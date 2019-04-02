@@ -1057,7 +1057,7 @@ close: 1 nil
 
 === TEST 19: cannot survive across request boundary (send)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location /t {
@@ -1116,7 +1116,7 @@ received: OK|failed to send request: closed)\$"
 
 === TEST 20: cannot survive across request boundary (receive)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location /t {
@@ -1191,7 +1191,7 @@ received: OK|failed to receive a line: closed \[nil\])$/
 
 === TEST 21: cannot survive across request boundary (close)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location /t {
@@ -1260,7 +1260,7 @@ received: OK|failed to close: closed)$/
 
 === TEST 22: cannot survive across request boundary (connect)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location /t {
@@ -2672,7 +2672,7 @@ lua clean up the timer for pending ngx.sleep
 
 === TEST 44: bad request tries to connect
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -2726,7 +2726,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):7: bad request/
 
 === TEST 45: bad request tries to receive
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -2783,7 +2783,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 46: bad request tries to send
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -2840,7 +2840,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 47: bad request tries to close
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -2897,7 +2897,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 48: bad request tries to set keepalive
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -2954,7 +2954,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 49: bad request tries to receiveuntil
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {

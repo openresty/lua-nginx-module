@@ -824,7 +824,7 @@ probe syscall.socket.return, syscall.connect.return {
 
 === TEST 15: bad request tries to setpeer
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -881,7 +881,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 16: bad request tries to send
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -938,7 +938,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 17: bad request tries to receive
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -995,7 +995,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 18: bad request tries to close
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {
@@ -1052,7 +1052,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 === TEST 19: bad request tries to receive
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     server_tokens off;
     location = /main {

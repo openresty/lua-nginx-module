@@ -229,7 +229,7 @@ qr/received: Server: \S+/,
 
 === TEST 4: tcp cosocket in timer handler (keep-alive connections)
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 
 --- config
     location = /t {
@@ -508,7 +508,7 @@ qr/\[lua\] log_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:6[4-9]|7[0-9]|8[0-
 
 === TEST 8: tcp cosocket in timer handler (keep-alive connections) - log_by_lua
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 
 --- config
     location = /t {
@@ -606,7 +606,7 @@ qr/go\(\): connected: 1, reused: \d+/,
 
 === TEST 9: tcp cosocket in timer handler (keep-alive connections) - header_filter_by_lua
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 
 --- config
     location = /t {
@@ -713,7 +713,7 @@ qr/go\(\): connected: 1, reused: \d+/,
 
 === TEST 10: tcp cosocket in timer handler (keep-alive connections) - body_filter_by_lua
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 
 --- config
     location = /t {
@@ -827,7 +827,7 @@ qr/go\(\): connected: 1, reused: \d+/,
 
 === TEST 11: tcp cosocket in timer handler (keep-alive connections) - set_by_lua
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 
 --- config
     location = /t {

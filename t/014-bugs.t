@@ -43,7 +43,7 @@ __DATA__
 
 === TEST 1: sanity
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /load {
         content_by_lua '
@@ -69,7 +69,7 @@ end
 
 === TEST 2: sanity
 --- http_config
-lua_package_path '/home/agentz/rpm/BUILD/lua-yajl-1.1/build/?.so;/home/lz/luax/?.so;./?.so';
+lua_package_cpath '/home/agentz/rpm/BUILD/lua-yajl-1.1/build/?.so;/home/lz/luax/?.so;./?.so';
 --- config
     location = '/report/listBidwordPrices4lzExtra.htm' {
         content_by_lua '
@@ -847,7 +847,7 @@ ok
 
 === TEST 37: resolving names with a trailing dot
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /t {
         resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -865,7 +865,7 @@ GET /t
 
 === TEST 38: resolving names with a trailing dot
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
     server {
         listen 12354;
 
@@ -892,7 +892,7 @@ args: foo=1&bar=2
 
 === TEST 39: lua_code_cache off + setkeepalive
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     lua_code_cache off;
     location = /t {
