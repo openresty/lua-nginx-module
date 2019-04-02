@@ -147,6 +147,13 @@ static int ngx_http_lua_get_raw_phase_context(lua_State *L);
 #define LUA_PATH_SEP ";"
 #endif
 
+
+#if !defined(LUA_DEFAULT_PATH) && (NGX_DEBUG)
+#define LUA_DEFAULT_PATH "../lua-resty-core/lib/?.lua;"                      \
+                         "../lua-resty-lrucache/lib/?.lua"
+#endif
+
+
 #define AUX_MARK "\1"
 
 
@@ -3813,6 +3820,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
     ngx_pool_cleanup_t **pcln)
 {
+    int                              rc;
     lua_State                       *L;
     ngx_uint_t                       i;
     ngx_pool_cleanup_t              *cln;
@@ -3878,6 +3886,21 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
         }
 
         lua_pop(L, 2);
+    }
+
+    if (lmcf->load_resty_core) {
+        lua_getglobal(L, "require");
+        lua_pushstring(L, "resty.core");
+
+        rc = lua_pcall(L, 1, 1, 0);
+        if (rc != 0) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "lua_load_resty_core failed to load the resty.core "
+                          "module from https://github.com/openresty/lua-resty"
+                          "-core; ensure you are using an OpenResty release "
+                          "from https://openresty.org/en/download.html "
+                          "(rc: %i, reason: %s)", rc, lua_tostring(L, -1));
+        }
     }
 
     return L;
