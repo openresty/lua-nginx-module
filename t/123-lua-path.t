@@ -37,7 +37,7 @@ env LUA_CPATH;
 --- request
 GET /lua
 --- response_body
-/foo/bar/baz
+../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;/foo/bar/baz
 /baz/bar/foo
 
 --- no_error_log
@@ -61,7 +61,7 @@ env LUA_CPATH;
 --- request
 GET /lua
 --- response_body
-/foo/bar/baz
+../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;/foo/bar/baz
 /baz/bar/foo
 
 --- no_error_log
