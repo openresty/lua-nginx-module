@@ -479,7 +479,7 @@ typedef struct {
 
 
 typedef struct ngx_http_lua_ctx_s {
-    /* for lua_coce_cache off: */
+    /* for lua_code_cache off: */
     ngx_http_lua_vm_state_t  *vm_state;
 
     ngx_http_request_t      *request;
