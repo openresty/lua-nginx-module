@@ -10,11 +10,6 @@ $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
 our $http_config = <<'_EOC_';
-    upstream database {
-        drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
-                       dbname=ngx_test user=ngx_test password=ngx_test;
-    }
-
     lua_package_path "../lua-resty-mysql/lib/?.lua;;";
 _EOC_
 
