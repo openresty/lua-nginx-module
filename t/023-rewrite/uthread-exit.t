@@ -401,6 +401,7 @@ after
 
 
 === TEST 6: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.udp)
+--- ONLY
 --- config
     location /lua {
         resolver 127.0.0.2:12345;
