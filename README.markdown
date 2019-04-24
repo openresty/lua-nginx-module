@@ -6738,7 +6738,7 @@ ngx.shared.DICT.flush_expired
 
 Flushes out the expired items in the dictionary, up to the maximal number specified by the optional `max_count` argument. When the `max_count` argument is given `0` or not given at all, then it means unlimited. Returns the number of items that have actually been flushed.
 
-Unlike the [flush_all](#ngxshareddictflush_all) method, this method actually free up the memory used by the expired items.
+Unlike the [flush_all](#ngxshareddictflush_all) method, this method actually frees up the memory used by the expired items.
 
 This feature was first introduced in the `v0.6.3` release.
 
