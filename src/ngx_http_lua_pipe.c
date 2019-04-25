@@ -551,7 +551,7 @@ ngx_http_lua_pipe_fd_write(ngx_connection_t *c, u_char *buf, size_t size)
 int
 ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
     const char *file, const char **argv, int merge_stderr, size_t buffer_size,
-    u_char *errbuf, size_t *errbuf_size)
+    const char **environ, u_char *errbuf, size_t *errbuf_size)
 {
     int                             rc;
     int                             in[2];
@@ -570,6 +570,15 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
     struct sigaction                sa;
     ngx_http_lua_pipe_signal_t     *sig;
     sigset_t                        set;
+
+#if !(NGX_HTTP_LUA_HAVE_EXECVPE)
+    if (environ != NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "environ option not supported")
+                       - errbuf;
+        return NGX_ERROR;
+    }
+#endif
 
     pool_size = ngx_align(NGX_MIN_POOL_SIZE + buffer_size * 2,
                           NGX_POOL_ALIGNMENT);
@@ -758,11 +767,31 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
             }
         }
 
+#if (NGX_HTTP_LUA_HAVE_EXECVPE)
+        if (environ != NULL) {
+            if (execvpe(file, (char * const *) argv, (char * const *) environ)
+                == -1)
+            {
+                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                              "lua pipe child execvpe() failed while "
+                              "executing %s", file);
+            }
+
+        } else {
+            if (execvp(file, (char * const *) argv) == -1) {
+                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                              "lua pipe child execvp() failed while "
+                              "executing %s", file);
+            }
+        }
+
+#else
         if (execvp(file, (char * const *) argv) == -1) {
             ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
                           "lua pipe child execvp() failed while executing %s",
                           file);
         }
+#endif
 
         exit(EXIT_FAILURE);
     }
