@@ -557,6 +557,21 @@ CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
 
 # ----------------------------------------
 
+ngx_feature="execvpe"
+ngx_feature_libs=
+ngx_feature_name="NGX_HTTP_LUA_HAVE_EXECVPE"
+ngx_feature_run=no
+ngx_feature_incs=
+ngx_feature_test='char* argv[] = {"/bin/sh"};execvpe("/bin/sh", argv, NULL);'
+SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
+
+. auto/feature
+
+CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
+# ----------------------------------------
+
 if test -n "$ngx_module_link"; then
     ngx_module_type=HTTP_AUX_FILTER
     ngx_module_name=$ngx_addon_name
