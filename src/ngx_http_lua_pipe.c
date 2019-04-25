@@ -862,10 +862,6 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
     pp->buffer_size = buffer_size;
 
     proc->_pid = pid;
-    proc->write_timeout = 10000;
-    proc->stdout_read_timeout = 10000;
-    proc->stderr_read_timeout = 10000;
-    proc->wait_timeout = 10000;
     proc->pipe = pp;
 
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
