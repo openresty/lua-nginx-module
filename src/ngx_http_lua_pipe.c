@@ -30,16 +30,12 @@ static ssize_t ngx_http_lua_pipe_fd_read(ngx_connection_t *c, u_char *buf,
     size_t size);
 static ssize_t ngx_http_lua_pipe_fd_write(ngx_connection_t *c, u_char *buf,
     size_t size);
-static ngx_int_t ngx_http_lua_pipe_close_helper(
-    ngx_http_lua_pipe_ctx_t *pipe_ctx, ngx_event_t *ev, int forced);
-static ngx_int_t ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe,
-    int forced);
-static ngx_int_t ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe,
-    int forced);
-static ngx_int_t ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe,
-    int forced);
-static void ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc,
-    int forced);
+static void ngx_http_lua_pipe_close_helper(
+    ngx_http_lua_pipe_ctx_t *pipe_ctx, ngx_event_t *ev);
+static void ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe);
+static void ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe);
+static void ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe);
+static void ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc);
 static ngx_int_t ngx_http_lua_pipe_get_lua_ctx(ngx_http_request_t *r,
     ngx_http_lua_ctx_t **ctx, u_char *errbuf, size_t *errbuf_size);
 static void ngx_http_lua_pipe_put_error(ngx_http_lua_pipe_ctx_t *pipe_ctx,
@@ -121,7 +117,8 @@ enum {
     PIPE_ERR_NOMEM,
     PIPE_ERR_TIMEOUT,
     PIPE_ERR_ADD_READ_EV,
-    PIPE_ERR_ADD_WRITE_EV
+    PIPE_ERR_ADD_WRITE_EV,
+    PIPE_ERR_ABORTED
 };
 
 
@@ -914,26 +911,27 @@ free_pool:
 }
 
 
-static ngx_int_t
+static void
 ngx_http_lua_pipe_close_helper(ngx_http_lua_pipe_ctx_t *pipe_ctx,
-    ngx_event_t *ev, int forced)
+    ngx_event_t *ev)
 {
-    if (ev->handler != ngx_http_lua_pipe_dummy_event_handler && !forced) {
-        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                       "lua pipe cannot close fd:%d without "
-                       "forced pipe:%p ev:%p", pipe_ctx->c->fd, pipe_ctx, ev);
-        return NGX_ERROR;
+    if (ev->handler != ngx_http_lua_pipe_dummy_event_handler) {
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua pipe abort blocking operation pipe_ctx:%p ev:%p",
+                       pipe_ctx, ev);
+
+        pipe_ctx->err_type = PIPE_ERR_ABORTED;
+        ngx_post_event(ev, &ngx_posted_events);
+        return;
     }
 
     ngx_close_connection(pipe_ctx->c);
     pipe_ctx->c = NULL;
-
-    return NGX_OK;
 }
 
 
-static ngx_int_t
-ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe, int forced)
+static void
+ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe)
 {
     ngx_event_t                     *wev;
 
@@ -949,15 +947,13 @@ ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe, int forced)
 
     } else if (pipe->stdin_ctx->c != NULL) {
         wev = pipe->stdin_ctx->c->write;
-        return ngx_http_lua_pipe_close_helper(pipe->stdin_ctx, wev, forced);
+        ngx_http_lua_pipe_close_helper(pipe->stdin_ctx, wev);
     }
-
-    return NGX_OK;
 }
 
 
-static ngx_int_t
-ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe, int forced)
+static void
+ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe)
 {
     ngx_event_t                     *rev;
 
@@ -973,15 +969,13 @@ ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe, int forced)
 
     } else if (pipe->stdout_ctx->c != NULL) {
         rev = pipe->stdout_ctx->c->read;
-        return ngx_http_lua_pipe_close_helper(pipe->stdout_ctx, rev, forced);
+        ngx_http_lua_pipe_close_helper(pipe->stdout_ctx, rev);
     }
-
-    return NGX_OK;
 }
 
 
-static ngx_int_t
-ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe, int forced)
+static void
+ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe)
 {
     ngx_event_t                     *rev;
 
@@ -997,10 +991,8 @@ ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe, int forced)
 
     } else if (pipe->stderr_ctx->c != NULL) {
         rev = pipe->stderr_ctx->c->read;
-        return ngx_http_lua_pipe_close_helper(pipe->stderr_ctx, rev, forced);
+        ngx_http_lua_pipe_close_helper(pipe->stderr_ctx, rev);
     }
-
-    return NGX_OK;
 }
 
 
@@ -1008,7 +1000,6 @@ int
 ngx_http_lua_ffi_pipe_proc_shutdown_stdin(ngx_http_lua_ffi_pipe_proc_t *proc,
     u_char *errbuf, size_t *errbuf_size)
 {
-    ngx_int_t                        rc;
     ngx_http_lua_pipe_t             *pipe;
 
     pipe = proc->pipe;
@@ -1017,12 +1008,7 @@ ngx_http_lua_ffi_pipe_proc_shutdown_stdin(ngx_http_lua_ffi_pipe_proc_t *proc,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_pipe_close_stdin(pipe, 0);
-    if (rc != NGX_OK) {
-        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "pipe busy writing")
-                       - errbuf;
-        return NGX_ERROR;
-    }
+    ngx_http_lua_pipe_close_stdin(pipe);
 
     return NGX_OK;
 }
@@ -1032,7 +1018,6 @@ int
 ngx_http_lua_ffi_pipe_proc_shutdown_stdout(ngx_http_lua_ffi_pipe_proc_t *proc,
     u_char *errbuf, size_t *errbuf_size)
 {
-    ngx_int_t                        rc;
     ngx_http_lua_pipe_t             *pipe;
 
     pipe = proc->pipe;
@@ -1041,12 +1026,7 @@ ngx_http_lua_ffi_pipe_proc_shutdown_stdout(ngx_http_lua_ffi_pipe_proc_t *proc,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_pipe_close_stdout(pipe, 0);
-    if (rc != NGX_OK) {
-        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "pipe busy reading")
-                       - errbuf;
-        return NGX_ERROR;
-    }
+    ngx_http_lua_pipe_close_stdout(pipe);
 
     return NGX_OK;
 }
@@ -1071,24 +1051,20 @@ ngx_http_lua_ffi_pipe_proc_shutdown_stderr(ngx_http_lua_ffi_pipe_proc_t *proc,
         return NGX_ERROR;
     }
 
-    if (ngx_http_lua_pipe_close_stderr(pipe, 0) != NGX_OK) {
-        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "pipe busy reading")
-                       - errbuf;
-        return NGX_ERROR;
-    }
+    ngx_http_lua_pipe_close_stderr(pipe);
 
     return NGX_OK;
 }
 
 
 static void
-ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc, int forced)
+ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc)
 {
     ngx_http_lua_pipe_t          *pipe;
 
-    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                   "lua pipe finalize process:%p pid:%P forced:%d", proc,
-                   proc->_pid, forced);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "lua pipe finalize process:%p pid:%P",
+                   proc, proc->_pid);
     pipe = proc->pipe;
 
     if (pipe->node) {
@@ -1098,11 +1074,11 @@ ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc, int forced)
 
     pipe->dead = 1;
 
-    ngx_http_lua_pipe_close_stdin(pipe, forced);
-    ngx_http_lua_pipe_close_stdout(pipe, forced);
+    ngx_http_lua_pipe_close_stdin(pipe);
+    ngx_http_lua_pipe_close_stdout(pipe);
 
     if (!pipe->merge_stderr) {
-        ngx_http_lua_pipe_close_stderr(pipe, forced);
+        ngx_http_lua_pipe_close_stderr(pipe);
     }
 
     pipe->closed = 1;
@@ -1135,7 +1111,7 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
         }
     }
 
-    ngx_http_lua_pipe_proc_finalize(proc, 1);
+    ngx_http_lua_pipe_proc_finalize(proc);
     ngx_destroy_pool(pipe->pool);
     proc->pipe = NULL;
 }
@@ -1203,6 +1179,10 @@ ngx_http_lua_pipe_put_error(ngx_http_lua_pipe_ctx_t *pipe_ctx, u_char *errbuf,
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
                                     "failed to add write event")
                        - errbuf;
+        break;
+
+    case PIPE_ERR_ABORTED:
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "aborted") - errbuf;
         break;
 
     default:
@@ -2005,7 +1985,7 @@ ngx_http_lua_ffi_pipe_proc_wait(ngx_http_request_t *r,
         *reason = REASON_UNKNOWN;
     }
 
-    ngx_http_lua_pipe_proc_finalize(proc, 0);
+    ngx_http_lua_pipe_proc_finalize(proc);
 
     if (*status == 0) {
         return NGX_OK;
@@ -2096,6 +2076,12 @@ ngx_http_lua_pipe_read_retval_helper(ngx_http_lua_ffi_pipe_proc_t *proc,
         return 0;
     }
 
+    if (pipe_ctx->err_type == PIPE_ERR_ABORTED) {
+        ngx_close_connection(pipe_ctx->c);
+        pipe_ctx->c = NULL;
+        return 0;
+    }
+
     rc = ngx_http_lua_pipe_read(pipe, pipe_ctx);
     if (rc != NGX_AGAIN) {
         return 0;
@@ -2147,6 +2133,12 @@ ngx_http_lua_pipe_write_retval(ngx_http_lua_ffi_pipe_proc_t *proc,
         return 0;
     }
 
+    if (pipe_ctx->err_type == PIPE_ERR_ABORTED) {
+        ngx_close_connection(pipe_ctx->c);
+        pipe_ctx->c = NULL;
+        return 0;
+    }
+
     rc = ngx_http_lua_pipe_write(pipe, pipe_ctx);
     if (rc != NGX_AGAIN) {
         return 0;
@@ -2192,7 +2184,7 @@ ngx_http_lua_pipe_wait_retval(ngx_http_lua_ffi_pipe_proc_t *proc, lua_State *L)
         return 2;
     }
 
-    ngx_http_lua_pipe_proc_finalize(pipe_node->proc, 0);
+    ngx_http_lua_pipe_proc_finalize(pipe_node->proc);
 
     if (pipe_node->status == 0) {
         lua_pushboolean(L, 1);
