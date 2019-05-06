@@ -77,8 +77,7 @@ static void ngx_http_lua_pipe_resume_write_handler(ngx_event_t *ev);
 static void ngx_http_lua_pipe_resume_wait_handler(ngx_event_t *ev);
 static ngx_int_t ngx_http_lua_pipe_resume(ngx_http_request_t *r);
 static void ngx_http_lua_pipe_dummy_event_handler(ngx_event_t *ev);
-static void ngx_http_lua_pipe_cleanup_helper(
-    ngx_http_lua_co_ctx_t *wait_co_ctx);
+static void ngx_http_lua_pipe_clear_event(ngx_event_t *ev);
 static void ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_write_cleanup(void *data);
@@ -2217,19 +2216,7 @@ ngx_http_lua_pipe_resume_helper(ngx_event_t *ev,
         ev->timedout = 0;
     }
 
-    if (ev->timer_set) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, 0,
-                       "lua pipe del timer for ev:%p", ev);
-        ngx_del_timer(ev);
-    }
-
-    if (ev->posted) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, 0,
-                       "lua pipe del posted event for ev:%p", ev);
-        ngx_delete_posted_event(ev);
-    }
-
-    ev->handler = ngx_http_lua_pipe_dummy_event_handler;
+    ngx_http_lua_pipe_clear_event(ev);
 
     r = ngx_http_lua_get_req(wait_co_ctx->co);
     c = r->connection;
@@ -2377,15 +2364,21 @@ ngx_http_lua_pipe_dummy_event_handler(ngx_event_t *ev)
 
 
 static void
-ngx_http_lua_pipe_cleanup_helper(ngx_http_lua_co_ctx_t *wait_co_ctx)
+ngx_http_lua_pipe_clear_event(ngx_event_t *ev)
 {
-    if (wait_co_ctx->sleep.timer_set) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, wait_co_ctx->sleep.log, 0,
-                       "lua pipe del timer for ev:%p", &wait_co_ctx->sleep);
-        ngx_del_timer(&wait_co_ctx->sleep);
+    ev->handler = ngx_http_lua_pipe_dummy_event_handler;
+
+    if (ev->timer_set) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, 0,
+                       "lua pipe del timer for ev:%p", ev);
+        ngx_del_timer(ev);
     }
 
-    wait_co_ctx->cleanup = NULL;
+    if (ev->posted) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, 0,
+                       "lua pipe del posted event for ev:%p", ev);
+        ngx_delete_posted_event(ev);
+    }
 }
 
 
@@ -2404,10 +2397,10 @@ ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data)
     c = proc->pipe->stdout_ctx->c;
     if (c) {
         rev = c->read;
-        rev->handler = ngx_http_lua_pipe_dummy_event_handler;
+        ngx_http_lua_pipe_clear_event(rev);
     }
 
-    ngx_http_lua_pipe_cleanup_helper(wait_co_ctx);
+    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2426,10 +2419,10 @@ ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data)
     c = proc->pipe->stderr_ctx->c;
     if (c) {
         rev = c->read;
-        rev->handler = ngx_http_lua_pipe_dummy_event_handler;
+        ngx_http_lua_pipe_clear_event(rev);
     }
 
-    ngx_http_lua_pipe_cleanup_helper(wait_co_ctx);
+    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2448,10 +2441,10 @@ ngx_http_lua_pipe_proc_write_cleanup(void *data)
     c = proc->pipe->stdin_ctx->c;
     if (c) {
         wev = c->write;
-        wev->handler = ngx_http_lua_pipe_dummy_event_handler;
+        ngx_http_lua_pipe_clear_event(wev);
     }
 
-    ngx_http_lua_pipe_cleanup_helper(wait_co_ctx);
+    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2471,14 +2464,9 @@ ngx_http_lua_pipe_proc_wait_cleanup(void *data)
     pipe_node = (ngx_http_lua_pipe_node_t *) &node->color;
     pipe_node->wait_co_ctx = NULL;
 
-    if (wait_co_ctx->sleep.posted) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                       "lua pipe del posted event for ev:%p",
-                       &wait_co_ctx->sleep);
-        ngx_delete_posted_event(&wait_co_ctx->sleep);
-    }
+    ngx_http_lua_pipe_clear_event(&wait_co_ctx->sleep);
 
-    ngx_http_lua_pipe_cleanup_helper(wait_co_ctx);
+    wait_co_ctx->cleanup = NULL;
 }
 
 
