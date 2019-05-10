@@ -4788,6 +4788,8 @@ ngx.req.set_header
 
 Set the current request's request header named `header_name` to value `header_value`, overriding any existing ones.
 
+It can also be used as Lua's equivalent of nginx `proxy_set_header` directive (same is true about [ngx.req.clear_header](#ngxreqclear_header)).
+
 By default, all the subrequests subsequently initiated by [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) will inherit the new header.
 
 Here is an example of setting the `Content-Type` header:
