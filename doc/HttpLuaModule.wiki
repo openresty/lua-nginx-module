@@ -6178,7 +6178,7 @@ Timeout for the reading operation is controlled by the [[#lua_socket_read_timeou
 
 <geshi lang="lua">
     sock:settimeouts(1000, 1000, 1000)  -- one second timeout for connect/read/write
-    local data, err = sock:receiveany(10 * 1024 * 1024) -- read any data, at most 10K
+    local data, err = sock:receiveany(10 * 1024) -- read any data, at most 10K
     if not data then
         ngx.say("failed to read any data: ", err)
         return
