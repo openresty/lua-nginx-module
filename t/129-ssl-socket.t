@@ -1096,9 +1096,11 @@ close: 1 nil
 qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2
+--- error_log eval
+[
+'lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1\.2, cipher: "(?:ECDHE-RSA-AES(?:256|128)-GCM-SHA(?:384|256)|ECDHE-(?:RSA|ECDSA)-CHACHA20-POLY1305) TLSv1\.2/,
+]
 --- no_error_log
 SSL reused session
 [error]
