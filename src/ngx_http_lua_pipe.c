@@ -574,7 +574,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
 #if !(NGX_HTTP_LUA_HAVE_EXECVPE)
     if (environ != NULL) {
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
-                                    "environ option unsupported")
+                                    "environ option not supported")
                        - errbuf;
         return NGX_ERROR;
     }
