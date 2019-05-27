@@ -3220,6 +3220,7 @@ Nginx API for Lua
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
 * [ngx.shared.DICT.rpop](#ngxshareddictrpop)
 * [ngx.shared.DICT.llen](#ngxshareddictllen)
+* [ngx.shared.DICT.lindex](#ngxshareddictlindex)
 * [ngx.shared.DICT.ttl](#ngxshareddictttl)
 * [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
@@ -6270,6 +6271,7 @@ The resulting object `dict` has the following methods:
 * [lpop](#ngxshareddictlpop)
 * [rpop](#ngxshareddictrpop)
 * [llen](#ngxshareddictllen)
+* [lindex](#ngxshareddictlindex)
 * [ttl](#ngxshareddictttl)
 * [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
@@ -6637,6 +6639,25 @@ Returns the number of elements in the list named `key` in the shm-based dictiona
 If key does not exist, it is interpreted as an empty list and 0 is returned. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
 
 This feature was first introduced in the `v0.10.6` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.lindex
+----------------------
+
+**syntax:** *val, err = ngx.shared.DICT:lindex(key, index)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Returns the element which at the index `index` of the list named `key` in the shm-base dictionary [ngx.shared.DICT](#ngxshareddict).
+
+The index is zero-based, so `0` means the first element, `1` for the second element and so forth. Also, negative index can be used to designate elements starting at the tail of the list, here `-1` means the last element and `-2` means the penultimate and so on.
+
+If `key` does not exist or `index` is out of the list bound, it will return `nil`. When the `key` already takes a value that is not a list, it will return `nil` and `"value not a list"`.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
