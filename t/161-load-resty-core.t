@@ -4,6 +4,8 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3);
 
+our $HtmlDir = html_dir;
+
 add_block_preprocessor(sub {
     my $block = shift;
 
@@ -66,3 +68,30 @@ resty.core loaded: false
     }
 --- response_body
 resty.core loaded: true
+
+
+
+=== TEST 4: lua_load_resty_core honors the lua_package_path directive
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;;';"
+--- config
+    location = /t {
+        content_by_lua_block {
+            local loaded_resty_core = package.loaded["resty.core"]
+            local resty_core = require "resty.core"
+
+            ngx.say("resty.core loaded: ", loaded_resty_core == resty_core)
+
+            resty_core.go()
+        }
+    }
+--- response_body
+resty.core loaded: true
+loaded from html dir
+--- user_files
+>>> resty/core.lua
+return {
+    go = function ()
+        ngx.say("loaded from html dir")
+    end
+}
