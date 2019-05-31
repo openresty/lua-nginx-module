@@ -194,7 +194,7 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
     *p++ = ':';
 
     p = ngx_snprintf(p, NGX_INT_T_LEN, "%d",
-                     ar.currentline ? ar.currentline : ar.linedefined);
+                     ar.currentline > 0 ? ar.currentline : ar.linedefined);
 
     *p++ = ':'; *p++ = ' ';
 
