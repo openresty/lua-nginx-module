@@ -16,6 +16,9 @@
 #include "ngx_http_lua_probe.h"
 
 
+#define NGX_HTTP_LUA_TIMER_ERRBUF_SIZE  128
+
+
 typedef struct {
     void        **main_conf;
     void        **srv_conf;
@@ -561,8 +564,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     lua_Debug                ar;
     u_char                  *p;
-    u_char                   errbuf[64];
-    int                      errbuf_size = 64;
+    u_char                   errbuf[NGX_HTTP_LUA_TIMER_ERRBUF_SIZE];
     const char              *source;
     const char              *errmsg;
 
@@ -586,7 +588,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     }
 
     if (lmcf->running_timers >= lmcf->max_running_timers) {
-        p = ngx_snprintf(errbuf, errbuf_size,
+        p = ngx_snprintf(errbuf, NGX_HTTP_LUA_TIMER_ERRBUF_SIZE - 1,
                          "%i lua_max_running_timers are not enough",
                          lmcf->max_running_timers);
         *p = '\0';
@@ -725,20 +727,20 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
 failed:
 
-    /* co stack: func [args] */
-    lua_getinfo(tctx.co, ">Sf", &ar);
-
-    source = ar.source;
-
-    if (source == NULL) {
-        source = "(unknown)";
-    }
-
-    ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
-                  "lua run timer with function defined in %s:%d"
-                  " failed: %s", source, ar.linedefined, errmsg);
-
     if (tctx.co_ref && tctx.co) {
+        /* co stack: func [args] */
+        lua_getinfo(tctx.co, ">Sf", &ar);
+
+        source = ar.source;
+
+        if (source == NULL) {
+            source = "(unknown)";
+        }
+
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "lua run timer with function defined in %s:%d"
+                      " failed: %s", source, ar.linedefined, errmsg);
+
         lua_pushlightuserdata(tctx.co, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(tctx.co, LUA_REGISTRYINDEX);
