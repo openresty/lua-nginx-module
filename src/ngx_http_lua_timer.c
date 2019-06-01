@@ -727,26 +727,26 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
 failed:
 
-    if (tctx.co_ref && tctx.co) {
-        /* co stack: func [args] */
-        lua_getinfo(tctx.co, ">Sf", &ar);
+    ngx_http_lua_assert(tctx.co_ref && tctx.co);
 
-        source = ar.source;
+    /* co stack: func [args] */
+    lua_getinfo(tctx.co, ">Sf", &ar);
 
-        if (source == NULL) {
-            source = "(unknown)";
-        }
+    source = ar.source;
 
-        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
-                      "lua run timer with function defined in %s:%d"
-                      " failed: %s", source, ar.linedefined, errmsg);
-
-        lua_pushlightuserdata(tctx.co, ngx_http_lua_lightudata_mask(
-                              coroutines_key));
-        lua_rawget(tctx.co, LUA_REGISTRYINDEX);
-        luaL_unref(tctx.co, -1, tctx.co_ref);
-        lua_settop(tctx.co, 0);
+    if (source == NULL) {
+        source = "(unknown)";
     }
+
+    ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                    "lua run timer with function defined in %s:%d"
+                    " failed: %s", source, ar.linedefined, errmsg);
+
+    lua_pushlightuserdata(tctx.co, ngx_http_lua_lightudata_mask(
+                            coroutines_key));
+    lua_rawget(tctx.co, LUA_REGISTRYINDEX);
+    luaL_unref(tctx.co, -1, tctx.co_ref);
+    lua_settop(tctx.co, 0);
 
     if (tctx.vm_state) {
         ngx_http_lua_cleanup_vm(tctx.vm_state);
