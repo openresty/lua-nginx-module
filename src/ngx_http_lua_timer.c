@@ -574,6 +574,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
     ngx_free(ev);
 
+    ngx_http_lua_assert(tctx.co_ref && tctx.co);
+
     lmcf = tctx.lmcf;
 
     lmcf->pending_timers--;
@@ -726,8 +728,6 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     return;
 
 failed:
-
-    ngx_http_lua_assert(tctx.co_ref && tctx.co);
 
     /* co stack: func [args] */
     lua_getinfo(tctx.co, ">Sf", &ar);
