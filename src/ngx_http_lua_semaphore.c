@@ -86,6 +86,8 @@ ngx_http_lua_alloc_sema(void)
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
 
+    ngx_http_lua_assert(lmcf != NULL);
+
     mm = lmcf->sema_mm;
 
     if (!ngx_queue_empty(&mm->free_queue)) {
@@ -171,6 +173,8 @@ ngx_http_lua_sema_mm_cleanup(void *data)
 
         sem = ngx_queue_data(q, ngx_http_lua_sema_t, chain);
         block = sem->block;
+
+        ngx_http_lua_assert(block != NULL);
 
         if (block->used == 0) {
             iter = (ngx_http_lua_sema_t *) (block + 1);

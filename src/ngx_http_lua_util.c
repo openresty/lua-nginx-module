@@ -269,7 +269,6 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
 
         lua_pushliteral(L, LUA_DEFAULT_PATH ";"); /* package default */
         lua_getfield(L, -2, "path"); /* package default old */
-        old_path = lua_tolstring(L, -1, &old_path_len);
         lua_concat(L, 2); /* package new */
         lua_setfield(L, -2, "path"); /* package */
 #endif
