@@ -370,17 +370,40 @@ int
 ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     int *al, void *arg)
 {
-    int                len;
-    ngx_int_t          rc;
-    const u_char      *id;
+    size_t                       len;
+    ngx_int_t                    rc;
+    const u_char                *id;
+    ngx_connection_t            *c;
+    ngx_http_lua_ssl_ctx_t      *cctx;
 
-    len = SSL_client_hello_get0_session_id(ssl_conn, &id);
+    c = ngx_ssl_get_connection(ssl_conn);
 
-    if (len <= 0) {
-        return SSL_CLIENT_HELLO_SUCCESS;
+    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
+
+    if (cctx && cctx->entered_sess_fetch_handler) {
+        /* not the first time */
+        rc = ngx_http_lua_ssl_sess_fetch_helper(ssl_conn, NULL, 0);
+
+    } else {
+        if (SSL_client_hello_get0_legacy_version(ssl_conn) > SSL3_VERSION) {
+            if (!(SSL_get_options(ssl_conn) & SSL_OP_NO_TICKET)
+                && SSL_client_hello_get0_ext(ssl_conn,
+                                             TLSEXT_TYPE_session_ticket,
+                                             NULL, &len)
+                && len > 0)
+            {
+                return SSL_CLIENT_HELLO_SUCCESS;
+            }
+        }
+
+        len = SSL_client_hello_get0_session_id(ssl_conn, &id);
+
+        if (len <= 0) {
+            return SSL_CLIENT_HELLO_SUCCESS;
+        }
+
+        rc = ngx_http_lua_ssl_sess_fetch_helper(ssl_conn, id, len);
     }
-
-    rc = ngx_http_lua_ssl_sess_fetch_helper(ssl_conn, id, len);
 
     if (rc == NGX_AGAIN) {
         return SSL_CLIENT_HELLO_RETRY;
