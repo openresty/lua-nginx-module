@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 163;
+plan tests => repeat_each() * 181;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -1372,5 +1372,248 @@ looking up Lua code cache with key 'nhlf_042c9b3a136fbacbbd0e4b9ad10896b7'
 "
 ]
 --- log_level: debug
+--- no_error_log
+[error]
+
+
+
+=== TEST 34: variables in rewrite_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        rewrite_by_lua_file html/$1.lua;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+        echo_location /lua/a;
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+ngx.say("a")
+>>> b.lua
+ngx.say("b")
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 35: variables in access_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        access_by_lua_file html/$1.lua;
+
+        content_by_lua_block {
+            return
+        }
+    }
+
+    location ~ ^/proxy/(.+)$ {
+        proxy_pass http://127.0.0.1:$server_port/lua/$1;
+    }
+
+    location /main {
+        content_by_lua_block {
+            local res1, res2, res3, res4, res5 = ngx.location.capture_multi{
+                { "/proxy/a" },
+                { "/proxy/b" },
+                { "/proxy/a" },
+                { "/proxy/a" },
+                { "/proxy/b" },
+            }
+
+            ngx.say(res1.body)
+            ngx.say(res2.body)
+            ngx.say(res3.body)
+            ngx.say(res4.body)
+            ngx.say(res5.body)
+        }
+    }
+--- user_files
+>>> a.lua
+ngx.print("a")
+>>> b.lua
+ngx.print("b")
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 36: variables in content_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        content_by_lua_file html/$1.lua;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+        echo_location /lua/a;
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+ngx.say("a")
+>>> b.lua
+ngx.say("b")
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 37: variables in header_filter_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        return 200;
+
+        header_filter_by_lua_file html/$1.lua;
+    }
+
+    location ~ ^/proxy/(.+)$ {
+        proxy_pass http://127.0.0.1:$server_port/lua/$1;
+    }
+
+    location /main {
+        content_by_lua_block {
+            local res1, res2, res3, res4, res5 = ngx.location.capture_multi{
+                { "/proxy/a" },
+                { "/proxy/b" },
+                { "/proxy/a" },
+                { "/proxy/a" },
+                { "/proxy/b" },
+            }
+
+            ngx.say(res1.header.match)
+            ngx.say(res2.header.match)
+            ngx.say(res3.header.match)
+            ngx.say(res4.header.match)
+            ngx.say(res5.header.match)
+        }
+    }
+--- user_files
+>>> a.lua
+ngx.header.match = "a"
+>>> b.lua
+ngx.header.match = "b"
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 38: variables in body_filter_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        echo hello;
+
+        body_filter_by_lua_file html/$1.lua;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+        echo_location /lua/a;
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+ngx.arg[1] = "a\n"
+ngx.arg[2] = true
+>>> b.lua
+ngx.arg[1] = "b\n"
+ngx.arg[2] = true
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 39: variables in log_by_lua_file's file path
+--- config
+    log_subrequest on;
+
+    location ~ ^/lua/(.+)$ {
+        echo hello;
+
+        log_by_lua_file html/$1.lua;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+        echo_location /lua/a;
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+ngx.log(ngx.NOTICE, "grep me: a")
+>>> b.lua
+ngx.log(ngx.NOTICE, "grep me: b")
+--- request
+GET /main
+--- ignore_response_body
+--- grep_error_log eval: qr/grep me: ([ab])/
+--- grep_error_log_out eval
+[
+"grep me: a
+grep me: b
+grep me: a
+grep me: a
+grep me: b
+",
+"grep me: a
+grep me: b
+grep me: a
+grep me: a
+grep me: b
+grep me: a
+grep me: b
+grep me: a
+grep me: a
+grep me: b
+"]
 --- no_error_log
 [error]
