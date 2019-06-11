@@ -184,6 +184,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->rewrite_src.value.data,
                                        llcf->rewrite_src.value.len,
+                                       &llcf->rewrite_src_ref,
                                        llcf->rewrite_src_key,
                                        (const char *)
                                        llcf->rewrite_chunkname);
@@ -221,6 +222,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &llcf->rewrite_src_ref,
                                      llcf->rewrite_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {

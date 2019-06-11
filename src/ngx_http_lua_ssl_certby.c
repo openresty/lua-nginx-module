@@ -46,6 +46,7 @@ ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
 
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
                                      lscf->srv.ssl_cert_src.data,
+                                     &lscf->srv.ssl_cert_src_ref,
                                      lscf->srv.ssl_cert_src_key);
     if (rc != NGX_OK) {
         return rc;
@@ -67,6 +68,7 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        lscf->srv.ssl_cert_src.data,
                                        lscf->srv.ssl_cert_src.len,
+                                       &lscf->srv.ssl_cert_src_ref,
                                        lscf->srv.ssl_cert_src_key,
                                        "=ssl_certificate_by_lua");
     if (rc != NGX_OK) {

@@ -39,6 +39,7 @@ ngx_http_lua_ssl_sess_store_handler_file(ngx_http_request_t *r,
 
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
                                      lscf->srv.ssl_sess_store_src.data,
+                                     &lscf->srv.ssl_sess_store_src_ref,
                                      lscf->srv.ssl_sess_store_src_key);
     if (rc != NGX_OK) {
         return rc;
@@ -61,6 +62,7 @@ ngx_http_lua_ssl_sess_store_handler_inline(ngx_http_request_t *r,
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        lscf->srv.ssl_sess_store_src.data,
                                        lscf->srv.ssl_sess_store_src.len,
+                                       &lscf->srv.ssl_sess_store_src_ref,
                                        lscf->srv.ssl_sess_store_src_key,
                                        "=ssl_session_store_by_lua_block");
     if (rc != NGX_OK) {

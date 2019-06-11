@@ -278,6 +278,7 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     filter_data->key = p;
+    filter_data->ref = LUA_REFNIL;
 
     p = ngx_copy(p, "set_by_lua", sizeof("set_by_lua") - 1);
     p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
@@ -361,6 +362,7 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        filter_data->script.data,
                                        filter_data->script.len,
+                                       &filter_data->ref,
                                        filter_data->key, "=set_by_lua");
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -413,6 +415,7 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &filter_data->ref,
                                      filter_data->key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
