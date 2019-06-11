@@ -1321,6 +1321,33 @@ failed:
 }
 
 
+int
+ngx_http_lua_ffi_ssl_set_ciphers(ngx_http_request_t *r, const char *ciphers,
+    char **err)
+{
+    ngx_ssl_conn_t    *ssl_conn;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    if (!SSL_set_cipher_list(ssl_conn, ciphers)) {
+        *err = "SSL_set_cipher_list() failed";
+        ERR_clear_error();
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
 #endif  /* NGX_LUA_NO_FFI_API */
 
 
