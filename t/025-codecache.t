@@ -1284,22 +1284,36 @@ GET /t
 /b/ is called
 /a/ is called
 /b/ is called
---- grep_error_log eval: qr/looking up Lua code cache with key '.*?'/
+--- grep_error_log eval: qr/code cache .*/
 --- grep_error_log_out eval
 [
-"looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
+"code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=-1)
+code cache miss (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=-1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache miss (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache setting ref (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
 ",
-"looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6'
-looking up Lua code cache with key '=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04'
+"code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=-1)
+code cache miss (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=-1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache miss (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=-1)
+code cache setting ref (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_3c7137b8371d10bc148c8f8bb3042ee6', ref=1)
+code cache lookup (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
+code cache hit (key='=content_by_lua(proxy.conf:2)nhli_1dfe09105792ef65c8d576cc486d5e04', ref=2)
 "]
 --- log_level: debug
 --- no_error_log
@@ -1353,22 +1367,34 @@ GET /t
 /b/ is called
 /a/ is called
 /b/ is called
---- grep_error_log eval: qr/looking up Lua code cache with key '.*?'/
+--- grep_error_log eval: qr/code cache .*/
 --- grep_error_log_out eval
 [
-"looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_68f5f4e946c3efd1cc206452b807e8b6'
-looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_042c9b3a136fbacbbd0e4b9ad10896b7'
+"code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=-1)
+code cache miss (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=-1)
+code cache lookup (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=-1)
+code cache miss (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=-1)
+code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache hit (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache lookup (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=-1)
+code cache miss (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=-1)
 ",
-"looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_68f5f4e946c3efd1cc206452b807e8b6'
-looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_042c9b3a136fbacbbd0e4b9ad10896b7'
-looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_68f5f4e946c3efd1cc206452b807e8b6'
-looking up Lua code cache with key 'nhlf_48a9a7def61143c003a7de1644e026e4'
-looking up Lua code cache with key 'nhlf_042c9b3a136fbacbbd0e4b9ad10896b7'
+"code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=-1)
+code cache miss (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=-1)
+code cache lookup (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=-1)
+code cache miss (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=-1)
+code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache hit (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache lookup (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=-1)
+code cache miss (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=-1)
+code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache hit (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache lookup (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=2)
+code cache hit (key='nhlf_68f5f4e946c3efd1cc206452b807e8b6', ref=2)
+code cache lookup (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache hit (key='nhlf_48a9a7def61143c003a7de1644e026e4', ref=1)
+code cache lookup (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=3)
+code cache hit (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=3)
 "
 ]
 --- log_level: debug
