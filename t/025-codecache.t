@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 181;
+plan tests => repeat_each() * 184;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 
@@ -1403,7 +1403,39 @@ code cache hit (key='nhlf_042c9b3a136fbacbbd0e4b9ad10896b7', ref=3)
 
 
 
-=== TEST 34: variables in rewrite_by_lua_file's file path
+=== TEST 34: variables in set_by_lua_file's file path
+--- config
+    location ~ ^/lua/(.+)$ {
+        set_by_lua_file $res html/$1.lua;
+        echo $res;
+    }
+
+    location /main {
+        echo_location /lua/a;
+        echo_location /lua/b;
+        echo_location /lua/a;
+        echo_location /lua/a;
+        echo_location /lua/b;
+    }
+--- user_files
+>>> a.lua
+return "a"
+>>> b.lua
+return "b"
+--- request
+GET /main
+--- response_body
+a
+b
+a
+a
+b
+--- no_error_log
+[error]
+
+
+
+=== TEST 35: variables in rewrite_by_lua_file's file path
 --- config
     location ~ ^/lua/(.+)$ {
         rewrite_by_lua_file html/$1.lua;
@@ -1434,7 +1466,7 @@ b
 
 
 
-=== TEST 35: variables in access_by_lua_file's file path
+=== TEST 36: variables in access_by_lua_file's file path
 --- config
     location ~ ^/lua/(.+)$ {
         access_by_lua_file html/$1.lua;
@@ -1483,7 +1515,7 @@ b
 
 
 
-=== TEST 36: variables in content_by_lua_file's file path
+=== TEST 37: variables in content_by_lua_file's file path
 --- config
     location ~ ^/lua/(.+)$ {
         content_by_lua_file html/$1.lua;
@@ -1514,7 +1546,7 @@ b
 
 
 
-=== TEST 37: variables in header_filter_by_lua_file's file path
+=== TEST 38: variables in header_filter_by_lua_file's file path
 --- config
     location ~ ^/lua/(.+)$ {
         return 200;
@@ -1561,7 +1593,7 @@ b
 
 
 
-=== TEST 38: variables in body_filter_by_lua_file's file path
+=== TEST 39: variables in body_filter_by_lua_file's file path
 --- config
     location ~ ^/lua/(.+)$ {
         echo hello;
@@ -1596,7 +1628,7 @@ b
 
 
 
-=== TEST 39: variables in log_by_lua_file's file path
+=== TEST 40: variables in log_by_lua_file's file path
 --- config
     log_subrequest on;
 
