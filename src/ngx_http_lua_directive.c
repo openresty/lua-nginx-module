@@ -301,7 +301,9 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t            target;
     ndk_set_var_t        filter;
 
-    ngx_http_lua_set_var_data_t     *filter_data;
+    ngx_http_lua_set_var_data_t           *filter_data;
+    ngx_http_complex_value_t               cv;
+    ngx_http_compile_complex_value_t       ccv;
 
     /*
      * value[0] = "set_by_lua_file"
@@ -324,16 +326,28 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     filter_data->size = filter.size;
 
-    p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
-    if (p == NULL) {
+    ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+    ccv.cf = cf;
+    ccv.value = &value[2];
+    ccv.complex_value = &cv;
+
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
-    filter_data->key = p;
+    if (cv.lengths == NULL) {
+        /* no variable found */
+        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
+        if (p == NULL) {
+            return NGX_CONF_ERROR;
+        }
 
-    p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
-    p = ngx_http_lua_digest_hex(p, value[2].data, value[2].len);
-    *p = '\0';
+        filter_data->key = p;
+
+        p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
+        p = ngx_http_lua_digest_hex(p, value[2].data, value[2].len);
+        *p = '\0';
+    }
 
     ngx_str_null(&filter_data->script);
 
