@@ -1,12 +1,16 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua;
+use Cwd qw(abs_path realpath);
+use File::Basename;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 184;
+plan tests => repeat_each() * 198;
 
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
+$ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
+$ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
 
 no_long_string();
 
@@ -1673,5 +1677,203 @@ grep me: a
 grep me: a
 grep me: b
 "]
+--- no_error_log
+[error]
+
+
+
+=== TEST 41: same chunk from different directives produces different closures
+--- http_config
+    ssl_session_fetch_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+    ssl_session_store_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block { ngx.log(ngx.INFO, "hello") }
+    }
+
+    server {
+        server_name test.com;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+
+        ssl_certificate_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+        location /lua {
+            set_by_lua_block $res { ngx.log(ngx.INFO, "hello") }
+
+            rewrite_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+            access_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+            content_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+            header_filter_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+            body_filter_by_lua_block { ngx.log(ngx.INFO, "hello") }
+
+            log_by_lua_block { ngx.log(ngx.INFO, "hello") }
+        }
+    }
+--- config
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location = /proxy {
+        proxy_pass http://backend;
+    }
+
+    location = /t {
+        set $html_dir $TEST_NGINX_HTML_DIR;
+
+        content_by_lua_block {
+            ngx.location.capture("/proxy")
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            local ok, err = sock:connect("unix:" .. ngx.var.html_dir .. "/nginx.sock")
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect: ", err)
+                return
+            end
+
+            local sess, err = sock:sslhandshake(nil, "test.com", true)
+            if not sess then
+                ngx.log(ngx.ERR, "failed to do SSL handshake: ", err)
+                return
+            end
+            package.loaded.session = sess
+            sock:close()
+
+            local ok, err = sock:connect("unix:" .. ngx.var.html_dir .. "/nginx.sock")
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect: ", err)
+                return
+            end
+
+            local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+            if not sess then
+                ngx.log(ngx.ERR, "failed to do SSL handshake: ", err)
+                return
+            end
+
+            local req = "GET /lua HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.log(ngx.ERR, "failed to send http request: ", err)
+                return
+            end
+        }
+    }
+--- request
+GET /t
+--- ignore_response_body
+--- grep_error_log eval: qr/code cache .*/
+--- grep_error_log_out eval
+[
+"code cache lookup (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=-1)
+code cache miss (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=-1)
+code cache lookup (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache hit (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache hit (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache lookup (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+",
+"code cache lookup (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=-1)
+code cache miss (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=-1)
+code cache lookup (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache hit (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache hit (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache lookup (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache miss (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=-1)
+code cache lookup (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=1)
+code cache hit (key='=content_by_lua(nginx.conf:120)nhli_56ca4388611109b6ecfdeada050c8024', ref=1)
+code cache lookup (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=2)
+code cache hit (key='balancer_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=2)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache hit (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache hit (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache lookup (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=5)
+code cache hit (key='ssl_session_fetch_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=5)
+code cache lookup (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache hit (key='ssl_certificate_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=3)
+code cache lookup (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache hit (key='ssl_session_store_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=4)
+code cache lookup (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=6)
+code cache hit (key='set_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=6)
+code cache lookup (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=7)
+code cache hit (key='=rewrite_by_lua(nginx.conf:46)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=7)
+code cache lookup (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=8)
+code cache hit (key='=access_by_lua(nginx.conf:48)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=8)
+code cache lookup (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=9)
+code cache hit (key='=content_by_lua(nginx.conf:50)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=9)
+code cache lookup (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=10)
+code cache hit (key='header_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=10)
+code cache lookup (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=11)
+code cache hit (key='body_filter_by_luanhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=11)
+code cache lookup (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=12)
+code cache hit (key='=log_by_lua(nginx.conf:56)nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=12)
+"]
+--- error_log eval
+[
+qr/balancer_by_lua:\d+: hello/,
+qr/ssl_session_fetch_by_lua_block:\d+: hello/,
+qr/ssl_certificate_by_lua:\d+: hello/,
+qr/ssl_session_store_by_lua_block:\d+: hello/,
+qr/set_by_lua:\d+: hello/,
+qr/rewrite_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/access_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/content_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/header_filter_by_lua:\d+: hello/,
+qr/body_filter_by_lua:\d+: hello/,
+qr/log_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+]
+--- log_level: debug
 --- no_error_log
 [error]
