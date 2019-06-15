@@ -181,6 +181,9 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
 #endif
     u_char *id, int len, int *copy)
 {
+#if defined(TLS1_3_VERSION)
+    int                              version;
+#endif
     lua_State                       *L;
     ngx_int_t                        rc;
     ngx_connection_t                *c, *fc = NULL;
@@ -197,6 +200,16 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
     *copy = 0;
 
     c = ngx_ssl_get_connection(ssl_conn);
+
+#if defined(TLS1_3_VERSION)
+    version = SSL_version(ssl_conn);
+
+    if (version >= TLS1_3_VERSION) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "ssl session fetch: skipped: TLS version %xd", version);
+        return 0;
+    }
+#endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "ssl session fetch: connection reusable: %ud", c->reusable);

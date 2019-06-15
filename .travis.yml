@@ -48,10 +48,9 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.15.8 OPENSSL_VER=1.0.2s OPENSSL_OPT="" OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.15.8 OPENSSL_VER=1.1.0k OPENSSL_OPT="" OPENSSL_PATCH_VER=1.1.0d
-    # TODO: when adding an OpenSSL version >= 1.1.1, please add "enable-tls1_3"
-    # to $OPENSSL_OPT.
+    - NGINX_VERSION=1.15.8 OPENSSL_VER=1.0.2s OPENSSL_PATCH_VER=1.0.2h
+    - NGINX_VERSION=1.15.8 OPENSSL_VER=1.1.0k OPENSSL_PATCH_VER=1.1.0d
+    - NGINX_VERSION=1.15.8 OPENSSL_VER=1.1.1c OPENSSL_PATCH_VER=1.1.1c
 
 services:
  - memcache
@@ -68,7 +67,7 @@ install:
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
-  - git clone https://github.com/openresty/openresty.git ../openresty
+  - git clone https://github.com/spacewander/openresty.git -b new_way_to_support_openssl_1.1.1 ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
@@ -117,7 +116,7 @@ script:
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
   - patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch
-  - ./config no-threads shared enable-ssl3 enable-ssl3-method $OPENSSL_OPT -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
+  - ./config no-threads shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..

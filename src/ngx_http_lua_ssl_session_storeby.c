@@ -176,6 +176,9 @@ int
 ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_ssl_session_t *sess)
 {
+#if defined(TLS1_3_VERSION)
+    int                              version;
+#endif
     const u_char                    *sess_id;
     unsigned int                     sess_id_len;
     lua_State                       *L;
@@ -188,6 +191,16 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_http_core_loc_conf_t        *clcf;
 
     c = ngx_ssl_get_connection(ssl_conn);
+
+#if defined(TLS1_3_VERSION)
+    version = SSL_version(ssl_conn);
+
+    if (version >= TLS1_3_VERSION) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "ssl session store: skipped: TLS version %xd", version);
+        return 0;
+    }
+#endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "ssl session store: connection reusable: %ud", c->reusable);
