@@ -19,6 +19,10 @@
 #include "ngx_http_lua_util.h"
 
 
+static u_char *ngx_http_lua_gen_file_cache_key_helper(u_char *out,
+    const u_char *src, size_t src_len);
+
+
 /**
  * Find code chunk associated with the given key in code cache,
  * and push it to the top of Lua stack if found.
@@ -260,7 +264,6 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
 {
     int              n;
     ngx_int_t        rc, errcode = NGX_ERROR;
-    u_char          *p;
     u_char           buf[NGX_HTTP_LUA_FILE_KEY_LEN + 1];
     const char      *err = NULL;
 
@@ -270,11 +273,8 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
     if (cache_key == NULL) {
         dd("CACHE file key not pre-calculated...calculating");
 
-        p = ngx_copy(buf, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, script, ngx_strlen(script));
-        *p = '\0';
-
-        cache_key = buf;
+        cache_key = ngx_http_lua_gen_file_cache_key_helper(buf, script,
+                                                           ngx_strlen(script));
         *cache_ref = LUA_NOREF;
 
     } else {
@@ -340,5 +340,65 @@ error:
     lua_settop(L, n);
     return errcode;
 }
+
+
+u_char *
+ngx_http_lua_gen_chunk_cache_key(ngx_conf_t *cf, const char *tag,
+    const u_char *src, size_t src_len)
+{
+    u_char      *p, *out;
+    size_t       tag_len;
+
+    tag_len = ngx_strlen(tag);
+
+    out = ngx_palloc(cf->pool, tag_len + NGX_HTTP_LUA_INLINE_KEY_LEN + 2);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    p = ngx_copy(out, tag, tag_len);
+    p = ngx_copy(p, "_", 1);
+    p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
+    p = ngx_http_lua_digest_hex(p, src, src_len);
+    *p = '\0';
+
+    return out;
+}
+
+
+static u_char *
+ngx_http_lua_gen_file_cache_key_helper(u_char *out, const u_char *src,
+    size_t src_len)
+{
+    u_char      *p;
+
+    ngx_http_lua_assert(out != NULL);
+
+    if (out == NULL) {
+        return NULL;
+    }
+
+    p = ngx_copy(out, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
+    p = ngx_http_lua_digest_hex(p, src, src_len);
+    *p = '\0';
+
+    return out;
+}
+
+
+u_char *
+ngx_http_lua_gen_file_cache_key(ngx_conf_t *cf, const u_char *src,
+    size_t src_len)
+{
+    u_char      *out;
+
+    out = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_TAG_LEN + 1);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    return ngx_http_lua_gen_file_cache_key_helper(out, src, src_len);
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
