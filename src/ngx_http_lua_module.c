@@ -1077,12 +1077,6 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
             return NGX_CONF_ERROR;
 #else
-#   ifdef HAVE_SSL_CLIENT_HELLO_CB_SUPPORT
-            SSL_CTX_set_client_hello_cb(sscf->ssl.ctx,
-                                        ngx_http_lua_ssl_client_hello_handler,
-                                        NULL);
-#   endif
-
             SSL_CTX_sess_set_get_cb(sscf->ssl.ctx,
                                     ngx_http_lua_ssl_sess_fetch_handler);
 #endif
