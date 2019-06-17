@@ -692,8 +692,9 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
 
 #if (nginx_version >= 1007005)
     max_tries = r->upstream->conf->next_upstream_tries;
-    // set a default tries to avoid infinite tries when all peers are not available
-    max_tries = max_tries == 0 ? 3 : max_tries; 
+    // set a default tries to avoid infinite retrying
+    // when all peers are invalid with default proxy_next_upstream_tries
+    max_tries = max_tries == 0 ? 3 : max_tries;
     total = bp->total_tries + r->upstream->peer.tries - 1;
 
     if (max_tries && total + count > max_tries) {
