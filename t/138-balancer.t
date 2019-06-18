@@ -522,4 +522,3 @@ http next upstream, 2
 http next upstream, 2
 --- error_log
 failed to set more tries: reduced tries due to limit
-[alert]
