@@ -520,7 +520,6 @@ set more tries: reduced tries due to limit
 http next upstream, 2
 http next upstream, 2
 http next upstream, 2
-http next upstream, 2
---- no_error_log
+--- error_log
 failed to set more tries: reduced tries due to limit
 [alert]
