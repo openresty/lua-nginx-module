@@ -962,9 +962,7 @@ connected: 1
 ssl handshake: userdata
 close: 1 nil
 
---- TODO: replace the expression below with skip_openssl
---- skip_eval
-5: `nginx -V 2>&1` !~ /built with OpenSSL 1\.1\.1/
+--- skip_openssl: 5: < 1.1.1
 --- error_log
 ssl session store: skipped: TLS version 304
 --- no_error_log
