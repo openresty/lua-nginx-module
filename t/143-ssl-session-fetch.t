@@ -7,7 +7,7 @@ use File::Basename;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 5 + 15);
+plan tests => repeat_each() * (blocks() * 5 + 16);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -1358,6 +1358,86 @@ ssl session fetch: connection reusable: 1
 reusable connection: 0
 ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
 /m,
+]
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 17: yield when reading early data
+--- http_config
+    ssl_session_fetch_by_lua_block {
+        local begin = ngx.now()
+        ngx.sleep(0.1)
+        print("elapsed in ssl fetch session by lua: ", ngx.now() - begin)
+    }
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        ssl_early_data on;
+
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+
+--- grep_error_log eval
+qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
+
+--- grep_error_log_out eval
+[
+'',
+qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
+qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
 ]
 
 --- no_error_log
