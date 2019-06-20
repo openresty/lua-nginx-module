@@ -11,7 +11,7 @@ my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
 } else {
-    plan tests => repeat_each() * (blocks() * 6 + 4);
+    plan tests => repeat_each() * (blocks() * 6 + 3);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
@@ -2075,3 +2075,66 @@ client socket file:
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 24: yield when reading early data
+--- http_config
+    server {
+        listen 127.0.0.2:8080 ssl;
+        server_name test.com;
+        ssl_certificate_by_lua_block {
+            ngx.sleep(0.001)
+        }
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_early_data on;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {ngx.status = 201 ngx.say("foo") ngx.exit(201)}
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.2", 8080)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
