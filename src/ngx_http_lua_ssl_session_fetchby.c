@@ -181,7 +181,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
 #endif
     u_char *id, int len, int *copy)
 {
-#if defined(TLS1_3_VERSION)
+#ifdef TLS1_3_VERSION
     int                              version;
 #endif
     lua_State                       *L;
@@ -201,7 +201,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
 
     c = ngx_ssl_get_connection(ssl_conn);
 
-#if defined(TLS1_3_VERSION)
+#ifdef TLS1_3_VERSION
     version = SSL_version(ssl_conn);
 
     if (version >= TLS1_3_VERSION) {
