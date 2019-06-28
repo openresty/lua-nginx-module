@@ -3818,7 +3818,7 @@ The `args` option can also take plain query strings:
 ```lua
 
  ngx.location.capture('/foo?a=1',
-     { args = 'b=3&c=%3a' } }
+     { args = 'b=3&c=%3a' }
  )
 ```
 

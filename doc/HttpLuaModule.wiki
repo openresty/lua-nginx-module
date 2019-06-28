@@ -3126,7 +3126,7 @@ The <code>args</code> option can also take plain query strings:
 
 <geshi lang="lua">
     ngx.location.capture('/foo?a=1',
-        { args = 'b=3&c=%3a' } }
+        { args = 'b=3&c=%3a' }
     )
 </geshi>
 
