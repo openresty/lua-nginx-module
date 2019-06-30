@@ -574,7 +574,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua_certificate_by_lua: handler return value: -1, cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 'lua exit with code -1',
 ]
 
@@ -715,7 +715,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua_certificate_by_lua: cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 'lua exit with code -1',
 ]
 
@@ -786,7 +786,7 @@ failed to do SSL handshake: handshake failed
 [
 'runtime error: ssl_certificate_by_lua:2: bad bad bad',
 'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
 ]
 
@@ -858,7 +858,7 @@ failed to do SSL handshake: handshake failed
 [
 'runtime error: ssl_certificate_by_lua:3: bad bad bad',
 'lua_certificate_by_lua: cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 ]
 
 --- no_error_log
@@ -1046,7 +1046,7 @@ failed to do SSL handshake: handshake failed
 [
 'lua ssl server name: "test.com"',
 'ssl_certificate_by_lua:1: API disabled in the context of ssl_certificate_by_lua*',
-qr/\[crit\] .*?cert cb error/,
+qr/\[info\] .*?cert cb error/,
 ]
 
 --- no_error_log
@@ -1775,7 +1775,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 qr/\[alert\] .*? no ssl_certificate_by_lua\* defined in server test2\.com\b/,
-qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 ]
 
 
@@ -1870,7 +1870,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 qr/\[alert\] .*? no ssl_certificate_by_lua\* defined in server ~test2\\\.com\b/,
-qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 ]
 
 
