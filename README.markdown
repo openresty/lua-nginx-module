@@ -2623,18 +2623,15 @@ But do not forget to comment this line out before publishing your site to the wo
 If you are using the [official pre-built packages](http://openresty.org/en/linux-packages.html) for [OpenResty](https://openresty.org/)
 1.11.2.1 or later, then everything should work out of the box.
 
-If you are not using one of the [OpenSSL
-packages](https://openresty.org/en/linux-packages.html) provided by
-[OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
-1.0.2, up to (and including) 1.1.0:
+If you are using OpenSSL libraries not provided by [OpenResty](https://openresty.org),
+then you need to apply the following patch for OpenSSL 1.0.2h or later:
 
-<https://openresty.org/en/openssl-patches.html>
+<https://github.com/openresty/openresty/blob/master/patches/openssl-1.0.2h-sess_set_get_cb_yield.patch>
 
-Similarly, if you are not using the NGINX core shipped with
-[OpenResty](https://openresty.org) 1.11.2.1 or later, you will need to apply
-patches to the standard NGINX core:
+If you are not using the NGINX core shipped with [OpenResty](https://openresty.org) 1.11.2.1 or later, then you need to
+apply the following patch to the standard NGINX core 1.11.2 or later:
 
-<https://openresty.org/en/nginx-ssl-patches.html>
+<http://openresty.org/download/nginx-1.11.2-nonblocking_ssl_handshake_hooks.patch>
 
 This directive was first introduced in the `v0.10.6` release.
 

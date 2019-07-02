@@ -173,12 +173,16 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
-static ngx_int_t
-ngx_http_lua_ssl_sess_fetch_helper(ngx_ssl_conn_t *ssl_conn,
-    const u_char *id, int len)
+/* cached session fetching callback to be set with SSL_CTX_sess_set_get_cb */
+ngx_ssl_session_t *
+ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+    const
+#endif
+    u_char *id, int len, int *copy)
 {
     lua_State                       *L;
-    ngx_int_t                        rc, res = NGX_ERROR;
+    ngx_int_t                        rc;
     ngx_connection_t                *c, *fc = NULL;
     ngx_http_request_t              *r = NULL;
     ngx_pool_cleanup_t              *cln;
@@ -186,6 +190,11 @@ ngx_http_lua_ssl_sess_fetch_helper(ngx_ssl_conn_t *ssl_conn,
     ngx_http_lua_ssl_ctx_t          *cctx;
     ngx_http_lua_srv_conf_t         *lscf;
     ngx_http_core_loc_conf_t        *clcf;
+
+    /* set copy to 0 as we expect OpenSSL to handle
+     * the memory of returned session */
+
+    *copy = 0;
 
     c = ngx_ssl_get_connection(ssl_conn);
 
@@ -208,10 +217,17 @@ ngx_http_lua_ssl_sess_fetch_helper(ngx_ssl_conn_t *ssl_conn,
                            cctx->exit_code);
 
             dd("lua ssl sess_fetch done, finally");
-            return NGX_OK;
+            return cctx->session;
         }
 
-        return NGX_AGAIN;
+#ifdef SSL_ERROR_PENDING_SESSION
+        return SSL_magic_pending_session_ptr();
+#else
+        ngx_log_error(NGX_LOG_CRIT, c->log, 0,
+                      "lua: cannot yield in sess get cb: "
+                      "missing async sess get cb support in OpenSSL");
+        return NULL;
+#endif
     }
 
     dd("first time");
@@ -313,7 +329,7 @@ ngx_http_lua_ssl_sess_fetch_helper(ngx_ssl_conn_t *ssl_conn,
                        "sess get cb exit code: %d", rc, cctx->exit_code);
 
         c->log->action = "SSL handshaking";
-        return NGX_OK;
+        return cctx->session;
     }
 
     /* rc == NGX_DONE */
@@ -340,13 +356,12 @@ ngx_http_lua_ssl_sess_fetch_helper(ngx_ssl_conn_t *ssl_conn,
 
     *cctx->cleanup = ngx_http_lua_ssl_sess_fetch_aborted;
 
-#if defined(SSL_ERROR_PENDING_SESSION)                                       \
-    || defined(HAVE_SSL_CLIENT_HELLO_CB_SUPPORT)
-
-    return NGX_AGAIN;
-
+#ifdef SSL_ERROR_PENDING_SESSION
+    return SSL_magic_pending_session_ptr();
 #else
-    res = NGX_AGAIN;
+    ngx_log_error(NGX_LOG_CRIT, c->log, 0,
+                  "lua: cannot yield in sess get cb: "
+                  "missing async sess get cb support in OpenSSL");
 
     /* fall through to the "failed" label below */
 #endif
@@ -361,123 +376,8 @@ failed:
         ngx_http_lua_close_fake_connection(fc);
     }
 
-    return res;
-}
-
-
-#ifdef HAVE_SSL_CLIENT_HELLO_CB_SUPPORT
-int
-ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
-    int *al, void *arg)
-{
-    int                len;
-    ngx_int_t          rc;
-    const u_char      *id;
-
-    len = SSL_client_hello_get0_session_id(ssl_conn, &id);
-
-    if (len <= 0) {
-        return SSL_CLIENT_HELLO_SUCCESS;
-    }
-
-    rc = ngx_http_lua_ssl_sess_fetch_helper(ssl_conn, id, len);
-
-    if (rc == NGX_AGAIN) {
-        return SSL_CLIENT_HELLO_RETRY;
-    }
-
-    return SSL_CLIENT_HELLO_SUCCESS;
-}
-
-
-ngx_ssl_session_t *
-ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
-    const u_char *id, int len, int *copy)
-{
-    ngx_connection_t                *c;
-    ngx_http_lua_ssl_ctx_t          *cctx;
-
-    /* set copy to 0 as we expect OpenSSL to handle
-     * the memory of returned session */
-
-    *copy = 0;
-
-    c = ngx_ssl_get_connection(ssl_conn);
-
-    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
-
-    if (cctx && cctx->done) {
-        return cctx->session;
-    }
-
     return NULL;
 }
-
-
-#else
-
-/* cached session fetching callback to be set with SSL_CTX_sess_set_get_cb */
-ngx_ssl_session_t *
-ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
-#if OPENSSL_VERSION_NUMBER >= 0x10100003L
-    const
-#endif
-    u_char *id, int len, int *copy)
-{
-    ngx_int_t                        rc;
-    ngx_connection_t                *c;
-    ngx_http_lua_ssl_ctx_t          *cctx;
-
-    /* set copy to 0 as we expect OpenSSL to handle
-     * the memory of returned session */
-
-    *copy = 0;
-
-    c = ngx_ssl_get_connection(ssl_conn);
-
-    rc = ngx_http_lua_ssl_sess_fetch_helper(ssl_conn, id, len);
-
-    if (rc == NGX_AGAIN) {
-
-#ifdef SSL_ERROR_PENDING_SESSION
-
-        return SSL_magic_pending_session_ptr();
-
-#else
-
-        ngx_log_error(NGX_LOG_CRIT, c->log, 0,
-                      "lua: cannot yield in sess get cb: "
-#   if OPENSSL_VERSION_NUMBER >= 0x1010100fL
-                      "missing support for yielding during SSL handshake in "
-                      "the nginx core; consider using the OpenResty releases "
-                      "from https://openresty.org/en/download.html or apply "
-                      "the nginx core patches yourself (see "
-                      "https://openresty.org/en/nginx-ssl-patches.html)");
-
-#   else
-                      "missing support for yielding during SSL handshake in "
-                      "linked " OPENSSL_VERSION_TEXT "; consider using the "
-                      "OpenResty releases from "
-                      "https://openresty.org/en/download.html or apply "
-                      "the OpenSSL patches yourself (see "
-                      "https://openresty.org/en/openssl-patches.html)");
-#   endif
-
-        return NULL;
-
-#endif
-    }
-
-    if (rc == NGX_ERROR) {
-        return NULL;
-    }
-
-    /* rc == NGX_OK */
-
-    cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
-    return cctx->session;
-}
-#endif
 
 
 static void
