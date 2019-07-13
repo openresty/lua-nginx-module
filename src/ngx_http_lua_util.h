@@ -260,6 +260,21 @@ void ngx_http_lua_set_sa_restart(ngx_log_t *log);
     }
 
 
+static ngx_inline size_t
+ngx_http_lua_safe_header_value_len(u_char *str, size_t len)
+{
+    size_t i;
+
+    for (i = 0; i < len; i++, str++) {
+        if (*str == '\r' || *str == '\n') {
+            return i;
+        }
+    }
+
+    return len;
+}
+
+
 static ngx_inline void
 ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {

@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 59);
+plan tests => repeat_each() * (blocks() * 3 + 73);
 
 #no_diff();
 no_long_string();
@@ -1961,5 +1961,141 @@ GET /t
 foo
 --- response_headers
 Content-Type: application/json
+--- no_error_log
+[error]
+
+
+
+=== TEST 87: truncates value after '\r'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header.header = "value\rfoo:bar\nbar:foo"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header: value
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 88: truncates value after '\n'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header.header = "value\nfoo:bar\rbar:foo"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header: value
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 89: truncates key after '\r'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["header: value\rfoo:bar\nbar:foo"] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header: value: xx
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 90: truncates key after '\n'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["header: value\nfoo:bar\rbar:foo"] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header: value: xx
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 91: truncates key after '\r' as the first character
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["\rheader: value\rfoo:bar\nbar:foo"] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header:
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 92: truncates key after '\n' as the first character
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["\nheader: value\nfoo:bar\rbar:foo"] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+header:
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 93: truncates multiple values if they contain '\r' or '\n'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["foo"] = {
+                "foo\nxx:bar",
+                "bar\rxxx:foo",
+            }
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+foo: foo, bar
+xx:
+xxx:
 --- no_error_log
 [error]

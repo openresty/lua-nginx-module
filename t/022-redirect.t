@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -320,3 +320,77 @@ GET /read
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
 --- error_code: 308
+
+
+
+=== TEST 18: truncates uri after '\r'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo\rfoo:bar\nbar:foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Location: http://agentzh.org/foo
+foo:
+bar:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 19: truncates uri after '\n'
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo\nfoo:bar\rbar:foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Location: http://agentzh.org/foo
+foo:
+bar:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 20: truncates uri with '\n' as the first character
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.redirect("\nfoo:http://agentzh.org/foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Location:
+foo:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 21: truncates uri with '\r' as the first character
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.redirect("\rfoo:http://agentzh.org/foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+Location:
+foo:
+--- response_body_like: 302 Found
+--- error_code: 302
