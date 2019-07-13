@@ -698,27 +698,12 @@ phases.
 = TODO =
 
 * cosocket: implement LuaSocket's unconnected UDP API.
-* port this module to the "datagram" subsystem of NGINX for implementing general UDP servers instead of HTTP
-servers in Lua. For example,
-<geshi lang="lua">
-    datagram {
-        server {
-            listen 1953;
-            handler_by_lua_block {
-                -- custom Lua code implementing the special UDP server...
-            }
-        }
-    }
-</geshi>
-* shm: implement a "shared queue API" to complement the existing [[#lua_shared_dict|shared dict]] API.
 * cosocket: add support in the context of [[#init_by_lua|init_by_lua*]].
 * cosocket: implement the <code>bind()</code> method for stream-typed cosockets.
-* cosocket: pool-based backend concurrency level control: implement automatic <code>connect</code> queueing when the backend concurrency exceeds its connection pool limit.
 * cosocket: review and merge aviramc's [https://github.com/openresty/lua-nginx-module/pull/290 patch] for adding the <code>bsdrecv</code> method.
-* add new API function <code>ngx.resp.add_header</code> to emulate the standard <code>add_header</code> config directive.
+* cosocket: add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * review and apply vadim-pavlov's patch for [[#ngx.location.capture|ngx.location.capture]]'s <code>extra_headers</code> option
 * use <code>ngx_hash_t</code> to optimize the built-in header look-up process for [[#ngx.req.set_header|ngx.req.set_header]], [[#ngx.header.HEADER|ngx.header.HEADER]], and etc.
-* add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * add directives to run Lua codes when nginx stops.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
