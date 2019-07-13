@@ -250,6 +250,8 @@ ngx_http_cleanup_t *ngx_http_lua_cleanup_add(ngx_http_request_t *r,
 void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
     ngx_http_cleanup_pt *cleanup);
 
+size_t ngx_http_lua_safe_header_filed_len(u_char *str, size_t len);
+
 #if (NGX_HTTP_LUA_HAVE_SA_RESTART)
 void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 #endif

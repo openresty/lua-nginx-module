@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 59);
+plan tests => repeat_each() * (blocks() * 3 + 65);
 
 #no_diff();
 no_long_string();
@@ -1961,5 +1961,68 @@ GET /t
 foo
 --- response_headers
 Content-Type: application/json
+--- no_error_log
+[error]
+
+
+
+=== TEST 87: value contains \r, before \n
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.header.header = "value\rfoo:bar\nbar:foo"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+header: value
+foo:
+bar:
+--- error_code: 200
+--- no_error_log
+[error]
+
+
+
+=== TEST 88: key contains \r, before \n
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.header["header: value\rfoo:bar\nbar:foo"] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+header: value: xx
+foo:
+bar:
+--- error_code: 200
+--- no_error_log
+[error]
+
+
+
+=== TEST 89: multipe values contains \r
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.header["foo"] = {
+                "foo\nxx:bar",
+                "bar\rxxx:foo",
+            }
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+foo: foo, bar
+xx:
+xxx:
+--- error_code: 200
 --- no_error_log
 [error]

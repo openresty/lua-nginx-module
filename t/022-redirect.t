@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #no_diff();
 #no_long_string();
@@ -320,3 +320,77 @@ GET /read
 --- response_headers
 Location: http://agentzh.org/foo?a=b&c=d
 --- error_code: 308
+
+
+
+=== TEST 18: contains \r, before \n
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo\rfoo:bar\nbar:foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo
+foo:
+bar:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 19: contains \n, before \r
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("http://agentzh.org/foo\nfoo:bar\rbar:foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location: http://agentzh.org/foo
+foo:
+bar:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 20: \n at the front
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("\nfoo:http://agentzh.org/foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location:
+foo:
+--- response_body_like: 302 Found
+--- error_code: 302
+
+
+
+=== TEST 21: \r at the front
+--- config
+    location /read {
+        content_by_lua_block {
+            ngx.redirect("\rfoo:http://agentzh.org/foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /read
+--- response_headers
+Location:
+foo:
+--- response_body_like: 302 Found
+--- error_code: 302

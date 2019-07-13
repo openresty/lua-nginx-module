@@ -491,6 +491,10 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
+    key.len = ngx_http_lua_safe_header_filed_len(key.data, key.len);
+
+    value.len = ngx_http_lua_safe_header_filed_len(value.data, value.len);
+
     hv.hash = ngx_hash_key_lc(key.data, key.len);
     hv.key = key;
 

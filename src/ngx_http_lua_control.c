@@ -248,6 +248,8 @@ ngx_http_lua_ngx_redirect(lua_State *L)
                           "the headers");
     }
 
+    len = ngx_http_lua_safe_header_filed_len(p, len);
+
     uri = ngx_palloc(r->pool, len);
     if (uri == NULL) {
         return luaL_error(L, "no memory");

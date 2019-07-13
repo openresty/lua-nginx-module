@@ -3470,6 +3470,8 @@ to be returned when reading <code>ngx.header.Foo</code>.
 
 Note that <code>ngx.header</code> is not a normal Lua table and as such, it is not possible to iterate through it using the Lua <code>ipairs</code> function.
 
+Notice: both the <code>HEADER</code> and the <code>VALUE</code> should not contains <code>\r</code> or <code>\n</code>, otherwise, the characters after <code>\r</code> or <code>\n</code> will be truncated, include the <code>\r</code> or <code>\n</code> themself.
+
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
 == ngx.resp.get_headers ==
@@ -4303,6 +4305,8 @@ It is recommended that a coding style that combines this method call with the <c
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
 Issue an <code>HTTP 301</code> or <code>302</code> redirection to <code>uri</code>.
+
+Notice: the <code>uri</code> should not contains <code>\r</code> or <code>\n</code>, otherwise, the characters after <code>\r</code> or <code>\n</code> will be truncated, include the <code>\r</code> or <code>\n</code> themself.
 
 The optional <code>status</code> parameter specifies the HTTP status code to be used. The following status codes are supported right now:
 
