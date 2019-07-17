@@ -263,18 +263,14 @@ void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 static ngx_inline size_t
 ngx_http_lua_safe_header_field_len(u_char *str, size_t len)
 {
-    u_char  *p;
+    size_t i;
 
-    /* search \r */
-    p = (u_char *) memchr(str, 13, len);
-    if (p != NULL) {
-        len = p - str;
-    }
+    for (i = 0; i < len; i++) {
+        if (*str == 13 || *str == 10) {
+            return i;
+        }
 
-    /* search \n */
-    p = (u_char *) memchr(str, 10, len);
-    if (p != NULL) {
-        len = p - str;
+        str++;
     }
 
     return len;
