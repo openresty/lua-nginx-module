@@ -4189,7 +4189,7 @@ to be returned when reading `ngx.header.Foo`.
 
 Note that `ngx.header` is not a normal Lua table and as such, it is not possible to iterate through it using the Lua `ipairs` function.
 
-Notice: both the `HEADER` and the `VALUE` should not contain `\r` or `\n`, otherwise, the characters after `\r` or `\n` will be truncated, including the `\r` or `\n` themself.
+Notice: both the `HEADER` and the `VALUE` should not contain `\r` or `\n`, otherwise, the characters after `\r` or `\n` will be truncated, including the `\r` or `\n` bytes themself.
 
 For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers) function instead.
 
@@ -5156,7 +5156,7 @@ ngx.redirect
 
 Issue an `HTTP 301` or `302` redirection to `uri`.
 
-Notice: the `uri` should not contains `\r` or `\n`, otherwise, the characters after `\r` or `\n` will be truncated, including the `\r` or `\n` themself.
+Notice: the `uri` should not contains `\r` or `\n`, otherwise, the characters after `\r` or `\n` will be truncated, including the `\r` or `\n` bytes themself.
 
 The optional `status` parameter specifies the HTTP status code to be used. The following status codes are supported right now:
 
