@@ -2075,3 +2075,70 @@ client socket file:
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 24: ssl_certificate_by_lua* can yield when reading early data
+--- skip_openssl: 6: < 1.1.1
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_early_data on;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local begin = ngx.now()
+            ngx.sleep(0.1)
+            print("elapsed in ssl_certificate_by_lua*: ", ngx.now() - begin)
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+--- grep_error_log eval
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+--- grep_error_log_out eval
+[
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+]
+--- no_error_log
+[error]
+[alert]
+[emerg]
