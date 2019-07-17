@@ -901,3 +901,65 @@ ssl_session_store_by_lua_block:1: ssl session store by lua is running!
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 13: ssl_session_store_by_lua* is skipped when using TLSv1.3
+--- skip_openssl: 6: < 1.1.1
+--- http_config
+    ssl_session_store_by_lua_block { ngx.log(ngx.ERR, "ssl_session_store_by_lua* is running!") }
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        ssl_protocols TLSv1.3;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+    lua_ssl_protocols TLSv1.3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- error_log eval
+qr/ssl_session_store_by_lua\*: skipped since TLS version >= 1\.3 \(\d+\)/
+--- no_error_log
+[error]
+[alert]
+[emerg]
