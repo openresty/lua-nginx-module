@@ -250,8 +250,6 @@ ngx_http_cleanup_t *ngx_http_lua_cleanup_add(ngx_http_request_t *r,
 void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
     ngx_http_cleanup_pt *cleanup);
 
-size_t ngx_http_lua_safe_header_filed_len(u_char *str, size_t len);
-
 #if (NGX_HTTP_LUA_HAVE_SA_RESTART)
 void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 #endif
@@ -260,6 +258,27 @@ void ngx_http_lua_set_sa_restart(ngx_log_t *log);
     if ((ctx)->no_abort) {                                                   \
         return luaL_error(L, "attempt to abort with pending subrequests");   \
     }
+
+
+static ngx_inline size_t
+ngx_http_lua_safe_header_field_len(u_char *str, size_t len)
+{
+    u_char  *p;
+
+    /* search \r */
+    p = (u_char *) memchr(str, 13, len);
+    if (p != NULL) {
+        len = p - str;
+    }
+
+    /* search \n */
+    p = (u_char *) memchr(str, 10, len);
+    if (p != NULL) {
+        len = p - str;
+    }
+
+    return len;
+}
 
 
 static ngx_inline void

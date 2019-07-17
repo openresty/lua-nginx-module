@@ -4266,25 +4266,4 @@ ngx_http_lua_set_sa_restart(ngx_log_t *log)
 #endif
 
 
-size_t
-ngx_http_lua_safe_header_filed_len(u_char *str, size_t len)
-{
-    u_char  *p;
-
-    /* search \r */
-    p = (u_char *) memchr(str, 13, len);
-    if (p != NULL) {
-        len = p - str;
-    }
-
-    /* search \n */
-    p = (u_char *) memchr(str, 10, len);
-    if (p != NULL) {
-        len = p - str;
-    }
-
-    return len;
-}
-
-
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
