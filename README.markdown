@@ -252,6 +252,7 @@ Nginx Compatibility
 
 The latest version of this module is compatible with the following versions of Nginx:
 
+* 1.17.x  (last tested: 1.17.1)
 * 1.15.x  (last tested: 1.15.8)
 * 1.14.x
 * 1.13.x  (last tested: 1.13.6)
