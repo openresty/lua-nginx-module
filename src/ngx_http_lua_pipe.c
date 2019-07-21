@@ -1159,6 +1159,7 @@ ngx_http_lua_pipe_get_lua_ctx(ngx_http_request_t *r,
                                         | NGX_HTTP_LUA_CONTEXT_ACCESS
                                         | NGX_HTTP_LUA_CONTEXT_CONTENT
                                         | NGX_HTTP_LUA_CONTEXT_TIMER
+                                        | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                         | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH,
                                         errbuf, errbuf_size);
