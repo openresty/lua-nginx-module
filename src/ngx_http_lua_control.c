@@ -322,13 +322,15 @@ ngx_http_lua_ngx_exit(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_TIMER
                                | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                | NGX_HTTP_LUA_CONTEXT_BALANCER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
-    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
+                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH))
     {
@@ -474,6 +476,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                        | NGX_HTTP_LUA_CONTEXT_BALANCER
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH,
@@ -483,7 +486,8 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
         return NGX_ERROR;
     }
 
-    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
+                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH))
     {

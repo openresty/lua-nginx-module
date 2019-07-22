@@ -56,6 +56,7 @@ ngx_http_lua_ngx_sleep(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
 

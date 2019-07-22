@@ -80,6 +80,10 @@ ngx_http_lua_ngx_get_phase(lua_State *L)
         lua_pushliteral(L, "balancer");
         break;
 
+    case NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO:
+        lua_pushliteral(L, "ssl_client_hello");
+        break;
+
     case NGX_HTTP_LUA_CONTEXT_SSL_CERT:
         lua_pushliteral(L, "ssl_cert");
         break;
