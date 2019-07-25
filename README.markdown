@@ -2529,14 +2529,25 @@ while starting NGINX:
     nginx: [emerg] no ssl configured for the server
 
 
-This directive currently requires the following NGINX core patch to work correctly:
+This directive requires OpenSSL 1.0.2e or greater.
 
-<http://mailman.nginx.org/pipermail/nginx-devel/2016-January/007748.html>
+If you are using the [official pre-built
+packages](http://openresty.org/en/linux-packages.html) for
+[OpenResty](https://openresty.org/) 1.9.7.2 or later, then everything should
+work out of the box.
 
-The bundled version of the NGINX core in OpenResty 1.9.7.2 (or above) already has this
-patch applied.
+If you are not using one of the [OpenSSL
+packages](https://openresty.org/en/linux-packages.html) provided by
+[OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
+in order to use this directive:
 
-Furthermore, one needs at least OpenSSL 1.0.2e for this directive to work.
+<https://openresty.org/en/openssl-patches.html>
+
+Similarly, if you are not using the NGINX core shipped with
+[OpenResty](https://openresty.org) 1.9.7.2 or later, you will need to apply
+patches to the standard NGINX core:
+
+<https://openresty.org/en/nginx-ssl-patches.html>
 
 This directive was first introduced in the `v0.10.0` release.
 
@@ -2611,7 +2622,7 @@ If you are using the [official pre-built packages](http://openresty.org/en/linux
 If you are not using one of the [OpenSSL
 packages](https://openresty.org/en/linux-packages.html) provided by
 [OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
-in order to use this hook:
+in order to use this directive:
 
 <https://openresty.org/en/openssl-patches.html>
 
@@ -2623,8 +2634,9 @@ patches to the standard NGINX core:
 
 This directive was first introduced in the `v0.10.6` release.
 
-Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
-(because SSL session resumption happens before server name dispatch).
+Note that this directive can only be used in the **http context** starting
+with the `v0.10.7` release since SSL session resumption happens
+before server name dispatch.
 
 [Back to TOC](#directives)
 
