@@ -592,7 +592,6 @@ fi
 
 if [ $PCRE != NO -a $PCRE != YES ]; then
     # force pcre_version symbol to be undefined when PCRE is statically linked
-
     ngx_feature="force undefined symbols (--undefined)"
     ngx_feature_libs="-Wl,--undefined=printf"
     ngx_feature_name=
@@ -605,6 +604,21 @@ if [ $PCRE != NO -a $PCRE != YES ]; then
 
     if [ $ngx_found = yes ]; then
         CORE_LIBS="$CORE_LIBS -Wl,--undefined=pcre_version"
+    fi
+
+    # for LLVM ld (Darwin)
+    ngx_feature="force undefined symbols (-all_load -U)"
+    ngx_feature_libs="-all_load -U printf"
+    ngx_feature_name=
+    ngx_feature_run=no
+    ngx_feature_incs="#include <stdio.h>"
+    ngx_feature_path=
+    ngx_feature_test='printf("hello");'
+
+    . auto/feature
+
+    if [ $ngx_found = yes ]; then
+        CORE_LIBS="$CORE_LIBS -all_load -U pcre_version"
     fi
 fi
 
