@@ -986,9 +986,12 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->balancer.src_key = NULL;
      */
 
+#if (NGX_HTTP_SSL)
     lscf->srv.ssl_cert_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_store_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_fetch_src_ref = LUA_REFNIL;
+#endif
+
     lscf->balancer.src_ref = LUA_REFNIL;
 
     return lscf;
