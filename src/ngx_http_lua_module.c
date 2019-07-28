@@ -1028,7 +1028,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 #ifdef LIBRESSL_VERSION_NUMBER
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "LibreSSL does not support ssl_certificate_by_lua*");
+                      "LibreSSL is not supported by ssl_certificate_by_lua*");
         return NGX_CONF_ERROR;
 
 #else
@@ -1060,7 +1060,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         if (sscf && sscf->ssl.ctx) {
 #ifdef LIBRESSL_VERSION_NUMBER
             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                          "LibreSSL does not support "
+                          "LibreSSL is not supported by "
                           "ssl_session_store_by_lua*");
 
             return NGX_CONF_ERROR;
@@ -1083,7 +1083,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         if (sscf && sscf->ssl.ctx) {
 #ifdef LIBRESSL_VERSION_NUMBER
             ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                          "LibreSSL does not support "
+                          "LibreSSL is not supported by "
                           "ssl_session_fetch_by_lua*");
 
             return NGX_CONF_ERROR;

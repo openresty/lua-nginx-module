@@ -44,7 +44,7 @@ static int ngx_http_lua_shdict_llen(lua_State *L);
 
 
 static ngx_inline ngx_shm_zone_t *ngx_http_lua_shdict_get_zone(lua_State *L,
-                                                               int index);
+    int index);
 
 
 #define NGX_HTTP_LUA_SHDICT_ADD         0x0001

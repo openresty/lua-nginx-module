@@ -2043,7 +2043,7 @@ ngx_http_lua_regex_compile(ngx_http_lua_regex_compile_t *rc)
         if ((size_t) erroff == rc->pattern.len) {
             rc->err.len = ngx_snprintf(rc->err.data, rc->err.len,
                                        "pcre_compile() failed: %s in \"%V\"",
-                                      errstr, &rc->pattern)
+                                       errstr, &rc->pattern)
                          - rc->err.data;
 
         } else {
