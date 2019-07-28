@@ -223,3 +223,6 @@ ngx_http_lua_log_ringbuf_read(ngx_http_lua_log_ringbuf_t *rb, int *log_level,
 
     return NGX_OK;
 }
+
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

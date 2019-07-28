@@ -2588,9 +2588,9 @@ ngx_http_lua_process_args_option(ngx_http_request_t *r, lua_State *L,
                 if (lua_isboolean(L, -1)) {
                     if (lua_toboolean(L, -1)) {
                         if (total_escape) {
-                            p = (u_char *) ngx_http_lua_escape_uri(p, key,
-    key_len,
-    NGX_ESCAPE_URI_COMPONENT);
+                            p = (u_char *)
+                                    ngx_http_lua_escape_uri(p, key, key_len,
+                                                      NGX_ESCAPE_URI_COMPONENT);
 
                         } else {
                             dd("shortcut: no escape required");
@@ -3371,7 +3371,7 @@ ngx_http_lua_check_broken_connection(ngx_http_request_t *r, ngx_event_t *ev)
     char                 buf[1];
     ngx_err_t            err;
     ngx_int_t            event;
-    ngx_connection_t     *c;
+    ngx_connection_t    *c;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ev->log, 0,
                    "http lua check client, write event:%d, \"%V\"",

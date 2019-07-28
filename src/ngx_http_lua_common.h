@@ -628,7 +628,6 @@ typedef struct {
     ngx_str_t                               name;
     ngx_uint_t                              offset;
     ngx_http_lua_set_header_pt              handler;
-
 } ngx_http_lua_set_header_t;
 
 
