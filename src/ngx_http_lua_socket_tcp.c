@@ -4012,9 +4012,11 @@ ngx_http_lua_socket_tcp_conn_op_ctx_cleanup(void *data)
     ngx_http_lua_socket_tcp_conn_op_ctx_t  *conn_op_ctx = data;
 
     u = conn_op_ctx->u;
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
-                   "cleanup lua tcp socket conn_op_ctx: \"%V\"",
-                   &u->request->uri);
+
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+                   "cleanup lua tcp socket conn_op_ctx: %p, u: %p, "
+                   "request: \"%V\"",
+                   conn_op_ctx, u, &u->request->uri);
 
     ngx_queue_insert_head(&u->socket_pool->cache_connect_op,
                           &conn_op_ctx->queue);
