@@ -1133,7 +1133,8 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
         if (kill(proc->_pid, SIGKILL) == -1) {
             if (ngx_errno != ESRCH) {
                 ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                              "lua pipe failed to kill process:%p pid:%P");
+                              "lua pipe failed to kill process:%p pid:%P",
+                              proc, proc->_pid);
             }
         }
     }
