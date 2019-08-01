@@ -1076,26 +1076,14 @@ lua_load_resty_core
 
 **context:** *http*
 
-Controls whether the `resty.core` module (from
-[lua-resty-core](https://github.com/openresty/lua-resty-core)) should be loaded
-or not. When enabled, this directive is equivalent to executing the following
-when the Lua VM is created:
+This directive is deprecated since the `v0.10.16` release of this
+module. The `resty.core` module from
+[lua-resty-core](https://github.com/openresty/lua-resty-core) is now mandatorily
+loaded during the Lua VM initialization. Specifying this directive will have no
+effect.
 
-```lua
-
- require "resty.core"
-```
-
-Note that usage of the `resty.core` module is recommended, as its
-FFI implementation is both faster, safer, and more complete than the Lua C API
-of the ngx_lua module.
-
-It must also be noted that the Lua C API of the ngx_lua module will eventually
-be removed, and usage of the FFI-based API (i.e. the `resty.core`
-module) will become mandatory. This directive only aims at providing a
-temporary backwards-compatibility mode in case of edge-cases.
-
-This directive was first introduced in the `v0.10.15` release.
+This directive was first introduced in the `v0.10.15` release and
+used to optionally load the `resty.core` module.
 
 [Back to TOC](#directives)
 
