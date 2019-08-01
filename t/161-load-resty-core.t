@@ -23,7 +23,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: lua_load_resty_core is enabled by default
+=== TEST 1: resty.core is automatically loaded in the Lua VM
 --- config
     location = /t {
         content_by_lua_block {
@@ -38,25 +38,9 @@ resty.core loaded: true
 
 
 
-=== TEST 2: lua_load_resty_core can be disabled
+=== TEST 2: resty.core is automatically loaded in the Lua VM with 'lua_code_cache off'
 --- http_config
-    lua_load_resty_core off;
---- config
-    location = /t {
-        content_by_lua_block {
-            local loaded_resty_core = package.loaded["resty.core"]
-
-            ngx.say("resty.core loaded: ", loaded_resty_core ~= nil)
-        }
-    }
---- response_body
-resty.core loaded: false
-
-
-
-=== TEST 3: lua_load_resty_core is effective when using lua_shared_dict
---- http_config
-    lua_shared_dict dogs 128k;
+    lua_code_cache off;
 --- config
     location = /t {
         content_by_lua_block {
@@ -71,7 +55,7 @@ resty.core loaded: true
 
 
 
-=== TEST 4: lua_load_resty_core honors the lua_package_path directive
+=== TEST 3: resty.core loading honors the lua_package_path directive
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;;';"
 --- config
@@ -95,3 +79,69 @@ return {
         ngx.say("loaded from html dir")
     end
 }
+
+
+
+=== TEST 4: resty.core not loading aborts the initialization
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;';"
+--- config
+    location = /t {
+        return 200;
+    }
+--- must_die
+--- error_log eval
+qr/\[alert\] .*? failed to load the 'resty\.core' module .*? \(reason: module 'resty\.core' not found:/
+
+
+
+=== TEST 5: resty.core not loading produces an error with 'lua_code_cache off'
+--- http_config
+    lua_code_cache off;
+
+    init_by_lua_block {
+        package.path = ""
+    }
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.say("ok")
+        }
+    }
+--- error_code: 500
+--- error_log eval
+qr/\[error\] .*? failed to load the 'resty\.core' module .*? \(reason: module 'resty\.core' not found:/
+--- no_error_log eval
+qr/\[alert\] .*? failed to load the 'resty\.core' module/
+
+
+
+=== TEST 6: lua_load_resty_core logs a deprecation warning when specified (on)
+--- http_config
+    lua_load_resty_core on;
+--- config
+    location = /t {
+        return 200;
+    }
+--- grep_error_log eval: qr/\[warn\] .*? lua_load_resty_core is deprecated.*/
+--- grep_error_log_out eval
+[
+qr/\[warn\] .*? lua_load_resty_core is deprecated \(the lua-resty-core library is required since ngx_lua v0\.10\.16\) in .*?nginx\.conf:\d+/,
+""
+]
+
+
+
+=== TEST 7: lua_load_resty_core logs a deprecation warning when specified (off)
+--- http_config
+    lua_load_resty_core off;
+--- config
+    location = /t {
+        return 200;
+    }
+--- grep_error_log eval: qr/\[warn\] .*? lua_load_resty_core is deprecated.*/
+--- grep_error_log_out eval
+[
+qr/\[warn\] .*? lua_load_resty_core is deprecated \(the lua-resty-core library is required since ngx_lua v0\.10\.16\) in .*?nginx\.conf:\d+/,
+""
+]

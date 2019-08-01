@@ -180,6 +180,17 @@ ngx_http_lua_code_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 char *
+ngx_http_lua_load_resty_core(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
+                       "lua_load_resty_core is deprecated (the lua-resty-core "
+                       "library is required since ngx_lua v0.10.16)");
+
+    return NGX_CONF_OK;
+}
+
+
+char *
 ngx_http_lua_package_cpath(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_lua_main_conf_t *lmcf = conf;

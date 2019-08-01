@@ -3814,10 +3814,10 @@ ngx_http_lua_close_fake_connection(ngx_connection_t *c)
 }
 
 
-lua_State *
-ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
-    ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
-    ngx_pool_cleanup_t **pcln)
+ngx_int_t
+ngx_http_lua_init_vm(lua_State **new_vm, lua_State *parent_vm,
+    ngx_cycle_t *cycle, ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf,
+    ngx_log_t *log, ngx_pool_cleanup_t **pcln)
 {
     int                              rc;
     lua_State                       *L;
@@ -3828,13 +3828,13 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
 
     cln = ngx_pool_cleanup_add(pool, 0);
     if (cln == NULL) {
-        return NULL;
+        return NGX_ERROR;
     }
 
     /* create new Lua VM instance */
     L = ngx_http_lua_new_state(parent_vm, cycle, lmcf, log);
     if (L == NULL) {
-        return NULL;
+        return NGX_ERROR;
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, log, 0, "lua initialize the "
@@ -3845,7 +3845,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
 
     state = ngx_alloc(sizeof(ngx_http_lua_vm_state_t), log);
     if (state == NULL) {
-        return NULL;
+        return NGX_ERROR;
     }
     state->vm = L;
     state->count = 1;
@@ -3878,7 +3878,8 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
 
         for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
 
-            ngx_http_lua_probe_register_preload_package(L, hook[i].package);
+            ngx_http_lua_probe_register_preload_package(L,
+                                                        hook[i].package);
 
             lua_pushcfunction(L, hook[i].loader);
             lua_setfield(L, -2, (char *) hook[i].package);
@@ -3887,22 +3888,17 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
         lua_pop(L, 2);
     }
 
-    if (lmcf->load_resty_core) {
-        lua_getglobal(L, "require");
-        lua_pushstring(L, "resty.core");
+    *new_vm = L;
 
-        rc = lua_pcall(L, 1, 1, 0);
-        if (rc != 0) {
-            ngx_log_error(NGX_LOG_ERR, log, 0,
-                          "lua_load_resty_core failed to load the resty.core "
-                          "module from https://github.com/openresty/lua-resty"
-                          "-core; ensure you are using an OpenResty release "
-                          "from https://openresty.org/en/download.html "
-                          "(rc: %i, reason: %s)", rc, lua_tostring(L, -1));
-        }
+    lua_getglobal(L, "require");
+    lua_pushstring(L, "resty.core");
+
+    rc = lua_pcall(L, 1, 1, 0);
+    if (rc != 0) {
+        return NGX_DECLINED;
     }
 
-    return L;
+    return NGX_OK;
 }
 
 

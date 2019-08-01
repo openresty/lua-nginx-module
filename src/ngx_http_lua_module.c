@@ -79,9 +79,9 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 
     { ngx_string("lua_load_resty_core"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
+      ngx_http_lua_load_resty_core,
       NGX_HTTP_MAIN_CONF_OFFSET,
-      offsetof(ngx_http_lua_main_conf_t, load_resty_core),
+      0,
       NULL },
 
     { ngx_string("lua_max_running_timers"),
@@ -787,13 +787,32 @@ ngx_http_lua_init(ngx_conf_t *cf)
                                   ngx_http_lua_hash_literal("content-length");
         ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
 
-        lmcf->lua = ngx_http_lua_init_vm(NULL, cf->cycle, cf->pool, lmcf,
-                                         cf->log, NULL);
-        if (lmcf->lua == NULL) {
-            ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                               "failed to initialize Lua VM");
+        rc = ngx_http_lua_init_vm(&lmcf->lua, NULL, cf->cycle, cf->pool,
+                                  lmcf, cf->log, NULL);
+        if (rc != NGX_OK) {
+            if (rc == NGX_DECLINED) {
+                ngx_http_lua_assert(lmcf->lua != NULL);
+
+                ngx_conf_log_error(NGX_LOG_ALERT, cf, 0,
+                                   "failed to load the 'resty.core' module "
+                                   "(https://github.com/openresty/lua-resty"
+                                   "-core); ensure you are using an OpenResty "
+                                   "release from https://openresty.org/en/"
+                                   "download.html (reason: %s)",
+                                   lua_tostring(lmcf->lua, -1));
+
+            } else {
+                /* rc == NGX_ERROR */
+                ngx_conf_log_error(NGX_LOG_ALERT, cf, 0,
+                                   "failed to initialize Lua VM");
+            }
+
             return NGX_ERROR;
         }
+
+        /* rc == NGX_OK */
+
+        ngx_http_lua_assert(lmcf->lua != NULL);
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
             saved_cycle = ngx_cycle;
@@ -884,7 +903,6 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      */
 
     lmcf->pool = cf->pool;
-    lmcf->load_resty_core = NGX_CONF_UNSET;
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
 #if (NGX_PCRE)
@@ -917,10 +935,6 @@ static char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
     ngx_http_lua_main_conf_t *lmcf = conf;
-
-    if (lmcf->load_resty_core == NGX_CONF_UNSET) {
-        lmcf->load_resty_core = 1;
-    }
 
 #if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {

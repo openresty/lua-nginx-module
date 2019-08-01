@@ -831,25 +831,14 @@ how the result will be used. Below is a diagram showing the order in which direc
 
 '''context:''' ''http''
 
-Controls whether the <code>resty.core</code> module (from
-[https://github.com/openresty/lua-resty-core lua-resty-core]) should be loaded
-or not. When enabled, this directive is equivalent to executing the following
-when the Lua VM is created:
+This directive is deprecated since the <code>v0.10.16</code> release of this
+module. The <code>resty.core</code> module from
+[https://github.com/openresty/lua-resty-core lua-resty-core] is now mandatorily
+loaded during the Lua VM initialization. Specifying this directive will have no
+effect.
 
-<geshi lang="lua">
-    require "resty.core"
-</geshi>
-
-Note that usage of the <code>resty.core</code> module is recommended, as its
-FFI implementation is both faster, safer, and more complete than the Lua C API
-of the ngx_lua module.
-
-It must also be noted that the Lua C API of the ngx_lua module will eventually
-be removed, and usage of the FFI-based API (i.e. the <code>resty.core</code>
-module) will become mandatory. This directive only aims at providing a
-temporary backwards-compatibility mode in case of edge-cases.
-
-This directive was first introduced in the <code>v0.10.15</code> release.
+This directive was first introduced in the <code>v0.10.15</code> release and
+used to optionally load the <code>resty.core</code> module.
 
 == lua_capture_error_log ==
 '''syntax:''' ''lua_capture_error_log size''

@@ -136,9 +136,9 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
 
 
-lua_State *ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
-    ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log,
-    ngx_pool_cleanup_t **pcln);
+ngx_int_t ngx_http_lua_init_vm(lua_State **new_vm, lua_State *parent_vm,
+    ngx_cycle_t *cycle, ngx_pool_t *pool, ngx_http_lua_main_conf_t *lmcf,
+    ngx_log_t *log, ngx_pool_cleanup_t **pcln);
 
 lua_State *ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *l,
     int *ref);
@@ -289,7 +289,8 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 static ngx_inline ngx_http_lua_ctx_t *
 ngx_http_lua_create_ctx(ngx_http_request_t *r)
 {
-    lua_State                   *L;
+    ngx_int_t                    rc;
+    lua_State                   *L = NULL;
     ngx_http_lua_ctx_t          *ctx;
     ngx_pool_cleanup_t          *cln;
     ngx_http_lua_loc_conf_t     *llcf;
@@ -311,13 +312,32 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
         dd("lmcf: %p", lmcf);
 #endif
 
-        L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
-                                 r->connection->log, &cln);
-        if (L == NULL) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "failed to initialize Lua VM");
+        rc = ngx_http_lua_init_vm(&L, lmcf->lua, lmcf->cycle, r->pool, lmcf,
+                                  r->connection->log, &cln);
+        if (rc != NGX_OK) {
+            if (rc == NGX_DECLINED) {
+                ngx_http_lua_assert(L != NULL);
+
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                              "failed to load the 'resty.core' module "
+                              "(https://github.com/openresty/lua-resty"
+                              "-core); ensure you are using an OpenResty "
+                              "release from https://openresty.org/en/"
+                              "download.html (reason: %s)",
+                              lua_tostring(L, -1));
+
+            } else {
+                /* rc == NGX_ERROR */
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                              "failed to initialize Lua VM");
+            }
+
             return NULL;
         }
+
+        /* rc == NGX_OK */
+
+        ngx_http_lua_assert(L != NULL);
 
         if (lmcf->init_handler) {
             if (lmcf->init_handler(r->connection->log, lmcf, L) != NGX_OK) {
