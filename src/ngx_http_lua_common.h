@@ -50,6 +50,11 @@
 #endif
 
 
+#if !defined(LUAJIT_VERSION_NUM) || (LUAJIT_VERSION_NUM < 20000)
+#   error unsupported LuaJIT version
+#endif
+
+
 #if (!defined OPENSSL_NO_OCSP && defined SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB)
 #   define NGX_HTTP_LUA_USE_OCSP 1
 #endif
