@@ -23,12 +23,10 @@
 #endif
 
 
-#ifndef NGX_LUA_NO_FFI_API
 typedef struct {
     ngx_http_lua_ffi_str_t   key;
     ngx_http_lua_ffi_str_t   value;
 } ngx_http_lua_ffi_table_elt_t;
-#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* char whose address we use as the key in Lua vm registry for
@@ -41,7 +39,7 @@ extern char ngx_http_lua_code_cache_key;
 
 
 /* char whose address we use as the key in Lua vm registry for
- * regex cache table  */
+ * regex cache table */
 extern char ngx_http_lua_regex_cache_key;
 
 /* char whose address we use as the key in Lua vm registry for
@@ -100,7 +98,6 @@ extern char ngx_http_lua_headers_metatable_key;
     }
 
 
-#ifndef NGX_LUA_NO_FFI_API
 static ngx_inline ngx_int_t
 ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     u_char *err, size_t *errlen)
@@ -116,7 +113,6 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
 
     return NGX_OK;
 }
-#endif
 
 
 #define ngx_http_lua_check_fake_request(L, r)                                \

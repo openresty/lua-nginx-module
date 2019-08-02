@@ -80,8 +80,7 @@ typedef struct {
 } ngx_http_lua_pipe_signal_t;
 
 
-#if !(NGX_WIN32) && !defined(NGX_LUA_NO_FFI_API)                             \
-    && defined(HAVE_SOCKET_CLOEXEC_PATCH)
+#if !(NGX_WIN32) && defined(HAVE_SOCKET_CLOEXEC_PATCH)
 #define HAVE_NGX_LUA_PIPE   1
 
 

@@ -613,9 +613,9 @@ GET /lua
 \z
 --- no_error_log
 [error]
---- grep_error_log eval: qr/(old foo: \d+|writing a global lua variable \('\w+'\))/
+--- grep_error_log eval: qr/(old foo: \d+|writing a global Lua variable \('\w+'\))/
 --- grep_error_log_out eval
-["writing a global lua variable \('foo'\)\n", "old foo: 1\n"]
+["writing a global Lua variable \('foo'\)\n", "old foo: 1\n"]
 
 
 

@@ -562,8 +562,6 @@ ngx_http_lua_ssl_sess_fetch_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
 /* de-serialized a SSL session and set it back to the request at lua context */
 int
 ngx_http_lua_ffi_ssl_set_serialized_session(ngx_http_request_t *r,
@@ -614,8 +612,6 @@ ngx_http_lua_ffi_ssl_set_serialized_session(ngx_http_request_t *r,
 
     return NGX_OK;
 }
-
-#endif  /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_HTTP_SSL */

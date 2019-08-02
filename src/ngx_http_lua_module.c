@@ -650,7 +650,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     volatile ngx_cycle_t       *saved_cycle;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_lua_main_conf_t   *lmcf;
-#if !defined(NGX_LUA_NO_FFI_API) || nginx_version >= 1011011
+#if nginx_version >= 1011011
     ngx_pool_cleanup_t         *cln;
 #endif
     ngx_str_t                   name = ngx_string("host");
@@ -741,7 +741,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
     }
 
-#ifndef NGX_LUA_NO_FFI_API
     /* add the cleanup of semaphores after the lua_close */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
@@ -753,8 +752,6 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
 #ifdef HAVE_NGX_LUA_PIPE
     ngx_http_lua_pipe_init();
-#endif
-
 #endif
 
 #if nginx_version >= 1011011
@@ -867,9 +864,7 @@ ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data)
 static void *
 ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 {
-#ifndef NGX_LUA_NO_FFI_API
     ngx_int_t       rc;
-#endif
 
     ngx_http_lua_main_conf_t    *lmcf;
 
@@ -918,14 +913,12 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->malloc_trim_cycle = NGX_CONF_UNSET_UINT;
 #endif
 
-#ifndef NGX_LUA_NO_FFI_API
     rc = ngx_http_lua_sema_mm_init(cf, lmcf);
     if (rc != NGX_OK) {
         return NULL;
     }
 
     dd("nginx Lua module main config structure initialized!");
-#endif
 
     return lmcf;
 }

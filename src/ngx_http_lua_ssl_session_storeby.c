@@ -433,8 +433,6 @@ ngx_http_lua_ssl_sess_store_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
 /* serialize a session from lua context into buf.
  * the memory allocation of buf should be handled externally. */
 int
@@ -619,8 +617,6 @@ ngx_http_lua_ffi_ssl_get_session_id_size(ngx_http_request_t *r,
 
     return 2 * cctx->session_id.len;
 }
-
-#endif  /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_HTTP_SSL */

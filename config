@@ -278,17 +278,14 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_subrequest.h \
             $ngx_addon_dir/src/ngx_http_lua_ndk.h \
             $ngx_addon_dir/src/ngx_http_lua_control.h \
-            $ngx_addon_dir/src/ngx_http_lua_time.h \
             $ngx_addon_dir/src/ngx_http_lua_string.h \
             $ngx_addon_dir/src/ngx_http_lua_misc.h \
-            $ngx_addon_dir/src/ngx_http_lua_variable.h \
             $ngx_addon_dir/src/ngx_http_lua_output.h \
             $ngx_addon_dir/src/ngx_http_lua_headers.h \
             $ngx_addon_dir/src/ngx_http_lua_uri.h \
             $ngx_addon_dir/src/ngx_http_lua_req_body.h \
             $ngx_addon_dir/src/ngx_http_lua_args.h \
             $ngx_addon_dir/src/ngx_http_lua_ctx.h \
-            $ngx_addon_dir/src/ngx_http_lua_regex.h \
             $ngx_addon_dir/src/ngx_http_lua_common.h \
             $ngx_addon_dir/src/ngx_http_lua_directive.h \
             $ngx_addon_dir/src/ngx_http_lua_headers_out.h \
@@ -316,13 +313,10 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_initby.h \
             $ngx_addon_dir/src/ngx_http_lua_initworkerby.h \
             $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
-            $ngx_addon_dir/src/ngx_http_lua_req_method.h \
-            $ngx_addon_dir/src/ngx_http_lua_phase.h \
             $ngx_addon_dir/src/ngx_http_lua_probe.h \
             $ngx_addon_dir/src/ngx_http_lua_uthread.h \
             $ngx_addon_dir/src/ngx_http_lua_timer.h \
             $ngx_addon_dir/src/ngx_http_lua_config.h \
-            $ngx_addon_dir/src/ngx_http_lua_worker.h \
             $ngx_addon_dir/src/ngx_http_lua_ssl_certby.h \
             $ngx_addon_dir/src/ngx_http_lua_lex.h \
             $ngx_addon_dir/src/ngx_http_lua_balancer.h \
