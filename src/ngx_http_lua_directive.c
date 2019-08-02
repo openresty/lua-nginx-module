@@ -479,10 +479,6 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     dd("enter");
 
-#if defined(nginx_version) && nginx_version >= 8042 && nginx_version <= 8053
-    return "does not work with " NGINX_VER;
-#endif
-
     /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;
@@ -1437,12 +1433,12 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_uint_t   start_line;
     ngx_str_t   *word;
     ngx_buf_t   *b;
-#if nginx_version >= 1009002
+#if defined(nginx_version) && (nginx_version >= 1009002)
     ngx_buf_t   *dump;
 #endif
 
     b = cf->conf_file->buffer;
-#if nginx_version >= 1009002
+#if defined(nginx_version) && (nginx_version >= 1009002)
     dump = cf->conf_file->dump;
 #endif
     start = b->pos;
@@ -1513,7 +1509,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             b->last = b->start + len + n;
             start = b->start;
 
-#if nginx_version >= 1009002
+#if defined(nginx_version) && (nginx_version >= 1009002)
             if (dump) {
                 dump->last = ngx_cpymem(dump->last, b->start + len, size);
             }

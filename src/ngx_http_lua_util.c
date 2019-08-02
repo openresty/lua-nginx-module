@@ -537,16 +537,6 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
             }
         }
 
-#if defined(nginx_version) && nginx_version <= 8004
-
-        /* earlier versions of nginx does not allow subrequests
-           to send last_buf themselves */
-        if (r != r->main) {
-            return NGX_OK;
-        }
-
-#endif
-
         ctx->eof = 1;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -629,11 +619,7 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-#if nginx_version >= 1001004
     ngx_chain_update_chains(r->pool,
-#else
-    ngx_chain_update_chains(
-#endif
                             &ctx->free_bufs, &ctx->busy_bufs, &in,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
 
@@ -942,9 +928,7 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
     ctx->read_body_done = 1;
 
-#if defined(nginx_version) && nginx_version >= 8011
     r->main->count--;
-#endif
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
@@ -2767,9 +2751,7 @@ done:
     of->uniq = ngx_file_uniq(&fi);
     of->mtime = ngx_file_mtime(&fi);
     of->size = ngx_file_size(&fi);
-#if defined(nginx_version) && nginx_version >= 1000001
     of->fs_size = ngx_file_fs_size(&fi);
-#endif
     of->is_dir = ngx_is_dir(&fi);
     of->is_file = ngx_is_file(&fi);
     of->is_link = ngx_is_link(&fi);

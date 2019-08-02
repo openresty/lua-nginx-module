@@ -67,11 +67,6 @@ extern char ngx_http_lua_headers_metatable_key;
 #endif
 
 
-#if defined(nginx_version) && nginx_version < 1000000
-#define ngx_memmove(dst, src, n)   (void) memmove(dst, src, n)
-#endif
-
-
 #define ngx_http_lua_context_name(c)                                         \
     ((c) == NGX_HTTP_LUA_CONTEXT_SET ? "set_by_lua*"                         \
      : (c) == NGX_HTTP_LUA_CONTEXT_REWRITE ? "rewrite_by_lua*"               \

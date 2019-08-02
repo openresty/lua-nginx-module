@@ -316,11 +316,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-#if nginx_version >= 1001004
     ngx_chain_update_chains(r->pool,
-#else
-    ngx_chain_update_chains(
-#endif
                             &ctx->free_bufs, &ctx->busy_bufs, &out,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
 

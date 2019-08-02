@@ -114,11 +114,6 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
 
     rc = ngx_http_read_client_request_body(r, ngx_http_lua_req_body_post_read);
 
-#if (nginx_version < 1002006) ||                                             \
-        (nginx_version >= 1003000 && nginx_version < 1003009)
-    r->main->count--;
-#endif
-
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         ctx->exit_code = rc;
         ctx->exited = 1;
@@ -130,11 +125,8 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return lua_yield(L, 0);
     }
 
-#if (nginx_version >= 1002006 && nginx_version < 1003000) ||                 \
-        nginx_version >= 1003009
     r->main->count--;
     dd("decrement r->main->count: %d", (int) r->main->count);
-#endif
 
     if (rc == NGX_AGAIN) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,

@@ -1081,11 +1081,7 @@ ngx_http_lua_post_subrequest(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     if (ctx->body) {
 
-#if defined(nginx_version) && nginx_version >= 1001004
         ngx_chain_update_chains(r->pool,
-#else
-        ngx_chain_update_chains(
-#endif
                                 &pr_ctx->free_bufs, &pr_ctx->busy_bufs,
                                 &ctx->body,
                                 (ngx_buf_tag_t) &ngx_http_lua_module);
@@ -1457,7 +1453,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     ngx_http_request_t            *sr;
     ngx_http_core_srv_conf_t      *cscf;
 
-#if nginx_version >= 1009005
+#if defined(nginx_version) && (nginx_version >= 1009005)
 
     if (r->subrequests == 0) {
 #if defined(NGX_DTRACE) && NGX_DTRACE
@@ -1576,7 +1572,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
 
-#if nginx_version >= 1009005
+#if defined(nginx_version) && (nginx_version >= 1009005)
     sr->subrequests = r->subrequests - 1;
 #endif
 
