@@ -245,26 +245,11 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && nginx_version >= 1003014
-
-#   if nginx_version >= 1009000
-
+#if defined(nginx_version) && (nginx_version >= 1009000)
     ngx_set_connection_log(fc, clcf->error_log);
 
-#   else
-
-    ngx_http_set_connection_log(fc, clcf->error_log);
-
-#   endif
-
 #else
-
-    fc->log->file = clcf->error_log->file;
-
-    if (!(fc->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
-        fc->log->log_level = clcf->error_log->log_level;
-    }
-
+    ngx_http_set_connection_log(fc, clcf->error_log);
 #endif
 
     if (cctx == NULL) {

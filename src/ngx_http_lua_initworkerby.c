@@ -114,11 +114,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     ngx_memcpy(fake_cycle, cycle, sizeof(ngx_cycle_t));
 
-#if defined(nginx_version) && nginx_version >= 9007
-
     ngx_queue_init(&fake_cycle->reusable_connections_queue);
-
-#endif
 
     if (ngx_array_init(&fake_cycle->listening, cycle->pool,
                        cycle->listening.nelts || 1,
@@ -128,16 +124,12 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         goto failed;
     }
 
-#if defined(nginx_version) && nginx_version >= 1003007
-
     if (ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
                        sizeof(ngx_path_t *))
         != NGX_OK)
     {
         goto failed;
     }
-
-#endif
 
     part = &cycle->open_files.part;
     ofile = part->elts;
@@ -302,26 +294,11 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && nginx_version >= 1003014
-
-#   if nginx_version >= 1009000
-
+#if defined(nginx_version) && (nginx_version >= 1009000)
     ngx_set_connection_log(r->connection, clcf->error_log);
 
-#   else
-
-    ngx_http_set_connection_log(r->connection, clcf->error_log);
-
-#   endif
-
 #else
-
-    c->log->file = clcf->error_log->file;
-
-    if (!(c->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
-        c->log->log_level = clcf->error_log->log_level;
-    }
-
+    ngx_http_set_connection_log(r->connection, clcf->error_log);
 #endif
 
     ctx = ngx_http_lua_create_ctx(r);

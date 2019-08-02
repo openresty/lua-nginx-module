@@ -149,11 +149,6 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
                                        ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-#if (nginx_version < 1002006) ||                                             \
-        (nginx_version >= 1003000 && nginx_version < 1003009)
-            r->main->count--;
-#endif
-
             return rc;
         }
 
