@@ -457,8 +457,6 @@ ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc, void *data)
 #endif
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
 int
 ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
     const u_char *addr, size_t addr_len, int port, char **err)
@@ -754,4 +752,5 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
     return bp->last_peer_state;
 }
 
-#endif  /* NGX_LUA_NO_FFI_API */
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

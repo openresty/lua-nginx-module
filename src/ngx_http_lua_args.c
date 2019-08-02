@@ -16,7 +16,6 @@
 
 
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
-static int ngx_http_lua_ngx_req_get_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
@@ -77,64 +76,6 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
     r->valid_unparsed_uri = 0;
 
     return 0;
-}
-
-
-static int
-ngx_http_lua_ngx_req_get_uri_args(lua_State *L)
-{
-    ngx_http_request_t          *r;
-    u_char                      *buf;
-    u_char                      *last;
-    int                          retval;
-    int                          n;
-    int                          max;
-
-    n = lua_gettop(L);
-
-    if (n != 0 && n != 1) {
-        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
-    }
-
-    if (n == 1) {
-        max = luaL_checkinteger(L, 1);
-        lua_pop(L, 1);
-
-    } else {
-        max = NGX_HTTP_LUA_MAX_ARGS;
-    }
-
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return luaL_error(L, "no request object found");
-    }
-
-    ngx_http_lua_check_fake_request(L, r);
-
-    if (r->args.len == 0) {
-        lua_createtable(L, 0, 0);
-        return 1;
-    }
-
-    /* we copy r->args over to buf to simplify
-     * unescaping query arg keys and values */
-
-    buf = ngx_palloc(r->pool, r->args.len);
-    if (buf == NULL) {
-        return luaL_error(L, "no memory");
-    }
-
-    lua_createtable(L, 0, 4);
-
-    ngx_memcpy(buf, r->args.data, r->args.len);
-
-    last = buf + r->args.len;
-
-    retval = ngx_http_lua_parse_args(L, buf, last, max);
-
-    ngx_pfree(r->pool, buf);
-
-    return retval;
 }
 
 
@@ -368,18 +309,11 @@ ngx_http_lua_inject_req_args_api(lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_ngx_req_set_uri_args);
     lua_setfield(L, -2, "set_uri_args");
 
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
-    lua_setfield(L, -2, "get_uri_args");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_req_get_uri_args);
-    lua_setfield(L, -2, "get_query_args"); /* deprecated */
-
     lua_pushcfunction(L, ngx_http_lua_ngx_req_get_post_args);
     lua_setfield(L, -2, "get_post_args");
 }
 
 
-#ifndef NGX_LUA_NO_FFI_API
 size_t
 ngx_http_lua_ffi_req_get_querystring_len(ngx_http_request_t *r)
 {
@@ -549,7 +483,6 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
 
     return i;
 }
-#endif /* NGX_LUA_NO_FFI_API */
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -7,9 +7,6 @@
  */
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
-
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -576,7 +573,5 @@ ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem)
     ngx_http_lua_free_sema(sem);
 }
 
-
-#endif /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

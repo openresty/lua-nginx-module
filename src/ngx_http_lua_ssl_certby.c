@@ -540,8 +540,6 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
 int
 ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
 {
@@ -1309,9 +1307,6 @@ failed:
 
     return NGX_ERROR;
 }
-
-
-#endif  /* NGX_LUA_NO_FFI_API */
 
 
 #endif /* NGX_HTTP_SSL */
