@@ -392,7 +392,7 @@ ngx_http_lua_gen_file_cache_key(ngx_conf_t *cf, const u_char *src,
 {
     u_char      *out;
 
-    out = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_TAG_LEN + 1);
+    out = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
     if (out == NULL) {
         return NULL;
     }
