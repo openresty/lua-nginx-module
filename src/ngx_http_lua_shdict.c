@@ -1703,7 +1703,8 @@ ngx_http_lua_ffi_shdict_store_when(ngx_shm_zone_t *zone, int op, u_char *key,
 
         if (sd->value_type != old_value_type
             || (size_t) sd->value_len != old_str_value_len
-            || memcmp(sd->data + sd->key_len, old_str_value_buf, sd->value_len) != 0)
+            || memcmp(sd->data + sd->key_len, old_str_value_buf,
+                      sd->value_len) != 0)
         {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
             *errmsg = "already modified";
