@@ -467,21 +467,25 @@ done
 
 
 === TEST 10: thread traceback (multi-thread)
+Note: only coroutine.wrap propagates errors to the parent coroutine
+(and thus produces a traceback)
 --- config
     location /lua {
-        content_by_lua '
+        content_by_lua_block {
             local f = function(cr) coroutine.resume(cr) end
             -- emit a error
             local g = function() unknown.unknown = 1 end
-            local l1 = coroutine.create(f)
-            local l2 = coroutine.create(g)
-            coroutine.resume(l1, l2)
+            local l1 = coroutine.wrap(f)
+            local l2 = coroutine.wrap(g)
+            local l3 = coroutine.wrap(function() l1(l2) end)
+            l3()
             ngx.say("hello")
-        ';
+        }
     }
 --- request
 GET /lua
---- response_body
+--- error_code: 500
+--- response_body_unlike
 hello
 --- error_log eval
 ["stack traceback:", "coroutine 0:", "coroutine 1:", "coroutine 2:"]
@@ -904,8 +908,8 @@ qr/^child: resume: falsecontent_by_lua\(nginx\.conf:\d+\):4: bad
 child: status: dead
 parent: status: running
 $/s
---- error_log eval
-qr/lua coroutine: runtime error: content_by_lua\(nginx\.conf:\d+\):4: bad/
+--- no_error_log
+[error]
 
 
 
@@ -1712,3 +1716,29 @@ GET /t
 --- grep_error_log eval: qr/init_by_lua error: .*? something went wrong/
 --- grep_error_log_out
 init_by_lua error: init_by_lua:7: init_by_lua:4: something went wrong
+
+
+
+=== TEST 46: coroutine.resume runtime errors do not log errors
+--- config
+    location = /t {
+        content_by_lua_block {
+            local function f()
+                error("something went wrong")
+            end
+
+            local ret1, ret2 = coroutine.resume(coroutine.create(f))
+            ngx.say(ret1)
+            ngx.say(ret2)
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+false
+content_by_lua\(nginx.conf:\d+\):\d+: something went wrong
+--- no_error_log eval
+[
+    qr/\[error\] .*? lua coroutine: runtime error:",
+    "stack traceback:",
+]
