@@ -1020,6 +1020,14 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
     NGX_LUA_EXCEPTION_TRY {
 
+        /*
+         * silence a -Werror=clobbered warning with gcc 5.4
+         * due to above setjmp
+         */
+        err = NULL;
+        msg = NULL;
+        trace = NULL;
+
         if (ctx->cur_co_ctx->thread_spawn_yielded) {
             ngx_http_lua_probe_info("thread spawn yielded");
 
@@ -1389,29 +1397,33 @@ user_co_done:
                 ctx->cur_co_ctx = orig_coctx;
             }
 
-            if (lua_isstring(ctx->cur_co_ctx->co, -1)) {
-                dd("user custom error msg");
-                msg = lua_tostring(ctx->cur_co_ctx->co, -1);
-
-            } else {
-                msg = "unknown reason";
-            }
-
             ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
 
             ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 0);
 
             ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
 
-            ngx_http_lua_thread_traceback(L, ctx->cur_co_ctx->co,
-                                          ctx->cur_co_ctx);
-            trace = lua_tostring(L, -1);
+            if (orig_coctx->is_uthread
+                || orig_coctx->is_wrap
+                || ngx_http_lua_is_entry_thread(ctx))
+            {
+                ngx_http_lua_thread_traceback(L, orig_coctx->co, orig_coctx);
+                trace = lua_tostring(L, -1);
+
+                if (lua_isstring(orig_coctx->co, -1)) {
+                    msg = lua_tostring(orig_coctx->co, -1);
+                    dd("user custom error msg: %s", msg);
+
+                } else {
+                    msg = "unknown reason";
+                }
+            }
 
 propagate_error:
 
-            ngx_http_lua_assert(err != NULL && msg != NULL && trace != NULL);
-
             if (ctx->cur_co_ctx->is_uthread) {
+                ngx_http_lua_assert(err != NULL && msg != NULL
+                                    && trace != NULL);
 
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                               "lua user thread aborted: %s: %s\n%s",
@@ -1462,6 +1474,9 @@ propagate_error:
             }
 
             if (ngx_http_lua_is_entry_thread(ctx)) {
+                ngx_http_lua_assert(err != NULL && msg != NULL
+                                    && trace != NULL);
+
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                               "lua entry thread aborted: %s: %s\n%s",
                               err, msg, trace);
@@ -1518,9 +1533,6 @@ propagate_error:
             lua_pushboolean(next_co, 0);
             lua_xmove(orig_coctx->co, next_co, 1);
             nrets = 2;
-
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "lua coroutine: %s: %s\n%s", err, msg, trace);
 
             /* try resuming on the new coroutine again */
             continue;
