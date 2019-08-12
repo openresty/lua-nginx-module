@@ -2142,3 +2142,177 @@ qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
 [error]
 [alert]
 [emerg]
+
+
+
+=== TEST 25: cosocket (UDP)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local sock = ngx.socket.udp()
+
+            sock:settimeout(1000)
+
+            local ok, err = sock:setpeername("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+                return
+            end
+
+            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+                return
+            end
+
+            local res, err = sock:receive()
+            if not res then
+                ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+                return
+            end
+
+            ngx.log(ngx.INFO, "received memc reply of ", #res, " bytes")
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+--- no_error_log
+[error]
+[alert]
+[emerg]
+--- grep_error_log eval: qr/received memc reply of \d+ bytes/
+--- grep_error_log_out eval
+[
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+]
+
+
+
+=== TEST 26: uthread (kill)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local function f()
+                ngx.log(ngx.INFO, "uthread: hello from f()")
+                ngx.sleep(1)
+            end
+
+            local t, err = ngx.thread.spawn(f)
+            if not t then
+                ngx.log(ngx.ERR, "failed to spawn thread: ", err)
+                return ngx.exit(ngx.ERROR)
+            end
+
+            local ok, res = ngx.thread.kill(t)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to kill thread: ", res)
+                return
+            end
+
+            ngx.log(ngx.INFO, "uthread: killed")
+
+            local ok, err = ngx.thread.kill(t)
+            if not ok then
+                ngx.log(ngx.INFO, "uthread: failed to kill: ", err)
+            end
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+--- no_error_log
+[error]
+[alert]
+[emerg]
+--- grep_error_log eval: qr/uthread: [^.,]+/
+--- grep_error_log_out
+uthread: hello from f()
+uthread: killed
+uthread: failed to kill: already waited or killed
