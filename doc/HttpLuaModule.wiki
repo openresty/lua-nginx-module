@@ -6869,7 +6869,7 @@ This API was first enabled in the <code>v0.7.0</code> release.
 
 '''syntax:''' ''ok, err = ngx.thread.kill(thread)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*''
 
 Kills a running "light thread" created by [[#ngx.thread.spawn|ngx.thread.spawn]]. Returns a true value when successful or <code>nil</code> and a string describing the error otherwise.
 
