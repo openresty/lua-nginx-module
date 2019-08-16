@@ -1533,7 +1533,7 @@ co == co2: false
 --- config
     location = /t {
         content_by_lua_block {
-            function f()
+            local function f()
                 local cnt = 0
                 for i = 1, 20 do
                     ngx.say("co yield: ", cnt)
@@ -1567,7 +1567,7 @@ co yield: 2
 --- config
     location = /t {
         content_by_lua_block {
-            function f()
+            local function f()
                 local cnt = 0
                 for i = 1, 20 do
                     coroutine.yield(cnt, cnt + 1)
@@ -1601,7 +1601,7 @@ co yield: 2, 3
 --- config
     location = /t {
         content_by_lua_block {
-            function f(step)
+            local function f(step)
                 local cnt = 0
                 for i = 1, 20 do
                     ngx.say("co yield: ", cnt)
@@ -1637,7 +1637,7 @@ co yield: 2
         return 200;
 
         header_filter_by_lua_block {
-            function f()
+            local function f()
                 local cnt = 0
                 for i = 1, 20 do
                     print("co yield: ", cnt)

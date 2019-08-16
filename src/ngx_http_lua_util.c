@@ -1352,7 +1352,7 @@ user_co_done:
 
                 if (!ctx->cur_co_ctx->is_wrap) {
                     /*
-                     * ended successful, coroutine.resume returns true plus
+                     * ended successfully, coroutine.resume returns true plus
                      * any return values
                      */
                     lua_pushboolean(next_co, success);
@@ -1520,7 +1520,7 @@ propagate_error:
             if (orig_coctx->is_wrap) {
                 /*
                  * coroutine.wrap propagates errors
-                 * to the parent
+                 * to its parent coroutine
                  */
                 next_coctx->propagate_error = 1;
                 continue;
