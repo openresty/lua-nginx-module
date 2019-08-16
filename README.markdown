@@ -319,10 +319,10 @@ patches](https://github.com/openresty/openresty/tree/master/patches).
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
-1. LuaJIT can be downloaded from the [latest release of OpenResty's LuaJIT fork](https://github.com/openresty/luajit2/releases). The official LuaJIT 2.x releases are also supported, although performance will be significantly lower for reasons elaborated above..
-1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags).
-1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags).
-1. Download the latest version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
+1. LuaJIT can be downloaded from the [latest release of OpenResty's LuaJIT fork](https://github.com/openresty/luajit2/releases). The official LuaJIT 2.x releases are also supported, although performance will be significantly lower for reasons elaborated above
+1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags)
+1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags)
+1. Download the latest supported version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
 
 Build the source with this module:
 
@@ -413,7 +413,8 @@ The [openresty](https://groups.google.com/group/openresty) mailing list is for C
 Code Repository
 ===============
 
-The code repository of this project is hosted on github at [openresty/lua-nginx-module](https://github.com/openresty/lua-nginx-module).
+The code repository of this project is hosted on GitHub at
+[openresty/lua-nginx-module](https://github.com/openresty/lua-nginx-module).
 
 [Back to TOC](#table-of-contents)
 
@@ -7625,7 +7626,7 @@ tcpsock:settimeout
 
 Set the timeout value in milliseconds for subsequent socket operations ([connect](#tcpsockconnect), [receive](#tcpsockreceive), and iterators returned from [receiveuntil](#tcpsockreceiveuntil)).
 
-Settings done by this method takes priority over those config directives, i.e., [lua_socket_connect_timeout](#lua_socket_connect_timeout), [lua_socket_send_timeout](#lua_socket_send_timeout), and [lua_socket_read_timeout](#lua_socket_read_timeout).
+Settings done by this method take priority over those specified via config directives (i.e. [lua_socket_connect_timeout](#lua_socket_connect_timeout), [lua_socket_send_timeout](#lua_socket_send_timeout), and [lua_socket_read_timeout](#lua_socket_read_timeout)).
 
 Note that this method does *not* affect the [lua_socket_keepalive_timeout](#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [setkeepalive](#tcpsocksetkeepalive) method should be used for this purpose instead.
 
@@ -7640,12 +7641,12 @@ tcpsock:settimeouts
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
-Sets the connect timeout thresold, send timeout threshold, and read timeout threshold, respetively, in milliseconds, for subsequent socket
+Respectively sets the connect, send, and read timeout thresholds (in milliseconds) for subsequent socket
 operations ([connect](#tcpsockconnect), [send](#tcpsocksend), [receive](#tcpsockreceive), and iterators returned from [receiveuntil](#tcpsockreceiveuntil)).
 
-Settings done by this method takes priority over those config directives, i.e., [lua_socket_connect_timeout](#lua_socket_connect_timeout), [lua_socket_send_timeout](#lua_socket_send_timeout), and [lua_socket_read_timeout](#lua_socket_read_timeout).
+Settings done by this method take priority over those specified via config directives (i.e. [lua_socket_connect_timeout](#lua_socket_connect_timeout), [lua_socket_send_timeout](#lua_socket_send_timeout), and [lua_socket_read_timeout](#lua_socket_read_timeout)).
 
-You are recommended to use [settimeouts](#tcpsocksettimeouts) instead of [settimeout](#tcpsocksettimeout).
+It is recommended to use [settimeouts](#tcpsocksettimeouts) instead of [settimeout](#tcpsocksettimeout).
 
 Note that this method does *not* affect the [lua_socket_keepalive_timeout](#lua_socket_keepalive_timeout) setting; the `timeout` argument to the [setkeepalive](#tcpsocksetkeepalive) method should be used for this purpose instead.
 
