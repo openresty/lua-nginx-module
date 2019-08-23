@@ -195,7 +195,7 @@ ngx_feature_test='lua_State *L = luaL_newstate();
 SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
 CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
 
-. auto/feature
+LD_LIBRARY_PATH=$LUAJIT_LIB . auto/feature
 
 if [ $ngx_found = no ]; then
     cat << END
