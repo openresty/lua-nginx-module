@@ -1,5 +1,11 @@
 ngx_lua_opt_I=
 ngx_lua_opt_L=
+luajit_ld_opt=
+
+ngx_feature_name=
+ngx_feature_run=no
+ngx_feature_incs=
+ngx_feature_test=
 
 if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     # explicitly set LuaJIT paths
@@ -30,6 +36,7 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
         ngx_feature_path="$LUAJIT_INC"
         ngx_lua_opt_I="-I$LUAJIT_INC"
         ngx_lua_opt_L="-L$LUAJIT_LIB"
+        luajit_ld_opt="-lm -ldl"
 
         # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
         SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
@@ -38,9 +45,9 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
         NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
 
         if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 -lm -ldl"
+            ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
         else
-            ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 -lm -ldl"
+            ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
         fi
 
         . auto/feature
@@ -55,6 +62,7 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
             ngx_feature_path="$LUAJIT_INC"
             ngx_lua_opt_I="-I$LUAJIT_INC"
             ngx_lua_opt_L="-L$LUAJIT_LIB"
+            luajit_ld_opt="-lm"
 
             # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
             SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
@@ -63,9 +71,9 @@ if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
             NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
 
             if [ $NGX_RPATH = YES ]; then
-                ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 -lm"
+                ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
             else
-                ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 -lm"
+                ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
             fi
 
             . auto/feature
@@ -88,6 +96,7 @@ END
             case "$NGX_MACHINE" in
                 amd64 | x86_64 | i386)
                     echo "adding extra linking options needed by LuaJIT on $NGX_MACHINE"
+                    luajit_ld_opt="$luajit_ld_opt -pagezero_size 10000 -image_base 100000000"
                     ngx_feature_libs="$ngx_feature_libs -pagezero_size 10000 -image_base 100000000"
                 ;;
 
@@ -105,6 +114,8 @@ else
         # FreeBSD with luajit-2.0 from ports collection
         ngx_feature="LuaJIT library in /usr/local/"
         ngx_feature_path="/usr/local/include/luajit-2.0"
+        luajit_ld_opt="-lm"
+        LUAJIT_LIB="/usr/local/lib"
         if [ $NGX_RPATH = YES ]; then
             ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -lluajit-5.1 -lm"
         else
@@ -117,6 +128,8 @@ else
         # Gentoo with LuaJIT-2.0, try with -ldl
         ngx_feature="LuaJIT library in /usr/"
         ngx_feature_path="/usr/include/luajit-2.0"
+        luajit_ld_opt="-lm -ldl"
+        LUAJIT_LIB="/usr/lib"
         if [ $NGX_RPATH = YES ]; then
             ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1 -ldl"
         else
@@ -129,6 +142,8 @@ else
         # Gentoo with LuaJIT 2.0
         ngx_feature="LuaJIT library in /usr/"
         ngx_feature_path="/usr/include/luajit-2.0"
+        luajit_ld_opt="-lm"
+        LUAJIT_LIB="/usr/lib"
         if [ $NGX_RPATH = YES ]; then
             ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1"
         else
@@ -159,15 +174,11 @@ fi
 # ----------------------------------------
 
 ngx_feature="LuaJIT 2.x"
-ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs="#include <luajit.h>"
-ngx_feature_path=
 ngx_feature_test='#if !defined(LUAJIT_VERSION_NUM) || (LUAJIT_VERSION_NUM < 20000)
                   #    error unsupported LuaJIT version
                   #endif'
-SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
 
 . auto/feature
 
@@ -178,22 +189,17 @@ END
     exit 1
 fi
 
-CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
-
 # ----------------------------------------
 
 ngx_feature="LuaJIT has FFI"
-ngx_feature_name=
+ngx_feature_libs="$LUAJIT_LIB/libluajit-5.1.a $luajit_ld_opt"
 ngx_feature_run=yes
 ngx_feature_incs="#include <lualib.h>
                   #include <lauxlib.h>
                   #include <assert.h>"
-ngx_feature_path=
-ngx_feature_test='lua_State *L = luaL_newstate();
+ngx_feature_test="lua_State *L = luaL_newstate();
                   assert(L != NULL);
-                  luaopen_ffi(L);'
-SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+                  luaopen_ffi(L);"
 
 . auto/feature
 
@@ -203,8 +209,6 @@ if [ $ngx_found = no ]; then
 END
     exit 1
 fi
-
-CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
 
 # ----------------------------------------
 
@@ -468,36 +472,41 @@ fi
 
 # ----------------------------------------
 
-if [ $PCRE != NO -a $PCRE != YES ]; then
-    # force pcre_version symbol to be undefined when PCRE is statically linked
-    ngx_feature="force undefined symbols (--undefined)"
-    ngx_feature_libs="-Wl,--undefined=printf"
-    ngx_feature_name=
-    ngx_feature_run=no
-    ngx_feature_incs="#include <stdio.h>"
-    ngx_feature_path=
-    ngx_feature_test='printf("hello");'
+if [ $USE_PCRE = YES -o $PCRE != NONE ] && [ $PCRE != NO -a $PCRE != YES ]; then
+    # force pcre_version symbol to be required when PCRE is statically linked
+    case "$NGX_PLATFORM" in
+        Darwin:*)
+            ngx_feature="require defined symbols (-u)"
+            ngx_feature_name=
+            ngx_feature_path=
+            ngx_feature_libs="-Wl,-u,_strerror"
+            ngx_feature_run=no
+            ngx_feature_incs="#include <stdio.h>"
+            ngx_feature_test='printf("hello");'
 
-    . auto/feature
+            . auto/feature
 
-    if [ $ngx_found = yes ]; then
-        CORE_LIBS="$CORE_LIBS -Wl,--undefined=pcre_version"
-    fi
+            if [ $ngx_found = yes ]; then
+                CORE_LIBS="-Wl,-u,_pcre_version $CORE_LIBS"
+            fi
+        ;;
 
-    # for LLVM ld (Darwin)
-    ngx_feature="force undefined symbols (-all_load -U)"
-    ngx_feature_libs="-all_load -U printf"
-    ngx_feature_name=
-    ngx_feature_run=no
-    ngx_feature_incs="#include <stdio.h>"
-    ngx_feature_path=
-    ngx_feature_test='printf("hello");'
+        *)
+            ngx_feature="require defined symbols (--require-defined)"
+            ngx_feature_name=
+            ngx_feature_path=
+            ngx_feature_libs="-Wl,--require-defined=strerror"
+            ngx_feature_run=no
+            ngx_feature_incs="#include <stdio.h>"
+            ngx_feature_test='printf("hello");'
 
-    . auto/feature
+            . auto/feature
 
-    if [ $ngx_found = yes ]; then
-        CORE_LIBS="$CORE_LIBS -all_load -U pcre_version"
-    fi
+            if [ $ngx_found = yes ]; then
+                CORE_LIBS="-Wl,--require-defined=pcre_version $CORE_LIBS"
+            fi
+        ;;
+    esac
 fi
 
 # ----------------------------------------
