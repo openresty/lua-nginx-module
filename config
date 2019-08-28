@@ -176,15 +176,33 @@ fi
 ngx_feature="LuaJIT 2.x"
 ngx_feature_run=no
 ngx_feature_incs="#include <luajit.h>"
-ngx_feature_test='#if !defined(LUAJIT_VERSION_NUM) || (LUAJIT_VERSION_NUM < 20000)
+ngx_feature_test="#if !defined(LUAJIT_VERSION_NUM) || LUAJIT_VERSION_NUM < 20000
                   #    error unsupported LuaJIT version
-                  #endif'
+                  #endif"
 
 . auto/feature
 
 if [ $ngx_found = no ]; then
     cat << END
     $0: error: unsupported LuaJIT version; ngx_http_lua_module requires LuaJIT 2.x.
+END
+    exit 1
+fi
+
+# ----------------------------------------
+
+ngx_feature="Lua language 5.1"
+ngx_feature_run=no
+ngx_feature_incs="#include <lua.h>"
+ngx_feature_test="#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM != 501
+                  #   error unsupported Lua language version
+                  #endif"
+
+. auto/feature
+
+if [ $ngx_found = no ]; then
+    cat << END
+    $0: error: unsupported Lua language version; ngx_http_lua_module requires Lua 5.1.
 END
     exit 1
 fi
