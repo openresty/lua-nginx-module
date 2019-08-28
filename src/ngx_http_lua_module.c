@@ -119,21 +119,27 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_main_conf_t, set_sa_restart),
       NULL },
 
-#if (NGX_PCRE)
     { ngx_string("lua_regex_cache_max_entries"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
+      ngx_http_lua_regex_cache_max_entries,
       NGX_HTTP_MAIN_CONF_OFFSET,
+#if (NGX_PCRE)
       offsetof(ngx_http_lua_main_conf_t, regex_cache_max_entries),
+#else
+      0,
+#endif
       NULL },
 
     { ngx_string("lua_regex_match_limit"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
+      ngx_http_lua_regex_match_limit,
       NGX_HTTP_MAIN_CONF_OFFSET,
+#if (NGX_PCRE)
       offsetof(ngx_http_lua_main_conf_t, regex_match_limit),
-      NULL },
+#else
+      0,
 #endif
+      NULL },
 
     { ngx_string("lua_package_cpath"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
