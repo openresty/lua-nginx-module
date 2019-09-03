@@ -37,7 +37,7 @@ void ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem);
 
 enum {
     SEMAPHORE_WAIT_SUCC = 0,
-    SEMAPHORE_WAIT_TIMEOUT = 1
+    SEMAPHORE_WAIT_TIMEOUT = 1,
 };
 
 

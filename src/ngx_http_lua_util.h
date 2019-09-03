@@ -19,52 +19,17 @@
 
 
 #ifndef NGX_UNESCAPE_URI_COMPONENT
-#define NGX_UNESCAPE_URI_COMPONENT  0
-#endif
-
-
-typedef struct {
-    ngx_http_lua_ffi_str_t   key;
-    ngx_http_lua_ffi_str_t   value;
-} ngx_http_lua_ffi_table_elt_t;
-
-
-/* char whose address we use as the key in Lua vm registry for
- * user code cache table */
-extern char ngx_http_lua_code_cache_key;
-
-
-/* key in Lua vm registry for all the "ngx.ctx" tables */
-#define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
-
-
-/* char whose address we use as the key in Lua vm registry for
- * regex cache table */
-extern char ngx_http_lua_regex_cache_key;
-
-/* char whose address we use as the key in Lua vm registry for
- * socket connection pool table */
-extern char ngx_http_lua_socket_pool_key;
-
-/* char whose address we use as the key for the coroutine parent relationship */
-extern char ngx_http_lua_coroutine_parents_key;
-
-/* coroutine anchoring table key in Lua VM registry */
-extern char ngx_http_lua_coroutines_key;
-
-/* key to the metatable for ngx.req.get_headers() and ngx.resp.get_headers() */
-extern char ngx_http_lua_headers_metatable_key;
-
-
-#ifndef ngx_str_set
-#define ngx_str_set(str, text)                                               \
-    (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+#   define NGX_UNESCAPE_URI_COMPONENT 0
 #endif
 
 
 #ifndef NGX_HTTP_SWITCHING_PROTOCOLS
-#define NGX_HTTP_SWITCHING_PROTOCOLS 101
+#   define NGX_HTTP_SWITCHING_PROTOCOLS 101
 #endif
+
+
+/* key in Lua vm registry for all the "ngx.ctx" tables */
+#define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
 
 
 #define ngx_http_lua_context_name(c)                                         \
@@ -93,6 +58,60 @@ extern char ngx_http_lua_headers_metatable_key;
     }
 
 
+#define ngx_http_lua_check_fake_request(L, r)                                \
+    if ((r)->connection->fd == (ngx_socket_t) -1) {                          \
+        return luaL_error(L, "API disabled in the current context");         \
+    }
+
+
+#define ngx_http_lua_check_fake_request2(L, r, ctx)                          \
+    if ((r)->connection->fd == (ngx_socket_t) -1) {                          \
+        return luaL_error(L, "API disabled in the context of %s",            \
+                          ngx_http_lua_context_name((ctx)->context));        \
+    }
+
+
+#define ngx_http_lua_check_if_abortable(L, ctx)                              \
+    if ((ctx)->no_abort) {                                                   \
+        return luaL_error(L, "attempt to abort with pending subrequests");   \
+    }
+
+
+#define ngx_http_lua_ssl_get_ctx(ssl_conn)                                   \
+    SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
+
+
+#define ngx_http_lua_hash_literal(s)                                         \
+    ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
+
+
+#ifndef ngx_str_set
+#   define ngx_str_set(str, text)                                            \
+        (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
+#endif
+
+
+typedef struct {
+    ngx_http_lua_ffi_str_t   key;
+    ngx_http_lua_ffi_str_t   value;
+} ngx_http_lua_ffi_table_elt_t;
+
+
+/* char whose address we use as the key in Lua vm registry for
+ * user code cache table */
+extern char ngx_http_lua_code_cache_key;
+
+/* char whose address we use as the key in Lua vm registry for
+ * socket connection pool table */
+extern char ngx_http_lua_socket_pool_key;
+
+/* coroutine anchoring table key in Lua VM registry */
+extern char ngx_http_lua_coroutines_key;
+
+/* key to the metatable for ngx.req.get_headers() and ngx.resp.get_headers() */
+extern char ngx_http_lua_headers_metatable_key;
+
+
 static ngx_inline ngx_int_t
 ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
     u_char *err, size_t *errlen)
@@ -108,23 +127,6 @@ ngx_http_lua_ffi_check_context(ngx_http_lua_ctx_t *ctx, unsigned flags,
 
     return NGX_OK;
 }
-
-
-#define ngx_http_lua_check_fake_request(L, r)                                \
-    if ((r)->connection->fd == (ngx_socket_t) -1) {                          \
-        return luaL_error(L, "API disabled in the current context");         \
-    }
-
-
-#define ngx_http_lua_check_fake_request2(L, r, ctx)                          \
-    if ((r)->connection->fd == (ngx_socket_t) -1) {                          \
-        return luaL_error(L, "API disabled in the context of %s",            \
-                          ngx_http_lua_context_name((ctx)->context));        \
-    }
-
-
-#define ngx_http_lua_ssl_get_ctx(ssl_conn)                                   \
-    SSL_get_ex_data(ssl_conn, ngx_http_lua_ssl_ctx_index)
 
 
 ngx_int_t ngx_http_lua_init_vm(lua_State **new_vm, lua_State *parent_vm,
@@ -244,11 +246,6 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
 #if (NGX_HTTP_LUA_HAVE_SA_RESTART)
 void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 #endif
-
-#define ngx_http_lua_check_if_abortable(L, ctx)                              \
-    if ((ctx)->no_abort) {                                                   \
-        return luaL_error(L, "attempt to abort with pending subrequests");   \
-    }
 
 
 static ngx_inline size_t
@@ -370,7 +367,9 @@ ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 }
 
 
+#ifndef OPENRESTY_LUAJIT
 #define ngx_http_lua_req_key  "__ngx_req"
+#endif
 
 
 static ngx_inline ngx_http_request_t *
@@ -402,6 +401,7 @@ ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 }
 
 
+#ifndef OPENRESTY_LUAJIT
 static ngx_inline void
 ngx_http_lua_get_globals_table(lua_State *L)
 {
@@ -414,10 +414,7 @@ ngx_http_lua_set_globals_table(lua_State *L)
 {
     lua_replace(L, LUA_GLOBALSINDEX);
 }
-
-
-#define ngx_http_lua_hash_literal(s)                                         \
-    ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
+#endif /* OPENRESTY_LUAJIT */
 
 
 static ngx_inline ngx_uint_t

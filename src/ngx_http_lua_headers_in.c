@@ -340,7 +340,7 @@ ngx_http_lua_validate_host(ngx_str_t *host, ngx_pool_t *pool, ngx_uint_t alloc)
     enum {
         sw_usual = 0,
         sw_literal,
-        sw_rest
+        sw_rest,
     } state;
 
     dot_pos = host->len;

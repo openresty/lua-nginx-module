@@ -66,7 +66,7 @@ enum {
     FOUND_RIGHT_LBRACKET,
     FOUND_COMMENT_LINE,
     FOUND_DOUBLE_QUOTED,
-    FOUND_SINGLE_QUOTED
+    FOUND_SINGLE_QUOTED,
 };
 
 
@@ -1272,7 +1272,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
     ngx_array_t      *saved;
     enum {
         parse_block = 0,
-        parse_param
+        parse_param,
     } type;
 
     if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
@@ -1422,7 +1422,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_http_lua_block_parser_ctx_t *ctx)
 {
     enum {
-        OVEC_SIZE = 2
+        OVEC_SIZE = 2,
     };
     int          i, rc;
     int          ovec[OVEC_SIZE];

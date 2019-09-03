@@ -17,7 +17,7 @@ typedef struct {
 
 
 enum {
-    HEADER_LEN = sizeof(ngx_http_lua_log_ringbuf_header_t)
+    HEADER_LEN = sizeof(ngx_http_lua_log_ringbuf_header_t),
 };
 
 

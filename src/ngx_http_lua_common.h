@@ -22,33 +22,43 @@
 #include <lauxlib.h>
 
 
-#if (NGX_PCRE)
+#if defined(NDK) && NDK
+#include <ndk.h>
 
-#include <pcre.h>
-
-#if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
-#   define LUA_HAVE_PCRE_JIT 1
-#else
-#   define LUA_HAVE_PCRE_JIT 0
+typedef struct {
+    size_t       size;
+    int          ref;
+    u_char      *key;
+    ngx_str_t    script;
+} ngx_http_lua_set_var_data_t;
 #endif
 
+
+#ifdef NGX_LUA_USE_ASSERT
+#include <assert.h>
+#   define ngx_http_lua_assert(a)  assert(a)
+#else
+#   define ngx_http_lua_assert(a)
+#endif
+
+
+#if (NGX_PCRE)
+#include <pcre.h>
+#   if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
+#       define LUA_HAVE_PCRE_JIT 1
+#   else
+#       define LUA_HAVE_PCRE_JIT 0
+#   endif
 #endif
 
 
 #if !defined(nginx_version) || (nginx_version < 1006000)
-#error at least nginx 1.6.0 is required but found an older version
+#   error at least nginx 1.6.0 is required but found an older version
 #endif
-
-
-#if defined(NDK) && NDK
-#include <ndk.h>
-#endif
-
 
 #if LUA_VERSION_NUM != 501
 #   error unsupported Lua language version
 #endif
-
 
 #if !defined(LUAJIT_VERSION_NUM) || (LUAJIT_VERSION_NUM < 20000)
 #   error unsupported LuaJIT version
@@ -60,26 +70,25 @@
 #endif
 
 #ifndef NGX_HTTP_PERMANENT_REDIRECT
-#   define NGX_HTTP_PERMANENT_REDIRECT  308
+#   define NGX_HTTP_PERMANENT_REDIRECT 308
 #endif
 
 #ifndef NGX_HAVE_SHA1
 #   if defined(nginx_version) && (nginx_version >= 1011002)
-#       define NGX_HAVE_SHA1  1
+#       define NGX_HAVE_SHA1 1
 #   endif
 #endif
 
-
 #ifndef MD5_DIGEST_LENGTH
-#define MD5_DIGEST_LENGTH 16
+#   define MD5_DIGEST_LENGTH 16
 #endif
 
+#ifndef NGX_HTTP_LUA_MAX_ARGS
+#   define NGX_HTTP_LUA_MAX_ARGS 100
+#endif
 
-#ifdef NGX_LUA_USE_ASSERT
-#   include <assert.h>
-#   define ngx_http_lua_assert(a)  assert(a)
-#else
-#   define ngx_http_lua_assert(a)
+#ifndef NGX_HTTP_LUA_MAX_HEADERS
+#   define NGX_HTTP_LUA_MAX_HEADERS 100
 #endif
 
 
@@ -104,26 +113,6 @@
     (NGX_HTTP_LUA_FILE_TAG_LEN + 2 * MD5_DIGEST_LENGTH)
 
 
-#if defined(NDK) && NDK
-typedef struct {
-    size_t       size;
-    int          ref;
-    u_char      *key;
-    ngx_str_t    script;
-} ngx_http_lua_set_var_data_t;
-#endif
-
-
-#ifndef NGX_HTTP_LUA_MAX_ARGS
-#define NGX_HTTP_LUA_MAX_ARGS 100
-#endif
-
-
-#ifndef NGX_HTTP_LUA_MAX_HEADERS
-#define NGX_HTTP_LUA_MAX_HEADERS 100
-#endif
-
-
 /* must be within 16 bit */
 #define NGX_HTTP_LUA_CONTEXT_SET            0x0001
 #define NGX_HTTP_LUA_CONTEXT_REWRITE        0x0002
@@ -145,29 +134,37 @@ typedef struct {
 
 
 #if (NGX_PTR_SIZE >= 8 && !defined(_WIN64))
-#define ngx_http_lua_lightudata_mask(ludata)                                 \
-    ((void *) ((uintptr_t) (&ngx_http_lua_##ludata) & ((1UL << 47) - 1)))
-
+#   define ngx_http_lua_lightudata_mask(ludata)                              \
+        ((void *) ((uintptr_t) (&ngx_http_lua_##ludata) & ((1UL << 47) - 1)))
 #else
-#define ngx_http_lua_lightudata_mask(ludata)    (&ngx_http_lua_##ludata)
+#   define ngx_http_lua_lightudata_mask(ludata)                              \
+        (&ngx_http_lua_##ludata)
 #endif
 
 
-typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
+typedef struct ngx_http_lua_co_ctx_s  ngx_http_lua_co_ctx_t;
+
+typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
+
 typedef union ngx_http_lua_srv_conf_u  ngx_http_lua_srv_conf_t;
 
+typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
+
+typedef struct ngx_http_lua_header_val_s  ngx_http_lua_header_val_t;
+
+typedef struct ngx_http_lua_posted_thread_s  ngx_http_lua_posted_thread_t;
 
 typedef struct ngx_http_lua_balancer_peer_data_s
     ngx_http_lua_balancer_peer_data_t;
 
-
-typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
-
-
 typedef ngx_int_t (*ngx_http_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L);
+
 typedef ngx_int_t (*ngx_http_lua_srv_conf_handler_pt)(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L);
+
+typedef ngx_int_t (*ngx_http_lua_set_header_pt)(ngx_http_request_t *r,
+    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 
 
 typedef struct {
@@ -198,11 +195,9 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            regex_cache_entries;
     ngx_int_t            regex_cache_max_entries;
     ngx_int_t            regex_match_limit;
-
-#if (LUA_HAVE_PCRE_JIT)
+#   if (LUA_HAVE_PCRE_JIT)
     pcre_jit_stack      *jit_stack;
-#endif
-
+#   endif
 #endif
 
     ngx_array_t         *shm_zones;  /* of ngx_shm_zone_t* */
@@ -298,10 +293,10 @@ union ngx_http_lua_srv_conf_u {
 #endif
 
     struct {
-        ngx_http_lua_srv_conf_handler_pt  handler;
-        ngx_str_t           src;
-        u_char             *src_key;
-        int                 src_ref;
+        ngx_http_lua_srv_conf_handler_pt     handler;
+        ngx_str_t                            src;
+        u_char                              *src_key;
+        int                                  src_ref;
     } balancer;
 };
 
@@ -398,7 +393,7 @@ typedef enum {
     NGX_HTTP_LUA_USER_CORO_NOP      = 0,
     NGX_HTTP_LUA_USER_CORO_RESUME   = 1,
     NGX_HTTP_LUA_USER_CORO_YIELD    = 2,
-    NGX_HTTP_LUA_USER_THREAD_RESUME = 3
+    NGX_HTTP_LUA_USER_THREAD_RESUME = 3,
 } ngx_http_lua_user_coro_op_t;
 
 
@@ -411,18 +406,9 @@ typedef enum {
 } ngx_http_lua_co_status_t;
 
 
-typedef struct ngx_http_lua_co_ctx_s  ngx_http_lua_co_ctx_t;
-
-typedef struct ngx_http_lua_posted_thread_s  ngx_http_lua_posted_thread_t;
-
 struct ngx_http_lua_posted_thread_s {
     ngx_http_lua_co_ctx_t               *co_ctx;
     ngx_http_lua_posted_thread_t        *next;
-};
-
-
-enum {
-    NGX_HTTP_LUA_SUBREQ_TRUNCATED = 1
 };
 
 
@@ -613,13 +599,6 @@ typedef struct ngx_http_lua_ctx_s {
                                                     is acquired */
     unsigned         seen_body_data:1;
 } ngx_http_lua_ctx_t;
-
-
-typedef struct ngx_http_lua_header_val_s  ngx_http_lua_header_val_t;
-
-
-typedef ngx_int_t (*ngx_http_lua_set_header_pt)(ngx_http_request_t *r,
-    ngx_http_lua_header_val_t *hv, ngx_str_t *value);
 
 
 struct ngx_http_lua_header_val_s {

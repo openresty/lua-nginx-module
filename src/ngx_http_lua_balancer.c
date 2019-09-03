@@ -54,8 +54,8 @@ static ngx_int_t ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc,
     void *data);
 static ngx_int_t ngx_http_lua_balancer_by_chunk(lua_State *L,
     ngx_http_request_t *r);
-void ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
-    ngx_uint_t state);
+static void ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc,
+    void *data, ngx_uint_t state);
 
 
 ngx_int_t
@@ -399,7 +399,7 @@ ngx_http_lua_balancer_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
-void
+static void
 ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
     ngx_uint_t state)
 {

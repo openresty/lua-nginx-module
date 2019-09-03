@@ -63,7 +63,7 @@ static void ngx_http_lua_udp_socket_cleanup(void *data);
 
 enum {
     SOCKET_CTX_INDEX = 1,
-    SOCKET_TIMEOUT_INDEX = 2
+    SOCKET_TIMEOUT_INDEX = 2,
 };
 
 
