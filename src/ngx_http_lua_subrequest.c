@@ -27,6 +27,7 @@
 
 #define ngx_http_lua_method_name(m) { sizeof(m) - 1, (u_char *) m " " }
 
+
 ngx_str_t  ngx_http_lua_get_method = ngx_http_lua_method_name("GET");
 ngx_str_t  ngx_http_lua_put_method = ngx_http_lua_method_name("PUT");
 ngx_str_t  ngx_http_lua_post_method = ngx_http_lua_method_name("POST");
@@ -79,6 +80,11 @@ static ngx_int_t ngx_http_post_request_to_head(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
     ngx_http_request_t *r);
+
+
+enum {
+    NGX_HTTP_LUA_SUBREQ_TRUNCATED = 1,
+};
 
 
 /* ngx.location.capture is just a thin wrapper around

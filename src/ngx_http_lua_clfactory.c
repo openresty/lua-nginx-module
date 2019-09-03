@@ -288,12 +288,12 @@
 typedef enum {
     NGX_LUA_TEXT_FILE,
     NGX_LUA_BT_LUA,
-    NGX_LUA_BT_LJ
+    NGX_LUA_BT_LJ,
 } ngx_http_lua_clfactory_file_type_e;
 
 
 enum {
-    NGX_LUA_READER_BUFSIZE = 4096
+    NGX_LUA_READER_BUFSIZE = 4096,
 };
 
 

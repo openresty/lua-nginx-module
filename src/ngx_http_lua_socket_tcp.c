@@ -174,7 +174,7 @@ enum {
     SOCKET_OP_CONNECT,
     SOCKET_OP_READ,
     SOCKET_OP_WRITE,
-    SOCKET_OP_RESUME_CONN
+    SOCKET_OP_RESUME_CONN,
 };
 
 
@@ -1915,8 +1915,8 @@ ngx_http_lua_ssl_handshake_retval_handler(ngx_http_request_t *r,
     } else {
         *ud = ssl_session;
 
-       ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                      "lua ssl save session: %p", ssl_session);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "lua ssl save session: %p", ssl_session);
 
         /* set up the __gc metamethod */
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(

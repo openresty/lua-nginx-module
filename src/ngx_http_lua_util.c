@@ -84,7 +84,6 @@
 
 
 char ngx_http_lua_code_cache_key;
-char ngx_http_lua_regex_cache_key;
 char ngx_http_lua_socket_pool_key;
 char ngx_http_lua_coroutines_key;
 char ngx_http_lua_headers_metatable_key;
@@ -690,14 +689,6 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
                           socket_pool_key));
     lua_createtable(L, 0, 8 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
-
-#if (NGX_PCRE)
-    /* create the registry entry for the Lua precompiled regex object cache */
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          regex_cache_key));
-    lua_createtable(L, 0, 16 /* nrec */);
-    lua_rawset(L, LUA_REGISTRYINDEX);
-#endif
 
     /* {{{ register table to cache user code:
      * { [(string)cache_key] = <code closure> } */
@@ -2065,7 +2056,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     enum {
         sw_usual = 0,
         sw_quoted,
-        sw_quoted_second
+        sw_quoted_second,
     } state;
 
     d = *dst;
