@@ -30,8 +30,6 @@
 static uintptr_t ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src,
     size_t size);
 static int ngx_http_lua_ngx_quote_sql_str(lua_State *L);
-static int ngx_http_lua_ngx_crc32_short(lua_State *L);
-static int ngx_http_lua_ngx_crc32_long(lua_State *L);
 static int ngx_http_lua_ngx_encode_args(lua_State *L);
 static int ngx_http_lua_ngx_decode_args(lua_State *L);
 #if (NGX_OPENSSL)
@@ -50,12 +48,6 @@ ngx_http_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_ngx_quote_sql_str);
     lua_setfield(L, -2, "quote_sql_str");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_crc32_short);
-    lua_setfield(L, -2, "crc32_short");
-
-    lua_pushcfunction(L, ngx_http_lua_ngx_crc32_long);
-    lua_setfield(L, -2, "crc32_long");
 
 #if (NGX_OPENSSL)
     lua_pushcfunction(L, ngx_http_lua_ngx_hmac_sha1);
@@ -257,42 +249,6 @@ ngx_http_lua_encode_base64(ngx_str_t *dst, ngx_str_t *src, int no_padding)
 
 
 static int
-ngx_http_lua_ngx_crc32_short(lua_State *L)
-{
-    u_char                  *p;
-    size_t                   len;
-
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one argument, but got %d",
-                          lua_gettop(L));
-    }
-
-    p = (u_char *) luaL_checklstring(L, 1, &len);
-
-    lua_pushnumber(L, (lua_Number) ngx_crc32_short(p, len));
-    return 1;
-}
-
-
-static int
-ngx_http_lua_ngx_crc32_long(lua_State *L)
-{
-    u_char                  *p;
-    size_t                   len;
-
-    if (lua_gettop(L) != 1) {
-        return luaL_error(L, "expecting one argument, but got %d",
-                          lua_gettop(L));
-    }
-
-    p = (u_char *) luaL_checklstring(L, 1, &len);
-
-    lua_pushnumber(L, (lua_Number) ngx_crc32_long(p, len));
-    return 1;
-}
-
-
-static int
 ngx_http_lua_ngx_encode_args(lua_State *L)
 {
     ngx_str_t                    args;
@@ -411,6 +367,20 @@ ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
 #else
     return 0;
 #endif
+}
+
+
+unsigned int
+ngx_http_lua_ffi_crc32_short(const u_char *src, size_t len)
+{
+    return ngx_crc32_short((u_char *) src, len);
+}
+
+
+unsigned int
+ngx_http_lua_ffi_crc32_long(const u_char *src, size_t len)
+{
+    return ngx_crc32_long((u_char *) src, len);
 }
 
 
