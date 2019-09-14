@@ -1534,7 +1534,7 @@ ngx_http_lua_socket_conn_error_retval_handler(ngx_http_request_t *r,
 static int
 ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 {
-    int                      n, top;
+    int                      n, top, i;
     ngx_int_t                rc;
     ngx_str_t                name = ngx_null_string;
     ngx_connection_t        *c;
@@ -1542,15 +1542,19 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_lua_co_ctx_t   *coctx;
+    STACK_OF(X509)          *chain = NULL;
+    X509                    *x509;
+    EVP_PKEY                *pkey;
+    ngx_ssl_conn_t          *ssl_conn;
 
     ngx_http_lua_socket_tcp_upstream_t  *u;
 
     /* Lua function arguments: self [,session] [,host] [,verify]
-       [,send_status_req] */
+       [,send_status_req] [, opts] */
 
     n = lua_gettop(L);
-    if (n < 1 || n > 5) {
-        return luaL_error(L, "ngx.socket sslhandshake: expecting 1 ~ 5 "
+    if (n < 1 || n > 6) {
+        return luaL_error(L, "ngx.socket sslhandshake: expecting 1 ~ 6 "
                           "arguments (including the object), but seen %d", n);
     }
 
@@ -1626,6 +1630,8 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
         return 2;
     }
 
+    ssl_conn = c->ssl->connection;
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return luaL_error(L, "no ctx found");
@@ -1693,6 +1699,95 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 #else
                         return luaL_error(L, "no OCSP support");
 #endif
+                    }
+                }
+
+                if (n >= 6) {
+                    if (lua_type(L, 6) == LUA_TTABLE) {
+                        lua_getfield(L, 6, "client_cert");
+
+                        if (!lua_isnil(L, -1)) {
+                            chain = luaL_checkcdataptr(L, -1);
+                            if (chain == NULL) {
+                                return luaL_error(L, "\"client_cert\" can "
+                                                  "not be NULL");
+                            }
+
+                            /* chain != NULL */
+
+                            lua_pop(L, 1);
+
+                            lua_getfield(L, 6, "client_priv_key");
+
+                            pkey = luaL_checkcdataptr(L, -1);
+                            if (pkey == NULL) {
+                                return luaL_error(L, "\"client_priv_key\" can "
+                                                  "not be NULL");
+                            }
+
+                            if (sk_X509_num(chain) < 1) {
+                                ERR_clear_error();
+                                return luaL_error(L, "invalid client "
+                                                  "certificate chain");
+                            }
+
+                            x509 = sk_X509_value(chain, 0);
+                            if (x509 == NULL) {
+                                ERR_clear_error();
+                                lua_pushnil(L);
+                                lua_pushliteral(L, "lua ssl fetch client "
+                                                "certificate from chain "
+                                                "failed");
+                                return 2;
+                            }
+
+                            if (SSL_use_certificate(ssl_conn, x509) == 0) {
+                                ERR_clear_error();
+                                lua_pushnil(L);
+                                lua_pushliteral(L, "lua ssl set client "
+                                                "certificate failed");
+                                return 2;
+                            }
+
+                            /* read rest of the chain */
+
+                            for (i = 1; i < sk_X509_num(chain); i++) {
+                                x509 = sk_X509_value(chain, i);
+                                if (x509 == NULL) {
+                                    ERR_clear_error();
+                                    lua_pushnil(L);
+                                    lua_pushliteral(L, "lua ssl fetch client "
+                                                    "intermediate certificate "
+                                                    "from chain failed");
+                                    return 2;
+                                }
+
+                                if (SSL_add1_chain_cert(ssl_conn, x509) == 0) {
+                                    ERR_clear_error();
+                                    lua_pushnil(L);
+                                    lua_pushliteral(L, "lua ssl set client "
+                                                    "intermediate certificate "
+                                                    "failed");
+                                    return 2;
+                                }
+                            }
+
+                            if (SSL_use_PrivateKey(ssl_conn, pkey) == 0) {
+                                ERR_clear_error();
+                                lua_pushnil(L);
+                                lua_pushliteral(L, "lua ssl set client "
+                                                "private key failed");
+                                return 2;
+                            }
+                        }
+
+                        lua_pop(L, 1);
+
+                    } else if (!lua_isnil(L, 6)) {
+                        return luaL_error(L, "ngx.socket sslhandshake: bad "
+                                          "options table type, expecting a "
+                                          "table but seen %s",
+                                          lua_typename(L, lua_type(L, 6)));
                     }
                 }
             }

@@ -927,7 +927,6 @@ TODO
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
-* cosocket: add client SSL certificate support.
 
 [Back to TOC](#table-of-contents)
 
@@ -7346,7 +7345,7 @@ This method was first introduced in the `v0.5.0rc1` release.
 tcpsock:sslhandshake
 --------------------
 
-**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?)*
+**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?, options_table?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
@@ -7381,6 +7380,18 @@ to validate the server name in the server certificate.
 
 The optional `send_status_req` argument takes a boolean that controls whether to send
 the OCSP status request in the SSL handshake request (which is for requesting OCSP stapling).
+
+An optional Lua table can be specified as the last argument to this method to specify various handshake options:
+
+* `client_cert` specify a client certificate chain cdata object that will be used while handshaking with
+remote server. These objects can be created using [ngx.ssl.parse\_pem\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_cert)
+function provided by lua-resty-core. Note that specifying the `client_cert` option requires
+corresponding `client_priv_key` be provided too. See below.
+* `client_priv_key` specify a private key corresponds to the `client_cert` option above.
+These objects can be created using [ngx.ssl.parse\_pem\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_priv_key)
+function provided by lua-resty-core.
+
+The support for the options table argument was first introduced in the v0.10.16 release.
 
 For connections that have already done SSL/TLS handshake, this method returns
 immediately.
