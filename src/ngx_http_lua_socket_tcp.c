@@ -1707,6 +1707,7 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
                         lua_getfield(L, 6, "client_cert");
 
                         if (!lua_isnil(L, -1)) {
+#ifdef OPENRESTY_LUAJIT
                             chain = luaL_checkcdataptr(L, -1);
                             if (chain == NULL) {
                                 return luaL_error(L, "\"client_cert\" can "
@@ -1779,6 +1780,10 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
                                                 "private key failed");
                                 return 2;
                             }
+#else
+    return luaL_error(L, "client certificate support requires the "
+                      "OpenResty LuaJIT fork");
+#endif /* OPENRESTY_LUAJIT */
                         }
 
                         lua_pop(L, 1);
