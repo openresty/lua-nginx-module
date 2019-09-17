@@ -295,6 +295,10 @@ union ngx_http_lua_srv_conf_u {
 #endif
 
     struct {
+        ngx_http_upstream_init_pt            original_init_upstream;
+        ngx_http_upstream_init_peer_pt       original_init_peer;
+        uintptr_t                            data;
+
         ngx_http_lua_srv_conf_handler_pt     handler;
         ngx_str_t                            src;
         u_char                              *src_key;

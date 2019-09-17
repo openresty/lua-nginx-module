@@ -988,6 +988,9 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
      *      lscf->srv.ssl_session_fetch_src_key = NULL;
      *
+     *      lscf->balancer.original_init_upstream = NULL;
+     *      lscf->balancer.original_init_peer = NULL;
+     *      lscf->balancer.data = NULL;
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
      *      lscf->balancer.src_key = NULL;
