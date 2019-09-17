@@ -111,7 +111,8 @@ static void ngx_http_lua_balancer_save_session(ngx_peer_connection_t *pc,
     (bp->sockaddr && bp->socklen)
 
 
-static char ngx_http_lua_balancer_keepalive_pools_table_key;
+static char              ngx_http_lua_balancer_keepalive_pools_table_key;
+static struct sockaddr  *ngx_http_lua_balancer_default_server_sockaddr;
 
 
 ngx_int_t
@@ -239,7 +240,9 @@ ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                            *cache_key = NULL;
     u_char                            *name;
     ngx_str_t                         *value;
+    ngx_url_t                          url;
     ngx_http_upstream_srv_conf_t      *uscf;
+    ngx_http_upstream_server_t        *us;
     ngx_http_lua_srv_conf_t           *lscf = conf;
 
     dd("enter");
@@ -292,6 +295,29 @@ ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     /* balancer setup */
 
     uscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_upstream_module);
+
+    if (uscf->servers->nelts == 0) {
+        us = ngx_array_push(uscf->servers);
+        if (us == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        ngx_memzero(us, sizeof(ngx_http_upstream_server_t));
+        ngx_memzero(&url, sizeof(ngx_url_t));
+
+        ngx_str_set(&url.url, "0.0.0.1");
+        url.default_port = 80;
+
+        if (ngx_parse_url(cf->pool, &url) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        us->name = url.url;
+        us->addrs = url.addrs;
+        us->naddrs = url.naddrs;
+
+        ngx_http_lua_balancer_default_server_sockaddr = us->addrs[0].sockaddr;
+    }
 
     if (uscf->peer.init_upstream) {
         ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
@@ -525,7 +551,19 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         return NGX_OK;
     }
 
-    return bp->original_get_peer(pc, bp->data);
+    rc = bp->original_get_peer(pc, bp->data);
+    if (rc == NGX_ERROR) {
+        return rc;
+    }
+
+    if (pc->sockaddr == ngx_http_lua_balancer_default_server_sockaddr) {
+        ngx_log_error(NGX_LOG_ERR, pc->log, 0,
+                      "lua balancer: no peer set");
+
+        return NGX_ERROR;
+    }
+
+    return rc;
 }
 
 
