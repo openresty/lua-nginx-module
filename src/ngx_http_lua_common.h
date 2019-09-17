@@ -239,13 +239,6 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
     ngx_str_t                            exit_worker_src;
 
-    ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
-                    /* neither yielding nor recursion is possible in
-                     * balancer_by_lua*, so there cannot be any races among
-                     * concurrent requests and it is safe to store the peer
-                     * data pointer in the main conf.
-                     */
-
     ngx_chain_t                            *body_filter_chain;
                     /* neither yielding nor recursion is possible in
                      * body_filter_by_lua*, so there cannot be any races among
@@ -320,6 +313,10 @@ union ngx_http_lua_srv_conf_u {
 #endif
 
     struct {
+        ngx_http_upstream_init_pt            original_init_upstream;
+        ngx_http_upstream_init_peer_pt       original_init_peer;
+        uintptr_t                            data;
+
         ngx_http_lua_srv_conf_handler_pt     handler;
         ngx_str_t                            src;
         u_char                              *src_key;
