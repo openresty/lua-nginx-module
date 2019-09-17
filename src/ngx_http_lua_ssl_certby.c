@@ -420,7 +420,7 @@ ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
 
     c = log->data;
 
-    if (c->addr_text.len) {
+    if (c && c->addr_text.len) {
         p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
         len -= p - buf;
         buf = p;
