@@ -100,7 +100,7 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -209,7 +209,7 @@ ssl_certificate_by_lua\(nginx.conf:28\):1: ssl cert by lua is running!,/
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -314,7 +314,7 @@ qr/elapsed in ssl cert by lua: 0.(?:09|1\d)\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -432,7 +432,7 @@ my timer run!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -924,7 +924,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 
 --- error_log
 lua ssl server name: "test.com"
@@ -1137,7 +1137,7 @@ print("ssl cert by lua is running!")
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1248,7 +1248,7 @@ a.lua:1: ssl cert by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1372,7 +1372,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1468,7 +1468,7 @@ GitHub openresty/lua-resty-core#42
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1566,7 +1566,7 @@ github issue #723
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1668,7 +1668,7 @@ ssl_certificate_by_lua:1: ssl cert by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 59 bytes.
 received: HTTP/1.1 200 OK
 received: Server: nginx
@@ -1963,7 +1963,7 @@ qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2063,7 +2063,7 @@ client ip: 127.0.0.1
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2221,7 +2221,7 @@ qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 --- no_error_log
 [error]
 [alert]
@@ -2311,7 +2311,7 @@ ssl handshake: userdata
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 --- no_error_log
 [error]
 [alert]

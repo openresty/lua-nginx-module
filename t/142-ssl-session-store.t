@@ -77,7 +77,7 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -152,7 +152,7 @@ ssl_session_store_by_lua\(nginx\.conf:25\):1: ssl session store by lua is runnin
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -227,7 +227,7 @@ API disabled in the context of ssl_session_store_by_lua*
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -319,7 +319,7 @@ my timer run!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -390,7 +390,7 @@ API disabled in the context of ssl_session_store_by_lua*
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -462,7 +462,7 @@ ngx.exit does not yield and the error code is eaten.
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -532,7 +532,7 @@ ssl_session_store_by_lua*: handler return value: 0, sess new cb exit code: 0
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -600,7 +600,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -671,7 +671,7 @@ get_phase: ssl_session_store
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log eval
@@ -744,7 +744,7 @@ print("ssl store session by lua is running!")
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -820,7 +820,7 @@ a.lua:1: ssl store session by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- no_error_log
@@ -891,7 +891,7 @@ qr/\[emerg\] .*? "ssl_session_store_by_lua_block" directive is not allowed here 
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- error_log
@@ -955,7 +955,7 @@ ssl_session_store_by_lua(nginx.conf:25):1: ssl session store by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- error_log eval
 qr/ssl_session_store_by_lua\*: skipped since TLS version >= 1\.3 \(\d+\)/

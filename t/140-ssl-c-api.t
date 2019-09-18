@@ -217,7 +217,7 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -371,7 +371,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -499,7 +499,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -650,7 +650,7 @@ failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -800,7 +800,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1182,7 +1182,7 @@ client certificate subject: nil
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1306,7 +1306,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
