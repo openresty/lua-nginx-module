@@ -522,6 +522,22 @@ if [ $USE_PCRE = YES -o $PCRE != NONE ] && [ $PCRE != NO -a $PCRE != YES ]; then
 
             if [ $ngx_found = yes ]; then
                 CORE_LIBS="-Wl,--require-defined=pcre_version $CORE_LIBS"
+
+            else
+                # ld 2.25 and below (--required-defined was introduced in 2.26)
+                ngx_feature="require defined symbols fallback (--undefined)"
+                ngx_feature_name=
+                ngx_feature_path=
+                ngx_feature_libs="-Wl,--undefined=strerror"
+                ngx_feature_run=no
+                ngx_feature_incs="#include <stdio.h>"
+                ngx_feature_test='printf("hello");'
+
+                . auto/feature
+
+                if [ $ngx_found = yes ]; then
+                    CORE_LIBS="-Wl,--undefined=pcre_version $CORE_LIBS"
+                fi
             fi
         ;;
     esac
