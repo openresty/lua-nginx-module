@@ -2079,7 +2079,7 @@ ngx_http_lua_ffi_shdict_capacity(ngx_shm_zone_t *zone)
 }
 
 
-#    if nginx_version >= 1011007
+#if (nginx_version >= 1011007)
 size_t
 ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
 {
@@ -2094,7 +2094,7 @@ ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
 
     return bytes;
 }
-#    endif /* nginx_version >= 1011007 */
+#endif
 
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

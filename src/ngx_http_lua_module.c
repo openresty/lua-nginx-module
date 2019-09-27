@@ -748,7 +748,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_http_lua_pipe_init();
 #endif
 
-#if defined(nginx_version) && (nginx_version >= 1011011)
+#if (nginx_version >= 1011011)
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
         return NGX_ERROR;

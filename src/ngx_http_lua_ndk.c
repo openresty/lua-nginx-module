@@ -46,7 +46,7 @@ ngx_http_lookup_ndk_set_var_directive(u_char *name,
     ngx_module_t           **modules;
     ngx_command_t           *cmd;
 
-#if defined(nginx_version) && nginx_version >= 1009011
+#if (nginx_version >= 1009011)
     modules = ngx_cycle->modules;
 #else
     modules = ngx_modules;

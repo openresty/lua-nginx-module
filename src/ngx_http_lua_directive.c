@@ -1433,12 +1433,12 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_uint_t   start_line;
     ngx_str_t   *word;
     ngx_buf_t   *b;
-#if defined(nginx_version) && (nginx_version >= 1009002)
+#if (nginx_version >= 1009002)
     ngx_buf_t   *dump;
 #endif
 
     b = cf->conf_file->buffer;
-#if defined(nginx_version) && (nginx_version >= 1009002)
+#if (nginx_version >= 1009002)
     dump = cf->conf_file->dump;
 #endif
     start = b->pos;
@@ -1509,7 +1509,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             b->last = b->start + len + n;
             start = b->start;
 
-#if defined(nginx_version) && (nginx_version >= 1009002)
+#if (nginx_version >= 1009002)
             if (dump) {
                 dump->last = ngx_cpymem(dump->last, b->start + len, size);
             }

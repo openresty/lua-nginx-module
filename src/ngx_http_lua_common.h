@@ -52,7 +52,7 @@ typedef struct {
 #endif
 
 
-#if !defined(nginx_version) || (nginx_version < 1006000)
+#if (nginx_version < 1006000)
 #   error at least nginx 1.6.0 is required but found an older version
 #endif
 
@@ -74,7 +74,7 @@ typedef struct {
 #endif
 
 #ifndef NGX_HAVE_SHA1
-#   if defined(nginx_version) && (nginx_version >= 1011002)
+#   if (nginx_version >= 1011002)
 #       define NGX_HAVE_SHA1 1
 #   endif
 #endif
@@ -251,7 +251,7 @@ struct ngx_http_lua_main_conf_s {
                                                 of reqeusts */
     ngx_uint_t           malloc_trim_req_count;
 
-#if defined(nginx_version) && (nginx_version >= 1011011)
+#if (nginx_version >= 1011011)
     /* the following 2 fields are only used by ngx.req.raw_headers() for now */
     ngx_buf_t          **busy_buf_ptrs;
     ngx_int_t            busy_buf_ptr_count;

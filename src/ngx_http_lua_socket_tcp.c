@@ -1839,7 +1839,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
                 goto failed;
             }
 
-#if defined(nginx_version) && nginx_version >= 1007000
+#if (nginx_version >= 1007000)
 
             if (u->ssl_name.len
                 && ngx_ssl_check_host(c, &u->ssl_name) != NGX_OK)
@@ -3758,7 +3758,7 @@ ngx_http_lua_socket_tcp_finalize_read_part(ngx_http_request_t *r,
             ngx_del_event(c->read, NGX_READ_EVENT, NGX_CLOSE_EVENT);
         }
 
-#if defined(nginx_version) && nginx_version >= 1007005
+#if (nginx_version >= 1007005)
         if (c->read->posted) {
 #else
         if (c->read->prev) {
@@ -3811,7 +3811,7 @@ ngx_http_lua_socket_tcp_finalize_write_part(ngx_http_request_t *r,
             ngx_del_event(c->write, NGX_WRITE_EVENT, NGX_CLOSE_EVENT);
         }
 
-#if defined(nginx_version) && nginx_version >= 1007005
+#if (nginx_version >= 1007005)
         if (c->write->posted) {
 #else
         if (c->write->prev) {

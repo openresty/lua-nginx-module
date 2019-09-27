@@ -267,7 +267,7 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && (nginx_version >= 1009000)
+#if (nginx_version >= 1009000)
     ngx_set_connection_log(fc, clcf->error_log);
 
 #else
