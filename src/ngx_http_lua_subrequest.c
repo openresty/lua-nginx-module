@@ -1459,7 +1459,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
     ngx_http_request_t            *sr;
     ngx_http_core_srv_conf_t      *cscf;
 
-#if defined(nginx_version) && (nginx_version >= 1009005)
+#if (nginx_version >= 1009005)
 
     if (r->subrequests == 0) {
 #if defined(NGX_DTRACE) && NGX_DTRACE
@@ -1578,7 +1578,7 @@ ngx_http_lua_subrequest(ngx_http_request_t *r,
 
     sr->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
 
-#if defined(nginx_version) && (nginx_version >= 1009005)
+#if (nginx_version >= 1009005)
     sr->subrequests = r->subrequests - 1;
 #endif
 

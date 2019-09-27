@@ -622,7 +622,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && (nginx_version >= 1009000)
+#if (nginx_version >= 1009000)
     ngx_set_connection_log(r->connection, clcf->error_log);
 
 #else
