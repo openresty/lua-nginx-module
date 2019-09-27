@@ -85,12 +85,6 @@
     ngx_http_lua_hash_str((u_char *) s, sizeof(s) - 1)
 
 
-#ifndef ngx_str_set
-#   define ngx_str_set(str, text)                                            \
-        (str)->len = sizeof(text) - 1; (str)->data = (u_char *) text
-#endif
-
-
 typedef struct {
     ngx_http_lua_ffi_str_t   key;
     ngx_http_lua_ffi_str_t   value;
