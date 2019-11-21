@@ -364,6 +364,10 @@ Build the source with this module:
  make install PREFIX=/opt/nginx
  cd lua-resty-lrucache
  make install PREFIX=/opt/nginx
+
+ # add necessary `lua_package_path` directive to `nginx.conf`, in the http context
+ 
+ lua_package_path "/opt/nginx/luajit/lib/lua/?.lua;;";
 ```
 
 [Back to TOC](#table-of-contents)
