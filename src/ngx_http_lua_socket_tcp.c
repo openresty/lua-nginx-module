@@ -255,10 +255,13 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{req socket object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           req_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 5 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_receiveany);
+    lua_setfield(L, -2, "receiveany");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receiveuntil);
     lua_setfield(L, -2, "receiveuntil");
@@ -278,10 +281,13 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{raw req socket object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           raw_req_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
     lua_setfield(L, -2, "receive");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_receiveany);
+    lua_setfield(L, -2, "receiveany");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_receiveuntil);
     lua_setfield(L, -2, "receiveuntil");

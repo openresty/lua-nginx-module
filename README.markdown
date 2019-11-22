@@ -5151,7 +5151,7 @@ ngx.req.socket
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
-Returns a read-only cosocket object that wraps the downstream connection. Only [receive](#tcpsockreceive) and [receiveuntil](#tcpsockreceiveuntil) methods are supported on this object.
+Returns a read-only cosocket object that wraps the downstream connection. Only [receive](#tcpsockreceive), [receiveany](#tcpsockreceiveany) and [receiveuntil](#tcpsockreceiveuntil) methods are supported on this object.
 
 In case of error, `nil` will be returned as well as a string describing the error.
 

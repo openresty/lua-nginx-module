@@ -4312,7 +4312,7 @@ See also [[#ngx.req.init_body|ngx.req.init_body]].
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Returns a read-only cosocket object that wraps the downstream connection. Only [[#tcpsock:receive|receive]] and [[#tcpsock:receiveuntil|receiveuntil]] methods are supported on this object.
+Returns a read-only cosocket object that wraps the downstream connection. Only [[#tcpsock:receive|receive]], [[#tcpsock:receiveany|receiveany]] and [[#tcpsock:receiveuntil|receiveuntil]] methods are supported on this object.
 
 In case of error, <code>nil</code> will be returned as well as a string describing the error.
 
