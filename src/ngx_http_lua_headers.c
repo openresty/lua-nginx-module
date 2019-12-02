@@ -955,9 +955,10 @@ nomem:
 
 
 int
-ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
-    const u_char *key, size_t key_len, const u_char *value, size_t value_len,
-    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, int override)
+ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
+    size_t key_len, const u_char *value, size_t value_len,
+    ngx_http_lua_ffi_str_t *mvals, size_t mvals_len, int override,
+    char **errmsg)
 {
     u_char                      *p;
     size_t                       len;
@@ -975,11 +976,11 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
 
     k.data = ngx_palloc(r->pool, key_len + 1);
     if (k.data == NULL) {
-        return NGX_ERROR;
+        goto nomem;
     }
+
     ngx_memcpy(k.data, key, key_len);
     k.data[key_len] = '\0';
-
     k.len = key_len;
 
     if (mvals) {
@@ -990,7 +991,7 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
 
                 v.data = ngx_palloc(r->pool, len + 1);
                 if (v.data == NULL) {
-                    return NGX_ERROR;
+                    goto nomem;
                 }
 
                 ngx_memcpy(v.data, p, len);
@@ -1000,21 +1001,20 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
                 if (ngx_http_lua_set_input_header(r, k, v, override)
                     != NGX_OK)
                 {
-                    return NGX_ERROR;
+                    goto failed;
                 }
             }
 
             return NGX_OK;
-
-        } else {
-            v.data = NULL;
-            v.len = 0;
         }
+
+        v.data = NULL;
+        v.len = 0;
 
     } else if (value) {
         v.data = ngx_palloc(r->pool, value_len + 1);
         if (v.data == NULL) {
-            return NGX_ERROR;
+            goto nomem;
         }
 
         ngx_memcpy(v.data, value, value_len);
@@ -1029,10 +1029,20 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r,
     if (ngx_http_lua_set_input_header(r, k, v, override)
         != NGX_OK)
     {
-        return NGX_ERROR;
+        goto failed;
     }
 
     return NGX_OK;
+
+nomem:
+
+    *errmsg = "no memory";
+    return NGX_ERROR;
+
+failed:
+
+    *errmsg = "failed to set header";
+    return NGX_ERROR;
 }
 
 
