@@ -226,12 +226,15 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 {
     ngx_int_t         rc;
 
-    lua_createtable(L, 0, 4 /* nrec */);    /* ngx.socket */
+    lua_createtable(L, 0, 5 /* nrec */);    /* ngx.socket */
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp);
     lua_pushvalue(L, -1);
     lua_setfield(L, -3, "tcp");
     lua_setfield(L, -2, "stream");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_select);
+    lua_setfield(L, -2, "select");
 
     {
         const char  buf[] = "local sock = ngx.socket.tcp()"
@@ -2118,6 +2121,159 @@ ngx_http_lua_socket_tcp_receive_helper(ngx_http_request_t *r,
     return lua_yield(L, 0);
 }
 
+static void
+ngx_http_lua_socket_select_handler(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u)
+{
+    ngx_connection_t            *c;
+    ngx_http_lua_loc_conf_t     *llcf;
+
+    c = u->peer.connection;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket read handler");
+
+    if (c->read->timedout) {
+        c->read->timedout = 0;
+
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "lua tcp socket read timed out");
+        }
+
+        ngx_http_lua_socket_handle_read_error(r, u,
+                                              NGX_HTTP_LUA_SOCKET_FT_TIMEOUT);
+        return;
+    }
+
+#if 1
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+#endif
+
+    ngx_http_lua_socket_handle_read_success(r, u);
+}
+
+// TODO: Maybe remove
+void shallow_copy(lua_State* L, int index) {
+    /*Create a new table on the stack.*/
+    lua_newtable(L);
+
+    /*Now we need to iterate through the table. 
+    Going to steal the Lua API's example of this.*/
+    lua_pushnil(L);
+    while (lua_next(L, index) != 0) {
+    /*Need to duplicate the key, as we need to set it
+    (one pop) and keep it for lua_next (the next pop). Stack looks like table, k, v.*/
+        lua_pushvalue(L, -2);
+        
+        /*Now the stack looks like table, k, v, k. 
+        But now the key is on top. Settable expects the value to be on top. So we 
+        need to do a swaparooney.*/
+        lua_insert(L, -2);
+
+        /*Now we just set them. Stack looks like table,k,k,v, so the table is at -4*/
+        lua_settable(L, -4);
+
+        /*Now the key and value were set in the table, and we popped off, so we have
+        table, k on the stack- which is just what lua_next wants, as it wants to find
+        the next key on top. So we're good.*/
+    }
+}
+
+static int
+ngx_http_lua_socket_tcp_select(lua_State *L)
+{
+    int                                  n;
+    ngx_http_lua_socket_tcp_upstream_t  *u, **array_entry;
+    ngx_array                           *u_array;
+    ngx_http_lua_ctx_t                  *ctx;
+    ngx_http_lua_co_ctx_t               *coctx;
+
+    n = lua_gettop(L);
+    if (n != 1) {
+        return luaL_error(L, "expecting 1 argument "
+                          "(no self object), but got %d", n);
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    ngx_array_create(cf->pool, lua_objlen(L, 1), sizeof(void *));
+    // TODO: Check ngx_array_create return
+
+    lua_pushnil(L);
+    while (lua_next(L, 1) != 0) {
+        lua_rawgeti(L, -1, SOCKET_CTX_INDEX);
+        u = lua_touserdata(L, -1);
+
+        if (u == NULL || u->peer.connection == NULL || u->read_closed) {
+            llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+            if (llcf->log_socket_errors) {
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                            "attempt to receive data on a closed socket: u:%p, "
+                            "c:%p, ft:%d eof:%d",
+                            u, u ? u->peer.connection : NULL,
+                            u ? (int) u->ft_type : 0, u ? (int) u->eof : 0);
+            }
+
+            lua_pushnil(L);
+            lua_pushliteral(L, "closed");
+            return 2;
+        }
+
+        if (u->request != r) {
+            return luaL_error(L, "bad request");
+        }
+
+        // TODO: Check this works?
+        array_entry = (ngx_http_lua_socket_tcp_upstream_t **) ngx_array_push(u_array);
+        *array_entry = u;
+
+        /* removes 'value'; keeps 'key' for next iteration */
+        lua_pop(L, 2);
+    }
+
+    for (i = 1; i < u_array->nelts; i++) {
+        u = u_array->elts[i];
+        
+        u->read_event_handler = ngx_http_lua_socket_select_handler;
+
+        coctx = ctx->cur_co_ctx;
+
+        ngx_http_lua_cleanup_pending_operation(coctx);
+        coctx->cleanup = ngx_http_lua_coctx_cleanup;
+        coctx->data = u_array;
+
+        if (ctx->entered_content_phase) {
+            r->write_event_handler = ngx_http_lua_content_wev_handler;
+        } else {
+            r->write_event_handler = ngx_http_core_run_phases;
+        }
+
+        u->read_co_ctx = coctx;
+        u->read_waiting = 1;
+        u->read_prepare_retvals = ngx_http_lua_socket_tcp_receive_retval_handler;
+
+        dd("setting data to %p, coctx:%p", u, coctx);
+
+        if (u->raw_downstream || u->body_downstream) {
+            ctx->downstream = u;
+        }
+    }
+
+    return lua_yield(L, 0);
+}
 
 static int
 ngx_http_lua_socket_tcp_receiveany(lua_State *L)
@@ -5928,6 +6084,87 @@ ngx_http_lua_socket_tcp_resume_helper(ngx_http_request_t *r, int socket_op)
         /* impossible to reach here */
         return NGX_ERROR;
     }
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket calling prepare retvals handler %p, "
+                   "u:%p", prepare_retvals, u);
+
+    nret = prepare_retvals(r, u, ctx->cur_co_ctx->co);
+    if (socket_op == SOCKET_OP_CONNECT
+        && nret > 1
+        && !u->conn_closed
+        && u->socket_pool != NULL)
+    {
+        u->socket_pool->connections--;
+        ngx_http_lua_socket_tcp_resume_conn_op(u->socket_pool);
+    }
+
+    if (nret == NGX_AGAIN) {
+        return NGX_DONE;
+    }
+
+    c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
+
+    rc = ngx_http_lua_run_thread(vm, r, ctx, nret);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_lua_finalize_request(r, NGX_DONE);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_lua_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_tcp_select_resume(ngx_http_request_t *r)
+{
+    int                                    nret;
+    lua_State                             *vm;
+    ngx_int_t                              rc;
+    ngx_uint_t                             nreqs;
+    ngx_connection_t                      *c;
+    ngx_http_lua_ctx_t                    *ctx;
+    ngx_http_lua_co_ctx_t                 *coctx;
+    ngx_http_lua_socket_tcp_conn_op_ctx_t *conn_op_ctx;
+
+    ngx_http_lua_socket_tcp_retval_handler  prepare_retvals;
+
+    ngx_http_lua_socket_tcp_upstream_t    *u, **array_entry;
+    ngx_array                             *u_array;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp operation done, resuming lua thread");
+
+    coctx = ctx->cur_co_ctx;
+
+    dd("coctx: %p", coctx);
+    u_array = coctx->data;
+
+    for (i = 1; i < u_array->nelts; i++) {
+        u = u_array->elts[i];
+        prepare_retvals = u->read_prepare_retvals;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket calling prepare retvals handler %p, "
