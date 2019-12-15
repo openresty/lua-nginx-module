@@ -2304,6 +2304,7 @@ ngx_http_lua_socket_tcp_select(lua_State *L)
 
     lua_pushnil(L);
     while (lua_next(L, 1) != 0) {
+        luaL_checktype(L, -1, LUA_TTABLE);
         lua_rawgeti(L, -1, SOCKET_CTX_INDEX);
         u = lua_touserdata(L, -1);
 
