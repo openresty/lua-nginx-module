@@ -2170,33 +2170,6 @@ ngx_http_lua_socket_select_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_handle_select_success(r, u);
 }
 
-// TODO: Maybe remove
-void shallow_copy(lua_State* L, int index) {
-    /*Create a new table on the stack.*/
-    lua_newtable(L);
-
-    /*Now we need to iterate through the table. 
-    Going to steal the Lua API's example of this.*/
-    lua_pushnil(L);
-    while (lua_next(L, index) != 0) {
-    /*Need to duplicate the key, as we need to set it
-    (one pop) and keep it for lua_next (the next pop). Stack looks like table, k, v.*/
-        lua_pushvalue(L, -2);
-        
-        /*Now the stack looks like table, k, v, k. 
-        But now the key is on top. Settable expects the value to be on top. So we 
-        need to do a swaparooney.*/
-        lua_insert(L, -2);
-
-        /*Now we just set them. Stack looks like table,k,k,v, so the table is at -4*/
-        lua_settable(L, -4);
-
-        /*Now the key and value were set in the table, and we popped off, so we have
-        table, k on the stack- which is just what lua_next wants, as it wants to find
-        the next key on top. So we're good.*/
-    }
-}
-
 static int
 ngx_http_lua_socket_tcp_receiveany(lua_State *L)
 {
@@ -2297,8 +2270,11 @@ ngx_http_lua_socket_tcp_select(lua_State *L)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    select_ctx = ngx_palloc(r->pool, sizeof(ngx_http_lua_socket_tcp_select_context_t));
-    ngx_array_init(&select_ctx->u_array, r->pool, lua_objlen(L, 1), sizeof(ngx_http_lua_socket_tcp_upstream_t *));
+    select_ctx = ngx_palloc(r->pool, 
+                            sizeof(ngx_http_lua_socket_tcp_select_context_t));
+    ngx_array_init(&select_ctx->u_array, r->pool, 
+                   lua_objlen(L, 1), 
+                   sizeof(ngx_http_lua_socket_tcp_upstream_t *));
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -2326,8 +2302,7 @@ ngx_http_lua_socket_tcp_select(lua_State *L)
             return luaL_error(L, "bad request");
         }
 
-        // TODO: Check this works?
-        array_entry = (ngx_http_lua_socket_tcp_upstream_t **) ngx_array_push(&select_ctx->u_array);
+        array_entry = ngx_array_push(&select_ctx->u_array);
         *array_entry = u;
 
         /* removes 'value'; keeps 'key' for next iteration */
