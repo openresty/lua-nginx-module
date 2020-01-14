@@ -232,6 +232,30 @@ ngx_http_lua_package_path(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+char *
+ngx_http_lua_regex_cache_max_entries(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+#if (NGX_PCRE)
+    return ngx_conf_set_num_slot(cf, cmd, conf);
+#else
+    return NGX_CONF_OK;
+#endif
+}
+
+
+char *
+ngx_http_lua_regex_match_limit(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+#if (NGX_PCRE)
+    return ngx_conf_set_num_slot(cf, cmd, conf);
+#else
+    return NGX_CONF_OK;
+#endif
+}
+
+
 #if defined(NDK) && NDK
 char *
 ngx_http_lua_set_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
