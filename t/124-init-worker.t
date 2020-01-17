@@ -967,25 +967,3 @@ qr/lua close the global Lua VM ([0-9A-F]+)$/,
 --- no_error_log
 [error]
 start privileged agent process
-
-
-
-=== TEST 25: ensure it does not mutate another module's main_conf (github issue #1553)
-https://github.com/openresty/lua-nginx-module/issues/1553
---- http_config
-    init_worker_by_lua_block {
-        return
-    }
---- config
-    location /t {
-        content_by_lua_block {
-            ngx.say("fake_var = ", ngx.var.fake_var)
-        }
-    }
---- request
-GET /t
---- response_body
-fake_var = 1
---- no_error_log
-[error]
-[alert]
