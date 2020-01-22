@@ -1689,7 +1689,7 @@ grep me: b
     ssl_session_store_by_lua_block { ngx.log(ngx.INFO, "hello") }
 
     upstream backend {
-        server 0.0.0.1;
+        server unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         balancer_by_lua_block { ngx.log(ngx.INFO, "hello") }
     }
 
