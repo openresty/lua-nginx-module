@@ -684,6 +684,10 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
     lua_createtable(L, 0, 32 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
 
+    lua_pushliteral(L, ngx_http_lua_tcp_ctx_tables_key);
+    lua_createtable(L, 0, 32 /* nrec */);
+    lua_rawset(L, LUA_REGISTRYINDEX);
+
     /* create the registry entry for the Lua socket connection pool table */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           socket_pool_key));

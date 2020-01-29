@@ -31,6 +31,9 @@
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
 
+/* key in Lua vm registry for all the "socket.ctx" tables */
+#define ngx_http_lua_tcp_ctx_tables_key "ngx_lua_tcp_ctx_tables"
+
 
 #define ngx_http_lua_context_name(c)                                         \
     ((c) == NGX_HTTP_LUA_CONTEXT_SET ? "set_by_lua*"                         \
