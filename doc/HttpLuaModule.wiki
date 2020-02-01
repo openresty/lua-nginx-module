@@ -4321,7 +4321,7 @@ The socket object returned by this method is usually used to read the current re
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
 Chunked request bodies are not yet supported in this API.
 
-Since the <code>v0.9.0</code> release, this function accepts an optional boolean <code>raw</code> argument. When this argument is <code>true</code>, this function returns a full-duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [[#tcpsock:receive|receive]], [[#tcpsock:receiveuntil|receiveuntil]], and [[#tcpsock:send|send]] methods.
+Since the <code>v0.9.0</code> release, this function accepts an optional boolean <code>raw</code> argument. When this argument is <code>true</code>, this function returns a full-duplex cosocket object wrapping around the raw downstream connection socket, upon which you can call the [[#tcpsock:receive|receive]], [[#tcpsock:receiveany|receiveany]], [[#tcpsock:receiveuntil|receiveuntil]], and [[#tcpsock:send|send]] methods.
 
 When the <code>raw</code> argument is <code>true</code>, it is required that no pending data from any previous [[#ngx.say|ngx.say]], [[#ngx.print|ngx.print]], or [[#ngx.send_headers|ngx.send_headers]] calls exists. So if you have these downstream output calls previously, you should call [[#ngx.flush|ngx.flush(true)]] before calling <code>ngx.req.socket(true)</code> to ensure that there is no pending output data. If the request body has not been read yet, then this "raw socket" can also be used to read the request body.
 
