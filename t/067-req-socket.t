@@ -1102,7 +1102,7 @@ GC cycle done
 === TEST 18: receiveany
 --- config
     location = /t {
-        content_by_lua '
+        content_by_lua_block '
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
             if not ok then
@@ -1139,7 +1139,7 @@ GC cycle done
     }
 
     location = /back {
-        content_by_lua '
+        content_by_lua_block '
             ngx.send_headers()
             ngx.flush(true)
 
