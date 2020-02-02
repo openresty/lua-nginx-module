@@ -886,7 +886,7 @@ request body: hey, hello world
         #set $port 5000;
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             local port = ngx.var.port
             local ok, err = sock:connect("127.0.0.1", port)
@@ -895,7 +895,7 @@ request body: hey, hello world
                 return
             end
 
-            local req = "GET /mysock HTTP/1.1\\r\\nUpgrade: mysock\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\nhello"
+            local req = "GET /mysock HTTP/1.1\r\nUpgrade: mysock\r\nHost: localhost\r\nConnection: close\r\n\r\nhello"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
@@ -913,7 +913,7 @@ request body: hey, hello world
                 return
             end
 
-            local reader = sock:receiveuntil("\\r\\n\\r\\n")
+            local reader = sock:receiveuntil("\r\n\r\n")
             local data, err, partial = reader()
             if not data then
                 ngx.say("no response header found")
@@ -933,11 +933,11 @@ request body: hey, hello world
                 ngx.say("failed to close socket: ", err)
                 return
             end
-        ';
+        }
     }
 
     location = /mysock {
-        content_by_lua '
+        content_by_lua_block {
             ngx.status = 101
             ngx.send_headers()
             ngx.flush(true)
@@ -954,12 +954,12 @@ request body: hey, hello world
                 return
             end
 
-            local bytes, err = sock:send("1: received: " .. data .. "\\n")
+            local bytes, err = sock:send("1: received: " .. data .. "\n")
             if not bytes then
                 ngx.log(ngx.ERR, "server: failed to send: ", err)
                 return
             end
-        ';
+        }
         more_clear_headers Date;
     }
 
