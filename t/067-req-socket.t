@@ -1102,7 +1102,7 @@ GC cycle done
 === TEST 18: receiveany
 --- config
     location = /t {
-        content_by_lua_block '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
             if not ok then
@@ -1110,19 +1110,19 @@ GC cycle done
                 return
             end
 
-            local bytes, err = sock:send("POST /back HTTP/1.0\\r\\nHost: localhost\\r\\nContent-Length: 1024\\r\\n\\r\\nabc")
+            local bytes, err = sock:send("POST /back HTTP/1.0\r\nHost: localhost\r\nContent-Length: 1024\r\n\r\nabc")
             if not bytes then
                 ngx.say("failed to send: ", err)
             end
 
             ngx.sleep(0.2)
 
-            local bytes, err = sock:send("hello world\\n")
+            local bytes, err = sock:send("hello world\n")
             if not bytes then
                 ngx.say("failed to send: ", err)
             end
 
-            local reader = sock:receiveuntil("\\r\\n\\r\\n")
+            local reader = sock:receiveuntil("\r\n\r\n")
             local header, err = reader()
             if not header then
                 ngx.say("failed to receive header: ", err)
@@ -1135,11 +1135,11 @@ GC cycle done
                 return
             end
             ngx.say("received: ", line)
-        ';
+        }
     }
 
     location = /back {
-        content_by_lua_block '
+        content_by_lua_block {
             ngx.send_headers()
             ngx.flush(true)
 
@@ -1157,7 +1157,7 @@ GC cycle done
             end
 
             ngx.say("received: ", data)
-        ';
+        }
     }
 
 --- request
