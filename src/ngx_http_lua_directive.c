@@ -353,6 +353,7 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    filter_data->ref = LUA_REFNIL;
     filter_data->size = filter.size;
 
     ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
