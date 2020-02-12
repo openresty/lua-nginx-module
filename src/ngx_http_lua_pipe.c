@@ -30,7 +30,7 @@ static ssize_t ngx_http_lua_pipe_fd_read(ngx_connection_t *c, u_char *buf,
     size_t size);
 static ssize_t ngx_http_lua_pipe_fd_write(ngx_connection_t *c, u_char *buf,
     size_t size);
-static void ngx_http_lua_pipe_close_helper(
+static void ngx_http_lua_pipe_close_helper(ngx_http_lua_pipe_t *pipe,
     ngx_http_lua_pipe_ctx_t *pipe_ctx, ngx_event_t *ev);
 static void ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe);
 static void ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe);
@@ -912,15 +912,21 @@ free_pool:
 
 
 static void
-ngx_http_lua_pipe_close_helper(ngx_http_lua_pipe_ctx_t *pipe_ctx,
-    ngx_event_t *ev)
+ngx_http_lua_pipe_close_helper(ngx_http_lua_pipe_t *pipe,
+    ngx_http_lua_pipe_ctx_t *pipe_ctx, ngx_event_t *ev)
 {
     if (ev->handler != ngx_http_lua_pipe_dummy_event_handler) {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                        "lua pipe abort blocking operation pipe_ctx:%p ev:%p",
                        pipe_ctx, ev);
 
-        pipe_ctx->err_type = PIPE_ERR_ABORTED;
+        if (pipe->dead) {
+            pipe_ctx->err_type = PIPE_ERR_CLOSED;
+
+        } else {
+            pipe_ctx->err_type = PIPE_ERR_ABORTED;
+        }
+
         ngx_post_event(ev, &ngx_posted_events);
         return;
     }
@@ -947,7 +953,7 @@ ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe)
 
     } else if (pipe->stdin_ctx->c != NULL) {
         wev = pipe->stdin_ctx->c->write;
-        ngx_http_lua_pipe_close_helper(pipe->stdin_ctx, wev);
+        ngx_http_lua_pipe_close_helper(pipe, pipe->stdin_ctx, wev);
     }
 }
 
@@ -969,7 +975,7 @@ ngx_http_lua_pipe_close_stdout(ngx_http_lua_pipe_t *pipe)
 
     } else if (pipe->stdout_ctx->c != NULL) {
         rev = pipe->stdout_ctx->c->read;
-        ngx_http_lua_pipe_close_helper(pipe->stdout_ctx, rev);
+        ngx_http_lua_pipe_close_helper(pipe, pipe->stdout_ctx, rev);
     }
 }
 
@@ -991,7 +997,7 @@ ngx_http_lua_pipe_close_stderr(ngx_http_lua_pipe_t *pipe)
 
     } else if (pipe->stderr_ctx->c != NULL) {
         rev = pipe->stderr_ctx->c->read;
-        ngx_http_lua_pipe_close_helper(pipe->stderr_ctx, rev);
+        ngx_http_lua_pipe_close_helper(pipe, pipe->stderr_ctx, rev);
     }
 }
 
