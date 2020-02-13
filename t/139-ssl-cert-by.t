@@ -218,7 +218,7 @@ close: 1 nil
 --- error_log eval
 [
 'lua ssl server name: "test.com"',
-qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
+qr/elapsed in ssl cert by lua: 0.(?:09|1\d)\d+,/,
 ]
 
 --- no_error_log
@@ -2131,12 +2131,12 @@ GET /t
 connected: 1
 ssl handshake: boolean
 --- grep_error_log eval
-qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
 --- grep_error_log_out eval
 [
-qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
-qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
-qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1[01])\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
 ]
 --- no_error_log
 [error]
