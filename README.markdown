@@ -5554,7 +5554,7 @@ ngx.sleep
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
-Sleeps for the specified seconds without blocking. One can specify time resolution up to 0.001 seconds (i.e., one milliseconds).
+Sleeps for the specified seconds without blocking. One can specify time resolution up to 0.001 seconds (i.e., one millisecond).
 
 Behind the scene, this method makes use of the Nginx timers.
 
