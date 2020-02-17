@@ -1710,7 +1710,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "Lua code block missing the closing "
                                    "long bracket \"%*s\", "
-                                   "probably too long lua code block",
+                                   "maybe the lua code is too long?",
                                    b->pos + ovec[1] - p, p);
                 return NGX_ERROR;
             }
