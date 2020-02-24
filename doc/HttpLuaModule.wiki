@@ -3533,10 +3533,8 @@ to be returned when reading <code>ngx.header.Foo</code>.
 
 Note that <code>ngx.header</code> is not a normal Lua table and as such, it is not possible to iterate through it using the Lua <code>ipairs</code> function.
 
-Note: <code>HEADER</code> and <code>VALUE</code> will be truncated if they
-contain the <code>\r</code> or <code>\n</code> characters. The truncated values
-will contain all characters up to (and excluding) the first occurrence of
-<code>\r</code> or <code>\n</code>.
+Note: this function throws a Lua error if <code>HEADER</code> or
+<code>VALUE</code> contain unsafe characters (control characters).
 
 For reading ''request'' headers, use the [[#ngx.req.get_headers|ngx.req.get_headers]] function instead.
 
@@ -3745,6 +3743,9 @@ which is functionally equivalent to
         proxy_pass http://my_backend;
     }
 </geshi>
+
+Note: this function throws a Lua error if the <code>uri</code> argument
+contains unsafe characters (control characters).
 
 Note that it is not possible to use this interface to rewrite URI arguments and that [[#ngx.req.set_uri_args|ngx.req.set_uri_args]] should be used for this instead. For instance, Nginx config
 
@@ -4110,6 +4111,9 @@ is equivalent to
     ngx.req.clear_header("X-Foo")
 </geshi>
 
+Note: this function throws a Lua error if <code>header_name</code> or
+<code>header_value</code> contain unsafe characters (control characters).
+
 == ngx.req.clear_header ==
 
 '''syntax:''' ''ngx.req.clear_header(header_name)''
@@ -4398,12 +4402,8 @@ It is recommended that a coding style that combines this method call with the <c
 
 Issue an <code>HTTP 301</code> or <code>302</code> redirection to <code>uri</code>.
 
-Notice: the <code>uri</code> should not contains <code>\r</code> or <code>\n</code>, otherwise, the characters after <code>\r</code> or <code>\n</code> will be truncated, including the <code>\r</code> or <code>\n</code> bytes themself.
-
-The <code>uri</code> argument will be truncated if it contains the
-<code>\r</code> or <code>\n</code> characters. The truncated value will contain
-all characters up to (and excluding) the first occurrence of <code>\r</code> or
-<code>\n</code>.
+Note: this function throws a Lua error if the <code>uri</code> argument
+contains unsafe characters (control characters).
 
 The optional <code>status</code> parameter specifies the HTTP status code to be used. The following status codes are supported right now:
 

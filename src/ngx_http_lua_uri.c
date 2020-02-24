@@ -16,6 +16,8 @@
 
 
 static int ngx_http_lua_ngx_req_set_uri(lua_State *L);
+static ngx_int_t ngx_http_lua_check_uri_safe(ngx_http_request_t *r,
+    u_char *str, size_t len);
 
 
 void
@@ -53,6 +55,10 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
     if (len == 0) {
         return luaL_error(L, "attempt to use zero-length uri");
+    }
+
+    if (ngx_http_lua_check_uri_safe(r, p, len) != NGX_OK) {
+        return luaL_error(L, "attempt to use unsafe uri");
     }
 
     if (n == 2) {
@@ -106,5 +112,58 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
     return 0;
 }
+
+
+static ngx_inline ngx_int_t
+ngx_http_lua_check_uri_safe(ngx_http_request_t *r, u_char *str, size_t len)
+{
+    size_t           i, buf_len;
+    u_char           c;
+    u_char          *buf, *src = str;
+
+                     /* %00-%1F, " ", %7F */
+
+    static uint32_t  unsafe[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000001, /* 0000 0000 0000 0000  0000 0000 0000 0001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    for (i = 0; i < len; i++, str++) {
+        c = *str;
+        if (unsafe[c >> 5] & (1 << (c & 0x1f))) {
+            buf_len = ngx_http_lua_escape_log(NULL, src, len);
+            buf = ngx_palloc(r->pool, buf_len);
+            if (buf == NULL) {
+                return NGX_ERROR;
+            }
+
+            ngx_http_lua_escape_log(buf, src, len);
+
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "unsafe byte \"0x%uxd\" in uri \"%*s\"",
+                          (unsigned) c, buf_len, buf);
+
+            ngx_pfree(r->pool, buf);
+
+            return NGX_ERROR;
+        }
+    }
+
+    return NGX_OK;
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

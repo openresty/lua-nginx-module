@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 8);
+plan tests => repeat_each() * (blocks() * 3 + 14);
 
 #no_diff();
 #no_long_string();
@@ -323,7 +323,7 @@ Location: http://agentzh.org/foo?a=b&c=d
 
 
 
-=== TEST 18: truncates uri after '\r'
+=== TEST 18: uri contains '\r'
 --- config
     location = /t {
         content_by_lua_block {
@@ -333,16 +333,18 @@ Location: http://agentzh.org/foo?a=b&c=d
     }
 --- request
 GET /t
+--- error_code: 500
 --- response_headers
-Location: http://agentzh.org/foo
+Location:
 foo:
 bar:
---- response_body_like: 302 Found
---- error_code: 302
+--- error_log
+unsafe byte "0xd" in header "http://agentzh.org/foo\x0Dfoo:bar\x0Abar:foo"
+attempt to use unsafe uri
 
 
 
-=== TEST 19: truncates uri after '\n'
+=== TEST 19: uri contains '\n'
 --- config
     location = /t {
         content_by_lua_block {
@@ -352,16 +354,18 @@ bar:
     }
 --- request
 GET /t
+--- error_code: 500
 --- response_headers
-Location: http://agentzh.org/foo
+Location:
 foo:
 bar:
---- response_body_like: 302 Found
---- error_code: 302
+--- error_log
+unsafe byte "0xa" in header "http://agentzh.org/foo\x0Afoo:bar\x0Dbar:foo"
+attempt to use unsafe uri
 
 
 
-=== TEST 20: truncates uri with '\n' as the first character
+=== TEST 20: uri prefix '\n'
 --- config
     location = /t {
         content_by_lua_block {
@@ -371,15 +375,17 @@ bar:
     }
 --- request
 GET /t
+--- error_code: 500
 --- response_headers
 Location:
 foo:
---- response_body_like: 302 Found
---- error_code: 302
+--- error_log
+unsafe byte "0xa" in header "\x0Afoo:http://agentzh.org/foo"
+attempt to use unsafe uri
 
 
 
-=== TEST 21: truncates uri with '\r' as the first character
+=== TEST 21: uri prefix '\r'
 --- config
     location = /t {
         content_by_lua_block {
@@ -389,8 +395,30 @@ foo:
     }
 --- request
 GET /t
+--- error_code: 500
 --- response_headers
 Location:
 foo:
---- response_body_like: 302 Found
---- error_code: 302
+--- error_log
+unsafe byte "0xd" in header "\x0Dfoo:http://agentzh.org/foo"
+attempt to use unsafe uri
+
+
+
+=== TEST 22: uri with invalid characters escapes '"' and '\' characters
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.redirect("\rhttp\\://\"agentzh.org\"/foo");
+            ngx.say("hi")
+        }
+    }
+--- request
+GET /t
+--- error_code: 500
+--- response_headers
+Location:
+foo:
+--- error_log
+unsafe byte "0xd" in header "\x0Dhttp\x5C://\x22agentzh.org\x22/foo"
+attempt to use unsafe uri
