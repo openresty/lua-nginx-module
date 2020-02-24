@@ -997,7 +997,7 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
                 v.data[len] = '\0';
                 v.len = len;
 
-                if (ngx_http_lua_set_input_header(r, k, v, override)
+                if (ngx_http_lua_set_input_header(r, k, v, override && i == 0)
                     != NGX_OK)
                 {
                     goto failed;
