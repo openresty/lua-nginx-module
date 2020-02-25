@@ -325,7 +325,7 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char              *cache_key;
+    u_char              *cache_key = NULL;
     ngx_str_t           *value;
     ngx_str_t            target;
     ndk_set_var_t        filter;
@@ -353,9 +353,6 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    filter_data->ref = LUA_REFNIL;
-    filter_data->size = filter.size;
-
     ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
     ccv.cf = cf;
     ccv.value = &value[2];
@@ -372,9 +369,11 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         if (cache_key == NULL) {
             return NGX_CONF_ERROR;
         }
-
-        filter_data->key = cache_key;
     }
+
+    filter_data->key = cache_key;
+    filter_data->ref = LUA_REFNIL;
+    filter_data->size = filter.size;
 
     ngx_str_null(&filter_data->script);
 
