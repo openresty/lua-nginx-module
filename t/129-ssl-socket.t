@@ -1112,20 +1112,31 @@ SSL reused session
 
 
 === TEST 14: explicit cipher configuration
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_ciphers ECDHE-RSA-AES256-SHA;
-    location /t {
-        #set $port 5000;
-        set $port $TEST_NGINX_MEMCACHED_PORT;
 
+    location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1133,7 +1144,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "openresty.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1141,7 +1152,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1164,14 +1175,13 @@ SSL reused session
             collectgarbage()
         ';
     }
-
 --- request
 GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 58 bytes.
-received: HTTP/1.1 302 Moved Temporarily
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
@@ -1181,8 +1191,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
-['lua ssl server name: "openresty.org"',
-qr/SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
