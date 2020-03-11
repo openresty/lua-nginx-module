@@ -1050,7 +1050,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):14: bad request/
 
 
 
-=== TEST 20: the upper bound of port range should be 2^16 - 1
+=== TEST 19: the upper bound of port range should be 2^16 - 1
 --- config
     location /t {
         content_by_lua_block {
@@ -1070,7 +1070,7 @@ failed to connect: bad port number: 65536
 
 
 
-=== TEST 21: send boolean and nil
+=== TEST 20: send boolean and nil
 --- config
     server_tokens off;
     location /t {
