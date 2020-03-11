@@ -1253,58 +1253,6 @@ ngx_http_lua_shdict_llen(lua_State *L)
 }
 
 
-ngx_shm_zone_t *
-ngx_http_lua_find_zone(u_char *name_data, size_t name_len)
-{
-    ngx_str_t                       *name;
-    ngx_uint_t                       i;
-    ngx_shm_zone_t                  *zone;
-    ngx_http_lua_shm_zone_ctx_t     *ctx;
-    volatile ngx_list_part_t        *part;
-
-    part = &ngx_cycle->shared_memory.part;
-    zone = part->elts;
-
-    for (i = 0; /* void */ ; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            zone = part->elts;
-            i = 0;
-        }
-
-        name = &zone[i].shm.name;
-
-        dd("name: [%.*s] %d", (int) name->len, name->data, (int) name->len);
-        dd("name2: [%.*s] %d", (int) name_len, name_data, (int) name_len);
-
-        if (name->len == name_len
-            && ngx_strncmp(name->data, name_data, name_len) == 0)
-        {
-            ctx = (ngx_http_lua_shm_zone_ctx_t *) zone[i].data;
-            return &ctx->zone;
-        }
-    }
-
-    return NULL;
-}
-
-
-ngx_shm_zone_t *
-ngx_http_lua_ffi_shdict_udata_to_zone(void *zone_udata)
-{
-    if (zone_udata == NULL) {
-        return NULL;
-    }
-
-    return *(ngx_shm_zone_t **) zone_udata;
-}
-
-
 int
 ngx_http_lua_ffi_shdict_store(ngx_shm_zone_t *zone, int op, u_char *key,
     size_t key_len, int value_type, u_char *str_value_buf,
