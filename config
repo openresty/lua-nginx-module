@@ -210,7 +210,7 @@ fi
 # ----------------------------------------
 
 ngx_feature="LuaJIT has FFI"
-ngx_feature_libs="$LUAJIT_LIB/libluajit-5.1.a $luajit_ld_opt"
+ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
 ngx_feature_run=yes
 ngx_feature_incs="#include <lualib.h>
                   #include <lauxlib.h>
