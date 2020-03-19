@@ -241,20 +241,9 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
 void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 #endif
 
-
-static ngx_inline size_t
-ngx_http_lua_safe_header_value_len(u_char *str, size_t len)
-{
-    size_t i;
-
-    for (i = 0; i < len; i++, str++) {
-        if (*str == '\r' || *str == '\n') {
-            return i;
-        }
-    }
-
-    return len;
-}
+size_t ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size);
+ngx_int_t ngx_http_lua_check_header_safe(ngx_http_request_t *r, u_char *str,
+    size_t len);
 
 
 static ngx_inline void

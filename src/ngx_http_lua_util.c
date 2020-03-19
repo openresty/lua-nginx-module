@@ -4261,4 +4261,123 @@ ngx_http_lua_set_sa_restart(ngx_log_t *log)
 #endif
 
 
+size_t
+ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size)
+{
+    size_t          n;
+    u_char          c;
+    static u_char   hex[] = "0123456789ABCDEF";
+
+    static uint32_t escape[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000004, /* 0000 0000 0000 0000  0000 0000 0000 0100 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x10000000, /* 0001 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+    if (dst == NULL) {
+
+        /* find the number of characters to be escaped */
+
+        n = 0;
+
+        while (size) {
+            c = *src;
+            if (escape[c >> 5] & (1 << (c & 0x1f))) {
+                n += 4;
+
+            } else {
+                n++;
+            }
+
+            src++;
+            size--;
+        }
+
+        return n;
+    }
+
+    while (size) {
+        c = *src;
+        if (escape[c >> 5] & (1 << (c & 0x1f))) {
+            *dst++ = '\\';
+            *dst++ = 'x';
+            *dst++ = hex[*src >> 4];
+            *dst++ = hex[*src & 0xf];
+            src++;
+
+        } else {
+            *dst++ = *src++;
+        }
+
+        size--;
+    }
+
+    return 0;
+}
+
+
+ngx_inline ngx_int_t
+ngx_http_lua_check_header_safe(ngx_http_request_t *r, u_char *str, size_t len)
+{
+    size_t           i, buf_len;
+    u_char           c;
+    u_char          *buf, *src = str;
+
+                     /* %00-%1F, %7F */
+
+    static uint32_t  unsafe[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    for (i = 0; i < len; i++, str++) {
+        c = *str;
+        if (unsafe[c >> 5] & (1 << (c & 0x1f))) {
+            buf_len = ngx_http_lua_escape_log(NULL, src, len);
+            buf = ngx_palloc(r->pool, buf_len);
+            if (buf == NULL) {
+                return NGX_ERROR;
+            }
+
+            ngx_http_lua_escape_log(buf, src, len);
+
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "unsafe byte \"0x%uxd\" in header \"%*s\"",
+                          (unsigned) c, buf_len, buf);
+
+            ngx_pfree(r->pool, buf);
+
+            return NGX_ERROR;
+        }
+    }
+
+    return NGX_OK;
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

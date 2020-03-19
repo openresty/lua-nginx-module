@@ -247,3 +247,25 @@ Cookie: boo=123; foo=bar
 
 --- no_error_log
 [error]
+
+
+
+=== TEST 7: set multiple custom cookies (with unsafe values)
+--- config
+    location /t {
+        rewrite_by_lua_block {
+           ngx.req.set_header("Cookie", {"boo=123\nfoo", "foo=bar\rbar"})
+        }
+        echo "Cookie foo: $cookie_foo";
+        echo "Cookie baz: $cookie_baz";
+        echo "Cookie boo: $cookie_boo";
+        echo "Cookie: $http_cookie";
+    }
+--- request
+GET /t
+--- error_code: 500
+--- error_log
+unsafe byte "0xa" in header "boo=123\x0Afoo"
+failed to set header
+--- no_error_log
+[crit]

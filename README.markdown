@@ -4251,10 +4251,8 @@ to be returned when reading `ngx.header.Foo`.
 
 Note that `ngx.header` is not a normal Lua table and as such, it is not possible to iterate through it using the Lua `ipairs` function.
 
-Note: `HEADER` and `VALUE` will be truncated if they
-contain the `\r` or `\n` characters. The truncated values
-will contain all characters up to (and excluding) the first occurrence of
-`\r` or `\n`.
+Note: this function throws a Lua error if `HEADER` or
+`VALUE` contain unsafe characters (control characters).
 
 For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers) function instead.
 
@@ -4498,6 +4496,9 @@ which is functionally equivalent to
      proxy_pass http://my_backend;
  }
 ```
+
+Note: this function throws a Lua error if the `uri` argument
+contains unsafe characters (control characters).
 
 Note that it is not possible to use this interface to rewrite URI arguments and that [ngx.req.set_uri_args](#ngxreqset_uri_args) should be used for this instead. For instance, Nginx config
 
@@ -4914,6 +4915,9 @@ is equivalent to
  ngx.req.clear_header("X-Foo")
 ```
 
+Note: this function throws a Lua error if `header_name` or
+`header_value` contain unsafe characters (control characters).
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.req.clear_header
@@ -5247,12 +5251,8 @@ ngx.redirect
 
 Issue an `HTTP 301` or `302` redirection to `uri`.
 
-Notice: the `uri` should not contains `\r` or `\n`, otherwise, the characters after `\r` or `\n` will be truncated, including the `\r` or `\n` bytes themself.
-
-The `uri` argument will be truncated if it contains the
-`\r` or `\n` characters. The truncated value will contain
-all characters up to (and excluding) the first occurrence of `\r` or
-`\n`.
+Note: this function throws a Lua error if the `uri` argument
+contains unsafe characters (control characters).
 
 The optional `status` parameter specifies the HTTP status code to be used. The following status codes are supported right now:
 

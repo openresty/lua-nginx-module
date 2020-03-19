@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 18);
+plan tests => repeat_each() * (blocks() * 2 + 20);
 
 no_root_location();
 
@@ -1554,3 +1554,39 @@ GET /lua
 args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
 --- no_error_log
 [error]
+
+
+
+=== TEST 58: set_uri with unsafe uri (with \t)
+--- config
+    location /t {
+        content_by_lua_block {
+            local new_uri = "/foo\tbar"
+            ngx.req.set_uri(new_uri)
+            ngx.say(ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- error_code: 500
+--- error_log
+unsafe byte "0x9" in uri "/foo\x09bar"
+attempt to use unsafe uri
+
+
+
+=== TEST 59: set_uri with unsafe uri (with " ")
+--- config
+    location /t {
+        content_by_lua_block {
+            local new_uri = "/foo bar"
+            ngx.req.set_uri(new_uri)
+            ngx.say(ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- error_code: 500
+--- error_log
+unsafe byte "0x20" in uri "/foo bar"
+attempt to use unsafe uri
