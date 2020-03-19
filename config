@@ -216,10 +216,12 @@ ngx_feature_libs="$ngx_module_libs"
 ngx_feature_run=no
 ngx_feature_incs="#include <lualib.h>
                   #include <lauxlib.h>
-                  #include <assert.h>"
+                  #include <assert.h>
+                  "
 ngx_feature_test="lua_State *L = luaL_newstate();
                   assert(L != NULL);
-                  luaopen_ffi(L);"
+                  luaopen_ffi(L);
+                  "
 
 . auto/feature
 
