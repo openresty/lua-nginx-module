@@ -171,3 +171,9 @@ tthread
 addr2line
 hup
 theaders
+src/ngx_http_lua_autoconf.h
+src/autoconf.h
+src/filters.c
+src/filters.h
+src/ringbuf.c
+src/ringbuf.h
