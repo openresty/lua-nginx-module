@@ -250,7 +250,7 @@ Cookie: boo=123; foo=bar
 
 
 
-=== TEST 7: set multiple custom cookies (with unsafe values)
+=== TEST 7: set multiple custom cookies with unsafe values (with '\n' and 'r')
 --- config
     location /t {
         rewrite_by_lua_block {

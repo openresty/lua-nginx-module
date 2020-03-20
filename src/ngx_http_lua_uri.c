@@ -16,7 +16,7 @@
 
 
 static int ngx_http_lua_ngx_req_set_uri(lua_State *L);
-static ngx_int_t ngx_http_lua_check_uri_safe(ngx_http_request_t *r,
+static ngx_inline ngx_int_t ngx_http_lua_check_unsafe_uri(ngx_http_request_t *r,
     u_char *str, size_t len);
 
 
@@ -57,7 +57,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
         return luaL_error(L, "attempt to use zero-length uri");
     }
 
-    if (ngx_http_lua_check_uri_safe(r, p, len) != NGX_OK) {
+    if (ngx_http_lua_check_unsafe_uri(r, p, len) != NGX_OK) {
         return luaL_error(L, "attempt to use unsafe uri");
     }
 
@@ -115,7 +115,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
 
 
 static ngx_inline ngx_int_t
-ngx_http_lua_check_uri_safe(ngx_http_request_t *r, u_char *str, size_t len)
+ngx_http_lua_check_unsafe_uri(ngx_http_request_t *r, u_char *str, size_t len)
 {
     size_t           i, buf_len;
     u_char           c;

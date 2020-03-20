@@ -2033,7 +2033,7 @@ new
 
 
 
-=== TEST 62: set input header with unsafe key
+=== TEST 62: unsafe header name (with '\r')
 --- config
     location /req-header {
         rewrite_by_lua_block {
@@ -2051,7 +2051,7 @@ failed to set header
 
 
 
-=== TEST 63: set input header with unsafe value
+=== TEST 63: unsafe header value (with '\n')
 --- config
     location /req-header {
         rewrite_by_lua_block {
@@ -2069,7 +2069,7 @@ failed to set header
 
 
 
-=== TEST 64: set input header with multiple unsafe values
+=== TEST 64: multiple unsafe header values (with '\n' and '\t')
 --- config
     location /req-header {
         rewrite_by_lua_block {
@@ -2089,7 +2089,7 @@ failed to set header
 
 
 
-=== TEST 65: unsafe value errors escape '"' and '\' characters
+=== TEST 65: unsafe names/values logging escapes '"' and '\' characters
 --- config
     location /req-header {
         rewrite_by_lua_block {

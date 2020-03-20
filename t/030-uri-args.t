@@ -1557,7 +1557,7 @@ args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
 
 
 
-=== TEST 58: set_uri with unsafe uri (with \t)
+=== TEST 58: set_uri with unsafe uri (with '\t')
 --- config
     location /t {
         content_by_lua_block {
@@ -1575,7 +1575,7 @@ attempt to use unsafe uri
 
 
 
-=== TEST 59: set_uri with unsafe uri (with " ")
+=== TEST 59: set_uri with unsafe uri (with ' ')
 --- config
     location /t {
         content_by_lua_block {
