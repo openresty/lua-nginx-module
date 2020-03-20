@@ -323,7 +323,7 @@ Location: http://agentzh.org/foo?a=b&c=d
 
 
 
-=== TEST 18: uri contains '\r'
+=== TEST 18: unsafe uri (with '\r')
 --- config
     location = /t {
         content_by_lua_block {
@@ -344,7 +344,7 @@ attempt to use unsafe uri
 
 
 
-=== TEST 19: uri contains '\n'
+=== TEST 19: unsafe uri (with '\n')
 --- config
     location = /t {
         content_by_lua_block {
@@ -365,7 +365,7 @@ attempt to use unsafe uri
 
 
 
-=== TEST 20: uri prefix '\n'
+=== TEST 20: unsafe uri (with prefix '\n')
 --- config
     location = /t {
         content_by_lua_block {
@@ -385,7 +385,7 @@ attempt to use unsafe uri
 
 
 
-=== TEST 21: uri prefix '\r'
+=== TEST 21: unsafe uri (with prefix '\r')
 --- config
     location = /t {
         content_by_lua_block {
@@ -405,7 +405,7 @@ attempt to use unsafe uri
 
 
 
-=== TEST 22: uri with invalid characters escapes '"' and '\' characters
+=== TEST 22: unsafe uri logging escapes '"' and '\' characters
 --- config
     location = /t {
         content_by_lua_block {

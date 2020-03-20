@@ -491,8 +491,8 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    if (ngx_http_lua_check_header_safe(r, key.data, key.len) != NGX_OK
-        || ngx_http_lua_check_header_safe(r, value.data, value.len) != NGX_OK)
+    if (ngx_http_lua_check_unsafe_header(r, key.data, key.len) != NGX_OK
+        || ngx_http_lua_check_unsafe_header(r, value.data, value.len) != NGX_OK)
     {
         return NGX_ERROR;
     }

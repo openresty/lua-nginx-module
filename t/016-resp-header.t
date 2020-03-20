@@ -1966,7 +1966,7 @@ Content-Type: application/json
 
 
 
-=== TEST 87: value contains '\r'
+=== TEST 87: unsafe header value (with '\r')
 --- config
     location = /t {
         content_by_lua_block {
@@ -1987,7 +1987,7 @@ failed to set header
 
 
 
-=== TEST 88: value contains '\n'
+=== TEST 88: unsafe header value (with '\n')
 --- config
     location = /t {
         content_by_lua_block {
@@ -2008,7 +2008,7 @@ failed to set header
 
 
 
-=== TEST 89: header name contains '\r'
+=== TEST 89: unsafe header name (with '\r')
 --- config
     location = /t {
         content_by_lua_block {
@@ -2029,7 +2029,7 @@ failed to set header
 
 
 
-=== TEST 90: truncates key after '\n'
+=== TEST 90: unsafe header name (with '\n')
 --- config
     location = /t {
         content_by_lua_block {
@@ -2050,7 +2050,7 @@ failed to set header
 
 
 
-=== TEST 91: header name: '\r' as the first character
+=== TEST 91: unsafe header name (with prefix '\r')
 --- config
     location = /t {
         content_by_lua_block {
@@ -2071,7 +2071,7 @@ failed to set header
 
 
 
-=== TEST 92: header name: '\n' as the first character
+=== TEST 92: unsafe header name (with prefix '\n')
 --- config
     location = /t {
         content_by_lua_block {
@@ -2092,7 +2092,7 @@ failed to set header
 
 
 
-=== TEST 93: truncates multiple values if they contain '\r' or '\n'
+=== TEST 93: multiple unsafe header values (with '\n' and '\r')
 --- config
     location = /t {
         content_by_lua_block {
