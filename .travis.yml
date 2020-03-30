@@ -1,4 +1,3 @@
-sudo: required
 dist: xenial
 
 os: linux
@@ -47,14 +46,14 @@ env:
     - LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
-  matrix:
+  jobs:
     - NGINX_VERSION=1.17.8 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
     - NGINX_VERSION=1.17.8 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
     - NGINX_VERSION=1.17.8 OPENSSL_VER=1.1.1e OPENSSL_PATCH_VER=1.1.1e
 
 services:
- - memcache
- - redis-server
+ - memcached
+ - redis
  - mysql
 
 before_install:
