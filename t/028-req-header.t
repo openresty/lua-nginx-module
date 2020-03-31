@@ -2046,7 +2046,7 @@ new
 GET /req-header
 --- error_code: 500
 --- error_log
-unsafe byte "0xd" in header "Foo\x0Dfoo"
+unsafe byte "0xd" in header name "Foo\x0Dfoo"
 failed to set header
 
 
@@ -2064,7 +2064,7 @@ failed to set header
 GET /req-header
 --- error_code: 500
 --- error_log
-unsafe byte "0xa" in header "new\x0Avalue"
+unsafe byte "0xa" in header value "new\x0Avalue"
 failed to set header
 
 
@@ -2084,7 +2084,7 @@ failed to set header
 GET /req-header
 --- error_code: 500
 --- error_log
-unsafe byte "0xa" in header "new\x0Avalue"
+unsafe byte "0xa" in header value "new\x0Avalue"
 failed to set header
 
 
@@ -2104,5 +2104,5 @@ failed to set header
 GET /req-header
 --- error_code: 500
 --- error_log
-unsafe byte "0xa" in header "\x22new\x0Avalue\x5C\x22"
+unsafe byte "0xa" in header value "\x22new\x0Avalue\x5C\x22"
 failed to set header

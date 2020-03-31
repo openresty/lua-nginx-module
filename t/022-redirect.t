@@ -339,8 +339,8 @@ Location:
 foo:
 bar:
 --- error_log
-unsafe byte "0xd" in header "http://agentzh.org/foo\x0Dfoo:bar\x0Abar:foo"
-attempt to use unsafe uri
+unsafe byte "0xd" in redirect uri "http://agentzh.org/foo\x0Dfoo:bar\x0Abar:foo"
+attempt to set unsafe redirect uri
 
 
 
@@ -360,8 +360,8 @@ Location:
 foo:
 bar:
 --- error_log
-unsafe byte "0xa" in header "http://agentzh.org/foo\x0Afoo:bar\x0Dbar:foo"
-attempt to use unsafe uri
+unsafe byte "0xa" in redirect uri "http://agentzh.org/foo\x0Afoo:bar\x0Dbar:foo"
+attempt to set unsafe redirect uri
 
 
 
@@ -380,8 +380,8 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xa" in header "\x0Afoo:http://agentzh.org/foo"
-attempt to use unsafe uri
+unsafe byte "0xa" in redirect uri "\x0Afoo:http://agentzh.org/foo"
+attempt to set unsafe redirect uri
 
 
 
@@ -400,8 +400,8 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xd" in header "\x0Dfoo:http://agentzh.org/foo"
-attempt to use unsafe uri
+unsafe byte "0xd" in redirect uri "\x0Dfoo:http://agentzh.org/foo"
+attempt to set unsafe redirect uri
 
 
 
@@ -420,5 +420,5 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xd" in header "\x0Dhttp\x5C://\x22agentzh.org\x22/foo"
-attempt to use unsafe uri
+unsafe byte "0xd" in redirect uri "\x0Dhttp\x5C://\x22agentzh.org\x22/foo"
+attempt to set unsafe redirect uri

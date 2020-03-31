@@ -490,7 +490,8 @@ ngx_inet_get_port(struct sockaddr *sa)
 
 
 static ngx_inline ngx_int_t
-ngx_http_lua_check_unsafe_header(ngx_http_request_t *r, u_char *str, size_t len)
+ngx_http_lua_check_unsafe_string(ngx_http_request_t *r, u_char *str, size_t len,
+    const char *name)
 {
     size_t           i, buf_len;
     u_char           c;
@@ -528,8 +529,8 @@ ngx_http_lua_check_unsafe_header(ngx_http_request_t *r, u_char *str, size_t len)
             ngx_http_lua_escape_log(buf, src, len);
 
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "unsafe byte \"0x%uxd\" in header \"%*s\"",
-                          (unsigned) c, buf_len, buf);
+                          "unsafe byte \"0x%uxd\" in %s \"%*s\"",
+                          (unsigned) c, name, buf_len, buf);
 
             ngx_pfree(r->pool, buf);
 

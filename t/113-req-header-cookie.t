@@ -265,7 +265,7 @@ Cookie: boo=123; foo=bar
 GET /t
 --- error_code: 500
 --- error_log
-unsafe byte "0xa" in header "boo=123\x0Afoo"
+unsafe byte "0xa" in header value "boo=123\x0Afoo"
 failed to set header
 --- no_error_log
 [crit]

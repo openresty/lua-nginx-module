@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 20);
+plan tests => repeat_each() * (blocks() * 2 + 21);
 
 no_root_location();
 
@@ -1571,15 +1571,15 @@ args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
 --- error_code: 500
 --- error_log
 unsafe byte "0x9" in uri "/foo\x09bar"
-attempt to use unsafe uri
+attempt to set unsafe uri
 
 
 
-=== TEST 59: set_uri with unsafe uri (with ' ')
+=== TEST 59: set_uri with unsafe uri (with '\0')
 --- config
     location /t {
         content_by_lua_block {
-            local new_uri = "/foo bar"
+            local new_uri = '\0foo'
             ngx.req.set_uri(new_uri)
             ngx.say(ngx.var.uri)
         }
@@ -1588,5 +1588,32 @@ attempt to use unsafe uri
     GET /t
 --- error_code: 500
 --- error_log
-unsafe byte "0x20" in uri "/foo bar"
-attempt to use unsafe uri
+unsafe byte "0x0" in uri "\x00foo"
+attempt to set unsafe uri
+
+
+
+=== TEST 60: set_uri with safe uri (with ' ')
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            local new_uri = "/foo bar"
+            ngx.req.set_uri(new_uri)
+        }
+
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+
+    location /foo {
+        content_by_lua_block {
+            ngx.say("request_uri: ", ngx.var.request_uri)
+            ngx.say("uri: ", ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- response_body
+request_uri: /foo%20bar
+uri: /foo bar
+--- no_error_log
+[error]

@@ -1982,7 +1982,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xd" in header "value\x0Dfoo:bar\x0Abar:foo"
+unsafe byte "0xd" in header value "value\x0Dfoo:bar\x0Abar:foo"
 failed to set header
 
 
@@ -2003,7 +2003,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xa" in header "value\x0Afoo:bar\x0Dbar:foo"
+unsafe byte "0xa" in header value "value\x0Afoo:bar\x0Dbar:foo"
 failed to set header
 
 
@@ -2024,7 +2024,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xd" in header "header: value\x0Dfoo:bar\x0Abar:foo"
+unsafe byte "0xd" in header name "header: value\x0Dfoo:bar\x0Abar:foo"
 failed to set header
 
 
@@ -2045,7 +2045,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xa" in header "header: value\x0Afoo:bar\x0Dbar:foo"
+unsafe byte "0xa" in header name "header: value\x0Afoo:bar\x0Dbar:foo"
 failed to set header
 
 
@@ -2066,7 +2066,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xd" in header "\x0Dheader: value\x0Dfoo:bar\x0Abar:foo"
+unsafe byte "0xd" in header name "\x0Dheader: value\x0Dfoo:bar\x0Abar:foo"
 failed to set header
 
 
@@ -2087,7 +2087,7 @@ header:
 foo:
 bar:
 --- error_log
-unsafe byte "0xa" in header "\x0Aheader: value\x0Afoo:bar\x0Dbar:foo"
+unsafe byte "0xa" in header name "\x0Aheader: value\x0Afoo:bar\x0Dbar:foo"
 failed to set header
 
 
@@ -2111,5 +2111,5 @@ foo:
 xx:
 xxx:
 --- error_log
-unsafe byte "0xa" in header "foo\x0Axx:bar"
+unsafe byte "0xa" in header value "foo\x0Axx:bar"
 failed to set header

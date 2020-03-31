@@ -658,8 +658,10 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    if (ngx_http_lua_check_unsafe_header(r, key.data, key.len) != NGX_OK
-        || ngx_http_lua_check_unsafe_header(r, value.data, value.len) != NGX_OK)
+    if (ngx_http_lua_check_unsafe_string(r, key.data, key.len,
+                                         "header name") != NGX_OK
+        || ngx_http_lua_check_unsafe_string(r, value.data, value.len,
+                                            "header value") != NGX_OK)
     {
         return NGX_ERROR;
     }
