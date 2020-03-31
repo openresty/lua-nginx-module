@@ -8399,7 +8399,7 @@ This API was first introduced in the `0.9.20` release.
 ngx.worker.id
 -------------
 
-**syntax:** *count = ngx.worker.id()*
+**syntax:** *id = ngx.worker.id()*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_worker_by_lua&#42;*
 
