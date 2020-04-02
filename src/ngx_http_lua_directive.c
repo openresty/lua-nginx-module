@@ -1228,8 +1228,6 @@ ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf = conf;
 
-    dd("enter");
-
     /*  must specify a content handler */
     if (cmd->post == NULL) {
         return NGX_CONF_ERROR;

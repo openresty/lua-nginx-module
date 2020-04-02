@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1);
+plan tests => repeat_each() * (blocks() * 2) + 3;
 
 #no_diff();
 #no_long_string();
@@ -183,7 +183,7 @@ init_worker
 --- http_config
     exit_worker_by_lua_block {
         local phase = ngx.get_phase()
-        ngx.log(ngx.NOTICE, phase)
+        ngx.log(ngx.ERR, phase)
     }
 --- config
     location /lua {
@@ -196,4 +196,4 @@ GET /lua
 --- response_body
 ok
 --- shutdown_error_log
-exit_worker
+exit_worker_by_lua:3: exit_worker
