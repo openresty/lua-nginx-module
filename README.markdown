@@ -1512,6 +1512,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
                  return
              end
          end
+
+         -- do something
      end
 
      local hdl, err = new_timer(delay, check)
@@ -1519,6 +1521,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
          log(ERR, "failed to create timer: ", err)
          return
      end
+
+     -- do something
  ';
 ```
 
@@ -6236,6 +6240,8 @@ Here is a small example to demonstrate its basic usage:
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
+
+ -- do something
 ```
 
 More often we just put it into a Lua loop:
@@ -6299,6 +6305,8 @@ When the `replace` is a string, then it is treated as a special template for str
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
+
+ -- do something
 ```
 
 where `$0` referring to the whole substring matched by the pattern and `$1` referring to the first parenthesized capturing substring.
@@ -6364,6 +6372,8 @@ Here is some examples:
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
+
+ -- do something
 ```
 
 ```lua
@@ -7074,6 +7084,8 @@ Since the `v0.7.18` release, connecting to a datagram unix domain socket file is
      ngx.say("failed to connect to the datagram unix domain socket: ", err)
      return
  end
+
+ -- do something
 ```
 
 assuming the datagram service is listening on the unix domain socket file `/tmp/some-datagram-service.sock` and the client socket will use the "autobind" feature on Linux.
@@ -7278,6 +7290,8 @@ Connecting to a Unix Domain Socket file is also possible:
      ngx.say("failed to connect to the memcached unix domain socket: ", err)
      return
  end
+
+ -- do something
 ```
 
 assuming memcached (or something else) is listening on the unix domain socket file `/tmp/memcached.sock`.
@@ -8156,6 +8170,8 @@ Here is a simple example:
              ngx.log(ngx.ERR, "failed to create timer: ", err)
              return
          end
+
+         -- do something
      }
  }
 ```
@@ -8183,6 +8199,8 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
      ngx.log(ngx.ERR, "failed to create the timer: ", err)
      return
  end
+
+ -- do something
 ```
 
 It is recommended, however, to use the [ngx.timer.every](#ngxtimerevery) API function
