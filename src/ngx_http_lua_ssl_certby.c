@@ -1308,12 +1308,11 @@ ngx_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
 
 int
-ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r,
-    int depth,
-    void *cdata, char **err)
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, int depth,
+    void *ca_certs, char **err)
 {
     ngx_ssl_conn_t         *ssl_conn;
-    STACK_OF(X509)         *chain = cdata;
+    STACK_OF(X509)         *chain = ca_certs;
     STACK_OF(X509_NAME)    *name_chain = NULL;
     X509                   *x509 = NULL;
     X509_NAME              *subject = NULL;
