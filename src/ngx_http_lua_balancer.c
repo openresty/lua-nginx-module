@@ -753,4 +753,39 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
 }
 
 
+int
+ngx_http_lus_ffi_balancer_disable_ssl(ngx_http_request_t *r, char **err)
+{
+    ngx_http_lua_ctx_t    *ctx;
+    ngx_http_upstream_t   *u;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        *err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    u->ssl = 0;
+    u->schema.len = 7;
+
+    return NGX_OK;
+}
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
