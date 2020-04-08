@@ -1513,7 +1513,7 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
              end
          end
 
-         -- do something
+         -- do something in timer
      end
 
      local hdl, err = new_timer(delay, check)
@@ -1522,7 +1522,7 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
          return
      end
 
-     -- do something
+     -- other job in init_worker_by_lua
  ';
 ```
 
@@ -6240,8 +6240,6 @@ Here is a small example to demonstrate its basic usage:
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
-
- -- do something
 ```
 
 More often we just put it into a Lua loop:
@@ -6298,15 +6296,13 @@ When the `replace` is a string, then it is treated as a special template for str
 ```lua
 
  local newstr, n, err = ngx.re.sub("hello, 1234", "([0-9])[0-9]", "[$0][$1]")
- if newstr then
-     -- newstr == "hello, [12][1]34"
-     -- n == 1
- else
+ if not newstr then
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
 
- -- do something
+     -- newstr == "hello, [12][1]34"
+     -- n == 1
 ```
 
 where `$0` referring to the whole substring matched by the pattern and `$1` referring to the first parenthesized capturing substring.
@@ -6365,15 +6361,13 @@ Here is some examples:
 ```lua
 
  local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", "[$0,$1]", "i")
- if newstr then
-     -- newstr == "[hello,h], [world,w]"
-     -- n == 2
- else
+ if not newstr then
      ngx.log(ngx.ERR, "error: ", err)
      return
  end
 
- -- do something
+     -- newstr == "[hello,h], [world,w]"
+     -- n == 2
 ```
 
 ```lua
@@ -7085,7 +7079,8 @@ Since the `v0.7.18` release, connecting to a datagram unix domain socket file is
      return
  end
 
- -- do something
+ -- do something after connect
+ -- such as sock:send or sock:receive
 ```
 
 assuming the datagram service is listening on the unix domain socket file `/tmp/some-datagram-service.sock` and the client socket will use the "autobind" feature on Linux.
@@ -7291,7 +7286,8 @@ Connecting to a Unix Domain Socket file is also possible:
      return
  end
 
- -- do something
+ -- do something after connect
+ -- such as sock:send or sock:receive
 ```
 
 assuming memcached (or something else) is listening on the unix domain socket file `/tmp/memcached.sock`.
@@ -8171,7 +8167,7 @@ Here is a simple example:
              return
          end
 
-         -- do something
+         -- other job in log_by_lua_block
      }
  }
 ```
@@ -8192,6 +8188,8 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
          ngx.log(ngx.ERR, "failed to create the timer: ", err)
          return
      end
+
+     -- do something in timer
  end
 
  local ok, err = ngx.timer.at(delay, handler)
@@ -8200,7 +8198,7 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
      return
  end
 
- -- do something
+ -- do other jobs
 ```
 
 It is recommended, however, to use the [ngx.timer.every](#ngxtimerevery) API function
