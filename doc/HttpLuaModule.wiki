@@ -1289,9 +1289,9 @@ This hook no longer runs in the cache manager and cache loader processes since t
 
 '''phase:''' ''exiting-worker''
 
-Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
+Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled. When the master process is disabled, this hook will before run Nginx process exiting.
 
-This hook is often used to release resources when [[#init_worker_by_lua_block|init_worker_by_lua*]] create resources, To prevent the worker exit abnormal.
+This hook is often used to release resources when [[#init_worker_by_lua|init_worker_by_lua*]] create resources, to prevent the worker from exiting abnormally.
 
 For example,
 
