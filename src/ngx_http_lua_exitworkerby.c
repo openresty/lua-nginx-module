@@ -26,7 +26,15 @@ ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
     if (lmcf == NULL
         || lmcf->exit_worker_handler == NULL
-        || lmcf->lua == NULL)
+        || lmcf->lua == NULL
+#if !(NGX_WIN32)
+        || (ngx_process == NGX_PROCESS_HELPER
+#   ifdef HAVE_PRIVILEGED_PROCESS_PATCH
+            && !ngx_is_privileged_agent
+#   endif
+           )
+#endif  /* NGX_WIN32 */
+       )
     {
         return;
     }
@@ -89,13 +97,13 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
 
 
 ngx_int_t
-ngx_http_lua_exit_worker_by_file(ngx_log_t *log,
-    ngx_http_lua_main_conf_t *lmcf, lua_State *L)
+ngx_http_lua_exit_worker_by_file(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
+    lua_State *L)
 {
     int         status;
 
     status = luaL_loadfile(L, (char *) lmcf->exit_worker_src.data)
              || ngx_http_lua_do_call(log, L);
 
-    return ngx_http_lua_report(log, L, status, "exit_worker_by_file");
+    return ngx_http_lua_report(log, L, status, "exit_worker_by_lua_file");
 }

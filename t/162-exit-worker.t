@@ -2,9 +2,10 @@
 
 use Test::Nginx::Socket::Lua;
 
+master_on();
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 7);
 
 #log_level("warn");
 no_long_string();
@@ -87,7 +88,7 @@ hello, world
 
         local ok, err = ngx.timer.at(0, bar)
         if not ok then
-            ngx.log(ngx.ERR, "failed to create timer: " .. err)
+            ngx.log(ngx.ERR, "failed to create timer: ", err)
         else
             ngx.log(ngx.NOTICE, "success")
         end
@@ -101,19 +102,20 @@ GET /t
 --- response_body
 ok
 --- no_error_log
+[error]
 
 
 
 === TEST 5: exit_worker_by_lua use shdict
 --- http_config
-    lua_shared_dict dog 10m;
+    lua_shared_dict dog 1m;
     exit_worker_by_lua_block {
         local dog = ngx.shared.dog
         local val, err = dog:get("foo")
         if not val then
-            ngx.log(ngx.ERR, "failed get shdict: " .. err)
+            ngx.log(ngx.ERR, "failed get shdict: ", err)
         else
-            ngx.log(ngx.NOTICE, "get val: " .. val)
+            ngx.log(ngx.NOTICE, "get val: ", val)
         end
     }
 --- config
@@ -130,3 +132,60 @@ GET /t
 ok
 --- shutdown_error_log
 get val: 100
+
+
+
+=== TEST 6: skip in cache processes (with exit worker and privileged agent)
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
+
+    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+
+    init_by_lua_block {
+        assert(require "ngx.process".enable_privileged_agent())
+    }
+
+    exit_worker_by_lua_block {
+        ngx.log(ngx.NOTICE, "hello from exit worker by lua")
+    }
+--- config
+    location = /t {
+        return 200;
+    }
+--- request
+    GET /t
+--- no_error_log
+[error]
+--- shutdown_error_log eval
+[
+qr/cache loader process \d+ exited/,
+qr/cache manager process \d+ exited/,
+qr/hello from exit worker by lua$/,
+qr/hello from exit worker by lua$/,
+qr/privileged agent process \d+ exited/,
+]
+
+
+
+=== TEST 7: skipin cache processes (with init worker but without privileged agent)
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
+
+    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+
+    exit_worker_by_lua_block {
+        ngx.log(ngx.WARN, "hello from exit worker by lua")
+    }
+--- config
+    location = /t {
+        return 200;
+    }
+--- request
+    GET /t
+--- no_error_log
+[error]
+start privileged agent process
+--- shutdown_error_log eval
+[
+qr/hello from exit worker by lua$/,
+]

@@ -1589,9 +1589,9 @@ exit_worker_by_lua_block
 
 **phase:** *exiting-worker*
 
-Runs the specified Lua code upon every Nginx worker process's exiting when the master process is enabled.
+Runs the specified Lua code upon every Nginx worker process's exit when the master process is enabled. When the master process is disabled, this hook will before run Nginx process exiting.
 
-This hook is often used to release resources when [init_worker_by_lua*](#init_worker_by_lua_block) create resources, To prevent the worker exit abnormal.
+This hook is ogten used to release resources allocated by each worker (e.g. resources allocated by [init_worker_by_lua*](#init_worker_by_lua)), or to prevent workers from exiting abnormally.
 
 For example,
 
@@ -1607,7 +1607,7 @@ For example,
 exit_worker_by_lua_file
 -----------------------
 
-**syntax:** *exit_worker_by_lua_file { lua--file-path }*
+**syntax:** *exit_worker_by_lua_file { lua-file-path }*
 
 **context:** *http*
 
@@ -7877,6 +7877,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of [log_by_lua*](#log_by_lua).
 * `timer`
 	for the context of user callback functions for [ngx.timer.*](#ngxtimerat).
+* `exit_worker`
+	for the context of [exit_worker_by_lua*](#exit_worker_by_lua).
 
 This API was first introduced in the `v0.5.10` release.
 
