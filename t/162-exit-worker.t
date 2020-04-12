@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 master_on();
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 7);
+plan tests => repeat_each() * (blocks() * 2 + 8);
 
 #log_level("warn");
 no_long_string();
@@ -146,7 +146,8 @@ get val: 100
     }
 
     exit_worker_by_lua_block {
-        ngx.log(ngx.NOTICE, "hello from exit worker by lua")
+        local process = require "ngx.process"
+        ngx.log(ngx.INFO, "hello from exit worker by lua, process type: ", process.type())
     }
 --- config
     location = /t {
@@ -160,8 +161,8 @@ get val: 100
 [
 qr/cache loader process \d+ exited/,
 qr/cache manager process \d+ exited/,
-qr/hello from exit worker by lua$/,
-qr/hello from exit worker by lua$/,
+qr/hello from exit worker by lua, process type: worker/,
+qr/hello from exit worker by lua, process type: privileged agent/,
 qr/privileged agent process \d+ exited/,
 ]
 
@@ -174,7 +175,8 @@ qr/privileged agent process \d+ exited/,
     proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
 
     exit_worker_by_lua_block {
-        ngx.log(ngx.WARN, "hello from exit worker by lua")
+        local process = require "ngx.process"
+        ngx.log(ngx.INFO, "hello from exit worker by lua, process type: ", process.type())
     }
 --- config
     location = /t {
@@ -187,5 +189,7 @@ qr/privileged agent process \d+ exited/,
 start privileged agent process
 --- shutdown_error_log eval
 [
-qr/hello from exit worker by lua$/,
+qr/cache loader process \d+ exited/,
+qr/cache manager process \d+ exited/,
+qr/hello from exit worker by lua, process type: worker/,
 ]
