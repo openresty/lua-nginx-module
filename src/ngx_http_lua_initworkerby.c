@@ -67,11 +67,11 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
-#ifdef HAVE_NGX_LUA_PIPE
+#   ifdef HAVE_NGX_LUA_PIPE
     if (ngx_http_lua_pipe_add_signal_handler(cycle) != NGX_OK) {
         return NGX_ERROR;
     }
-#endif
+#   endif
 
 #endif  /* NGX_WIN32 */
 
@@ -351,3 +351,6 @@ ngx_http_lua_log_init_worker_error(ngx_log_t *log, u_char *buf, size_t len)
 
     return ngx_snprintf(buf, len, ", context: init_worker_by_lua*");
 }
+
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
