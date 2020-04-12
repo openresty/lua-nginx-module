@@ -107,3 +107,6 @@ ngx_http_lua_exit_worker_by_file(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
 
     return ngx_http_lua_report(log, L, status, "exit_worker_by_lua_file");
 }
+
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
