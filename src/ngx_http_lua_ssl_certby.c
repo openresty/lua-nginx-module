@@ -1308,19 +1308,20 @@ ngx_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
 
 int
-ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, int depth,
-    void *ca_certs, char **err)
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
+    int depth, char **err)
 {
-    ngx_ssl_conn_t         *ssl_conn;
-    STACK_OF(X509)         *chain = ca_certs;
-    STACK_OF(X509_NAME)    *name_chain = NULL;
-    X509                   *x509 = NULL;
-    X509_NAME              *subject = NULL;
-    X509_STORE             *ca_store = NULL;
+    ngx_ssl_conn_t              *ssl_conn;
+    ngx_http_ssl_srv_conf_t     *sscf;
+    STACK_OF(X509)              *chain = ca_certs;
+    STACK_OF(X509_NAME)         *name_chain = NULL;
+    X509                        *x509 = NULL;
+    X509_NAME                   *subject = NULL;
+    X509_STORE                  *ca_store = NULL;
 #ifdef OPENSSL_IS_BORINGSSL
-    size_t                 i;
+    size_t                      i;
 #else
-    int                    i;
+    int                         i;
 #endif
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -1334,17 +1335,29 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, int depth,
         return NGX_ERROR;
     }
 
-    ca_store = SSL_CTX_get_cert_store(SSL_get_SSL_CTX(ssl_conn));
-    if (ca_store == NULL) {
-        *err = "SSL_CTX_get_cert_store() failed";
-        return NGX_ERROR;
-    }
+    /* enable verify */
 
     SSL_set_verify(ssl_conn, SSL_VERIFY_PEER, ngx_ssl_verify_callback);
 
+    /* set depth */
+
+    if (depth < 0) {
+        sscf = ngx_http_get_module_srv_conf(r, ngx_http_ssl_module);
+        if (sscf != NULL) {
+            depth = sscf->verify_depth;
+        }
+    }
     SSL_set_verify_depth(ssl_conn, depth);
 
+    /* set CA chain */
+
     if (chain != NULL) {
+        ca_store = SSL_CTX_get_cert_store(SSL_get_SSL_CTX(ssl_conn));
+        if (ca_store == NULL) {
+            *err = "SSL_CTX_get_cert_store() failed";
+            return NGX_ERROR;
+        }
+
         /* construct name chain */
 
         name_chain = sk_X509_NAME_new_null();

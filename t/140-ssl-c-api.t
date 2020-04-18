@@ -64,7 +64,8 @@ ffi.cdef[[
 
     int ngx_http_lua_ffi_ssl_clear_certs(void *r, char **err);
 
-    int ngx_http_lua_ffi_ssl_verify_client(void *r, int depth, void *cdata, char **err);
+    int ngx_http_lua_ffi_ssl_verify_client(void *r, void *cdata,
+        int depth, char **err);
 
 ]]
 _EOC_
@@ -849,7 +850,7 @@ lua ssl server name: "test.com"
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, 1, cert, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
@@ -914,7 +915,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, 1, nil, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, -1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
@@ -979,7 +980,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, 1, nil, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, -1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
