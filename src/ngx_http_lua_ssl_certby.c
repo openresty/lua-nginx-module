@@ -1345,6 +1345,9 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
         sscf = ngx_http_get_module_srv_conf(r, ngx_http_ssl_module);
         if (sscf != NULL) {
             depth = sscf->verify_depth;
+        } else {
+            /* same as the default value of ssl_verify_depth */
+            depth = 1;
         }
     }
     SSL_set_verify_depth(ssl_conn, depth);
