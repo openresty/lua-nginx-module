@@ -858,8 +858,8 @@ lua ssl server name: "test.com"
             end
         }
 
-        ssl_certificate ../../cert/test.crt;
-        ssl_certificate_key ../../cert/test.key;
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
 
         server_tokens off;
         location / {
@@ -873,7 +873,7 @@ lua ssl server name: "test.com"
     }
 --- config
     server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_trusted_certificate ../../cert/test2.crt;
 
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
@@ -923,8 +923,8 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
             end
         }
 
-        ssl_certificate ../../cert/test.crt;
-        ssl_certificate_key ../../cert/test.key;
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
 
         server_tokens off;
         location / {
@@ -938,7 +938,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
     }
 --- config
     server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_trusted_certificate ../../cert/test2.crt;
 
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
@@ -988,8 +988,8 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
             end
         }
 
-        ssl_certificate ../../cert/test.crt;
-        ssl_certificate_key ../../cert/test.key;
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
 
         server_tokens off;
         location / {
@@ -1003,7 +1003,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
     }
 --- config
     server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_trusted_certificate ../../cert/test2.crt;
 
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
