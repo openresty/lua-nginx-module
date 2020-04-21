@@ -861,7 +861,6 @@ lua ssl server name: "test.com"
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
 
-        server_tokens off;
         location / {
             default_type 'text/plain';
             content_by_lua_block {
@@ -872,9 +871,6 @@ lua ssl server name: "test.com"
         }
     }
 --- config
-    server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test2.crt;
-
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         proxy_ssl_certificate       ../../cert/test.crt;
@@ -926,7 +922,6 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
 
-        server_tokens off;
         location / {
             default_type 'text/plain';
             content_by_lua_block {
@@ -937,9 +932,6 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
         }
     }
 --- config
-    server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test2.crt;
-
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         proxy_ssl_certificate       ../../cert/test.crt;
@@ -980,7 +972,18 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, -1, errmsg)
+            local f = assert(io.open("t/cert/test.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not cert then
+                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
@@ -991,7 +994,6 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
 
-        server_tokens off;
         location / {
             default_type 'text/plain';
             content_by_lua_block {
@@ -1002,9 +1004,6 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
         }
     }
 --- config
-    server_tokens off;
-    lua_ssl_trusted_certificate ../../cert/test2.crt;
-
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
     }
