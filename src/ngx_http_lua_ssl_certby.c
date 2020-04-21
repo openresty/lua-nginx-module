@@ -1311,6 +1311,7 @@ int
 ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
     int depth, char **err)
 {
+    ngx_http_lua_ctx_t          *ctx;
     ngx_ssl_conn_t              *ssl_conn;
     ngx_http_ssl_srv_conf_t     *sscf;
     STACK_OF(X509)              *chain = ca_certs;
@@ -1323,6 +1324,17 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
 #else
     int                         i;
 #endif
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no request ctx found";
+        return NGX_ERROR;
+    }
+
+    if (!(ctx->context & NGX_HTTP_LUA_CONTEXT_SSL_CERT)) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
