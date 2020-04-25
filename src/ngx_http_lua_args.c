@@ -64,7 +64,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
     default:
         msg = lua_pushfstring(L, "string, number, or table expected, "
-                              "but got %s", luaL_typename(L, 2));
+                              "but got %s", luaL_typename(L, 1));
         return luaL_argerror(L, 1, msg);
     }
 

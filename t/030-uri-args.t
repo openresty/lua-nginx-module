@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 21);
+plan tests => repeat_each() * (blocks() * 2 + 24);
 
 no_root_location();
 
@@ -1617,3 +1617,72 @@ request_uri: /foo%20bar
 uri: /foo bar
 --- no_error_log
 [error]
+
+
+
+=== TEST 61: set_uri_args with boolean
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args(true)
+            ngx.req.set_uri("/bar", true)
+        }
+        proxy_pass http://127.0.0.2:12345;
+    }
+--- request
+    GET /foo?world
+--- response_body_like: 500 Internal Server Error
+--- log_level: debug
+--- error_code: 500
+--- error_log
+bad argument #1 to 'set_uri_args' (string, number, or table expected, but got boolean)
+
+
+
+=== TEST 62: set_uri_args with nil
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args(nil)
+            ngx.req.set_uri("/bar", true)
+        }
+        proxy_pass http://127.0.0.2:12345;
+    }
+--- request
+    GET /foo?world
+--- response_body_like: 500 Internal Server Error
+--- log_level: debug
+--- error_code: 500
+--- error_log
+bad argument #1 to 'set_uri_args' (string, number, or table expected, but got nil)
+
+
+
+=== TEST 63: set_uri_args with userdata
+--- config
+    location /bar {
+        echo $query_string;
+    }
+    location /foo {
+        #set $args 'hello';
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args(ngx.null)
+            ngx.req.set_uri("/bar", true)
+        }
+        proxy_pass http://127.0.0.2:12345;
+    }
+--- request
+    GET /foo?world
+--- response_body_like: 500 Internal Server Error
+--- log_level: debug
+--- error_code: 500
+--- error_log
+bad argument #1 to 'set_uri_args' (string, number, or table expected, but got userdata)
