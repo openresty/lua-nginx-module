@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 3);
 
 no_long_string();
 
@@ -195,5 +195,25 @@ GET /lua
 --- response_body
 -_.!~*'()
 %2C%24%40%7C%60
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: not component argument
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("https://www.google.com", true))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", true))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", true))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+https://www.google.com
+https://www.google.com/query?q=test
+https://www.google.com/query?%0D%0Aq=test
 --- no_error_log
 [error]

@@ -433,17 +433,20 @@ ngx_http_lua_ffi_unescape_uri(const u_char *src, size_t len, u_char *dst)
 
 
 size_t
-ngx_http_lua_ffi_uri_escaped_length(const u_char *src, size_t len)
+ngx_http_lua_ffi_uri_escaped_length(const u_char *src, size_t len, 
+    int not_component)
 {
-    return len + 2 * ngx_http_lua_escape_uri(NULL, (u_char *) src, len,
-                                             NGX_ESCAPE_URI_COMPONENT);
+    int type = not_component ? NGX_ESCAPE_URI :  NGX_ESCAPE_URI_COMPONENT;
+    return len + 2 * ngx_http_lua_escape_uri(NULL, (u_char *) src, len, type);
 }
 
 
 void
-ngx_http_lua_ffi_escape_uri(const u_char *src, size_t len, u_char *dst)
+ngx_http_lua_ffi_escape_uri(const u_char *src, size_t len, u_char *dst, 
+    int not_component)
 {
-    ngx_http_lua_escape_uri(dst, (u_char *) src, len, NGX_ESCAPE_URI_COMPONENT);
+    int type = not_component ? NGX_ESCAPE_URI :  NGX_ESCAPE_URI_COMPONENT;
+    ngx_http_lua_escape_uri(dst, (u_char *) src, len, type);
 }
 
 
