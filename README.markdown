@@ -5593,11 +5593,19 @@ This method was introduced in the `0.5.0rc30` release.
 ngx.escape_uri
 --------------
 
-**syntax:** *newstr = ngx.escape_uri(str)*
+**syntax:** *newstr = ngx.escape_uri(str, type?)*
 
 **context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
-Escape `str` as a URI component.
+Since `v0.10.16`, this function accepts an optional `type` argument.
+It accepts the following values (defaults to `2`):
+
+* `0`: escapes `str` as a full URI. And the characters
+` ` (space), `#`, `%`,
+`?`, 0x00 ~ 0x1F, 0x7F ~ 0xFF will be escaped.
+* `2`: escape `str` as a URI component. All characters except
+alphabetic characters, digits, `-`, `.`, <code>_<code>,
+`~` will be encoded as `%XX`.
 
 [Back to TOC](#nginx-api-for-lua)
 

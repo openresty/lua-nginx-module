@@ -4698,11 +4698,19 @@ This method was introduced in the <code>0.5.0rc30</code> release.
 
 == ngx.escape_uri ==
 
-'''syntax:''' ''newstr = ngx.escape_uri(str)''
+'''syntax:''' ''newstr = ngx.escape_uri(str, type?)''
 
 '''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-Escape <code>str</code> as a URI component.
+Since `v0.10.16`, this function accepts an optional <code>type</code> argument.
+It accepts the following values (defaults to `2`):
+
+* `0`: escapes <code>str</code> as a full URI. And the characters
+<code> </code> (space), <code>#</code>, <code>%</code>,
+`?`, 0x00 ~ 0x1F, 0x7F ~ 0xFF will be escaped.
+* `2`: escape <code>str</code> as a URI component. All characters except
+alphabetic characters, digits, <code>-</code>, <code>.</code>, <code>_<code>,
+<code>~</code> will be encoded as `%XX`.
 
 == ngx.unescape_uri ==
 
