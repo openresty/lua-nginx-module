@@ -207,6 +207,8 @@ GET /lua
             ngx.say(ngx.escape_uri("https://www.google.com", true))
             ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", true))
             ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", true))
+            ngx.say(ngx.escape_uri("-_.~!*'();:@&=+$,/?#", true))
+            ngx.say(ngx.escape_uri("<>[]{}\\\" ", true))
         }
     }
 --- request
@@ -215,5 +217,7 @@ GET /lua
 https://www.google.com
 https://www.google.com/query?q=test
 https://www.google.com/query?%0D%0Aq=test
+-_.~!*'();:@&=+$,/?#
+%3C%3E%5B%5D%7B%7D%5C%22%20
 --- no_error_log
 [error]

@@ -4692,6 +4692,15 @@ This method was introduced in the <code>0.5.0rc30</code> release.
 
 Escape <code>str</code> as a URI component.
 
+Since `v0.10.16rc6`, this function accepts an optional boolean <code>not_component</code> argument. When this argument is <code>true</code>, these characters bellow will not be escaped.
+
+<geshi lang="text">
+Alphabets: a-zA-Z
+Digits: 0-9
+Reserve characters: -_.~!*'();:@&=+$,/?#
+</geshi>
+
+
 == ngx.unescape_uri ==
 
 '''syntax:''' ''newstr = ngx.unescape_uri(str)''
