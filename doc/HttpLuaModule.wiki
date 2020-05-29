@@ -1110,7 +1110,7 @@ Usually you can pre-load Lua modules at server start-up by means of this hook an
         location = /api {
             content_by_lua_block {
                 -- the following require() will just  return
-                -- the alrady loaded module from package.loaded:
+                -- the already loaded module from package.loaded:
                 ngx.say(require "cjson".encode{dog = 5, cat = 6})
             }
         }
@@ -1549,7 +1549,7 @@ can be implemented in ngx_lua as:
 
 Just as any other rewrite phase handlers, [[#rewrite_by_lua|rewrite_by_lua]] also runs in subrequests.
 
-Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#rewrite_by_lua|rewrite_by_lua]] handler, the Nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#rewrite_by_lua|rewrite_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
+Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#rewrite_by_lua|rewrite_by_lua]] handler, the Nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#rewrite_by_lua|rewrite_by_lua]] handler, call [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
 
 If the [[HttpRewriteModule]]'s [[HttpRewriteModule#rewrite|rewrite]] directive is used to change the URI and initiate location re-lookups (internal redirections), then any [[#rewrite_by_lua|rewrite_by_lua]] or [[#rewrite_by_lua_file|rewrite_by_lua_file]] code sequences within the current location will not be executed. For example,
 
@@ -1677,7 +1677,7 @@ can be implemented in ngx_lua as:
 
 As with other access phase handlers, [[#access_by_lua|access_by_lua]] will ''not'' run in subrequests.
 
-Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#access_by_lua|access_by_lua]] handler, the Nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#access_by_lua|access_by_lua]] handler, calling [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
+Note that when calling <code>ngx.exit(ngx.OK)</code> within a [[#access_by_lua|access_by_lua]] handler, the Nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [[#access_by_lua|access_by_lua]] handler, call [[#ngx.exit|ngx.exit]] with status >= 200 (<code>ngx.HTTP_OK</code>) and status < 300 (<code>ngx.HTTP_SPECIAL_RESPONSE</code>) for successful quits and <code>ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)</code> (or its friends) for failures.
 
 Starting from the <code>v0.9.20</code> release, you can use the [[#access_by_lua_no_postpone|access_by_lua_no_postpone]]
 directive to control when to run this handler inside the "access" request-processing phase
@@ -5815,7 +5815,7 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
 '''context:''' ''init_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-Flushes out all the items in the dictionary. This method does not actuall free up all the memory blocks in the dictionary but just marks all the existing items as expired.
+Flushes out all the items in the dictionary. This method does not actually free up all the memory blocks in the dictionary but just marks all the existing items as expired.
 
 This feature was first introduced in the <code>v0.5.0rc17</code> release.
 
@@ -6652,7 +6652,7 @@ All the Lua code chunks running by [[#rewrite_by_lua|rewrite_by_lua]], [[#access
 By default, the corresponding Nginx handler (e.g., [[#rewrite_by_lua|rewrite_by_lua]] handler) will not terminate until
 
 # both the "entry thread" and all the user "light threads" terminates,
-# a "light thread" (either the "entry thread" or a user "light thread" aborts by calling [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]], or
+# a "light thread" (either the "entry thread" or a user "light thread") aborts by calling [[#ngx.exit|ngx.exit]], [[#ngx.exec|ngx.exec]], [[#ngx.redirect|ngx.redirect]], or [[#ngx.req.set_uri|ngx.req.set_uri(uri, true)]], or
 # the "entry thread" terminates with a Lua error.
 
 When the user "light thread" terminates with a Lua error, however, it will not abort other running "light threads" like the "entry thread" does.
@@ -7086,7 +7086,7 @@ This directive was first introduced in the <code>v0.9.20</code> release.
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, init_by_lua*, init_worker_by_lua*''
 
-This string field indicates the current Nginx subsystem the current Lua environment is based on. For this module, this field always takes the string value <code>"http"</code>. For
+This string field indicates the Nginx subsystem the current Lua environment is based on. For this module, this field always takes the string value <code>"http"</code>. For
 [https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module], however, this field takes the value <code>"stream"</code>.
 
 This field was first introduced in the <code>0.10.1</code>.
