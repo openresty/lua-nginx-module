@@ -6548,7 +6548,9 @@ The optional `flags` argument specifies a user flags value associated with the e
 
 When it fails to allocate memory for the current key-value item, then `set` will try removing existing items in the storage according to the Least-Recently Used (LRU) algorithm. Note that, LRU takes priority over expiration time here. If up to tens of existing items have been removed and the storage left is still insufficient (either due to the total capacity limit specified by [lua_shared_dict](#lua_shared_dict) or memory segmentation), then the `err` return value will be `no memory` and `success` will be `false`.
 
-If the sizes of items in the dictionary are not approximate, it is eaisier to encounter `no memory` error because of memory fragmentation. It is recommended to use different dictionaries for different sizes of items. When you encounter `no memory` error, you can also remove more existing items by retrying more times to make the operation successful.
+If the sizes of items in the dictionary are not multiples or even powers of a certain value (like 2), it is easier to encounter `no memory` error because of memory fragmentation. It is recommended to use different dictionaries for different sizes of items.
+
+When you encounter `no memory` error, you can also remove more existing items by retrying more times to make the operation successful.
 
 If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, the `forcible` return value will be `true`. If it stores the item without forcibly removing other valid items, then the return value `forcible` will be `false`.
 
