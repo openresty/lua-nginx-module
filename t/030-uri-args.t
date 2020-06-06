@@ -1620,6 +1620,10 @@ uri: /foo bar
 
 
 
+<<<<<<< HEAD
+
+
+
 === TEST 61: set_uri_args with boolean
 --- config
     location /bar {
@@ -1686,3 +1690,125 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got ni
 --- error_code: 500
 --- error_log
 bad argument #1 to 'set_uri_args' (string, number, or table expected, but got userdata)
+=======
+
+
+
+=== TEST 64: rewrite args (string with \r)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("a\rb")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+--- request
+    GET /foo?world
+--- error_code: 500
+--- error_log eval
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+
+
+
+=== TEST 65: rewrite args (string with \n)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("a\nb")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+--- request
+    GET /foo?world
+--- error_code: 500
+--- error_log eval
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+
+
+
+=== TEST 66: rewrite args (string with \0)
+--- config
+    location /bar {
+        echo $server_protocol $query_string;
+    }
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("a\0b")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+--- request
+    GET /foo?world
+--- error_code: 500
+--- error_log eval
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+
+
+
+=== TEST 67: rewrite args (string arg with 'lang=中文')
+ngx.req.set_uri_args with string argument should be carefully encoded.
+For backward compatibility, we are allowed to pass such parameters.
+--- config
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("lang=中文")
+        }
+        content_by_lua_block {
+            ngx.say(ngx.var.arg_lang)
+        }
+    }
+--- request
+    GET /foo?world
+--- response_body
+中文
+--- no_error_log
+[error]
+
+
+
+=== TEST 68: rewrite args (string arg with '语言=chinese')
+ngx.req.set_uri_args with string argument should be carefully encoded.
+For backward compatibility, we are allowed to pass such parameters.
+--- config
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("语言=chinese")
+        }
+        content_by_lua_block {
+            ngx.say(ngx.var.arg_语言)
+        }
+    }
+--- request
+    GET /foo?world
+--- response_body
+chinese
+--- no_error_log
+[error]
+
+
+
+=== TEST 69: rewrite args (string arg with '语言=中文')
+ngx.req.set_uri_args with string argument should be carefully encoded.
+For backward compatibility, we are allowed to pass such parameters.
+--- config
+    location /foo {
+        rewrite_by_lua_block {
+            ngx.req.set_uri_args("语言=中文")
+        }
+        content_by_lua_block {
+            ngx.say(ngx.var.arg_语言)
+        }
+    }
+--- request
+    GET /foo?world
+--- response_body
+中文
+--- no_error_log
+[error]
+>>>>>>> e4388235... bugfix: ngx.req.set_uri_args with string argument can contain invalid chacters.

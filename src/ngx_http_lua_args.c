@@ -19,6 +19,38 @@ static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
+static ngx_inline int
+ngx_http_lua_valid_args(const u_char *src, size_t size)
+{
+    static uint32_t   map[] = {
+        0x00002401, /* 0000 0000 0000 0000  0010 0100 0000 0001 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    while (size) {
+        if (map[*src >> 5] & (1U << (*src & 0x1f))) {
+            return 0;
+        }
+
+        src++;
+        size--;
+    }
+    return 1;
+}
+
 static int
 ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 {
@@ -27,6 +59,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
     const char                  *msg;
     size_t                       len;
     u_char                      *p;
+    int                          type;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting 1 argument but seen %d",
@@ -40,10 +73,14 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    switch (lua_type(L, 1)) {
+    type = lua_type(L, 1);
+    switch (type) {
     case LUA_TNUMBER:
     case LUA_TSTRING:
         p = (u_char *) lua_tolstring(L, 1, &len);
+        if (type == LUA_TSTRING && !ngx_http_lua_valid_args(p, len)) {
+            return luaL_argerror(L, 1, "args need to be escaped");
+        }
 
         args.data = ngx_palloc(r->pool, len);
         if (args.data == NULL) {
