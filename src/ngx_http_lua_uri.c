@@ -55,10 +55,6 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
         return luaL_error(L, "attempt to use zero-length uri");
     }
 
-    if (ngx_http_lua_check_unsafe_string(r, p, len, "uri") != NGX_OK) {
-        return luaL_error(L, "attempt to set unsafe uri");
-    }
-
     if (n == 2) {
 
         luaL_checktype(L, 2, LUA_TBOOLEAN);

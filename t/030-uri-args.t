@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 24);
+plan tests => repeat_each() * (blocks() * 2 + 22);
 
 no_root_location();
 
@@ -1568,10 +1568,9 @@ args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
     }
 --- request
     GET /t
---- error_code: 500
---- error_log
-unsafe byte "0x9" in uri "/foo\x09bar"
-attempt to set unsafe uri
+--- error_code: 200
+--- response_body eval
+qr#/foo\tbar#
 
 
 
@@ -1586,10 +1585,9 @@ attempt to set unsafe uri
     }
 --- request
     GET /t
---- error_code: 500
---- error_log
-unsafe byte "0x0" in uri "\x00foo"
-attempt to set unsafe uri
+--- error_code: 200
+--- response_body eval
+qr/\0foo/
 
 
 
