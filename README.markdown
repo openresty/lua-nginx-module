@@ -4552,7 +4552,12 @@ or a Lua table holding the query arguments' key-value pairs, as in
  ngx.req.set_uri_args({ a = 3, b = "hello world" })
 ```
 
-where in the latter case, this method will escape argument keys and values according to the URI escaping rule.
+In the former case, i.e., when the whole query-strng is provided directly,
+the input Lua string should already be well-formed with the URI encoding.
+For security considerations, his method will autoamticaly escape any control and
+whitespace characters (ASCII code 0x00 ~ 0x32 and 0x7F) in the Lua string.
+
+In the latter case, this method will escape argument keys and values according to the URI escaping rule.
 
 Multi-value arguments are also supported:
 
