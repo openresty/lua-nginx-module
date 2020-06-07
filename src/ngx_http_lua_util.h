@@ -27,6 +27,9 @@
 #   define NGX_HTTP_SWITCHING_PROTOCOLS 101
 #endif
 
+#define NGX_HTTP_LUA_ESCAPE_HEADER_NAME  7
+
+#define NGX_HTTP_LUA_ESCAPE_HEADER_VALUE  8
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
@@ -168,6 +171,9 @@ void ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 
 uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
     size_t size, ngx_uint_t type);
+
+ngx_int_t ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
+    ngx_str_t *dst, int is_name);
 
 void ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L);
 

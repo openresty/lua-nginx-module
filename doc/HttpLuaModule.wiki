@@ -4084,6 +4084,11 @@ The <code>__index</code> metamethod will not be added when the <code>raw</code> 
 
 Set the current request's request header named <code>header_name</code> to value <code>header_value</code>, overriding any existing ones.
 
+The input Lua string `header_name` and `header_value` should already be well-formed with the URI encoding.
+For security considerations, this method will automatically escape " ", """, "(", ")", ",", "/", ":", ";", "?",
+"<", "=", ">", "?", "@", "[", "]", "\", "{", "}", 0x00-0x1F, 0x7F-0xFF in `header_name` and automatically escape
+"0x00-0x08, 0x0A-0x0F, 0x7F in `header_value`.
+
 By default, all the subrequests subsequently initiated by [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] will inherit the new header.
 
 Here is an example of setting the <code>Content-Type</code> header:

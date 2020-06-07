@@ -491,11 +491,11 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    if (ngx_http_lua_check_unsafe_string(r, key.data, key.len,
-                                         "header name") != NGX_OK
-        || ngx_http_lua_check_unsafe_string(r, value.data, value.len,
-                                            "header value") != NGX_OK)
-    {
+    if (ngx_http_lua_copy_escaped_header(r, &key, 1) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (ngx_http_lua_copy_escaped_header(r, &value, 0) != NGX_OK) {
         return NGX_ERROR;
     }
 

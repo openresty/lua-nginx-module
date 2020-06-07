@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (4 * blocks());
+plan tests => repeat_each() * (3 * blocks() + 6);
 
 #no_diff();
 no_long_string();
@@ -263,9 +263,10 @@ Cookie: boo=123; foo=bar
     }
 --- request
 GET /t
---- error_code: 500
---- error_log
-unsafe byte "0xa" in header value "boo=123\x0Afoo"
-failed to set header
+--- response_body
+Cookie foo: bar%0Dbar
+Cookie baz: 
+Cookie boo: 123%0Afoo
+Cookie: boo=123%0Afoo; foo=bar%0Dbar
 --- no_error_log
-[crit]
+[error]

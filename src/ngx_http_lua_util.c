@@ -2008,8 +2008,52 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
 
                     /* mail_auth is the same as memcached */
 
+                    /* " ", """, "(", ")", ",", "/", ":", ";", "?",
+                     * "<", "=", ">", "?", "@", "[", "]", "\", "{",
+                     * "}", %00-%1F, %7F-%FF
+                     */
+
+    static uint32_t   header_name[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0xfc009305, /* 1111 1100 0000 0000  1001 0011 0000 0101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x38000001, /* 0011 1000 0000 0000  0000 0000 0000 0001 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0xa8000000, /* 1010 1000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* "%00-%08, %0A-%0F, %7F */
+
+    static uint32_t   header_value[] = {
+        0xfffffdff, /* 1111 1111 1111 1111  1111 1101 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
     static uint32_t  *map[] =
-        { uri, args, uri_component, html, refresh, memcached, memcached };
+        { uri, args, uri_component, html, refresh, memcached, memcached,
+          header_name, header_value };
 
     escape = map[type];
 
@@ -4327,5 +4371,39 @@ ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size)
     return 0;
 }
 
+
+ngx_int_t
+ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
+    ngx_str_t *dst, int is_name)
+{
+    size_t       escape;
+    size_t       len;
+    u_char      *data;
+    int          type;
+
+    type = is_name
+        ? NGX_HTTP_LUA_ESCAPE_HEADER_NAME : NGX_HTTP_LUA_ESCAPE_HEADER_VALUE;
+
+    data = dst->data;
+    len = dst->len;
+
+    escape = ngx_http_lua_escape_uri(NULL, data, len, type);
+    if (escape > 0) {
+        /*
+         * we allocate space for the trailling '\0' char here because nginx
+         * header values must be null-terminated
+         */
+        dst->data = ngx_palloc(r->pool, len + 2 * escape + 1);
+        if (dst->data == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_http_lua_escape_uri(dst->data, data, len, type);
+        dst->len = len + 2 * escape;
+        dst->data[dst->len] = '\0';
+    }
+
+    return NGX_OK;
+}
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -4552,9 +4552,9 @@ or a Lua table holding the query arguments' key-value pairs, as in
  ngx.req.set_uri_args({ a = 3, b = "hello world" })
 ```
 
-In the former case, i.e., when the whole query-strng is provided directly,
+In the former case, i.e., when the whole query-string is provided directly,
 the input Lua string should already be well-formed with the URI encoding.
-For security considerations, his method will autoamticaly escape any control and
+For security considerations, this method will automatically escape any control and
 whitespace characters (ASCII code 0x00 ~ 0x32 and 0x7F) in the Lua string.
 
 In the latter case, this method will escape argument keys and values according to the URI escaping rule.
@@ -4882,6 +4882,11 @@ ngx.req.set_header
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;*
 
 Set the current request's request header named `header_name` to value `header_value`, overriding any existing ones.
+
+The input Lua string `header_name` and `header_value` should already be well-formed with the URI encoding.
+For security considerations, this method will automatically escape " ", """, "(", ")", ",", "/", ":", ";", "?",
+"<", "=", ">", "?", "@", "[", "]", "\", "{", "}", 0x00-0x1F, 0x7F-0xFF in `header_name` and automatically escape
+"0x00-0x08, 0x0A-0x0F, 0x7F in `header_value`.
 
 By default, all the subrequests subsequently initiated by [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) will inherit the new header.
 
