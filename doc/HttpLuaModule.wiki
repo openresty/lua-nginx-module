@@ -5305,8 +5305,8 @@ When the <code>replace</code> is a string, then it is treated as a special templ
         return
     end
 
-        -- newstr == "hello, [12][1]34"
-        -- n == 1
+    -- newstr == "hello, [12][1]34"
+    -- n == 1
 </geshi>
 
 where <code>$0</code> referring to the whole substring matched by the pattern and <code>$1</code> referring to the first parenthesized capturing substring.
@@ -5315,16 +5315,16 @@ Curly braces can also be used to disambiguate variable names from the background
 
 <geshi lang="lua">
     local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
-        -- newstr == "hello, 100234"
-        -- n == 1
+    -- newstr == "hello, 100234"
+    -- n == 1
 </geshi>
 
 Literal dollar sign characters (<code>$</code>) in the <code>replace</code> string argument can be escaped by another dollar sign, for instance,
 
 <geshi lang="lua">
     local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "$$")
-        -- newstr == "hello, $234"
-        -- n == 1
+    -- newstr == "hello, $234"
+    -- n == 1
 </geshi>
 
 Do not use backlashes to escape dollar signs; it will not work as expected.
@@ -5335,9 +5335,10 @@ When the <code>replace</code> argument is of type "function", then it will be in
     local func = function (m)
         return "[" .. m[0] .. "][" .. m[1] .. "]"
     end
+
     local newstr, n, err = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
-        -- newstr == "hello, [12][1]34"
-        -- n == 1
+    -- newstr == "hello, [12][1]34"
+    -- n == 1
 </geshi>
 
 The dollar sign characters in the return value of the <code>replace</code> function argument are not special at all.
@@ -5363,8 +5364,8 @@ Here is some examples:
         return
     end
 
-        -- newstr == "[hello,h], [world,w]"
-        -- n == 2
+    -- newstr == "[hello,h], [world,w]"
+    -- n == 2
 </geshi>
 
 <geshi lang="lua">
@@ -5372,8 +5373,8 @@ Here is some examples:
         return "[" .. m[0] .. "," .. m[1] .. "]"
     end
     local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
-        -- newstr == "[hello,h], [world,w]"
-        -- n == 2
+    -- newstr == "[hello,h], [world,w]"
+    -- n == 2
 </geshi>
 
 This method requires the PCRE library enabled in Nginx ([[#Special Escaping Sequences|Known Issue With Special Escaping Sequences]]).

@@ -6301,8 +6301,8 @@ When the `replace` is a string, then it is treated as a special template for str
      return
  end
 
-     -- newstr == "hello, [12][1]34"
-     -- n == 1
+ -- newstr == "hello, [12][1]34"
+ -- n == 1
 ```
 
 where `$0` referring to the whole substring matched by the pattern and `$1` referring to the first parenthesized capturing substring.
@@ -6312,8 +6312,8 @@ Curly braces can also be used to disambiguate variable names from the background
 ```lua
 
  local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "${0}00")
-     -- newstr == "hello, 100234"
-     -- n == 1
+ -- newstr == "hello, 100234"
+ -- n == 1
 ```
 
 Literal dollar sign characters (`$`) in the `replace` string argument can be escaped by another dollar sign, for instance,
@@ -6321,8 +6321,8 @@ Literal dollar sign characters (`$`) in the `replace` string argument can be esc
 ```lua
 
  local newstr, n, err = ngx.re.sub("hello, 1234", "[0-9]", "$$")
-     -- newstr == "hello, $234"
-     -- n == 1
+ -- newstr == "hello, $234"
+ -- n == 1
 ```
 
 Do not use backlashes to escape dollar signs; it will not work as expected.
@@ -6334,9 +6334,10 @@ When the `replace` argument is of type "function", then it will be invoked with 
  local func = function (m)
      return "[" .. m[0] .. "][" .. m[1] .. "]"
  end
+
  local newstr, n, err = ngx.re.sub("hello, 1234", "( [0-9] ) [0-9]", func, "x")
-     -- newstr == "hello, [12][1]34"
-     -- n == 1
+ -- newstr == "hello, [12][1]34"
+ -- n == 1
 ```
 
 The dollar sign characters in the return value of the `replace` function argument are not special at all.
@@ -6366,8 +6367,8 @@ Here is some examples:
      return
  end
 
-     -- newstr == "[hello,h], [world,w]"
-     -- n == 2
+ -- newstr == "[hello,h], [world,w]"
+ -- n == 2
 ```
 
 ```lua
@@ -6376,8 +6377,8 @@ Here is some examples:
      return "[" .. m[0] .. "," .. m[1] .. "]"
  end
  local newstr, n, err = ngx.re.gsub("hello, world", "([a-z])[a-z]+", func, "i")
-     -- newstr == "[hello,h], [world,w]"
-     -- n == 2
+ -- newstr == "[hello,h], [world,w]"
+ -- n == 2
 ```
 
 This method requires the PCRE library enabled in Nginx ([Known Issue With Special Escaping Sequences](#special-escaping-sequences)).
