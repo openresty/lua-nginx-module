@@ -1367,7 +1367,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
     /* set CA chain */
 
     if (chain != NULL) {
-        ca_store = SSL_CTX_get_cert_store(SSL_get_SSL_CTX(ssl_conn));
+        ca_store = X509_STORE_new();
         if (ca_store == NULL) {
             *err = "SSL_CTX_get_cert_store() failed";
             return NGX_ERROR;
@@ -1408,12 +1408,19 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
             }
         }
 
+        if (SSL_set0_verify_cert_store(ssl_conn, ca_store) == 0) {
+            *err = "SSL_set0_verify_cert_store() failed";
+            goto failed;
+        }
+
         SSL_set_client_CA_list(ssl_conn, name_chain);
     }
 
     return NGX_OK;
 
 failed:
+
+    X509_STORE_free(ca_store);
 
     sk_X509_NAME_free(name_chain);
 
