@@ -1369,7 +1369,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
     if (chain != NULL) {
         ca_store = X509_STORE_new();
         if (ca_store == NULL) {
-            *err = "SSL_CTX_get_cert_store() failed";
+            *err = "X509_STORE_new() failed";
             return NGX_ERROR;
         }
 
