@@ -1378,7 +1378,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
         name_chain = sk_X509_NAME_new_null();
         if (name_chain == NULL) {
             *err = "sk_X509_NAME_new_null() failed";
-            return NGX_ERROR;
+            goto failed;
         }
 
         for (i = 0; i < sk_X509_num(chain); i++) {
