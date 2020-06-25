@@ -32,12 +32,13 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     ngx_http_request_t          *r;
     size_t                       len;
     u_char                      *p;
+    u_char                       byte;
     int                          n;
     int                          jump = 0;
     int                          binary = 0;
     ngx_http_lua_ctx_t          *ctx;
     size_t                       buf_len;
-    u_char                      *buf
+    u_char                      *buf;
 
     n = lua_gettop(L);
 
@@ -64,17 +65,20 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
     }
 
     if (!binary
-        && ngx_http_lua_check_unsafe_uri_bytes(r, p, len, "uri") != NGX_OK)
+        && ngx_http_lua_check_unsafe_uri_bytes(r, p, len, &byte) != NGX_OK)
     {
-        buf_len = ngx_http_lua_escape_log(NULL, p, len);
-        buf = ngx_palloc(r->pool, buf_len + 1);
+        buf_len = ngx_http_lua_escape_log(NULL, p, len) + 1;
+        buf = ngx_palloc(r->pool, buf_len);
         if (buf == NULL) {
             return NGX_ERROR;
         }
+
         ngx_http_lua_escape_log(buf, p, len);
-        buf[buf_len] = '\0';
-        return luaL_error(L, "unsafe byte \"0x%x\" in %s \"%s\"",
-                      (unsigned) c, name, buf);
+        buf[buf_len - 1] = '\0';
+
+        return luaL_error(L, "unsafe byte \"0x%02x\" in uri \"%s\" "
+                          "(maybe you want to set the 'binary' argument?)",
+                          byte, buf);
     }
 
     if (n >= 2) {

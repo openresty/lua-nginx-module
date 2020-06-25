@@ -4530,8 +4530,14 @@ or
 Starting from `0.10.16rc6` of this module, this function accepts an
 optional boolean `binary` argument to allow arbitrary binary URI
 data. By default, this `binary` argument is false and this function
-will throw out a Lua error when the `uri` argument contains any
-control characters (ASCII Code 0 ~ 0x1F and 0x7F).
+will throw out a Lua error such as the one below when the `uri`
+argument contains any control characters (ASCII Code 0 ~ 0x08, 0x0A ~ 0x1F and 0x7F).
+
+
+    [error] 23430#23430: *1 lua entry thread aborted: runtime error:
+    content_by_lua(nginx.conf:44):3: ngx.req.set_uri unsafe byte "0x00"
+    in "\x00foo" (maybe you want to set the 'binary' argument?)
+
 
 This interface was first introduced in the `v0.3.1rc14` release.
 

@@ -496,13 +496,11 @@ ngx_inet_get_port(struct sockaddr *sa)
 
 
 static ngx_inline ngx_int_t
-ngx_http_lua_check_unsafe_uri_bytes(lua_State *L,
-    ngx_http_request_t *r, u_char *str,
+ngx_http_lua_check_unsafe_uri_bytes(ngx_http_request_t *r, u_char *str,
     size_t len, u_char *byte)
 {
-    size_t           i, buf_len;
+    size_t           i;
     u_char           c;
-    u_char          *buf, *src = str;
 
                      /* %00-%08, %0A-%1F, %7F */
 

@@ -9,7 +9,9 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 21);
+
+plan tests => repeat_each() * (blocks() * 2 + 23);
+
 
 no_root_location();
 
@@ -1579,7 +1581,7 @@ args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
     location /t {
         content_by_lua_block {
             local new_uri = '\0foo'
-            ngx.req.set_uri(new_uri)
+            ngx.req.set_uri(new_uri, false, true)
             ngx.say(ngx.var.uri)
         }
     }
@@ -1735,12 +1737,12 @@ explict specify binary option to false
 --- request
     GET /t
 --- error_code: 500
---- error_log
-attempt to set unsafe uri
+--- error_log eval
+qr{\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: rewrite_by_lua\(nginx.conf:\d+\):\d+: unsafe byte "0x0d" in uri "/foo\\x0D\\x0Abar" \(maybe you want to set the 'binary' argument\?\)}
 
 
 
-=== TEST 66: set_uri binary option with safe uri 
+=== TEST 66: set_uri binary option with safe uri
 explict specify binary option to false
 --- config
     location /t {

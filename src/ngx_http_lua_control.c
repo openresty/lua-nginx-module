@@ -186,9 +186,12 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     int                          n;
     u_char                      *p;
     u_char                      *uri;
+    u_char                       byte;
     size_t                       len;
     ngx_table_elt_t             *h;
     ngx_http_request_t          *r;
+    size_t                       buf_len;
+    u_char                      *buf;
 
     n = lua_gettop(L);
 
@@ -239,8 +242,17 @@ ngx_http_lua_ngx_redirect(lua_State *L)
                           "the headers");
     }
 
-    if (ngx_http_lua_check_unsafe_uri_bytes(r, p, len, "redirect uri") != NGX_OK) {
-        return luaL_error(L, "attempt to set unsafe redirect uri");
+    if (ngx_http_lua_check_unsafe_uri_bytes(r, p, len, &byte) != NGX_OK) {
+        buf_len = ngx_http_lua_escape_log(NULL, p, len) + 1;
+        buf = ngx_palloc(r->pool, buf_len);
+        if (buf == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_http_lua_escape_log(buf, p, len);
+        buf[buf_len - 1] = '\0';
+        return luaL_error(L, "unsafe byte \"0x%02x\" in redirect uri \"%s\"",
+                          byte, buf);
     }
 
     uri = ngx_palloc(r->pool, len);
