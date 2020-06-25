@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 24);
+plan tests => repeat_each() * (blocks() * 2 + 27);
 
 no_root_location();
 
@@ -1709,7 +1709,10 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got us
     GET /foo?world
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+[
+qr/\[error\] .*? unsafe byte "0xd" in query string "a\\x0Db"/,
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(query-string contains unescaped byte\)/
+]
 
 
 
@@ -1728,7 +1731,10 @@ qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_u
     GET /foo?world
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+[
+qr/\[error\] .*? unsafe byte "0xa" in query string "a\\x0Ab"/,
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(query-string contains unescaped byte\)/
+]
 
 
 
@@ -1747,7 +1753,10 @@ qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_u
     GET /foo?world
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(args need to be escaped\)/
+[
+qr/\[error\] .*? unsafe byte "0x0" in query string "a\\x00b"/,
+qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(query-string contains unescaped byte\)/
+]
 
 
 

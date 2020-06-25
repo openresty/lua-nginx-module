@@ -19,9 +19,14 @@ static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
 
 
-static ngx_inline int
-ngx_http_lua_valid_args(const u_char *src, size_t size)
+static ngx_inline ngx_uint_t
+ngx_http_lua_is_escaped_query_string(ngx_http_request_t *r, u_char *str,
+    size_t len)
 {
+    size_t           i, buf_len;
+    u_char           c;
+    u_char          *buf, *src = str;
+
     static uint32_t   map[] = {
         0x00002401, /* 0000 0000 0000 0000  0010 0100 0000 0001 */
 
@@ -40,14 +45,27 @@ ngx_http_lua_valid_args(const u_char *src, size_t size)
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
-    while (size) {
-        if (map[*src >> 5] & (1U << (*src & 0x1f))) {
+    for (i = 0; i < len; i++, str++) {
+        c = *str;
+        if (map[c >> 5] & (1 << (c & 0x1f))) {
+            buf_len = ngx_http_lua_escape_log(NULL, src, len);
+            buf = ngx_palloc(r->pool, buf_len);
+            if (buf == NULL) {
+                return NGX_ERROR;
+            }
+
+            ngx_http_lua_escape_log(buf, src, len);
+
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "unsafe byte \"0x%uxd\" in query string \"%*s\"",
+                          (unsigned) c, buf_len, buf);
+
+            ngx_pfree(r->pool, buf);
+
             return 0;
         }
-
-        src++;
-        size--;
     }
+
     return 1;
 }
 
@@ -59,6 +77,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
     const char                  *msg;
     size_t                       len;
     u_char                      *p;
+    u_char                       c;
     int                          type;
 
     if (lua_gettop(L) != 1) {
@@ -76,10 +95,22 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
     type = lua_type(L, 1);
     switch (type) {
     case LUA_TNUMBER:
+        p = (u_char *) lua_tolstring(L, 1, &len);
+
+        args.data = ngx_palloc(r->pool, len);
+        if (args.data == NULL) {
+            return luaL_error(L, "no memory");
+        }
+
+        ngx_memcpy(args.data, p, len);
+
+        args.len = len;
+        break;
+
     case LUA_TSTRING:
         p = (u_char *) lua_tolstring(L, 1, &len);
-        if (type == LUA_TSTRING && !ngx_http_lua_valid_args(p, len)) {
-            return luaL_argerror(L, 1, "args need to be escaped");
+        if (!ngx_http_lua_is_escaped_query_string(r, p, len)) {
+            return luaL_argerror(L, 1, "query-string contains unescaped byte");
         }
 
         args.data = ngx_palloc(r->pool, len);
