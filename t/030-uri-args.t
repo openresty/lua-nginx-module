@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 27);
+plan tests => repeat_each() * (blocks() * 2 + 30);
 
 no_root_location();
 
@@ -1585,7 +1585,7 @@ attempt to set unsafe uri
         }
     }
 --- request
-    GET /t
+GET /t
 --- error_code: 500
 --- error_log
 unsafe byte "0x0" in uri "\x00foo"
@@ -1611,16 +1611,12 @@ attempt to set unsafe uri
         }
     }
 --- request
-    GET /t
+GET /t
 --- response_body
 request_uri: /foo%20bar
 uri: /foo bar
 --- no_error_log
 [error]
-
-
-
-<<<<<<< HEAD
 
 
 
@@ -1638,7 +1634,7 @@ uri: /foo bar
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
@@ -1661,7 +1657,7 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got bo
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
@@ -1684,13 +1680,12 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got ni
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
 --- error_log
 bad argument #1 to 'set_uri_args' (string, number, or table expected, but got userdata)
-=======
 
 
 
@@ -1706,7 +1701,7 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got us
         proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- error_code: 500
 --- error_log eval
 [
@@ -1728,7 +1723,7 @@ qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_u
         proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- error_code: 500
 --- error_log eval
 [
@@ -1750,7 +1745,7 @@ qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_u
         proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- error_code: 500
 --- error_log eval
 [
@@ -1773,7 +1768,7 @@ For backward compatibility, we are allowed to pass such parameters.
         }
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body
 中文
 --- no_error_log
@@ -1794,7 +1789,7 @@ For backward compatibility, we are allowed to pass such parameters.
         }
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body
 chinese
 --- no_error_log
@@ -1815,9 +1810,8 @@ For backward compatibility, we are allowed to pass such parameters.
         }
     }
 --- request
-    GET /foo?world
+GET /foo?world
 --- response_body
 中文
 --- no_error_log
 [error]
->>>>>>> e4388235... bugfix: ngx.req.set_uri_args with string argument can contain invalid chacters.
