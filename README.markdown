@@ -6550,7 +6550,7 @@ When it fails to allocate memory for the current key-value item, then `set` will
 
 If the sizes of items in the dictionary are not multiples or even powers of a certain value (like 2), it is easier to encounter `no memory` error because of memory fragmentation. It is recommended to use different dictionaries for different sizes of items.
 
-When you encounter `no memory` error, you can also remove more existing items by retrying more times to make the operation successful.
+When you encounter `no memory` error, you can also evict more least-recently-used items by retrying this method call more times to to make room for the current item.
 
 If this method succeeds in storing the current item by forcibly removing other not-yet-expired items in the dictionary via LRU, the `forcible` return value will be `true`. If it stores the item without forcibly removing other valid items, then the return value `forcible` will be `false`.
 
