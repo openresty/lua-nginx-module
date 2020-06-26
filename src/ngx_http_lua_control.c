@@ -239,7 +239,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
                           "the headers");
     }
 
-    if (ngx_http_lua_check_unsafe_string(r, p, len, "redirect uri") != NGX_OK) {
+    if (ngx_http_lua_check_unsafe_uri_bytes(r, p, len, "redirect uri") != NGX_OK) {
         return luaL_error(L, "attempt to set unsafe redirect uri");
     }
 

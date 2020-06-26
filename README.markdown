@@ -4431,7 +4431,7 @@ See also [ngx.req.get_method](#ngxreqget_method).
 ngx.req.set_uri
 ---------------
 
-**syntax:** *ngx.req.set_uri(uri, jump?)*
+**syntax:** *ngx.req.set_uri(uri, jump?, binary?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;*
 
@@ -4526,6 +4526,12 @@ or
  ngx.req.set_uri_args({a = 3})
  ngx.req.set_uri("/foo", true)
 ```
+
+Starting from `0.10.16rc6` of this module, this function accepts an
+optional boolean `binary` argument to allow arbitrary binary URI
+data. By default, this `binary` argument is false and this function
+will throw out a Lua error when the `uri` argument contains any
+control characters (ASCII Code 0 ~ 0x1F and 0x7F).
 
 This interface was first introduced in the `v0.3.1rc14` release.
 
