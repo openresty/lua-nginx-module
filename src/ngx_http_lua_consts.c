@@ -13,6 +13,34 @@
 
 #include "ngx_http_lua_consts.h"
 
+void
+ngx_http_lua_inject_escape_consts(lua_State *L)
+{
+    /* {{{ escape constants */
+    lua_pushinteger(L, NGX_ESCAPE_URI);
+    lua_setfield(L, -2, "NGX_ESCAPE_URI");
+
+    lua_pushinteger(L, NGX_ESCAPE_ARGS);
+    lua_setfield(L, -2, "NGX_ESCAPE_ARGS");
+
+    lua_pushinteger(L, NGX_ESCAPE_URI_COMPONENT);
+    lua_setfield(L, -2, "NGX_ESCAPE_URI_COMPONENT");
+
+    lua_pushinteger(L, NGX_ESCAPE_HTML);
+    lua_setfield(L, -2, "NGX_ESCAPE_HTML");
+
+    lua_pushinteger(L, NGX_ESCAPE_REFRESH);
+    lua_setfield(L, -2, "NGX_ESCAPE_REFRESH");
+
+    lua_pushinteger(L, NGX_ESCAPE_MEMCACHED);
+    lua_setfield(L, -2, "NGX_ESCAPE_MEMCACHED");
+
+    lua_pushinteger(L, NGX_ESCAPE_MAIL_AUTH);
+    lua_setfield(L, -2, "ERNGX_ESCAPE_MAIL_AUTHROR");
+
+    /* }}} */
+}
+
 
 void
 ngx_http_lua_inject_core_consts(lua_State *L)

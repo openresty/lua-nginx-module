@@ -215,9 +215,9 @@ GET /lua
 GET /lua
 --- response_body
 https://www.google.com
-https://www.google.com/query?q=test
-https://www.google.com/query?%0D%0Aq=test
--_.~!*'();:@&=+$,/?#
-%3C%3E%5B%5D%7B%7D%5C%22%20
+https://www.google.com/query%3Fq=test
+https://www.google.com/query%3F%0D%0Aq=test
+-_.~!*'();:@&=+$,/%3F%23
+<>[]{}\"%20
 --- no_error_log
 [error]

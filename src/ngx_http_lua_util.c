@@ -726,6 +726,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
     ngx_http_lua_inject_arg_api(L);
 
+    ngx_http_lua_inject_escape_consts(L);
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
 
@@ -1892,13 +1893,13 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
         0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
 
                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-        0x50000025, /* 0101 0000 0000 0000  0000 0000 0010 0101 */
+        0x80000029, /* 1000 0000 0000 0000  0000 0000 0010 1001 */
 
                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-        0x78000000, /* 0111 1000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
 
                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
-        0xa8000000, /* 1010 1000 0000 0000  0000 0000 0000 0000 */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
 
         0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
         0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
