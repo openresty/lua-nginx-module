@@ -17,53 +17,50 @@
 
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
+/*
+https://tools.ietf.org/html/rfc3986*
+URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+query         = *( pchar / "/" / "?" )
+fragment      = *( pchar / "/" / "?" )
+pct-encoded   = "%" HEXDIG HEXDIG
+unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+reserved      = gen-delims / sub-delims
+sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+              / "*" / "+" / "," / ";" / "="
 
+gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+ */
 
 static ngx_inline ngx_int_t
 ngx_http_lua_is_escaped_query_string(ngx_http_request_t *r, u_char *str,
-    size_t len)
+    size_t len, u_char *b)
 {
-    size_t           i, buf_len;
+    size_t           i;
     u_char           c;
-    u_char          *buf;
-    u_char          *src;
 
     static uint32_t   map[] = {
-        0x00002401, /* 0000 0000 0000 0000  0010 0100 0000 0001 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
 
                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x50000005, /* 0101 0000 0000 0000  0000 0000 0000 0101 */
 
                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x78000000, /* 0111 1000 0000 0000  0000 0000 0000 0000 */
 
                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0xa8000000, /* 1010 1000 0000 0000  0000 0000 0000 0000 */
 
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
-    src = str;
     for (i = 0; i < len; i++, str++) {
         c = *str;
         if (map[c >> 5] & (1 << (c & 0x1f))) {
-            buf_len = ngx_http_lua_escape_log(NULL, src, len);
-            buf = ngx_palloc(r->pool, buf_len);
-            if (buf == NULL) {
-                return NGX_ERROR;
-            }
-
-            ngx_http_lua_escape_log(buf, src, len);
-
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "unsafe byte \"0x%uxd\" in query string \"%*s\"",
-                          (unsigned) c, buf_len, buf);
-
-            ngx_pfree(r->pool, buf);
-
+            *b = c;
             return NGX_ERROR;
         }
     }
@@ -78,8 +75,10 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
     ngx_str_t                    args;
     const char                  *msg;
     size_t                       len;
+    size_t                       buf_len;
     u_char                      *p;
-    int                          type;
+    u_char                       b;
+    u_char                      *buf;
 
     if (lua_gettop(L) != 1) {
         return luaL_error(L, "expecting 1 argument but seen %d",
@@ -93,8 +92,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
     ngx_http_lua_check_fake_request(L, r);
 
-    type = lua_type(L, 1);
-    switch (type) {
+    switch (lua_type(L, 1)) {
     case LUA_TNUMBER:
         p = (u_char *) lua_tolstring(L, 1, &len);
 
@@ -110,8 +108,22 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
 
     case LUA_TSTRING:
         p = (u_char *) lua_tolstring(L, 1, &len);
-        if (ngx_http_lua_is_escaped_query_string(r, p, len) != NGX_OK) {
-            return luaL_argerror(L, 1, "query-string contains unescaped byte");
+        if (ngx_http_lua_is_escaped_query_string(r, p, len, &b) != NGX_OK) {
+            buf_len = ngx_http_lua_escape_log(NULL, p, len);
+            buf = ngx_palloc(r->pool, buf_len + 1);
+            if (buf == NULL) {
+                return NGX_ERROR;
+            }
+
+            ngx_http_lua_escape_log(buf, p, len);
+            /* lua_pushfstring should be zero terminated */
+            buf[buf_len] = '\0';
+            msg = lua_pushfstring(L, "unescaped byte 0x%x in query string "
+                                  "\"%s\"", b, buf);
+
+            ngx_pfree(r->pool, buf);
+
+            return luaL_argerror(L, 1, msg);
         }
 
         args.data = ngx_palloc(r->pool, len);
