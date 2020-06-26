@@ -17,20 +17,6 @@
 
 static int ngx_http_lua_ngx_req_set_uri_args(lua_State *L);
 static int ngx_http_lua_ngx_req_get_post_args(lua_State *L);
-/*
-https://tools.ietf.org/html/rfc3986*
-URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-query         = *( pchar / "/" / "?" )
-fragment      = *( pchar / "/" / "?" )
-pct-encoded   = "%" HEXDIG HEXDIG
-unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-reserved      = gen-delims / sub-delims
-sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
-              / "*" / "+" / "," / ";" / "="
-
-gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
- */
 
 static ngx_inline ngx_int_t
 ngx_http_lua_is_escaped_query_string(ngx_http_request_t *r, u_char *str,
