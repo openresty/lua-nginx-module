@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 3 + 14);
+plan tests => repeat_each() * (blocks() * 3 + 9);
 
 #no_diff();
 #no_long_string();
@@ -339,8 +339,7 @@ Location:
 foo:
 bar:
 --- error_log
-unsafe byte "0xd" in redirect uri "http://agentzh.org/foo\x0Dfoo:bar\x0Abar:foo"
-attempt to set unsafe redirect uri
+unsafe byte "0x0d" in redirect uri "http://agentzh.org/foo\x0Dfoo:bar\x0Abar:foo"
 
 
 
@@ -360,8 +359,7 @@ Location:
 foo:
 bar:
 --- error_log
-unsafe byte "0xa" in redirect uri "http://agentzh.org/foo\x0Afoo:bar\x0Dbar:foo"
-attempt to set unsafe redirect uri
+unsafe byte "0x0a" in redirect uri "http://agentzh.org/foo\x0Afoo:bar\x0Dbar:foo"
 
 
 
@@ -380,8 +378,7 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xa" in redirect uri "\x0Afoo:http://agentzh.org/foo"
-attempt to set unsafe redirect uri
+unsafe byte "0x0a" in redirect uri "\x0Afoo:http://agentzh.org/foo"
 
 
 
@@ -400,8 +397,7 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xd" in redirect uri "\x0Dfoo:http://agentzh.org/foo"
-attempt to set unsafe redirect uri
+unsafe byte "0x0d" in redirect uri "\x0Dfoo:http://agentzh.org/foo"
 
 
 
@@ -420,5 +416,4 @@ GET /t
 Location:
 foo:
 --- error_log
-unsafe byte "0xd" in redirect uri "\x0Dhttp\x5C://\x22agentzh.org\x22/foo"
-attempt to set unsafe redirect uri
+unsafe byte "0x0d" in redirect uri "\x0Dhttp\x5C://\x22agentzh.org\x22/foo"

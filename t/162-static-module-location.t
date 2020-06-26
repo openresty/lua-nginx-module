@@ -18,7 +18,7 @@ __DATA__
         rewrite_by_lua_block {
             ngx.req.read_body();
             local args, _ = ngx.req.get_post_args();
-            ngx.req.set_uri(args["url"], true);
+            ngx.req.set_uri(args["url"], true, true);
         }
     }
 --- request

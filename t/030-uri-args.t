@@ -9,7 +9,9 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 21);
+
+plan tests => repeat_each() * (blocks() * 2 + 23);
+
 
 no_root_location();
 
@@ -1579,7 +1581,7 @@ args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
     location /t {
         content_by_lua_block {
             local new_uri = '\0foo'
-            ngx.req.set_uri(new_uri)
+            ngx.req.set_uri(new_uri, false, true)
             ngx.say(ngx.var.uri)
         }
     }
@@ -1684,3 +1686,84 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got ni
 --- error_code: 500
 --- error_log
 bad argument #1 to 'set_uri_args' (string, number, or table expected, but got userdata)
+
+
+
+=== TEST 64: set_uri binary option with unsafe uri
+explict specify binary option to true
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            local new_uri = "/foo\r\nbar"
+            ngx.req.set_uri(new_uri, false, true)
+        }
+
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+
+    location /foo {
+        content_by_lua_block {
+            ngx.say("request_uri: ", ngx.var.request_uri)
+            ngx.say("uri: ", ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- response_body eval
+["request_uri: /foo%0D%0Abar\nuri: /foo\r\nbar\n", "request_uri: /foo%0D%0Abar\nuri: /foo\r\nbar\n"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 65: set_uri binary option with unsafe uri
+explict specify binary option to false
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            local new_uri = "/foo\r\nbar"
+            ngx.req.set_uri(new_uri, false, false)
+        }
+
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+
+    location /foo {
+        content_by_lua_block {
+            ngx.say("request_uri: ", ngx.var.request_uri)
+            ngx.say("uri: ", ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- error_code: 500
+--- error_log eval
+qr{\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: rewrite_by_lua\(nginx.conf:\d+\):\d+: unsafe byte "0x0d" in uri "/foo\\x0D\\x0Abar" \(maybe you want to set the 'binary' argument\?\)}
+
+
+
+=== TEST 66: set_uri binary option with safe uri
+explict specify binary option to false
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            local new_uri = "/foo bar"
+            ngx.req.set_uri(new_uri, false, true)
+        }
+
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+    }
+
+    location /foo {
+        content_by_lua_block {
+            ngx.say("request_uri: ", ngx.var.request_uri)
+            ngx.say("uri: ", ngx.var.uri)
+        }
+    }
+--- request
+    GET /t
+--- response_body
+request_uri: /foo%20bar
+uri: /foo bar
+--- no_error_log
+[error]
