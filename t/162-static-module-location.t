@@ -93,4 +93,3 @@ GET /t/%E4%B8%AD%E6%96%87?q=name
 Location: http://localhost:1984/t/%E4%B8%AD%E6%96%87/?q=name
 --- response_body_like
 .*301 Moved Permanently.*
-
