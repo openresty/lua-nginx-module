@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 3);
+plan tests => repeat_each() * (blocks() * 2 + 4);
 
 no_long_string();
 
@@ -200,15 +200,15 @@ GET /lua
 
 
 
-=== TEST 15: not component argument
+=== TEST 15: escape type argument
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.escape_uri("https://www.google.com", true))
-            ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", true))
-            ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", true))
-            ngx.say(ngx.escape_uri("-_.~!*'();:@&=+$,/?#", true))
-            ngx.say(ngx.escape_uri("<>[]{}\\\" ", true))
+            ngx.say(ngx.escape_uri("https://www.google.com", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("-_.~!*'();:@&=+$,/?#", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("<>[]{}\\\" ", ngx.ESCAPE_URI))
         }
     }
 --- request
@@ -221,3 +221,76 @@ https://www.google.com/query%3F%0D%0Aq=test
 <>[]{}\"%20
 --- no_error_log
 [error]
+
+
+
+=== TEST 16: escape type argument
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_ARGS))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_URI_COMPONENT))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_HTML))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_REFRESH))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_MEMCACHED))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_MAIL_AUTH))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+https://www.google.com/%3Ft=abc@%20:
+https://www.google.com/%3Ft=abc@%20:
+https%3A%2F%2Fwww.google.com%2F%3Ft%3Dabc%40%20%3A
+https://www.google.com/?t=abc@%20:
+https://www.google.com/?t=abc@%20:
+https://www.google.com/?t=abc@%20:
+https://www.google.com/?t=abc@%20:
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: escape type out of range
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("https://www.google.com", -1))
+        }
+    }
+--- request
+GET /lua
+--- error_code: 500
+--- error_log eval
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" \-1 out of range/
+
+
+
+=== TEST 18: escape type out of range
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("https://www.google.com", 100))
+        }
+    }
+--- request
+GET /lua
+--- error_code: 500
+--- error_log eval
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" 100 out of range/
+
+
+
+=== TEST 19: escape type not integer
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.escape_uri("https://www.google.com", true))
+        }
+    }
+--- request
+GET /lua
+--- error_code: 500
+--- error_log eval
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" is not number/
