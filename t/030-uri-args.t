@@ -9,7 +9,7 @@ log_level('warn');
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 27);
+plan tests => repeat_each() * (blocks() * 2 + 24);
 
 no_root_location();
 
@@ -1585,7 +1585,7 @@ attempt to set unsafe uri
         }
     }
 --- request
-GET /t
+    GET /t
 --- error_code: 500
 --- error_log
 unsafe byte "0x0" in uri "\x00foo"
@@ -1611,7 +1611,7 @@ attempt to set unsafe uri
         }
     }
 --- request
-GET /t
+    GET /t
 --- response_body
 request_uri: /foo%20bar
 uri: /foo bar
@@ -1634,7 +1634,7 @@ uri: /foo bar
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-GET /foo?world
+    GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
@@ -1657,7 +1657,7 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got bo
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-GET /foo?world
+    GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
@@ -1680,133 +1680,9 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got ni
         proxy_pass http://127.0.0.2:12345;
     }
 --- request
-GET /foo?world
+    GET /foo?world
 --- response_body_like: 500 Internal Server Error
 --- log_level: debug
 --- error_code: 500
 --- error_log
 bad argument #1 to 'set_uri_args' (string, number, or table expected, but got userdata)
-
-
-
-=== TEST 64: rewrite args (string with \r)
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("a\rb")
-        }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
-    }
-    location /echo {
-        content_by_lua_block {
-            ngx.say(ngx.var.request_uri);
-        }
-    }
---- request
-GET /foo?world
---- error_code: 200
---- response_body
-/echo?a%0Db
-
-
-
-=== TEST 65: rewrite args (string with \n)
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("a\nb")
-        }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
-    }
-    location /echo {
-        content_by_lua_block {
-            ngx.say(ngx.var.request_uri);
-        }
-    }
---- request
-GET /foo?world
---- response_body
-/echo?a%0Ab
-
-
-
-=== TEST 66: rewrite args (string with \0)
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("a\0b")
-        }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
-    }
-    location /echo {
-        content_by_lua_block {
-            ngx.say(ngx.var.request_uri);
-        }
-    }
---- request
-GET /foo?world
---- response_body
-/echo?a%00b
-
-
-
-=== TEST 67: rewrite args (string arg with 'lang=中文')
-ngx.req.set_uri_args with string argument should be carefully encoded.
-For backward compatibility, we are allowed to pass such parameters.
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("lang=中文")
-        }
-        content_by_lua_block {
-            ngx.say(ngx.var.arg_lang)
-        }
-    }
---- request
-GET /foo?world
---- response_body
-中文
---- no_error_log
-[error]
-
-
-
-=== TEST 68: rewrite args (string arg with '语言=chinese')
-ngx.req.set_uri_args with string argument should be carefully encoded.
-For backward compatibility, we are allowed to pass such parameters.
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("语言=chinese")
-        }
-        content_by_lua_block {
-            ngx.say(ngx.var.arg_语言)
-        }
-    }
---- request
-GET /foo?world
---- response_body
-chinese
---- no_error_log
-[error]
-
-
-
-=== TEST 69: rewrite args (string arg with '语言=中文')
-ngx.req.set_uri_args with string argument should be carefully encoded.
-For backward compatibility, we are allowed to pass such parameters.
---- config
-    location /foo {
-        rewrite_by_lua_block {
-            ngx.req.set_uri_args("语言=中文")
-        }
-        content_by_lua_block {
-            ngx.say(ngx.var.arg_语言)
-        }
-    }
---- request
-GET /foo?world
---- response_body
-中文
---- no_error_log
-[error]
