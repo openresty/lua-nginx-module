@@ -3791,7 +3791,8 @@ or a Lua table holding the query arguments' key-value pairs, as in
     ngx.req.set_uri_args({ a = 3, b = "hello world" })
 </geshi>
 
-In the former case, this method will throw out a Lua exception if <code>args</code> contain '\r' or '\n' or '\0'.
+In the former case, the input Lua string should be escaped. Otherwise, this
+method will escape ASCII code 0x00~0x32 and 0x7F in the Lua string.
 In the latter case, this method will escape argument keys and values according to the URI escaping rule.
 
 Multi-value arguments are also supported:

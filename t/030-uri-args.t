@@ -1691,58 +1691,62 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got us
 
 === TEST 64: rewrite args (string with \r)
 --- config
-    location /bar {
-        echo $server_protocol $query_string;
-    }
     location /foo {
         rewrite_by_lua_block {
             ngx.req.set_uri_args("a\rb")
         }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
+    }
+    location /echo {
+        content_by_lua_block {
+            ngx.say(ngx.var.request_uri);
+        }
     }
 --- request
 GET /foo?world
---- error_code: 500
---- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(unescaped byte 0xd in query string "a\\x0Db"\)/
+--- error_code: 200
+--- response_body
+/echo?a%0Db
 
 
 
 === TEST 65: rewrite args (string with \n)
 --- config
-    location /bar {
-        echo $server_protocol $query_string;
-    }
     location /foo {
         rewrite_by_lua_block {
             ngx.req.set_uri_args("a\nb")
         }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
+    }
+    location /echo {
+        content_by_lua_block {
+            ngx.say(ngx.var.request_uri);
+        }
     }
 --- request
 GET /foo?world
---- error_code: 500
---- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(unescaped byte 0xa in query string "a\\x0Ab"\)/
+--- response_body
+/echo?a%0Ab
 
 
 
 === TEST 66: rewrite args (string with \0)
 --- config
-    location /bar {
-        echo $server_protocol $query_string;
-    }
     location /foo {
         rewrite_by_lua_block {
             ngx.req.set_uri_args("a\0b")
         }
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/echo;
+    }
+    location /echo {
+        content_by_lua_block {
+            ngx.say(ngx.var.request_uri);
+        }
     }
 --- request
 GET /foo?world
---- error_code: 500
---- error_log eval
-qr/\[error\] .*? rewrite_by_lua\(nginx.conf:\d+\):\d+: bad argument #1 to 'set_uri_args' \(unescaped byte 0x0 in query string "a\\x00b"\)/
+--- response_body
+/echo?a%00b
 
 
 
