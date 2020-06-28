@@ -5585,16 +5585,11 @@ ngx.escape_uri
 
 **context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
-Escape `str` as a URI component.
-
 Since `v0.10.16rc6`, this function accepts an optional `type` argument.
-```lua
-
-   type = 0 (Escape <code>str</code> as a URI)
-   type = 2 (Escape <code>str</code> as a URI component)
-```
-when type set to 0, " ", "#", "%", "?", 0x00-0x1F, 0x7F-0xFF will be escaped.
-when type set to 2, all characters excepter ALPHA, DIGIT, "-", ".", "_", "~" will be escaped.
+When `type` is set to 0, escape `str` as a URI. And these
+characters " ", "#", "%", "?", 0x00-0x1F, 0x7F-0xFF will be escaped.
+When `type` is set to 2 (which is the default), escape `str`
+as a URI component. All characters excepter ALPHA, DIGIT, "-", ".", "_", "~" will be escaped.
 
 [Back to TOC](#nginx-api-for-lua)
 

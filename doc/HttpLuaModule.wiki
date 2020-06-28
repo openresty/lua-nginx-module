@@ -4690,15 +4690,11 @@ This method was introduced in the <code>0.5.0rc30</code> release.
 
 '''context:''' ''init_by_lua*, init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
-Escape <code>str</code> as a URI component.
-
 Since `v0.10.16rc6`, this function accepts an optional <code>type</code> argument.
-<geshi lang="lua">
-  type = 0 (Escape <code>str</code> as a URI)
-  type = 2 (Escape <code>str</code> as a URI component)
-</geshi>
-when type set to 0, " ", "#", "%", "?", 0x00-0x1F, 0x7F-0xFF will be escaped.
-when type set to 2, all characters excepter ALPHA, DIGIT, "-", ".", "_", "~" will be escaped.
+When <code>type</code> is set to 0, escape <code>str</code> as a URI. And these
+characters " ", "#", "%", "?", 0x00-0x1F, 0x7F-0xFF will be escaped.
+When <code>type</code> is set to 2 (which is the default), escape <code>str</code>
+as a URI component. All characters excepter ALPHA, DIGIT, "-", ".", "_", "~" will be escaped.
 
 == ngx.unescape_uri ==
 
