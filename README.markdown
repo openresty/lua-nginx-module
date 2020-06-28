@@ -4555,7 +4555,7 @@ or a Lua table holding the query arguments' key-value pairs, as in
 In the former case, i.e., when the whole query-string is provided directly,
 the input Lua string should already be well-formed with the URI encoding.
 For security considerations, this method will automatically escape any control and
-whitespace characters (ASCII code 0x00 ~ 0x32 and 0x7F) in the Lua string.
+whitespace characters (ASCII code 0x00 ~ 0x20 and 0x7F) in the Lua string.
 
 In the latter case, this method will escape argument keys and values according to the URI escaping rule.
 
