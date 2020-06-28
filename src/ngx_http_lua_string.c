@@ -436,6 +436,9 @@ size_t
 ngx_http_lua_ffi_uri_escaped_length(const u_char *src, size_t len,
     int type)
 {
+    if (type < NGX_ESCAPE_URI || type > NGX_ESCAPE_MAIL_AUTH) {
+        return -1;
+    }
     return len + 2 * ngx_http_lua_escape_uri(NULL, (u_char *) src, len, type);
 }
 
@@ -444,6 +447,9 @@ void
 ngx_http_lua_ffi_escape_uri(const u_char *src, size_t len, u_char *dst,
     int type)
 {
+    if (type < NGX_ESCAPE_URI || type > NGX_ESCAPE_MAIL_AUTH) {
+        return;
+    }
     ngx_http_lua_escape_uri(dst, (u_char *) src, len, type);
 }
 

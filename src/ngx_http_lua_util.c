@@ -726,7 +726,6 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
     ngx_http_lua_inject_arg_api(L);
 
-    ngx_http_lua_inject_escape_consts(L);
     ngx_http_lua_inject_http_consts(L);
     ngx_http_lua_inject_core_consts(L);
 

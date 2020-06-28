@@ -204,11 +204,11 @@ GET /lua
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.escape_uri("https://www.google.com", ngx.ESCAPE_URI))
-            ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", ngx.ESCAPE_URI))
-            ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", ngx.ESCAPE_URI))
-            ngx.say(ngx.escape_uri("-_.~!*'();:@&=+$,/?#", ngx.ESCAPE_URI))
-            ngx.say(ngx.escape_uri("<>[]{}\\\" ", ngx.ESCAPE_URI))
+            ngx.say(ngx.escape_uri("https://www.google.com", 0))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?q=test", 0))
+            ngx.say(ngx.escape_uri("https://www.google.com/query?\r\nq=test", 0))
+            ngx.say(ngx.escape_uri("-_.~!*'();:@&=+$,/?#", 0))
+            ngx.say(ngx.escape_uri("<>[]{}\\\" ", 0))
         }
     }
 --- request
@@ -228,13 +228,13 @@ https://www.google.com/query%3F%0D%0Aq=test
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_URI))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_ARGS))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_URI_COMPONENT))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_HTML))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_REFRESH))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_MEMCACHED))
-            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", ngx.ESCAPE_MAIL_AUTH))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 0))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 1))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 2))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 3))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 4))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 5))
+            ngx.say(ngx.escape_uri("https://www.google.com/?t=abc@ :", 6))
         }
     }
 --- request
@@ -263,7 +263,7 @@ https://www.google.com/?t=abc@%20:
 GET /lua
 --- error_code: 500
 --- error_log eval
-qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" \-1 out of range/
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" \-1 out of range/
 
 
 
@@ -271,14 +271,14 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" 
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.escape_uri("https://www.google.com", 100))
+            ngx.say(ngx.escape_uri("https://www.google.com", 10))
         }
     }
 --- request
 GET /lua
 --- error_code: 500
 --- error_log eval
-qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" 100 out of range/
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" 10 out of range/
 
 
 
@@ -293,4 +293,4 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" 
 GET /lua
 --- error_code: 500
 --- error_log eval
-qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "esc_type" is not number/
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is not number/
