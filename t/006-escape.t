@@ -293,4 +293,4 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" 10 o
 GET /lua
 --- error_code: 500
 --- error_log eval
-qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is not number/
+qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is not a number/
