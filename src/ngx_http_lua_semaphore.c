@@ -379,11 +379,7 @@ ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
-                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
+    rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE,
                                         err, errlen);
 
     if (rc != NGX_OK) {
