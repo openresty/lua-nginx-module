@@ -2672,6 +2672,7 @@ success:
 static int
 ngx_http_lua_socket_tcp_send(lua_State *L)
 {
+    double                               num;
     ngx_int_t                            rc;
     ngx_http_request_t                  *r;
     u_char                              *p;
@@ -2681,6 +2682,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_http_lua_socket_tcp_upstream_t  *u;
     int                                  type;
     int                                  tcp_nodelay;
+    int                                  n;
     const char                          *msg;
     ngx_buf_t                           *b;
     ngx_connection_t                    *c;
@@ -2741,6 +2743,16 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     type = lua_type(L, 2);
     switch (type) {
         case LUA_TNUMBER:
+            num = (double) lua_tonumber(L, 2);
+            if (num == (double) (long) num) {
+                len = NGX_INT64_LEN;
+
+            } else {
+                len = NGX_DOUBLE_LEN;
+            }
+
+            break;
+
         case LUA_TSTRING:
             lua_tolstring(L, 2, &len);
             break;
@@ -2789,13 +2801,30 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     switch (type) {
         case LUA_TNUMBER:
+            if (num == (double) (long) num) {
+                b->last = ngx_snprintf(b->last, NGX_INT64_LEN, "%l",
+                                       (long) num);
+
+            } else {
+                n = snprintf((char *) b->last, NGX_DOUBLE_LEN, "%.16g", num);
+                if (n < 0) {
+                    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                                  "snprintf(\"%f\") failed");
+
+                } else {
+                    b->last += n;
+                }
+            }
+
+            break;
+
         case LUA_TSTRING:
-            p = (u_char *) lua_tolstring(L, -1, &len);
+            p = (u_char *) lua_tolstring(L, 2, &len);
             b->last = ngx_copy(b->last, (u_char *) p, len);
             break;
 
         case LUA_TTABLE:
-            b->last = ngx_http_lua_copy_str_in_table(L, -1, b->last);
+            b->last = ngx_http_lua_copy_str_in_table(L, 2, b->last);
             break;
 
         case LUA_TNIL:
@@ -2826,6 +2855,10 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     }
 
     u->request_bufs = cl;
+
+    lua_assert(b->last - b->start <= len);
+
+    len = b->last - b->start;
 
     u->request_len = len;
 

@@ -257,6 +257,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
     size_t              size;
     size_t              len;
     const char         *msg;
+    double              num;
 
     if (index < 0) {
         index = lua_gettop(L) + index + 1;
@@ -301,6 +302,18 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
         switch (type) {
             case LUA_TNUMBER:
+                num = (double) lua_tonumber(L, -1);
+                if (num == (double) (long) num) {
+                    /* dd("is an integer! %f", num); */
+                    size += NGX_INT64_LEN;
+
+                } else {
+                    /* dd("is a double! %f", num); */
+                    size += NGX_DOUBLE_LEN;
+                }
+
+                break;
+
             case LUA_TSTRING:
 
                 lua_tolstring(L, -1, &len);
@@ -371,9 +384,11 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
     double               key;
     int                  max;
     int                  i;
+    int                  n;
     int                  type;
     size_t               len;
     u_char              *p;
+    double               num;
 
     if (index < 0) {
         index = lua_gettop(L) + index + 1;
@@ -396,6 +411,31 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
         type = lua_type(L, -1);
         switch (type) {
             case LUA_TNUMBER:
+                num = (double) lua_tonumber(L, -1);
+                if (num == (double) (long) num) {
+                    /* dd("is an integer! %f", num); */
+                    dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
+
+                } else {
+#if DDEBUG
+                    u_char *p = dst;
+#endif
+                    /* dd("is a double! %f", num); */
+
+                    n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.16g", num);
+                    if (n < 0) {
+                        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                                      "snprintf(\"%f\") failed");
+
+                    } else {
+                        dst += n;
+                    }
+
+                    dd("%d: %.*s", NGX_DOUBLE_LEN, (int) (dst - p), p);
+                }
+
+                break;
+
             case LUA_TSTRING:
                 p = (u_char *) lua_tolstring(L, -1, &len);
                 dst = ngx_copy(dst, p, len);

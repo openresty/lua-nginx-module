@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 222;
+plan tests => repeat_each() * 225;
 
 our $HtmlDir = html_dir;
 
@@ -1493,7 +1493,7 @@ GET /t
 
 
 
-=== TEST 25: send tables of string fragments
+=== TEST 25: send tables of string fragments (with integers too)
 --- config
     server_tokens off;
     location /t {
@@ -4158,3 +4158,76 @@ orld
 [error]
 --- error_log
 lua tcp socket calling receiveany() method to read at most 7 bytes
+
+
+
+=== TEST 70: send tables of string fragments (with floating point number too)
+--- config
+    server_tokens off;
+    location /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = {"GET", " ", "/foo", " HTTP/", 1, ".", 0, "\r\n",
+                         "Host: localhost\r\n", "Connection: close\r\n",
+                         "Foo: ", 3.1415926, "\r\n",
+                         "\r\n"}
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+
+                else
+                    ngx.say("failed to receive a line: ", err, " [", part, "]")
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        }
+    }
+
+    location /foo {
+        content_by_lua_block {
+            ngx.say(ngx.req.get_headers()["Foo"])
+        }
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+request sent: 73
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 10
+received: Connection: close
+received: 
+received: 3.1415926
+failed to receive a line: closed []
+close: 1 nil
+--- no_error_log
+[error]

@@ -44,6 +44,11 @@ typedef struct {
 #endif
 
 
+#ifndef NGX_DOUBLE_LEN
+#define NGX_DOUBLE_LEN  25
+#endif
+
+
 #if (NGX_PCRE)
 #include <pcre.h>
 #   if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
