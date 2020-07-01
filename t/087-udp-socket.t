@@ -1172,7 +1172,7 @@ send: fd:\d+ 15 of 15/
 
 
 === TEST 22: send tables of string framents (with numbers too)
-Note: maximum number of digits after the decimal-point character is 13
+the maximum number of significant digits is 14 in lua
 --- config
     server_tokens off;
     location /t {

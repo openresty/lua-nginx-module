@@ -95,14 +95,14 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
         switch (type) {
             case LUA_TNUMBER:
-            num = (double) lua_tonumber(L, i);
-            if (num == (double) (long) num) {
-                size += NGX_INT64_LEN;
+                num = (double) lua_tonumber(L, i);
+                if (num == (double) (long) num) {
+                    size += NGX_INT64_LEN;
 
-            } else {
-                size += NGX_DOUBLE_LEN;
-            }
-            break;
+                } else {
+                    size += NGX_DOUBLE_LEN;
+                }
+                break;
 
             case LUA_TSTRING:
 
@@ -204,6 +204,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                         b->last += n;
                     }
                 }
+
                 break;
 
             case LUA_TSTRING:
