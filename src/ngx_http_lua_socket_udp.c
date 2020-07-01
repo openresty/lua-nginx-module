@@ -829,6 +829,7 @@ ngx_http_lua_socket_udp_send(lua_State *L)
 
     switch (type) {
         case LUA_TNUMBER:
+            num = (double) lua_tonumber(L, 2);
             if (num == (double) (long) num) {
                 p = ngx_snprintf(p, NGX_INT64_LEN, "%l", (long) num);
 
