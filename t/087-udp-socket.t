@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 13);
+plan tests => repeat_each() * (3 * blocks() + 15);
 
 our $HtmlDir = html_dir;
 
