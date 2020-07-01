@@ -278,9 +278,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     return 1;
 }
 
-/**
- * Get the maximum possible length, not the actual length
- */
+
 size_t
 ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
     unsigned strict)
@@ -337,6 +335,7 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
         switch (type) {
             case LUA_TNUMBER:
+                /* Get the maximum possible length, not the actual length */
                 num = (double) lua_tonumber(L, -1);
                 if (num == (double) (long) num) {
                     /* dd("is an integer! %f", num); */
