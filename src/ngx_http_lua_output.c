@@ -190,8 +190,12 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                                            (long) num);
 
                 } else {
+                   /**
+                    * The maximum number of significant digits is 14 in lua.
+                    * Please refer to lj_strfmt.c:411 for more details.
+                    */
                     n = snprintf((char *) b->last, NGX_DOUBLE_LEN,
-                                 "%.16g", num);
+                                 "%.14g", num);
                     if (n < 0) {
                         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
                                       "snprintf(\"%f\") failed");
@@ -452,8 +456,11 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
                     u_char *p = dst;
 #endif
                     /* dd("is a double! %f", num); */
-
-                    n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.16g", num);
+                    /**
+                     * The maximum number of significant digits is 14 in lua.
+                     * Please refer to lj_strfmt.c:411 for more details.
+                     */
+                    n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
                     if (n < 0) {
                         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
                                       "snprintf(\"%f\") failed");

@@ -226,7 +226,11 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
                     p = ngx_snprintf(p, NGX_INT64_LEN, "%l", (long) num);
 
                 } else {
-                    n = snprintf((char *) p, NGX_DOUBLE_LEN, "%.16g", num);
+                    /**
+                     * The maximum number of significant digits is 14 in lua.
+                     * Please refer to lj_strfmt.c:411 for more details.
+                     */
+                    n = snprintf((char *) p, NGX_DOUBLE_LEN, "%.14g", num);
                     if (n < 0) {
                         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
                                       "snprintf(\"%f\") failed");

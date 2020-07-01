@@ -548,3 +548,23 @@ ok
 [error]
 --- error_log eval
 "2: hello\0world, client: "
+
+
+
+=== TEST 27: test log-level STDERR
+Note: maximum number of digits after the decimal-point character is 13
+--- config
+    location /log {
+        content_by_lua '
+            ngx.say("before log")
+            ngx.log(ngx.STDERR, 3.14159265357939723846)
+            ngx.say("after log")
+        ';
+    }
+--- request
+GET /log
+--- response_body
+before log
+after log
+--- error_log eval
+qr/\[\] \S+: \S+ \[lua\] content_by_lua\(nginx\.conf:\d+\):3: 3.1415926535794/

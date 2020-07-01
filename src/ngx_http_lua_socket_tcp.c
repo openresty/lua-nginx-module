@@ -2808,7 +2808,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                                        (long) num);
 
             } else {
-                n = snprintf((char *) b->last, NGX_DOUBLE_LEN, "%.16g", num);
+                /**
+                 * The maximum number of significant digits is 14 in lua.
+                 * Please refer to lj_strfmt.c:411 for more details.
+                 */
+                n = snprintf((char *) b->last, NGX_DOUBLE_LEN, "%.14g", num);
                 if (n < 0) {
                     ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
                                   "snprintf(\"%f\") failed");

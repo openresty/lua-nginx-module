@@ -4235,6 +4235,7 @@ close: 1 nil
 
 
 === TEST 71: send numbers
+the maximum number of significant digits is 14 in lua
 --- config
     server_tokens off;
     location /t {
@@ -4265,7 +4266,7 @@ close: 1 nil
             end
             total_bytes = total_bytes + bytes;
 
-            bytes, err = sock:send(3.1415926)
+            bytes, err = sock:send(3.14159265357939723846)
             if not bytes then
                 ngx.say("failed to send request: ", err)
                 return
@@ -4314,14 +4315,14 @@ close: 1 nil
 GET /t
 --- response_body
 connected: 1
-request sent: 81
+request sent: 87
 received: HTTP/1.1 200 OK
 received: Server: nginx
 received: Content-Type: text/plain
-received: Content-Length: 18
+received: Content-Length: 24
 received: Connection: close
 received: 
-received: 3.141592631415926
+received: 3.141592653579431415926
 failed to receive a line: closed []
 close: 1 nil
 --- no_error_log
