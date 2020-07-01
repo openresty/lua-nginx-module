@@ -2758,6 +2758,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
             break;
 
         case LUA_TTABLE:
+            /* The maximum possible length, not the actual length */
             len = ngx_http_lua_calc_strlen_in_table(L, 2, 2, 1 /* strict */);
             break;
 

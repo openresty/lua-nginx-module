@@ -1117,3 +1117,97 @@ qr/send: fd:\d+ 4 of 4
 send: fd:\d+ 5 of 5
 send: fd:\d+ 3 of 3/
 --- log_level: debug
+
+
+
+=== TEST 21: send numbers
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local socket = ngx.socket
+            local udp = socket.udp()
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", ngx.var.port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local function send(data)
+                local bytes, err = udp:send(data)
+                if not bytes then
+                    ngx.say("failed to send: ", err)
+                    return
+                end
+                ngx.say("sent ok")
+            end
+
+            send(123456)
+            send(3.141926)
+        }
+    }
+--- request
+GET /t
+--- response_body
+sent ok
+sent ok
+--- no_error_log
+[error]
+--- grep_error_log eval
+qr/send: fd:\d+ \d+ of \d+/
+--- grep_error_log_out eval
+qr/send: fd:\d+ 6 of 6
+send: fd:\d+ 8 of 8/
+--- log_level: debug
+
+
+
+=== TEST 22: send tables of string framents (with numbers too)
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local socket = ngx.socket
+            local udp = socket.udp()
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", ngx.var.port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local function send(data)
+                local bytes, err = udp:send(data)
+                if not bytes then
+                    ngx.say("failed to send: ", err)
+                    return
+                end
+                ngx.say("sent ok")
+            end
+
+            send({"integer: ", 1234567890123})
+            send({"float: ", 3.1419265})
+        }
+    }
+--- request
+GET /t
+--- response_body
+sent ok
+sent ok
+--- no_error_log
+[error]
+--- grep_error_log eval
+qr/send: fd:\d+ \d+ of \d+/
+--- grep_error_log_out eval
+qr/send: fd:\d+ 22 of 22
+send: fd:\d+ 16 of 16/
+--- log_level: debug
