@@ -67,8 +67,8 @@ Version
 =======
 
 This document describes ngx_lua
-[v0.10.16](https://github.com/openresty/lua-nginx-module/tags), which is not
-released yet.
+[v0.10.16](https://github.com/openresty/lua-nginx-module/tags), which was released
+on 2 July, 2020.
 
 Synopsis
 ========
