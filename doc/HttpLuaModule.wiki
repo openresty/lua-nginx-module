@@ -4709,7 +4709,7 @@ It accepts the following values (defaults to `2`):
 <code> </code> (space), <code>#</code>, <code>%</code>,
 `?`, 0x00 ~ 0x1F, 0x7F ~ 0xFF will be escaped.
 * `2`: escape <code>str</code> as a URI component. All characters except
-alphabetic characters, digits, <code>-</code>, <code>.</code>, <code>_<code>,
+alphabetic characters, digits, <code>-</code>, <code>.</code>, <code>_</code>,
 <code>~</code> will be encoded as `%XX`.
 
 == ngx.unescape_uri ==
