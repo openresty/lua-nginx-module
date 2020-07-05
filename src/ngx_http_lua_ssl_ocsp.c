@@ -20,7 +20,7 @@
 static int ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn,
     void *data);
 
-static time_t ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time);
+static long ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time);
 #endif
 
 int
@@ -263,7 +263,7 @@ failed:
 int
 ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
     size_t resp_len, const char *chain_data, size_t chain_len,
-    u_char *errbuf, size_t *errbuf_size, time_t *valid)
+    u_char *errbuf, size_t *errbuf_size, long *valid)
 {
 #ifndef NGX_HTTP_LUA_USE_OCSP
 
@@ -386,7 +386,7 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
 
     if (nextupdate) {
         *valid = ngx_http_lua_ssl_stapling_time(nextupdate);
-        if (*valid == (time_t) NGX_ERROR) {
+        if (*valid == NGX_ERROR) {
             *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
                                         "invalid nextUpdate time "
                                         "in certificate status") - errbuf;
@@ -449,7 +449,8 @@ ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn, void *data)
     return SSL_TLSEXT_ERR_OK;
 }
 
-static time_t
+
+static long
 ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time)
 {
     BIO     *bio;
@@ -459,7 +460,7 @@ ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time)
 
     /*
      * OpenSSL doesn't provide a way to convert ASN1_GENERALIZEDTIME
-     * into time_t.  To do this, we use ASN1_GENERALIZEDTIME_print(),
+     * into long.  To do this, we use ASN1_GENERALIZEDTIME_print(),
      * which uses the "MMM DD HH:MM:SS YYYY [GMT]" format (e.g.,
      * "Feb  3 00:55:52 2015 GMT"), and parse the result.
      */
