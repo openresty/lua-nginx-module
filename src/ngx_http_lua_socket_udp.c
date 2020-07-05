@@ -886,6 +886,8 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     }
 
     query.len = p - query.data;
+    ngx_http_lua_assert(query.len <= len);
+
     u->ft_type = 0;
 
     /* mimic ngx_http_upstream_init_request here */
