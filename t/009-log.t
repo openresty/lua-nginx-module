@@ -555,11 +555,11 @@ ok
 Note: maximum number of digits after the decimal-point character is 13
 --- config
     location /log {
-        content_by_lua '
+        content_by_lua_block {
             ngx.say("before log")
             ngx.log(ngx.STDERR, 3.14159265357939723846)
             ngx.say("after log")
-        ';
+        }
     }
 --- request
 GET /log
