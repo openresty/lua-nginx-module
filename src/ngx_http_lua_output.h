@@ -31,6 +31,7 @@ ngx_http_lua_get_num_len(lua_State *L, int idx)
     num = (double) lua_tonumber(L, idx);
     if (num == (double) (long) num) {
         return NGX_INT64_LEN;
+
     } else {
         return NGX_DOUBLE_LEN;
     }
