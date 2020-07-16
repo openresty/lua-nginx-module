@@ -724,7 +724,6 @@ ngx_http_lua_socket_error_retval_handler(ngx_http_request_t *r,
 static int
 ngx_http_lua_socket_udp_send(lua_State *L)
 {
-    double                               num;
     ssize_t                              n;
     ngx_http_request_t                  *r;
     u_char                              *p;
@@ -783,14 +782,7 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     type = lua_type(L, 2);
     switch (type) {
         case LUA_TNUMBER:
-            num = (double) lua_tonumber(L, 2);
-            if (num == (double) (long) num) {
-                len = NGX_INT64_LEN;
-
-            } else {
-                len = NGX_DOUBLE_LEN;
-            }
-
+            len = ngx_http_lua_get_num_len(L, 2);
             break;
 
         case LUA_TSTRING:
@@ -829,24 +821,7 @@ ngx_http_lua_socket_udp_send(lua_State *L)
 
     switch (type) {
         case LUA_TNUMBER:
-            num = (double) lua_tonumber(L, 2);
-            if (num == (double) (long) num) {
-                p = ngx_snprintf(p, NGX_INT64_LEN, "%l", (long) num);
-
-            } else {
-                /**
-                 * The maximum number of significant digits is 14 in lua.
-                 * Please refer to lj_strfmt.c:411 for more details.
-                 */
-                n = snprintf((char *) p, NGX_DOUBLE_LEN, "%.14g", num);
-                if (n < 0) {
-                    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                                  "snprintf(\"%f\") failed");
-
-                } else {
-                    p += n;
-                }
-            }
+            p = ngx_http_lua_write_num(L, 2, p);
             break;
 
         case LUA_TSTRING:

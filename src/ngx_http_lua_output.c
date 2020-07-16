@@ -38,7 +38,6 @@ ngx_http_lua_ngx_say(lua_State *L)
 static int
 ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 {
-    double                       num;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
     const char                  *p;
@@ -50,7 +49,6 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     int                          i;
     int                          nargs;
     int                          type;
-    int                          n;
     const char                  *msg;
 
     r = ngx_http_lua_get_req(L);
@@ -95,13 +93,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
         switch (type) {
             case LUA_TNUMBER:
-                num = (double) lua_tonumber(L, i);
-                if (num == (double) (long) num) {
-                    size += NGX_INT64_LEN;
-
-                } else {
-                    size += NGX_DOUBLE_LEN;
-                }
+                size += ngx_http_lua_get_num_len(L, i);
                 break;
 
             case LUA_TSTRING:
@@ -184,27 +176,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
-                num = (double) lua_tonumber(L, i);
-                if (num == (double) (long) num) {
-                    b->last = ngx_snprintf(b->last, NGX_INT64_LEN, "%l",
-                                           (long) num);
-
-                } else {
-                   /**
-                    * The maximum number of significant digits is 14 in lua.
-                    * Please refer to lj_strfmt.c:411 for more details.
-                    */
-                    n = snprintf((char *) b->last, NGX_DOUBLE_LEN,
-                                 "%.14g", num);
-                    if (n < 0) {
-                        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                                      "snprintf(\"%f\") failed");
-
-                    } else {
-                        b->last += n;
-                    }
-                }
-
+                b->last = ngx_http_lua_write_num(L, i, b->last);
                 break;
 
             case LUA_TSTRING:
@@ -291,7 +263,6 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
     size_t              size;
     size_t              len;
     const char         *msg;
-    double              num;
 
     if (index < 0) {
         index = lua_gettop(L) + index + 1;
@@ -336,17 +307,8 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
         switch (type) {
             case LUA_TNUMBER:
-                /* Get the maximum possible length, not the actual length */
-                num = (double) lua_tonumber(L, -1);
-                if (num == (double) (long) num) {
-                    /* dd("is an integer! %f", num); */
-                    size += NGX_INT64_LEN;
 
-                } else {
-                    /* dd("is a double! %f", num); */
-                    size += NGX_DOUBLE_LEN;
-                }
-
+                size += ngx_http_lua_get_num_len(L, -1);
                 break;
 
             case LUA_TSTRING:
@@ -419,11 +381,9 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
     double               key;
     int                  max;
     int                  i;
-    int                  n;
     int                  type;
     size_t               len;
     u_char              *p;
-    double               num;
 
     if (index < 0) {
         index = lua_gettop(L) + index + 1;
@@ -446,32 +406,7 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
         type = lua_type(L, -1);
         switch (type) {
             case LUA_TNUMBER:
-                num = (double) lua_tonumber(L, -1);
-                if (num == (double) (long) num) {
-                    /* dd("is an integer! %f", num); */
-                    dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
-
-                } else {
-#if DDEBUG
-                    u_char *p = dst;
-#endif
-                    /* dd("is a double! %f", num); */
-                    /**
-                     * The maximum number of significant digits is 14 in lua.
-                     * Please refer to lj_strfmt.c:411 for more details.
-                     */
-                    n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
-                    if (n < 0) {
-                        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                                      "snprintf(\"%f\") failed");
-
-                    } else {
-                        dst += n;
-                    }
-
-                    dd("%d: %.*s", NGX_DOUBLE_LEN, (int) (dst - p), p);
-                }
-
+                dst = ngx_http_lua_write_num(L, -1, dst);
                 break;
 
             case LUA_TSTRING:

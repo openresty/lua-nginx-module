@@ -22,6 +22,47 @@ u_char *ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst);
 ngx_int_t ngx_http_lua_flush_resume_helper(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
+/* Get the maximum possible length, not the actual length */
+static ngx_inline size_t
+ngx_http_lua_get_num_len(lua_State *L, int idx)
+{
+    double     num;
+
+    num = (double) lua_tonumber(L, idx);
+    if (num == (double) (long) num) {
+        return NGX_INT64_LEN;
+    } else {
+        return NGX_DOUBLE_LEN;
+    }
+}
+
+static ngx_inline u_char *
+ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
+{
+    double     num;
+    int        n;
+
+    num = (double) lua_tonumber(L, idx);
+    if (num == (double) (long) num) {
+        dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
+
+        } else {
+            /**
+             * The maximum number of significant digits is 14 in lua.
+             * Please refer to lj_strfmt.c:411 for more details.
+             */
+            n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
+            if (n < 0) {
+                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                              "snprintf(\"%f\") failed");
+
+        } else {
+            dst += n;
+        }
+    }
+
+    return dst;
+}
 
 #endif /* _NGX_HTTP_LUA_OUTPUT_H_INCLUDED_ */
 

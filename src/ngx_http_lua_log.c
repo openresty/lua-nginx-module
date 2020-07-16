@@ -14,6 +14,7 @@
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_log_ringbuf.h"
+#include "ngx_http_lua_output.h"
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -90,7 +91,6 @@ static int
 log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
     lua_State *L)
 {
-    double               num;
     u_char              *buf;
     u_char              *p, *q;
     ngx_str_t            name;
@@ -98,7 +98,6 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
     size_t               size, len;
     size_t               src_len = 0;
     int                  type;
-    int                  n;
     const char          *msg;
     lua_Debug            ar;
 
@@ -144,14 +143,8 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
-            num = (double) lua_tonumber(L, i);
-            if (num == (double) (long) num) {
-                size += NGX_INT64_LEN;
-
-            } else {
-                size += NGX_DOUBLE_LEN;
-            }
-            break;
+                size += ngx_http_lua_get_num_len(L, i);
+                break;
 
             case LUA_TSTRING:
                 lua_tolstring(L, i, &len);
@@ -221,24 +214,7 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
-                num = (double) lua_tonumber(L, i);
-                if (num == (double) (long) num) {
-                    p = ngx_snprintf(p, NGX_INT64_LEN, "%l", (long) num);
-
-                } else {
-                    /**
-                     * The maximum number of significant digits is 14 in lua.
-                     * Please refer to lj_strfmt.c:411 for more details.
-                     */
-                    n = snprintf((char *) p, NGX_DOUBLE_LEN, "%.14g", num);
-                    if (n < 0) {
-                        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                                      "snprintf(\"%f\") failed");
-
-                    } else {
-                        p += n;
-                    }
-                }
+                p = ngx_http_lua_write_num(L, i, p);
                 break;
 
             case LUA_TSTRING:
