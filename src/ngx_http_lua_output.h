@@ -46,15 +46,15 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
     if (num == (double) (long) num) {
         dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
 
-        } else {
-            /**
-             * The maximum number of significant digits is 14 in lua.
-             * Please refer to lj_strfmt.c:411 for more details.
-             */
-            n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
-            if (n < 0) {
-                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                              "snprintf(\"%f\") failed");
+    } else {
+        /**
+         * The maximum number of significant digits is 14 in lua.
+         * Please refer to lj_strfmt.c:411 for more details.
+         */
+        n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
+        if (n < 0) {
+            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                          "snprintf(\"%f\") failed");
 
         } else {
             dst += n;
