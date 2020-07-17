@@ -22,6 +22,7 @@ u_char *ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst);
 ngx_int_t ngx_http_lua_flush_resume_helper(ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 
+
 /* Get the maximum possible length, not the actual length */
 static ngx_inline size_t
 ngx_http_lua_get_num_len(lua_State *L, int idx)
@@ -31,11 +32,11 @@ ngx_http_lua_get_num_len(lua_State *L, int idx)
     num = (double) lua_tonumber(L, idx);
     if (num == (double) (long) num) {
         return NGX_INT64_LEN;
-
-    } else {
-        return NGX_DOUBLE_LEN;
     }
+
+    return NGX_DOUBLE_LEN;
 }
+
 
 static ngx_inline u_char *
 ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
@@ -64,6 +65,7 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
 
     return dst;
 }
+
 
 #endif /* _NGX_HTTP_LUA_OUTPUT_H_INCLUDED_ */
 
