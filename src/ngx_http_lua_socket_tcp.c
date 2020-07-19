@@ -4890,6 +4890,7 @@ ngx_http_lua_req_socket(lua_State *L)
             if (rb == NULL) {
                 return luaL_error(L, "no memory");
             }
+
             r->request_body = rb;
         }
 

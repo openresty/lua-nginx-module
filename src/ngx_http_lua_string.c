@@ -133,6 +133,7 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
                         break;
                 }
             }
+
             src++;
             size--;
         }
@@ -192,9 +193,11 @@ ngx_http_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
                     *dst++ = *src;
                     break;
             }
+
         } else {
             *dst++ = *src;
         }
+
         src++;
         size--;
     } /* while (size) */

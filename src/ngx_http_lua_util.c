@@ -2067,6 +2067,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
             if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
                 n++;
             }
+
             src++;
             size--;
         }
@@ -2084,6 +2085,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
         } else {
             *dst++ = *src++;
         }
+
         size--;
     }
 
@@ -3886,6 +3888,7 @@ ngx_http_lua_init_vm(lua_State **new_vm, lua_State *parent_vm,
     if (state == NULL) {
         return NGX_ERROR;
     }
+
     state->vm = L;
     state->count = 1;
 

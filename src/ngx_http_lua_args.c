@@ -55,6 +55,7 @@ ngx_http_lua_escape_args(u_char *dst, u_char *src, size_t size)
             if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
                 n++;
             }
+
             src++;
             size--;
         }
@@ -72,6 +73,7 @@ ngx_http_lua_escape_args(u_char *dst, u_char *src, size_t size)
         } else {
             *dst++ = *src++;
         }
+
         size--;
     }
 
