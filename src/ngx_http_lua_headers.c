@@ -500,6 +500,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     } else {
         lua_pushliteral(L, "close");
     }
+
     lua_rawset(L, -3);
 
     if (r->chunked) {

@@ -121,6 +121,7 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
             if (*p == '/' || *p == '\\') {
                 name.data = p + 1;
             }
+
             p++;
         }
 

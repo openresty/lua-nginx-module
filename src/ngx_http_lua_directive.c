@@ -1378,6 +1378,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
                 if (dst == NULL) {
                     return NGX_CONF_ERROR;
                 }
+
                 dst->len = len;
                 dst->len--;  /* skip the trailing '}' block terminator */
 
@@ -1385,6 +1386,7 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
                 if (p == NULL) {
                     return NGX_CONF_ERROR;
                 }
+
                 dst->data = p;
 
                 for (i = 0; i < cf->args->nelts; i++) {

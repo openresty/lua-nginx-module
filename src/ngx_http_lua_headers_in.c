@@ -359,6 +359,7 @@ ngx_http_lua_validate_host(ngx_str_t *host, ngx_pool_t *pool, ngx_uint_t alloc)
             if (dot_pos == i - 1) {
                 return NGX_DECLINED;
             }
+
             dot_pos = i;
             break;
 
@@ -754,6 +755,7 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
                         if (part->next == NULL) {
                             return NGX_ERROR;
                         }
+
                         part = part->next;
                     }
 
@@ -798,6 +800,7 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
                     if (part->next == NULL) {
                         return NGX_ERROR;
                     }
+
                     part = part->next;
                 }
 
