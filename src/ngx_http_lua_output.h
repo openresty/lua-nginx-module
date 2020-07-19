@@ -51,7 +51,7 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
     } else {
         /**
          * The maximum number of significant digits is 14 in lua.
-         * Please refer to lj_strfmt.c:411 for more details.
+         * Please refer to lj_strfmt.c for more details.
          */
         n = snprintf((char *) dst, NGX_DOUBLE_LEN, "%.14g", num);
         if (n < 0) {
