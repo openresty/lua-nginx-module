@@ -14,6 +14,7 @@
 #include "ngx_http_lua_log.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_log_ringbuf.h"
+#include "ngx_http_lua_output.h"
 
 
 static int ngx_http_lua_print(lua_State *L);
@@ -143,6 +144,9 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
+                size += ngx_http_lua_get_num_len(L, i);
+                break;
+
             case LUA_TSTRING:
                 lua_tolstring(L, i, &len);
                 size += len;
@@ -211,6 +215,9 @@ log_wrapper(ngx_log_t *log, const char *ident, ngx_uint_t level,
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
+                p = ngx_http_lua_write_num(L, i, p);
+                break;
+
             case LUA_TSTRING:
                 q = (u_char *) lua_tolstring(L, i, &len);
                 p = ngx_copy(p, q, len);

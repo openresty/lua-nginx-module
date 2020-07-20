@@ -727,6 +727,7 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     ssize_t                              n;
     ngx_http_request_t                  *r;
     u_char                              *p;
+    u_char                              *str;
     size_t                               len;
     ngx_http_lua_socket_udp_upstream_t  *u;
     int                                  type;
@@ -781,11 +782,15 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     type = lua_type(L, 2);
     switch (type) {
         case LUA_TNUMBER:
+            len = ngx_http_lua_get_num_len(L, 2);
+            break;
+
         case LUA_TSTRING:
             lua_tolstring(L, 2, &len);
             break;
 
         case LUA_TTABLE:
+            /* The maximum possible length, not the actual length */
             len = ngx_http_lua_calc_strlen_in_table(L, 2, 2, 1 /* strict */);
             break;
 
@@ -812,29 +817,29 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     }
 
     query.data = lua_newuserdata(L, len);
-    query.len = len;
+    p = query.data;
 
     switch (type) {
         case LUA_TNUMBER:
+            p = ngx_http_lua_write_num(L, 2, p);
+            break;
+
         case LUA_TSTRING:
-            p = (u_char *) lua_tolstring(L, 2, &len);
-            ngx_memcpy(query.data, (u_char *) p, len);
+            str = (u_char *) lua_tolstring(L, 2, &len);
+            p = ngx_cpymem(p, (u_char *) str, len);
             break;
 
         case LUA_TTABLE:
-            (void) ngx_http_lua_copy_str_in_table(L, 2, query.data);
+            p = ngx_http_lua_copy_str_in_table(L, 2, p);
             break;
 
         case LUA_TNIL:
-            p = query.data;
             *p++ = 'n';
             *p++ = 'i';
             *p++ = 'l';
             break;
 
         case LUA_TBOOLEAN:
-            p = query.data;
-
             if (lua_toboolean(L, 2)) {
                 *p++ = 't';
                 *p++ = 'r';
@@ -854,6 +859,9 @@ ngx_http_lua_socket_udp_send(lua_State *L)
         default:
             return luaL_error(L, "impossible to reach here");
     }
+
+    query.len = p - query.data;
+    ngx_http_lua_assert(query.len <= len);
 
     u->ft_type = 0;
 
