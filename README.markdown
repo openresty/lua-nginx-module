@@ -1602,18 +1602,22 @@ For example,
  }
 ```
 
+This directive was first introduced in the `v0.10.18` release.
+
 [Back to TOC](#directives)
 
 exit_worker_by_lua_file
 -----------------------
 
-**syntax:** *exit_worker_by_lua_file { lua-file-path }*
+**syntax:** *exit_worker_by_lua_file &lt;path-to-lua-script-file&gt;*
 
 **context:** *http*
 
 **phase:** *exiting-worker*
 
 Similar to [exit_worker_by_lua_block](#exit_worker_by_lua_block), but accepts the file path to a Lua source file or Lua bytecode file.
+
+This directive was first introduced in the `v0.10.18` release.
 
 [Back to TOC](#directives)
 
