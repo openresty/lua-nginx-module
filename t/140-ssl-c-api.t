@@ -856,6 +856,8 @@ lua ssl server name: "test.com"
                         ffi.string(errmsg[0]))
                 return
             end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -875,6 +877,7 @@ lua ssl server name: "test.com"
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         proxy_ssl_certificate       ../../cert/test.crt;
         proxy_ssl_certificate_key   ../../cert/test.key;
+        proxy_ssl_session_reuse     off;
     }
 
 --- request
@@ -936,6 +939,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
         proxy_ssl_certificate       ../../cert/test.crt;
         proxy_ssl_certificate_key   ../../cert/test.key;
+        proxy_ssl_session_reuse     off;
     }
 
 --- request
@@ -989,6 +993,8 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                         ffi.string(errmsg[0]))
                 return
             end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -1006,6 +1012,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
 --- config
     location /t {
         proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_session_reuse     off;
     }
 
 --- request
