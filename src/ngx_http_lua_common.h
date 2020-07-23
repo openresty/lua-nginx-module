@@ -138,6 +138,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x0400
 #define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE 0x0800
 #define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH 0x1000
+#define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER    0x2000
 
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -225,6 +226,9 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_main_conf_handler_pt    init_worker_handler;
     ngx_str_t                            init_worker_src;
+
+    ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
+    ngx_str_t                            exit_worker_src;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
                     /* neither yielding nor recursion is possible in

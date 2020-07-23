@@ -22,6 +22,7 @@
 #include "ngx_http_lua_bodyfilterby.h"
 #include "ngx_http_lua_initby.h"
 #include "ngx_http_lua_initworkerby.h"
+#include "ngx_http_lua_exitworkerby.h"
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
 #include "ngx_http_lua_balancer.h"
@@ -228,6 +229,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_init_worker_by_file },
+
+    { ngx_string("exit_worker_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_exit_worker_by_lua_block,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_exit_worker_by_inline },
+
+    { ngx_string("exit_worker_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_exit_worker_by_lua,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_exit_worker_by_file },
 
 #if defined(NDK) && NDK
     /* set_by_lua_block $res { inline Lua code } */
@@ -636,7 +651,7 @@ ngx_module_t ngx_http_lua_module = {
     ngx_http_lua_init_worker,   /*  init process */
     NULL,                       /*  init thread */
     NULL,                       /*  exit thread */
-    NULL,                       /*  exit process */
+    ngx_http_lua_exit_worker,   /*  exit process */
     NULL,                       /*  exit master */
     NGX_MODULE_V1_PADDING
 };

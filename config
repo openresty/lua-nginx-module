@@ -278,6 +278,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.c \
             $ngx_addon_dir/src/ngx_http_lua_initby.c \
             $ngx_addon_dir/src/ngx_http_lua_initworkerby.c \
+            $ngx_addon_dir/src/ngx_http_lua_exitworkerby.c \
             $ngx_addon_dir/src/ngx_http_lua_socket_udp.c \
             $ngx_addon_dir/src/ngx_http_lua_req_method.c \
             $ngx_addon_dir/src/ngx_http_lua_phase.c \
@@ -339,6 +340,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_bodyfilterby.h \
             $ngx_addon_dir/src/ngx_http_lua_initby.h \
             $ngx_addon_dir/src/ngx_http_lua_initworkerby.h \
+            $ngx_addon_dir/src/ngx_http_lua_exitworkerby.h \
             $ngx_addon_dir/src/ngx_http_lua_socket_udp.h \
             $ngx_addon_dir/src/ngx_http_lua_probe.h \
             $ngx_addon_dir/src/ngx_http_lua_uthread.h \
