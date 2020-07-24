@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 228;
+plan tests => repeat_each() * 231;
 
 our $HtmlDir = html_dir;
 
@@ -3029,7 +3029,7 @@ qr/runtime error: content_by_lua\(nginx\.conf:\d+\):16: bad request/
 --- user_files
 >>> myfoo.lua
 local sock = ngx.socket.tcp()
-local ok, err = sock:connect("agentzh.org")
+local ok, err = sock:connect("agentzh.org", 12345)
 if not ok then
     ngx.log(ngx.ERR, "failed to connect: ", err)
     return
@@ -3059,7 +3059,7 @@ runtime error: attempt to yield across C-call boundary
             end
             local function err()
                 local sock = ngx.socket.tcp()
-                local ok, err = sock:connect("agentzh.org")
+                local ok, err = sock:connect("agentzh.org", 12345)
                 if not ok then
                     ngx.log(ngx.ERR, "failed to connect: ", err)
                     return
@@ -4325,5 +4325,45 @@ received:
 received: 3.141592653579431415926
 failed to receive a line: closed []
 close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 72: port is not number
+--- config
+    server_tokens off;
+    location = /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(500)
+
+            local ok, err = sock:connect("127.0.0.1")
+            if not ok then
+                ngx.say("connect failed: ", err)
+            end
+
+            local ok, err = sock:connect("127.0.0.1", nil)
+            if not ok then
+                ngx.say("connect failed: ", err)
+            end
+
+            local ok, err = sock:connect("127.0.0.1", {})
+            if not ok then
+                ngx.say("connect failed: ", err)
+            end
+
+            ngx.say("finish")
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connect failed: missing the port number
+connect failed: missing the port number
+connect failed: missing the port number
+finish
 --- no_error_log
 [error]
