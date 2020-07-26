@@ -2396,7 +2396,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
     ngx_connection_t            *c;
     ngx_buf_t                   *b;
     ngx_event_t                 *rev;
-    off_t                       size;
+    off_t                        size;
     ssize_t                      n;
     unsigned                     read;
     off_t                        preread = 0;
