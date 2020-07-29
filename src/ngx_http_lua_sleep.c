@@ -36,15 +36,20 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "attempt to pass %d arguments, but accepted 1", n);
     }
 
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return luaL_error(L, "no request found");
-    }
-
     delay = (ngx_int_t) (luaL_checknumber(L, 1) * 1000);
 
     if (delay < 0) {
         return luaL_error(L, "invalid sleep duration \"%d\"", delay);
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        /* init_by_lua phase */
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua ready to sleep for %d ms", delay);
+
+        ngx_msleep(delay);
+        return 0;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -52,7 +57,13 @@ ngx_http_lua_ngx_sleep(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
+    if (!(ctx->context & NGX_HTTP_LUA_CONTEXT_YIELDABLE)) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua ready to sleep for %d ms", delay);
+
+        ngx_msleep(delay);
+        return 0;
+    }
 
     coctx = ctx->cur_co_ctx;
     if (coctx == NULL) {

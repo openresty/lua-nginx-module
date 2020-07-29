@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 9);
+plan tests => repeat_each() * (blocks() * 4 + 8);
 
 #no_diff();
 no_long_string();
@@ -258,12 +258,12 @@ qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disable
 
 
 
-=== TEST 10: ngx.sleep is disabled
+=== TEST 10: ngx.sleep is allowed
 --- http_config
     upstream backend {
         server 0.0.0.1;
         balancer_by_lua_block {
-            ngx.sleep(0.1)
+            ngx.sleep(0.001)
         }
     }
 --- config
@@ -272,10 +272,8 @@ qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disable
     }
 --- request
     GET /t
---- response_body_like: 500 Internal Server Error
---- error_code: 500
---- error_log eval
-qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+--- response_body_like: 502 Bad Gateway
+--- error_code: 502
 
 
 
