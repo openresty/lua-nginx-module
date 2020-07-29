@@ -250,7 +250,7 @@ GET /t
 --- response_body
 hello
 --- error_log
-lua ready to sleep for 1 ms
+lua sleep blockingly for 1 ms in log_by_lua*
 
 
 
@@ -515,7 +515,7 @@ GET /t
 --- response_body
 hello
 --- error_log
-lua ready to sleep for 0 ms
+lua sleep blockingly for 0 ms in log_by_lua*
 
 
 

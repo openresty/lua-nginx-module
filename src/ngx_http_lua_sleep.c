@@ -45,8 +45,8 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         /* init_by_lua phase */
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                       "lua ready to sleep for %d ms", delay);
+        ngx_log_error(NGX_LOG_WARN, ngx_cycle->log, 0,
+                      "lua sleep blockingly for %d ms in init_by_lua*", delay);
 
         ngx_msleep(delay);
         return 0;
@@ -58,8 +58,9 @@ ngx_http_lua_ngx_sleep(lua_State *L)
     }
 
     if (!(ctx->context & NGX_HTTP_LUA_CONTEXT_YIELDABLE)) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua ready to sleep for %d ms", delay);
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "lua sleep blockingly for %d ms in %s",
+                      delay, ngx_http_lua_context_name(ctx->context));
 
         ngx_msleep(delay);
         return 0;
