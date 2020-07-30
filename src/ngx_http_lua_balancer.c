@@ -753,4 +753,43 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
 }
 
 
+int
+ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
+    char **err)
+{
+    ngx_http_lua_ctx_t    *ctx;
+    ngx_http_upstream_t   *u;
+
+    if (r == NULL) {
+        *err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        *err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    /* u->create_request can not be NULL since we are in balancer phase */
+    ngx_http_lua_assert(u->create_request != NULL);
+
+    *err = NULL;
+
+    return u->create_request(r);
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
