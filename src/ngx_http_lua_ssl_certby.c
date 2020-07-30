@@ -1294,4 +1294,140 @@ failed:
 }
 
 
+static int
+ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
+{
+    /*
+     * we never terminate handshake here and user can later use
+     * $ssl_client_verify to check verification result.
+     *
+     * this is consistent with Nginx behavior.
+     */
+    return 1;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
+    int depth, char **err)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_ssl_conn_t              *ssl_conn;
+    ngx_http_ssl_srv_conf_t     *sscf;
+    STACK_OF(X509)              *chain = ca_certs;
+    STACK_OF(X509_NAME)         *name_chain = NULL;
+    X509                        *x509 = NULL;
+    X509_NAME                   *subject = NULL;
+    X509_STORE                  *ca_store = NULL;
+#ifdef OPENSSL_IS_BORINGSSL
+    size_t                      i;
+#else
+    int                         i;
+#endif
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no request ctx found";
+        return NGX_ERROR;
+    }
+
+    if (!(ctx->context & NGX_HTTP_LUA_CONTEXT_SSL_CERT)) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    /* enable verify */
+
+    SSL_set_verify(ssl_conn, SSL_VERIFY_PEER, ngx_http_lua_ssl_verify_callback);
+
+    /* set depth */
+
+    if (depth < 0) {
+        sscf = ngx_http_get_module_srv_conf(r, ngx_http_ssl_module);
+        if (sscf != NULL) {
+            depth = sscf->verify_depth;
+
+        } else {
+            /* same as the default value of ssl_verify_depth */
+            depth = 1;
+        }
+    }
+
+    SSL_set_verify_depth(ssl_conn, depth);
+
+    /* set CA chain */
+
+    if (chain != NULL) {
+        ca_store = X509_STORE_new();
+        if (ca_store == NULL) {
+            *err = "X509_STORE_new() failed";
+            return NGX_ERROR;
+        }
+
+        /* construct name chain */
+
+        name_chain = sk_X509_NAME_new_null();
+        if (name_chain == NULL) {
+            *err = "sk_X509_NAME_new_null() failed";
+            goto failed;
+        }
+
+        for (i = 0; i < sk_X509_num(chain); i++) {
+            x509 = sk_X509_value(chain, i);
+            if (x509 == NULL) {
+                *err = "sk_X509_value() failed";
+                goto failed;
+            }
+
+            /* add subject to name chain, which will be sent to client */
+            subject = X509_NAME_dup(X509_get_subject_name(x509));
+            if (subject == NULL) {
+                *err = "X509_get_subject_name() failed";
+                goto failed;
+            }
+
+            if (!sk_X509_NAME_push(name_chain, subject)) {
+                *err = "sk_X509_NAME_push() failed";
+                X509_NAME_free(subject);
+                goto failed;
+            }
+
+            /* add to trusted CA store */
+            if (X509_STORE_add_cert(ca_store, x509) == 0) {
+                *err = "X509_STORE_add_cert() failed";
+                goto failed;
+            }
+        }
+
+        if (SSL_set0_verify_cert_store(ssl_conn, ca_store) == 0) {
+            *err = "SSL_set0_verify_cert_store() failed";
+            goto failed;
+        }
+
+        SSL_set_client_CA_list(ssl_conn, name_chain);
+    }
+
+    return NGX_OK;
+
+failed:
+
+    sk_X509_NAME_free(name_chain);
+
+    X509_STORE_free(ca_store);
+
+    return NGX_ERROR;
+}
+
+
 #endif /* NGX_HTTP_SSL */
