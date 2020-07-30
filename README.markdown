@@ -1402,14 +1402,14 @@ You can also initialize the [lua_shared_dict](#lua_shared_dict) shm storage at t
  lua_shared_dict dogs 1m;
 
  init_by_lua_block {
-     local dogs = ngx.shared.dogs;
+     local dogs = ngx.shared.dogs
      dogs:set("Tom", 56)
  }
 
  server {
      location = /api {
          content_by_lua_block {
-             local dogs = ngx.shared.dogs;
+             local dogs = ngx.shared.dogs
              ngx.say(dogs:get("Tom"))
          }
      }
@@ -1659,8 +1659,8 @@ a time. However, a workaround is possible using the [ngx.var.VARIABLE](#ngxvarva
          local a = 32
          local b = 56
 
-         ngx.var.diff = a - b;  -- write to $diff directly
-         return a + b;          -- return the $sum value normally
+         ngx.var.diff = a - b  -- write to $diff directly
+         return a + b          -- return the $sum value normally
      ';
 
      echo "sum = $sum, diff = $diff";
@@ -1874,7 +1874,7 @@ The right way of doing this is as follows:
      rewrite_by_lua '
          ngx.var.b = tonumber(ngx.var.a) + 1
          if tonumber(ngx.var.b) == 13 then
-             return ngx.redirect("/bar");
+             return ngx.redirect("/bar")
          end
      ';
 
@@ -3480,7 +3480,7 @@ For example:
  location /foo {
      set $my_var ''; # this line is required to create $my_var at config time
      content_by_lua_block {
-         ngx.var.my_var = 123;
+         ngx.var.my_var = 123
          ...
      }
  }
@@ -3948,7 +3948,7 @@ This option is set to `false` by default
      set $dog 'hello';
      content_by_lua_block {
          res = ngx.location.capture("/other",
-             { share_all_vars = true });
+             { share_all_vars = true })
 
          ngx.print(res.body)
          ngx.say(ngx.var.uri, ": ", ngx.var.dog)
@@ -3976,7 +3976,7 @@ The `copy_all_vars` option provides a copy of the parent request's Nginx variabl
      set $dog 'hello';
      content_by_lua_block {
          res = ngx.location.capture("/other",
-             { copy_all_vars = true });
+             { copy_all_vars = true })
 
          ngx.print(res.body)
          ngx.say(ngx.var.uri, ": ", ngx.var.dog)
@@ -4014,7 +4014,7 @@ unescaping them in the Nginx config file.
      set $cat '';
      content_by_lua_block {
          res = ngx.location.capture("/other",
-             { vars = { dog = "hello", cat = 32 }});
+             { vars = { dog = "hello", cat = 32 }})
 
          ngx.print(res.body)
      }
@@ -4042,8 +4042,8 @@ The `ctx` option can be used to specify a custom Lua table to serve as the [ngx.
          local ctx = {}
          res = ngx.location.capture("/sub", { ctx = ctx })
 
-         ngx.say(ctx.foo);
-         ngx.say(ngx.ctx.foo);
+         ngx.say(ctx.foo)
+         ngx.say(ngx.ctx.foo)
      }
  }
 ```
@@ -4061,13 +4061,13 @@ It is also possible to use this `ctx` option to share the same [ngx.ctx](#ngxctx
 
  location /sub {
      content_by_lua_block {
-         ngx.ctx.foo = "bar";
+         ngx.ctx.foo = "bar"
      }
  }
  location /lua {
      content_by_lua_block {
          res = ngx.location.capture("/sub", { ctx = ngx.ctx })
-         ngx.say(ngx.ctx.foo);
+         ngx.say(ngx.ctx.foo)
      }
  }
 ```
@@ -4245,14 +4245,14 @@ Setting a slot to `nil` effectively removes it from the response headers:
 
 ```lua
 
- ngx.header["X-My-Header"] = nil;
+ ngx.header["X-My-Header"] = nil
 ```
 
 The same applies to assigning an empty table:
 
 ```lua
 
- ngx.header["X-My-Header"] = {};
+ ngx.header["X-My-Header"] = {}
 ```
 
 Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](#ngxsend_headers) or implicitly with [ngx.print](#ngxprint) and similar) will log an error message.
@@ -5254,9 +5254,9 @@ Does an internal redirect to `uri` with `args` and is similar to the [echo_exec]
 
 ```lua
 
- ngx.exec('/some-location');
- ngx.exec('/some-location', 'a=3&b=5&c=6');
- ngx.exec('/some-location?a=3&b=5', 'c=6');
+ ngx.exec('/some-location')
+ ngx.exec('/some-location', 'a=3&b=5&c=6')
+ ngx.exec('/some-location?a=3&b=5', 'c=6')
 ```
 
 The optional second `args` can be used to specify extra URI query arguments, for example:
@@ -5285,7 +5285,7 @@ Named locations are also supported but the second `args` argument will be ignore
 
  location /foo {
      content_by_lua_block {
-         ngx.exec("@bar", "a=goodbye");
+         ngx.exec("@bar", "a=goodbye")
      }
  }
 
@@ -5373,7 +5373,7 @@ is equivalent to the following Lua code
 
 ```lua
 
- return ngx.redirect('/foo');  -- Lua code
+ return ngx.redirect('/foo')  -- Lua code
 ```
 
 while
@@ -8626,7 +8626,7 @@ For instance,
 
 ```lua
 
- local res = ndk.set_var.set_escape_uri('a/b');
+ local res = ndk.set_var.set_escape_uri('a/b')
  -- now res == 'a%2fb'
 ```
 
