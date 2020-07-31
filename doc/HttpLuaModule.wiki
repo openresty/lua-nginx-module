@@ -2133,7 +2133,7 @@ This directive was first introduced in the <code>v0.10.0</code> release.
 
 '''phase:''' ''depends on usage''
 
-Determines whether to force the request body data to be read before running rewrite/access/access_by_lua* or not. The Nginx core does not read the client request body by default and if request body data is required, then this directive should be turned <code>on</code> or the [[#ngx.req.read_body|ngx.req.read_body]] function should be called within the Lua code.
+Determines whether to force the request body data to be read before running rewrite/access/content_by_lua* or not. The Nginx core does not read the client request body by default and if request body data is required, then this directive should be turned <code>on</code> or the [[#ngx.req.read_body|ngx.req.read_body]] function should be called within the Lua code.
 
 To read the request body data within the [[HttpCoreModule#$request_body|$request_body]] variable,
 [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] must have the same value as [[HttpCoreModule#client_max_body_size|client_max_body_size]]. Because when the content length exceeds [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] but less than [[HttpCoreModule#client_max_body_size|client_max_body_size]], Nginx will buffer the data into a temporary file on the disk, which will lead to empty value in the [[HttpCoreModule#$request_body|$request_body]] variable.
