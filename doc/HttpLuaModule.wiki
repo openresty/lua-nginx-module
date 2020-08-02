@@ -2808,7 +2808,7 @@ The data chunk and "eof" flag passed to the downstream Nginx output filters can 
 
 '''syntax:''' ''ngx.var.VAR_NAME''
 
-'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*''
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, balancer_by_lua*''
 
 Read and write Nginx variable values.
 
