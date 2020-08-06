@@ -1435,6 +1435,8 @@ You should be very careful about potential security vulnerabilities in your Lua 
 
 This directive was first introduced in the `v0.5.5` release.
 
+See also the blog post ["How OpenResty and Nginx Shared Memory Zones Consume RAM "](https://blog.openresty.com/en/how-nginx-shm-consume-ram/).
+
 [Back to TOC](#directives)
 
 init_by_lua_block
