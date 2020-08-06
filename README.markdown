@@ -4205,9 +4205,9 @@ The header names are matched case-insensitively.
 ```lua
 
  -- equivalent to ngx.header["Content-Type"] = 'text/plain'
- ngx.header.content_type = 'text/plain';
+ ngx.header.content_type = 'text/plain'
 
- ngx.header["X-My-Header"] = 'blah blah';
+ ngx.header["X-My-Header"] = 'blah blah'
 ```
 
 Multi-value headers can be set this way:
