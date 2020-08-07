@@ -11,6 +11,7 @@
 
 
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_ssl.h"
 #include "ngx_http_lua_ctx.h"
 
 
@@ -21,7 +22,7 @@ typedef struct {
 
 
 static ngx_int_t ngx_http_lua_ngx_ctx_add_cleanup(ngx_http_request_t *r,
-    int ref);
+    ngx_pool_t *pool, int ref);
 static void ngx_http_lua_ngx_ctx_cleanup(void *data);
 
 
@@ -29,6 +30,8 @@ int
 ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, int index)
 {
+    ngx_pool_t              *pool;
+
     if (index < 0) {
         index = lua_gettop(L) + index + 1;
     }
@@ -43,7 +46,8 @@ ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
         ctx->ctx_ref = luaL_ref(L, -2);
         lua_pop(L, 1);
 
-        if (ngx_http_lua_ngx_ctx_add_cleanup(r, ctx->ctx_ref) != NGX_OK) {
+        pool = r->pool;
+        if (ngx_http_lua_ngx_ctx_add_cleanup(r, pool, ctx->ctx_ref) != NGX_OK) {
             return luaL_error(L, "no memory");
         }
 
@@ -66,32 +70,71 @@ ngx_http_lua_ngx_set_ctx_helper(lua_State *L, ngx_http_request_t *r,
 
 
 int
-ngx_http_lua_ffi_get_ctx_ref(ngx_http_request_t *r)
+ngx_http_lua_ffi_get_ctx_ref(ngx_http_request_t *r, int *in_ssl_phase,
+    int *ssl_ctx_ref)
 {
-    ngx_http_lua_ctx_t  *ctx;
+    ngx_http_lua_ctx_t              *ctx;
+    ngx_http_lua_ssl_ctx_t          *ssl_ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
-    return ctx->ctx_ref;
+    if (ctx->ctx_ref >= 0 || in_ssl_phase == NULL) {
+        return ctx->ctx_ref;
+    }
+
+    *in_ssl_phase = ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                                    | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
+                                    | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE);
+    *ssl_ctx_ref = LUA_NOREF;
+
+    if (r->connection->ssl != NULL) {
+        ssl_ctx = ngx_http_lua_ssl_get_ctx(r->connection->ssl->connection);
+
+        if (ssl_ctx != NULL) {
+            *ssl_ctx_ref = ssl_ctx->ctx_ref;
+        }
+    }
+
+    return LUA_NOREF;
 }
 
 
 int
 ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
 {
-    ngx_http_lua_ctx_t  *ctx;
+    ngx_pool_t                      *pool;
+    ngx_connection_t                *c;
+    ngx_http_lua_ctx_t              *ctx;
+    ngx_http_lua_ssl_ctx_t          *ssl_ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
+                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE))
+    {
+        ssl_ctx = ngx_http_lua_ssl_get_ctx(r->connection->ssl->connection);
+        if (ssl_ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        ssl_ctx->ctx_ref = ref;
+        c = ngx_ssl_get_connection(r->connection->ssl->connection);
+        pool = c->pool;
+
+    } else {
+        pool = r->pool;
+    }
+
     ctx->ctx_ref = ref;
 
-    if (ngx_http_lua_ngx_ctx_add_cleanup(r, ref) != NGX_OK) {
+    if (ngx_http_lua_ngx_ctx_add_cleanup(r, pool, ref) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -100,7 +143,8 @@ ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
 
 
 static ngx_int_t
-ngx_http_lua_ngx_ctx_add_cleanup(ngx_http_request_t *r, int ref)
+ngx_http_lua_ngx_ctx_add_cleanup(ngx_http_request_t *r, ngx_pool_t *pool,
+    int ref)
 {
     lua_State                   *L;
     ngx_pool_cleanup_t          *cln;
@@ -111,7 +155,7 @@ ngx_http_lua_ngx_ctx_add_cleanup(ngx_http_request_t *r, int ref)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     L = ngx_http_lua_get_lua_vm(r, ctx);
 
-    cln = ngx_pool_cleanup_add(r->pool,
+    cln = ngx_pool_cleanup_add(pool,
                                sizeof(ngx_http_lua_ngx_ctx_cleanup_data_t));
     if (cln == NULL) {
         return NGX_ERROR;

@@ -3769,6 +3769,14 @@ Then `GET /orig` will give
 
 rather than the original `"hello"` value.
 
+Because HTTP request is created after SSL handshake, the `ngx.ctx` created
+in [ssl_certificate_by_lua*](#ssl_certificate_by_lua), [ssl_session_store_by_lua*](#ssl_session_store_by_lua) and [ssl_session_fetch_by_lua*](#ssl_session_fetch_by_lua)
+is not available in the following phases like [rewrite_by_lua*](#rewrite_by_lua).
+
+Since `dev`, the `ngx.ctx` created during a SSL handshake
+will be inherited by the requests which share the same TCP connection established by the handshake.
+Note that overwrite values in `ngx.ctx` in the http request phases (like `rewrite_by_lua*`) will only take affect in the current http request.
+
 Arbitrary data values, including Lua closures and nested tables, can be inserted into this "magic" table. It also allows the registration of custom meta methods.
 
 Overriding `ngx.ctx` with a new Lua table is also supported, for example,

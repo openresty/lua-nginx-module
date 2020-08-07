@@ -279,6 +279,8 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
         if (cctx == NULL) {
             goto failed;  /* error */
         }
+
+        cctx->ctx_ref = LUA_NOREF;
     }
 
     cctx->exit_code = 1;  /* successful by default */
