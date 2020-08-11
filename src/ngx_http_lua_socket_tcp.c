@@ -2396,7 +2396,7 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
     ngx_connection_t            *c;
     ngx_buf_t                   *b;
     ngx_event_t                 *rev;
-    size_t                       size;
+    off_t                        size;
     ssize_t                      n;
     unsigned                     read;
     off_t                        preread = 0;
@@ -2503,7 +2503,7 @@ success:
             }
 
             b = &u->buffer;
-            size = (size_t) (b->end - b->last);
+            size = b->end - b->last;
         }
 
         if (u->raw_downstream) {
@@ -2511,8 +2511,8 @@ success:
 
             if (preread) {
 
-                if ((off_t) size > preread) {
-                    size = (size_t) preread;
+                if (size > preread) {
+                    size = preread;
                 }
 
                 ngx_http_lua_probe_req_socket_consume_preread(r,
@@ -2553,8 +2553,8 @@ success:
                     preread = r->request_body->rest;
                 }
 
-                if ((off_t) size > preread) {
-                    size = (size_t) preread;
+                if (size > preread) {
+                    size = preread;
                 }
 
                 ngx_http_lua_probe_req_socket_consume_preread(r,
@@ -2573,8 +2573,8 @@ success:
                 continue;
             }
 
-            if (size > (size_t) r->request_body->rest) {
-                size = (size_t) r->request_body->rest;
+            if (size > r->request_body->rest) {
+                size = r->request_body->rest;
             }
         }
 
