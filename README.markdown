@@ -1022,6 +1022,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 See Also
 ========
 
+Other related modules and libraries:
+
 * [ngx_stream_lua_module](https://github.com/openresty/stream-lua-nginx-module#readme) for an official port of this module for the Nginx "stream" subsystem (doing generic downstream TCP communications).
 * [lua-resty-memcached](https://github.com/openresty/lua-resty-memcached) library based on ngx_lua cosocket.
 * [lua-resty-redis](https://github.com/openresty/lua-resty-redis) library based on ngx_lua cosocket.
@@ -1043,6 +1045,12 @@ See Also
 * [memc-nginx-module](http://github.com/openresty/memc-nginx-module)
 * [The OpenResty bundle](https://openresty.org)
 * [Nginx Systemtap Toolkit](https://github.com/openresty/nginx-systemtap-toolkit)
+
+Blog posts:
+
+* [How OpenResty and Nginx Allocate and Manage Memory](https://blog.openresty.com/en//how-or-alloc-mem)
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
 
 [Back to TOC](#table-of-contents)
 
@@ -1435,7 +1443,10 @@ You should be very careful about potential security vulnerabilities in your Lua 
 
 This directive was first introduced in the `v0.5.5` release.
 
-See also the blog post ["How OpenResty and Nginx Shared Memory Zones Consume RAM "](https://blog.openresty.com/en/how-nginx-shm-consume-ram/).
+See also the following blog posts for more details on OpenResty and Nginx's shared memory zones:
+
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
 
 [Back to TOC](#directives)
 
