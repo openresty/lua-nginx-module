@@ -849,6 +849,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 = See Also =
 
+Other related modules and libraries:
+
 * [https://github.com/openresty/stream-lua-nginx-module#readme ngx_stream_lua_module] for an official port of this module for the Nginx "stream" subsystem (doing generic downstream TCP communications).
 * [https://github.com/openresty/lua-resty-memcached lua-resty-memcached] library based on ngx_lua cosocket.
 * [https://github.com/openresty/lua-resty-redis lua-resty-redis] library based on ngx_lua cosocket.
@@ -870,6 +872,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 * [[HttpMemcModule]]
 * [https://openresty.org The OpenResty bundle]
 * [https://github.com/openresty/nginx-systemtap-toolkit Nginx Systemtap Toolkit]
+
+Blog posts:
+
+* [How OpenResty and Nginx Allocate and Manage Memory](https://blog.openresty.com/en//how-or-alloc-mem)
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
 
 = Directives =
 
@@ -1155,6 +1163,11 @@ Basically you can safely use Lua libraries that do blocking I/O in this very con
 You should be very careful about potential security vulnerabilities in your Lua code registered in this context because the Nginx master process is often run under the <code>root</code> account.
 
 This directive was first introduced in the <code>v0.5.5</code> release.
+
+See also the following blog posts for more details on OpenResty and Nginx's shared memory zones:
+
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
 
 == init_by_lua_block ==
 
@@ -3274,7 +3287,7 @@ The <code>copy_all_vars</code> option provides a copy of the parent request's Ng
         set $dog 'hello';
         content_by_lua_block {
             res = ngx.location.capture("/other",
-                { copy_all_vars = true });
+                { copy_all_vars = true })
 
             ngx.print(res.body)
             ngx.say(ngx.var.uri, ": ", ngx.var.dog)
@@ -4402,7 +4415,7 @@ This function was first introduced in the <code>v0.5.0rc1</code> release.
 Does an internal redirect to <code>uri</code> with <code>args</code> and is similar to the [[HttpEchoModule#echo_exec|echo_exec]] directive of the [[HttpEchoModule]].
 
 <geshi lang="lua">
-    ngx.exec('/some-location');
+    ngx.exec('/some-location')
     ngx.exec('/some-location', 'a=3&b=5&c=6')
     ngx.exec('/some-location?a=3&b=5', 'c=6')
 </geshi>
