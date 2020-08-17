@@ -855,12 +855,11 @@ ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
 
 
 int
-ngx_http_lua_ffi_ssl_server_port(ngx_http_request_t *r, unsigned int *port,
-    char **err)
+ngx_http_lua_ffi_ssl_server_port(ngx_http_request_t *r,
+    unsigned short *server_port, char **err)
 {
     ngx_ssl_conn_t          *ssl_conn;
     ngx_connection_t        *c;
-    ngx_uint_t               p;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
@@ -876,22 +875,15 @@ ngx_http_lua_ffi_ssl_server_port(ngx_http_request_t *r, unsigned int *port,
     c = ngx_ssl_get_connection(ssl_conn);
 
     switch (c->local_sockaddr->sa_family) {
-        case AF_UNIX:
-            *err = "unix domain has no port";
-            return NGX_ERROR;
-            
-        default:
-            p = ngx_inet_get_port(c->local_sockaddr);
-    }
 
-    if (p < 1 || p > 65535) {
-        *err = "invalid port number";
+    case AF_UNIX:
+        *err = "unix domain has no port";
         return NGX_ERROR;
+
+    default:
+        *server_port = (unsigned short) ngx_inet_get_port(c->local_sockaddr);
+        return NGX_OK;
     }
-
-    *port = (unsigned int) p;
-
-    return NGX_OK;
 }
 
 
