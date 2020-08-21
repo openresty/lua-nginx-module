@@ -27,6 +27,10 @@ typedef struct {
     int                      exit_code;  /* exit code for openssl's
                                             set_cert_cb callback */
 
+    int                      ctx_ref;  /*  reference to anchor
+                                           request ctx data in lua
+                                           registry */
+
     unsigned                 done:1;
     unsigned                 aborted:1;
 

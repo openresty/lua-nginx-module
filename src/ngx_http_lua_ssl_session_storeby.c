@@ -241,6 +241,8 @@ ngx_http_lua_ssl_sess_store_handler(ngx_ssl_conn_t *ssl_conn,
         if (cctx == NULL) {
             goto failed;  /* error */
         }
+
+        cctx->ctx_ref = LUA_NOREF;
     }
 
 #if OPENSSL_VERSION_NUMBER >= 0x1000200fL
