@@ -140,7 +140,7 @@ ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
     }
 
 #else
-        pool = r->pool;
+    pool = r->pool;
 #endif
 
     ctx->ctx_ref = ref;
