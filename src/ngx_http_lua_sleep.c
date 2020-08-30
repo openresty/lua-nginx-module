@@ -71,7 +71,6 @@ ngx_http_lua_ngx_sleep(lua_State *L)
 #ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
         dd("posting 0 sec sleep event to head of delayed queue");
 
-        coctx->sleep.delayed = 1;
         ngx_post_event(&coctx->sleep, &ngx_posted_delayed_events);
 #else
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "ngx.sleep(0)"
