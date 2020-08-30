@@ -438,18 +438,12 @@ ok
 qr/f begin
 f begin
 f begin
-worker cycle
-e?poll timer: 0
 f middle
 f middle
 f middle
-worker cycle
-e?poll timer: 0
 f end
 f end
 f end
-worker cycle
-e?poll timer: 0
 /
 
 
@@ -487,16 +481,10 @@ ok
 qr/f begin
 f begin
 f begin
-worker cycle
-e?poll timer: 0
 f middle
 f middle
 f middle
-worker cycle
-e?poll timer: 0
 f end
 f end
 f end
-worker cycle
-e?poll timer: 0
 /
