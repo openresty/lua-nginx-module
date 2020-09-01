@@ -1010,7 +1010,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         /* Ban the following parameter combination:
          * sock:connect("127.0.0.1")
          * sock:connect("127.0.0.1", nil)
-         * sock:connect("127.0.0.1", opts) 
+         * sock:connect("127.0.0.1", opts)
          * sock:connect("127.0.0.1", nil, opts) */
 
         lua_pushnil(L);
