@@ -328,9 +328,9 @@ Build the source with this module:
 
 ```bash
 
- wget 'https://nginx.org/download/nginx-1.13.6.tar.gz'
- tar -xzvf nginx-1.13.6.tar.gz
- cd nginx-1.13.6/
+ wget 'https://openresty.org/download/nginx-1.17.8.tar.gz'
+ tar -xzvf nginx-1.17.8.tar.gz
+ cd nginx-1.17.8/
 
  # tell nginx's build system where to find LuaJIT 2.0:
  export LUAJIT_LIB=/path/to/luajit/lib
@@ -1446,8 +1446,8 @@ This directive was first introduced in the `v0.5.5` release.
 
 See also the following blog posts for more details on OpenResty and Nginx's shared memory zones:
 
-* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/src=gh_ngxlua)
-* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/src=gh_ngxlua)
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/?src=gh_ngxlua)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/?src=gh_ngxlua)
 
 [Back to TOC](#directives)
 
