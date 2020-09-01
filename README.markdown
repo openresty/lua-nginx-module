@@ -1024,10 +1024,10 @@ See Also
 
 Blog posts:
 
-* [Introduction to Lua-Land CPU Flame Graphs](https://blog.openresty.com/en/lua-cpu-flame-graph/)
-* [How OpenResty and Nginx Allocate and Manage Memory](https://blog.openresty.com/en//how-or-alloc-mem)
-* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
-* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
+* [Introduction to Lua-Land CPU Flame Graphs](https://blog.openresty.com/en/lua-cpu-flame-graph/?src=gh_ngxlua)
+* [How OpenResty and Nginx Allocate and Manage Memory](https://blog.openresty.com/en//how-or-alloc-mem?src=gh_ngxlua)
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/?src=gh_ngxlua)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/?src=gh_ngxlua)
 
 Other related modules and libraries:
 
@@ -1446,8 +1446,8 @@ This directive was first introduced in the `v0.5.5` release.
 
 See also the following blog posts for more details on OpenResty and Nginx's shared memory zones:
 
-* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/)
-* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/)
+* [How OpenResty and Nginx Shared Memory Zones Consume RAM](https://blog.openresty.com/en/how-nginx-shm-consume-ram/src=gh_ngxlua)
+* [Memory Fragmentation in OpenResty and Nginx's Shared Memory Zones](https://blog.openresty.com/en/nginx-shm-frag/src=gh_ngxlua)
 
 [Back to TOC](#directives)
 
