@@ -524,3 +524,43 @@ http next upstream, 2
 --- no_error_log
 failed to set more tries: reduced tries due to limit
 [alert]
+
+
+
+=== TEST 17: recreate_request buffer bugfix
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.1:8888;
+
+        location / {
+            return 200 "it works";
+        }
+    }
+
+    upstream foo {
+        server 127.0.0.1:8888 max_fails=0;
+        server 127.0.0.1:8889 max_fails=0 weight=9999;
+
+        balancer_by_lua_block {
+            local bal = require "ngx.balancer"
+
+            assert(bal.recreate_request())
+        }
+    }
+
+--- config
+    location = /t {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://foo;
+    }
+--- request
+GET /t
+--- error_code: 200
+--- error_log
+connect() failed (111: Connection refused) while connecting to upstream
+--- no_error_log
+upstream sent more data than specified in "Content-Length" header while reading upstream
+[alert]

@@ -788,6 +788,13 @@ ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
 
     *err = NULL;
 
+    if (u->request_bufs != NULL && u->request_bufs != r->request_body->bufs) {
+        /* u->request_bufs already contains a valid request buffer
+         * remove it from chain first
+         */
+        u->request_bufs = u->request_bufs->next;
+    }
+
     return u->create_request(r);
 }
 
