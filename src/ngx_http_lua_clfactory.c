@@ -288,12 +288,12 @@
 typedef enum {
     NGX_LUA_TEXT_FILE,
     NGX_LUA_BT_LUA,
-    NGX_LUA_BT_LJ
+    NGX_LUA_BT_LJ,
 } ngx_http_lua_clfactory_file_type_e;
 
 
 enum {
-    NGX_LUA_READER_BUFSIZE = 4096
+    NGX_LUA_READER_BUFSIZE = 4096,
 };
 
 
@@ -380,12 +380,12 @@ ngx_http_lua_clfactory_bytecode_prepare(lua_State *L,
 
 #if defined(DDEBUG) && (DDEBUG)
         {
-        dd("==LJ_BT_HEADER==");
-        size_t i;
-        for (i = 0; i < LJ_HEADERSIZE; i++) {
-            dd("%ld: 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
-        }
-        dd("==LJ_BT_HEADER_END==");
+            dd("==LJ_BT_HEADER==");
+            size_t i;
+            for (i = 0; i < LJ_HEADERSIZE; i++) {
+                dd("%ld: 0x%02X", i, (unsigned)(u_char) lf->begin_code.str[i]);
+            }
+            dd("==LJ_BT_HEADER_END==");
         }
 #endif
 

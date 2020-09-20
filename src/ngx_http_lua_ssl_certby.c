@@ -26,7 +26,7 @@
 enum {
     NGX_HTTP_LUA_ADDR_TYPE_UNIX  = 0,
     NGX_HTTP_LUA_ADDR_TYPE_INET  = 1,
-    NGX_HTTP_LUA_ADDR_TYPE_INET6 = 2
+    NGX_HTTP_LUA_ADDR_TYPE_INET6 = 2,
 };
 
 
@@ -46,6 +46,7 @@ ngx_http_lua_ssl_cert_handler_file(ngx_http_request_t *r,
 
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L,
                                      lscf->srv.ssl_cert_src.data,
+                                     &lscf->srv.ssl_cert_src_ref,
                                      lscf->srv.ssl_cert_src_key);
     if (rc != NGX_OK) {
         return rc;
@@ -67,6 +68,7 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        lscf->srv.ssl_cert_src.data,
                                        lscf->srv.ssl_cert_src.len,
+                                       &lscf->srv.ssl_cert_src_ref,
                                        lscf->srv.ssl_cert_src_key,
                                        "=ssl_certificate_by_lua");
     if (rc != NGX_OK) {
@@ -113,10 +115,10 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 #else
 
-    u_char                      *p;
+    u_char                      *cache_key = NULL;
     u_char                      *name;
     ngx_str_t                   *value;
-    ngx_http_lua_srv_conf_t    *lscf = conf;
+    ngx_http_lua_srv_conf_t     *lscf = conf;
 
     /*  must specify a concrete handler */
     if (cmd->post == NULL) {
@@ -137,47 +139,35 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     if (cmd->post == ngx_http_lua_ssl_cert_handler_file) {
         /* Lua code in an external file */
-
         name = ngx_http_lua_rebase_path(cf->pool, value[1].data,
                                         value[1].len);
         if (name == NULL) {
             return NGX_CONF_ERROR;
         }
 
+        cache_key = ngx_http_lua_gen_file_cache_key(cf, value[1].data,
+                                                    value[1].len);
+        if (cache_key == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
         lscf->srv.ssl_cert_src.data = name;
         lscf->srv.ssl_cert_src.len = ngx_strlen(name);
 
-        p = ngx_palloc(cf->pool, NGX_HTTP_LUA_FILE_KEY_LEN + 1);
-        if (p == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        lscf->srv.ssl_cert_src_key = p;
-
-        p = ngx_copy(p, NGX_HTTP_LUA_FILE_TAG, NGX_HTTP_LUA_FILE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
-
     } else {
-        /* inlined Lua code */
-
-        lscf->srv.ssl_cert_src = value[1];
-
-        p = ngx_palloc(cf->pool,
-                       sizeof("ssl_certificate_by_lua") +
-                       NGX_HTTP_LUA_INLINE_KEY_LEN);
-        if (p == NULL) {
+        cache_key = ngx_http_lua_gen_chunk_cache_key(cf,
+                                                     "ssl_certificate_by_lua",
+                                                     value[1].data,
+                                                     value[1].len);
+        if (cache_key == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        lscf->srv.ssl_cert_src_key = p;
-
-        p = ngx_copy(p, "ssl_certificate_by_lua",
-                     sizeof("ssl_certificate_by_lua") - 1);
-        p = ngx_copy(p, NGX_HTTP_LUA_INLINE_TAG, NGX_HTTP_LUA_INLINE_TAG_LEN);
-        p = ngx_http_lua_digest_hex(p, value[1].data, value[1].len);
-        *p = '\0';
+        /* Don't eval nginx variables for inline lua code */
+        lscf->srv.ssl_cert_src = value[1];
     }
+
+    lscf->srv.ssl_cert_src_key = cache_key;
 
     return NGX_CONF_OK;
 
@@ -255,26 +245,11 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-#if defined(nginx_version) && nginx_version >= 1003014
-
-#   if nginx_version >= 1009000
-
+#if (nginx_version >= 1009000)
     ngx_set_connection_log(fc, clcf->error_log);
 
-#   else
-
-    ngx_http_set_connection_log(fc, clcf->error_log);
-
-#   endif
-
 #else
-
-    fc->log->file = clcf->error_log->file;
-
-    if (!(fc->log->log_level & NGX_LOG_DEBUG_CONNECTION)) {
-        fc->log->log_level = clcf->error_log->log_level;
-    }
-
+    ngx_http_set_connection_log(fc, clcf->error_log);
 #endif
 
     if (cctx == NULL) {
@@ -282,6 +257,8 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
         if (cctx == NULL) {
             goto failed;  /* error */
         }
+
+        cctx->ctx_ref = LUA_NOREF;
     }
 
     cctx->exit_code = 1;  /* successful by default */
@@ -549,8 +526,6 @@ ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
     return rc;
 }
 
-
-#ifndef NGX_LUA_NO_FFI_API
 
 int
 ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
@@ -1321,7 +1296,140 @@ failed:
 }
 
 
-#endif  /* NGX_LUA_NO_FFI_API */
+static int
+ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
+{
+    /*
+     * we never terminate handshake here and user can later use
+     * $ssl_client_verify to check verification result.
+     *
+     * this is consistent with Nginx behavior.
+     */
+    return 1;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
+    int depth, char **err)
+{
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_ssl_conn_t              *ssl_conn;
+    ngx_http_ssl_srv_conf_t     *sscf;
+    STACK_OF(X509)              *chain = ca_certs;
+    STACK_OF(X509_NAME)         *name_chain = NULL;
+    X509                        *x509 = NULL;
+    X509_NAME                   *subject = NULL;
+    X509_STORE                  *ca_store = NULL;
+#ifdef OPENSSL_IS_BORINGSSL
+    size_t                      i;
+#else
+    int                         i;
+#endif
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        *err = "no request ctx found";
+        return NGX_ERROR;
+    }
+
+    if (!(ctx->context & NGX_HTTP_LUA_CONTEXT_SSL_CERT)) {
+        *err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    /* enable verify */
+
+    SSL_set_verify(ssl_conn, SSL_VERIFY_PEER, ngx_http_lua_ssl_verify_callback);
+
+    /* set depth */
+
+    if (depth < 0) {
+        sscf = ngx_http_get_module_srv_conf(r, ngx_http_ssl_module);
+        if (sscf != NULL) {
+            depth = sscf->verify_depth;
+
+        } else {
+            /* same as the default value of ssl_verify_depth */
+            depth = 1;
+        }
+    }
+
+    SSL_set_verify_depth(ssl_conn, depth);
+
+    /* set CA chain */
+
+    if (chain != NULL) {
+        ca_store = X509_STORE_new();
+        if (ca_store == NULL) {
+            *err = "X509_STORE_new() failed";
+            return NGX_ERROR;
+        }
+
+        /* construct name chain */
+
+        name_chain = sk_X509_NAME_new_null();
+        if (name_chain == NULL) {
+            *err = "sk_X509_NAME_new_null() failed";
+            goto failed;
+        }
+
+        for (i = 0; i < sk_X509_num(chain); i++) {
+            x509 = sk_X509_value(chain, i);
+            if (x509 == NULL) {
+                *err = "sk_X509_value() failed";
+                goto failed;
+            }
+
+            /* add subject to name chain, which will be sent to client */
+            subject = X509_NAME_dup(X509_get_subject_name(x509));
+            if (subject == NULL) {
+                *err = "X509_get_subject_name() failed";
+                goto failed;
+            }
+
+            if (!sk_X509_NAME_push(name_chain, subject)) {
+                *err = "sk_X509_NAME_push() failed";
+                X509_NAME_free(subject);
+                goto failed;
+            }
+
+            /* add to trusted CA store */
+            if (X509_STORE_add_cert(ca_store, x509) == 0) {
+                *err = "X509_STORE_add_cert() failed";
+                goto failed;
+            }
+        }
+
+        if (SSL_set0_verify_cert_store(ssl_conn, ca_store) == 0) {
+            *err = "SSL_set0_verify_cert_store() failed";
+            goto failed;
+        }
+
+        SSL_set_client_CA_list(ssl_conn, name_chain);
+    }
+
+    return NGX_OK;
+
+failed:
+
+    sk_X509_NAME_free(name_chain);
+
+    X509_STORE_free(ca_store);
+
+    return NGX_ERROR;
+}
 
 
 #endif /* NGX_HTTP_SSL */

@@ -175,7 +175,7 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     }
 
     zone->shm = shm_zone->shm;
-#if defined(nginx_version) && nginx_version >= 1009000
+#if (nginx_version >= 1009000)
     zone->noreuse = shm_zone->noreuse;
 #endif
 
@@ -195,7 +195,7 @@ ngx_http_lua_shared_memory_init(ngx_shm_zone_t *shm_zone, void *data)
     lmcf->shm_zones_inited++;
 
     if (lmcf->shm_zones_inited == lmcf->shm_zones->nelts
-        && lmcf->init_handler)
+        && lmcf->init_handler && !ngx_test_config)
     {
         saved_cycle = ngx_cycle;
         ngx_cycle = ctx->cycle;

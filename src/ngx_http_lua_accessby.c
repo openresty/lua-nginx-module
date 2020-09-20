@@ -60,7 +60,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
 #endif
 
         if (cur_ph < last_ph) {
-            dd("swaping the contents of cur_ph and last_ph...");
+            dd("swapping the contents of cur_ph and last_ph...");
 
             tmp = *cur_ph;
 
@@ -145,11 +145,6 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
                                        ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-#if (nginx_version < 1002006) ||                                             \
-        (nginx_version >= 1003000 && nginx_version < 1003009)
-            r->main->count--;
-#endif
-
             return rc;
         }
 
@@ -179,6 +174,7 @@ ngx_http_lua_access_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->access_src.value.data,
                                        llcf->access_src.value.len,
+                                       &llcf->access_src_ref,
                                        llcf->access_src_key,
                                        (const char *) llcf->access_chunkname);
 
@@ -217,6 +213,7 @@ ngx_http_lua_access_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &llcf->access_src_ref,
                                      llcf->access_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {

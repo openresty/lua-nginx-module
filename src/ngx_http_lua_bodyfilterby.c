@@ -15,12 +15,9 @@
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_pcrefix.h"
-#include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
-#include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_headers.h"
-#include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
@@ -162,6 +159,7 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->body_filter_src.value.data,
                                        llcf->body_filter_src.value.len,
+                                       &llcf->body_filter_src_ref,
                                        llcf->body_filter_src_key,
                                        "=body_filter_by_lua");
     if (rc != NGX_OK) {
@@ -209,6 +207,7 @@ ngx_http_lua_body_filter_file(ngx_http_request_t *r, ngx_chain_t *in)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &llcf->body_filter_src_ref,
                                      llcf->body_filter_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -317,11 +316,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
-#if nginx_version >= 1001004
     ngx_chain_update_chains(r->pool,
-#else
-    ngx_chain_update_chains(
-#endif
                             &ctx->free_bufs, &ctx->busy_bufs, &out,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
 

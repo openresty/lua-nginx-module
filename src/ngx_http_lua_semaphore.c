@@ -7,9 +7,6 @@
  */
 
 
-#ifndef NGX_LUA_NO_FFI_API
-
-
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -40,7 +37,7 @@ void ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem);
 
 enum {
     SEMAPHORE_WAIT_SUCC = 0,
-    SEMAPHORE_WAIT_TIMEOUT = 1
+    SEMAPHORE_WAIT_TIMEOUT = 1,
 };
 
 
@@ -85,6 +82,8 @@ ngx_http_lua_alloc_sema(void)
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
+
+    ngx_http_lua_assert(lmcf != NULL);
 
     mm = lmcf->sema_mm;
 
@@ -171,6 +170,8 @@ ngx_http_lua_sema_mm_cleanup(void *data)
 
         sem = ngx_queue_data(q, ngx_http_lua_sema_t, chain);
         block = sem->block;
+
+        ngx_http_lua_assert(block != NULL);
 
         if (block->used == 0) {
             iter = (ngx_http_lua_sema_t *) (block + 1);
@@ -378,11 +379,7 @@ ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
-                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT,
+    rc = ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE,
                                         err, errlen);
 
     if (rc != NGX_OK) {
@@ -572,7 +569,5 @@ ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem)
     ngx_http_lua_free_sema(sem);
 }
 
-
-#endif /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

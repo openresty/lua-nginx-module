@@ -1,5 +1,4 @@
-sudo: required
-dist: trusty
+dist: xenial
 
 os: linux
 
@@ -34,7 +33,7 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - PCRE_VER=8.41
+    - PCRE_VER=8.44
     - PCRE_PREFIX=/opt/pcre
     - PCRE_LIB=$PCRE_PREFIX/lib
     - PCRE_INC=$PCRE_PREFIX/include
@@ -47,15 +46,14 @@ env:
     - LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
-  matrix:
-    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.0.2n OPENSSL_OPT="" OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.13.6 OPENSSL_VER=1.1.0h OPENSSL_OPT="" OPENSSL_PATCH_VER=1.1.0d
-    # TODO: when adding an OpenSSL version >= 1.1.1, please add "enable-tls1_3"
-    # to $OPENSSL_OPT.
+  jobs:
+    - NGINX_VERSION=1.17.8 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
+    - NGINX_VERSION=1.17.8 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
+    - NGINX_VERSION=1.17.8 OPENSSL_VER=1.1.1g OPENSSL_PATCH_VER=1.1.1f
 
 services:
- - memcache
- - redis-server
+ - memcached
+ - redis
  - mysql
 
 before_install:
@@ -65,8 +63,8 @@ before_install:
 
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
-  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
-  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz; fi
+  - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VER.tar.gz; fi
+  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
@@ -88,6 +86,7 @@ install:
   - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
   - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
+  - git clone https://github.com/openresty/lua-resty-string.git ../lua-resty-string
   - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
 
@@ -96,6 +95,8 @@ before_script:
 
 script:
   - sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
+  - sudo iptables -I OUTPUT -p tcp --dst 127.0.0.2 --dport 12345 -j DROP
+  - sudo iptables -I OUTPUT -p udp --dst 127.0.0.2 --dport 12345 -j DROP
   - cd luajit2/
   - make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2' > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
@@ -115,7 +116,7 @@ script:
   - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
   - cd openssl-$OPENSSL_VER/
   - patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch
-  - ./config no-threads shared enable-ssl3 enable-ssl3-method $OPENSSL_OPT -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
+  - ./config no-threads shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..

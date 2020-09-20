@@ -1,16 +1,18 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua;
+use Cwd qw(abs_path realpath);
+use File::Basename;
 
 repeat_each(2);
 
 plan tests => repeat_each() * 211;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
-
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
+$ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
 
 #log_level 'warn';
 log_level 'debug';
@@ -301,7 +303,7 @@ SSL reused session
 
         content_by_lua '
             local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
+            sock:settimeout(7000)
 
             do
 
@@ -380,7 +382,7 @@ lua ssl free session
 --- no_error_log
 [error]
 [alert]
---- timeout: 5
+--- timeout: 10
 
 
 
@@ -573,7 +575,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET /en/linux-packages.html HTTP/1.1\\r\\nHost: openresty.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -602,7 +604,7 @@ GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 56 bytes.
+sent http request: 80 bytes.
 received: HTTP/1.1 404 Not Found
 close: 1 nil
 
@@ -1096,9 +1098,11 @@ close: 1 nil
 qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
---- error_log
-lua ssl server name: "openresty.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2
+--- error_log eval
+[
+'lua ssl server name: "openresty.org"',
+qr/SSL: TLSv1\.2, cipher: "(?:ECDHE-RSA-AES(?:256|128)-GCM-SHA(?:384|256)|ECDHE-(?:RSA|ECDSA)-CHACHA20-POLY1305) TLSv1\.2/,
+]
 --- no_error_log
 SSL reused session
 [error]
@@ -1108,20 +1112,31 @@ SSL reused session
 
 
 === TEST 14: explicit cipher configuration
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_ciphers ECDHE-RSA-AES256-SHA;
-    location /t {
-        #set $port 5000;
-        set $port $TEST_NGINX_MEMCACHED_PORT;
 
+    location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1129,7 +1144,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "openresty.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1137,7 +1152,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1160,14 +1175,13 @@ SSL reused session
             collectgarbage()
         ';
     }
-
 --- request
 GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 58 bytes.
-received: HTTP/1.1 302 Moved Temporarily
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
@@ -1177,8 +1191,8 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
-['lua ssl server name: "openresty.org"',
-qr/SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1188,20 +1202,31 @@ SSL reused session
 
 
 === TEST 15: explicit ssl protocol configuration
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
 --- config
     server_tokens off;
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_protocols TLSv1;
-    location /t {
-        #set $port 5000;
-        set $port $TEST_NGINX_MEMCACHED_PORT;
 
+    location /t {
         content_by_lua '
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1209,7 +1234,7 @@ SSL reused session
 
                 ngx.say("connected: ", ok)
 
-                local session, err = sock:sslhandshake(nil, "openresty.org")
+                local session, err = sock:sslhandshake(nil, "test.com")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1217,7 +1242,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -1240,14 +1265,13 @@ SSL reused session
             collectgarbage()
         ';
     }
-
 --- request
 GET /t
 --- response_body
 connected: 1
 ssl handshake: userdata
-sent http request: 58 bytes.
-received: HTTP/1.1 302 Moved Temporarily
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
@@ -1257,13 +1281,12 @@ qr/^lua ssl save session: ([0-9A-F]+)
 lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
-['lua ssl server name: "openresty.org"',
-qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES128-SHA (SSLv3|TLSv1)/]
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
 --- no_error_log
 SSL reused session
 [error]
 [alert]
---- timeout: 5
 
 
 
@@ -1333,13 +1356,13 @@ failed to send http request: closed
 --- grep_error_log_out
 --- error_log eval
 [
-qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?(unsupported protocol|no protocols available)/,
+qr/\[(crit|error)\] .*?SSL_do_handshake\(\) failed .*?(unsupported protocol|no protocols available)/,
 'lua ssl server name: "openresty.org"',
 ]
 --- no_error_log
 SSL reused session
-[error]
 [alert]
+[emerg]
 --- timeout: 5
 
 
@@ -2508,7 +2531,7 @@ SSL reused session
 
         content_by_lua_block {
             local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
+            sock:settimeout(7000)
 
             local ok, err = sock:connect("openresty.org", 443)
             if not ok then
@@ -2529,4 +2552,4 @@ GET /t
 qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including the object\), but seen 0/
 --- no_error_log
 [alert]
---- timeout: 5
+--- timeout: 10

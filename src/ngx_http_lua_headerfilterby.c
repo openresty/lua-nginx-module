@@ -13,12 +13,9 @@
 #include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_pcrefix.h"
-#include "ngx_http_lua_time.h"
 #include "ngx_http_lua_log.h"
-#include "ngx_http_lua_regex.h"
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_headers.h"
-#include "ngx_http_lua_variable.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_misc.h"
 #include "ngx_http_lua_consts.h"
@@ -172,6 +169,7 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->header_filter_src.value.data,
                                        llcf->header_filter_src.value.len,
+                                       &llcf->header_filter_src_ref,
                                        llcf->header_filter_src_key,
                                        "=header_filter_by_lua");
     if (rc != NGX_OK) {
@@ -213,6 +211,7 @@ ngx_http_lua_header_filter_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &llcf->header_filter_src_ref,
                                      llcf->header_filter_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;

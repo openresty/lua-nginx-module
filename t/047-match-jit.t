@@ -20,7 +20,7 @@ __DATA__
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]+)", "j")
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "j")
             if m then
                 ngx.say(m[0])
             else
@@ -41,7 +41,7 @@ pcre JIT compiling result: 1
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, world", "([0-9]+)", "j")
+            local m = ngx.re.match("hello, world", "([0-9]+)", "j")
             if m then
                 ngx.say(m[0])
             else
@@ -62,7 +62,7 @@ pcre JIT compiling result: 1
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, 1234", "([0-9]+)", "jo")
+            local m = ngx.re.match("hello, 1234", "([0-9]+)", "jo")
             if m then
                 ngx.say(m[0])
             else
@@ -87,7 +87,7 @@ qr/pcre JIT compiling result: \d+/
 --- config
     location /re {
         content_by_lua '
-            m = ngx.re.match("hello, world", "([0-9]+)", "jo")
+            local m = ngx.re.match("hello, world", "([0-9]+)", "jo")
             if m then
                 ngx.say(m[0])
             else
@@ -147,7 +147,7 @@ error: pcre_compile() failed: missing ) in "(abc"
 >>> a.lua
 local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
 
-s = string.rep([[ABCDEFG]], 21)
+local s = string.rep([[ABCDEFG]], 21)
 
 local start = ngx.now()
 
@@ -187,7 +187,7 @@ error: pcre_exec() failed: -8
 >>> a.lua
 local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
 
-s = string.rep([[ABCDEFG]], 21)
+local s = string.rep([[ABCDEFG]], 21)
 
 local start = ngx.now()
 

@@ -24,7 +24,7 @@ __DATA__
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.exit(0)
             end
@@ -87,7 +87,7 @@ hello in thread
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -172,13 +172,13 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.say("f")
                 ngx.exit(0)
             end
 
-            function g()
+            local function g()
                 ngx.sleep(1)
                 ngx.say("g")
             end
@@ -262,7 +262,7 @@ f
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.say("exiting the user thread")
                 ngx.exit(0)
@@ -298,10 +298,10 @@ exiting the user thread
 === TEST 5: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.tcp)
 --- config
     location /lua {
-        resolver agentzh.org;
+        resolver 127.0.0.2:12345;
         resolver_timeout 12s;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.001)
                 ngx.exit(0)
@@ -394,10 +394,10 @@ after
 === TEST 6: exit in user thread (entry thread is still pending on the DNS resolver for ngx.socket.udp)
 --- config
     location /lua {
-        resolver agentzh.org;
+        resolver 127.0.0.2:12345;
         resolver_timeout 12s;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.001)
                 ngx.exit(0)
@@ -491,7 +491,7 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -502,7 +502,7 @@ after
             ngx.say("after")
             local sock = ngx.socket.tcp()
             sock:settimeout(12000)
-            local ok, err = sock:connect("172.105.207.225", 12345)
+            local ok, err = sock:connect("127.0.0.2", 12345)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -582,7 +582,7 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -682,7 +682,7 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -788,7 +788,7 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -883,7 +883,7 @@ after
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -977,7 +977,7 @@ after
     location /lua {
         client_body_timeout 12000ms;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -1062,7 +1062,7 @@ after
     location /lua {
         client_body_timeout 12000ms;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello in thread")
                 ngx.sleep(0.1)
                 ngx.exit(0)
@@ -1146,7 +1146,7 @@ attempt to abort with pending subrequests
     location /lua {
         client_body_timeout 12000ms;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exit(0)
             end
@@ -1229,7 +1229,7 @@ attempt to abort with pending subrequests
     location /lua {
         client_body_timeout 12000ms;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exit(0)
             end

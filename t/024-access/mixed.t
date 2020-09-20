@@ -35,7 +35,7 @@ __DATA__
         access_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             print("access GET: ", res.status);
 
             res = ngx.location.capture("/memc",
@@ -49,7 +49,7 @@ __DATA__
         content_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             ngx.say("content GET: " .. res.status);
 
             res = ngx.location.capture("/memc",
@@ -187,7 +187,7 @@ world\x03\x04\xff
         rewrite_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             print("rewrite GET: " .. res.status);
 
             res = ngx.location.capture("/memc",
@@ -201,7 +201,7 @@ world\x03\x04\xff
         access_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             print("access GET: " .. res.status);
 
             res = ngx.location.capture("/memc",
@@ -215,7 +215,7 @@ world\x03\x04\xff
         content_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             ngx.say("content GET: " .. res.status);
 
             res = ngx.location.capture("/memc",

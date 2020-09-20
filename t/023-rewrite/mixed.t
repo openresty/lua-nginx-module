@@ -35,7 +35,7 @@ __DATA__
         rewrite_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             print("rewrite GET: " .. res.status);
 
             res = ngx.location.capture("/memc",
@@ -49,7 +49,7 @@ __DATA__
         content_by_lua '
             ngx.location.capture("/flush");
 
-            res = ngx.location.capture("/memc");
+            local res = ngx.location.capture("/memc");
             ngx.say("content GET: " .. res.status);
 
             res = ngx.location.capture("/memc",

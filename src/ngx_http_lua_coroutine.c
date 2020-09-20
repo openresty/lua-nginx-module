@@ -25,6 +25,7 @@
 
 
 static int ngx_http_lua_coroutine_create(lua_State *L);
+static int ngx_http_lua_coroutine_wrap(lua_State *L);
 static int ngx_http_lua_coroutine_resume(lua_State *L);
 static int ngx_http_lua_coroutine_yield(lua_State *L);
 static int ngx_http_lua_coroutine_status(lua_State *L);
@@ -62,6 +63,45 @@ ngx_http_lua_coroutine_create(lua_State *L)
 }
 
 
+static int
+ngx_http_lua_coroutine_wrap_runner(lua_State *L)
+{
+    /* retrieve closure and insert it at the bottom of
+     * the stack for coroutine.resume() */
+    lua_pushvalue(L, lua_upvalueindex(1));
+    lua_insert(L, 1);
+
+    return ngx_http_lua_coroutine_resume(L);
+}
+
+
+static int
+ngx_http_lua_coroutine_wrap(lua_State *L)
+{
+    ngx_http_request_t          *r;
+    ngx_http_lua_ctx_t          *ctx;
+    ngx_http_lua_co_ctx_t       *coctx = NULL;
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no request ctx found");
+    }
+
+    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
+
+    coctx->is_wrap = 1;
+
+    lua_pushcclosure(L, ngx_http_lua_coroutine_wrap_runner, 1);
+
+    return 1;
+}
+
+
 int
 ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t **pcoctx)
@@ -73,12 +113,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
                   "Lua function expected");
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
 
     vm = ngx_http_lua_get_lua_vm(r, ctx);
 
@@ -154,12 +189,7 @@ ngx_http_lua_coroutine_resume(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
 
     p_coctx = ctx->cur_co_ctx;
     if (p_coctx == NULL) {
@@ -215,12 +245,7 @@ ngx_http_lua_coroutine_yield(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
 
     coctx = ctx->cur_co_ctx;
 
@@ -250,7 +275,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     int         rc;
 
     /* new coroutine table */
-    lua_createtable(L, 0 /* narr */, 14 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 16 /* nrec */);
 
     /* get old coroutine table */
     lua_getglobal(L, "coroutine");
@@ -261,6 +286,9 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
 
     lua_getfield(L, -1, "create");
     lua_setfield(L, -3, "_create");
+
+    lua_getfield(L, -1, "wrap");
+    lua_setfield(L, -3, "_wrap");
 
     lua_getfield(L, -1, "resume");
     lua_setfield(L, -3, "_resume");
@@ -277,6 +305,9 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     lua_pushcfunction(L, ngx_http_lua_coroutine_create);
     lua_setfield(L, -2, "__create");
 
+    lua_pushcfunction(L, ngx_http_lua_coroutine_wrap);
+    lua_setfield(L, -2, "__wrap");
+
     lua_pushcfunction(L, ngx_http_lua_coroutine_resume);
     lua_setfield(L, -2, "__resume");
 
@@ -291,7 +322,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     /* inject coroutine APIs */
     {
         const char buf[] =
-            "local keys = {'create', 'yield', 'resume', 'status'}\n"
+            "local keys = {'create', 'yield', 'resume', 'status', 'wrap'}\n"
 #ifdef OPENRESTY_LUAJIT
             "local get_req = require 'thread.exdata'\n"
 #else
@@ -321,24 +352,18 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
                     "return std(...)\n"
                 "end\n"
             "end\n"
-            "local create, resume = coroutine.create, coroutine.resume\n"
-            "coroutine.wrap = function(f)\n"
-               "local co = create(f)\n"
-               "return function(...) return select(2, resume(co, ...)) end\n"
-            "end\n"
-            "package.loaded.coroutine = coroutine";
-
+            "package.loaded.coroutine = coroutine"
 #if 0
             "debug.sethook(function () collectgarbage() end, 'rl', 1)"
 #endif
             ;
 
-        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "=coroutine.wrap");
+        rc = luaL_loadbuffer(L, buf, sizeof(buf) - 1, "=coroutine_api");
     }
 
     if (rc != 0) {
         ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to load Lua code for coroutine.wrap(): %i: %s",
+                      "failed to load Lua code for coroutine_api: %i: %s",
                       rc, lua_tostring(L, -1));
 
         lua_pop(L, 1);
@@ -348,7 +373,7 @@ ngx_http_lua_inject_coroutine_api(ngx_log_t *log, lua_State *L)
     rc = lua_pcall(L, 0, 0, 0);
     if (rc != 0) {
         ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "failed to run the Lua code for coroutine.wrap(): %i: %s",
+                      "failed to run the Lua code for coroutine_api: %i: %s",
                       rc, lua_tostring(L, -1));
         lua_pop(L, 1);
     }
@@ -377,12 +402,7 @@ ngx_http_lua_coroutine_status(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH);
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
 
     coctx = ngx_http_lua_get_co_ctx(co, ctx);
     if (coctx == NULL) {

@@ -1219,3 +1219,506 @@ GET /t
 [error]
 [alert]
 [emerg]
+
+
+
+=== TEST 15: ssl_session_fetch_by_lua* is skipped when session ticket is provided
+--- http_config
+    ssl_session_fetch_by_lua_block { ngx.log(ngx.ERR, "ssl_session_fetch_by_lua* is running!") }
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- no_error_log
+[warn]
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 16: ssl_session_fetch_by_lua* always runs when using SSLv3 (SSLv3 does not support session tickets)
+--- http_config
+    ssl_session_fetch_by_lua_block { print("ssl_session_fetch_by_lua* is running!") }
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols SSLv3;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+    lua_ssl_protocols SSLv3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log_out eval
+[
+qr/\A(?:reusable connection: [01]\n)+\z/s,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+/m,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+/m,
+]
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 17: ssl_session_fetch_by_lua* can yield when reading early data
+--- skip_openssl: 6: < 1.1.1
+--- http_config
+    ssl_session_fetch_by_lua_block {
+        local begin = ngx.now()
+        ngx.sleep(0.1)
+        print("elapsed in ssl_session_fetch_by_lua*: ", ngx.now() - begin)
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        ssl_early_data on;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- grep_error_log eval
+qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
+--- grep_error_log_out eval
+[
+'',
+qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
+qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
+]
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 18: cosocket (UDP)
+--- http_config
+    ssl_session_fetch_by_lua_block {
+        local sock = ngx.socket.udp()
+
+        sock:settimeout(1000)
+
+        local ok, err = sock:setpeername("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+            return
+        end
+
+        local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+        local ok, err = sock:send(req)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+            return
+        end
+
+        local res, err = sock:receive()
+        if not res then
+            ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "received memc reply of ", #res, " bytes")
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- grep_error_log eval: qr/received memc reply of \d+ bytes/
+--- grep_error_log_out eval
+[
+'',
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+]
+--- no_error_log
+[alert]
+[error]
+[emerg]
+
+
+
+=== TEST 19: uthread (kill)
+--- http_config
+    ssl_session_fetch_by_lua_block {
+        local function f()
+            ngx.log(ngx.INFO, "uthread: hello from f()")
+            ngx.sleep(1)
+        end
+
+        local t, err = ngx.thread.spawn(f)
+        if not t then
+            ngx.log(ngx.ERR, "failed to spawn thread: ", err)
+            return
+        end
+
+        collectgarbage()
+
+        local ok, err = ngx.thread.kill(t)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to kill thread: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "uthread: killed")
+
+        local ok, err = ngx.thread.kill(t)
+        if not ok then
+            ngx.log(ngx.INFO, "uthread: failed to kill: ", err)
+        end
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- grep_error_log eval: qr/uthread: [^.,]+/
+--- grep_error_log_out eval
+[
+'',
+'uthread: hello from f()
+uthread: killed
+uthread: failed to kill: already waited or killed
+',
+'uthread: hello from f()
+uthread: killed
+uthread: failed to kill: already waited or killed
+'
+]
+--- no_error_log
+[alert]
+[error]
+[emerg]
+
+
+
+=== TEST 20: uthread (wait)
+--- http_config
+    ssl_session_fetch_by_lua_block {
+        local function f()
+            ngx.log(ngx.INFO, "uthread: hello from f()")
+            ngx.sleep(0.001)
+            return 32
+        end
+
+        local t, err = ngx.thread.spawn(f)
+        if not t then
+            ngx.log(ngx.ERR, "failed to spawn thread: ", err)
+            return
+        end
+
+        collectgarbage()
+
+        local ok, res = ngx.thread.wait(t)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to wait on thread: ", res)
+            return
+        end
+
+        ngx.log(ngx.INFO, "uthread: ", res)
+
+        local ok, err = ngx.thread.kill(t)
+        if not ok then
+            ngx.log(ngx.INFO, "uthread: failed to kill: ", err)
+        end
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_session_tickets off;
+        server_tokens off;
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(5000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(package.loaded.session, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                package.loaded.session = sess
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+close: 1 nil
+--- grep_error_log eval: qr/uthread: [^.,]+/
+--- grep_error_log_out eval
+[
+'',
+'uthread: hello from f()
+uthread: 32
+uthread: failed to kill: already waited or killed
+',
+'uthread: hello from f()
+uthread: 32
+uthread: failed to kill: already waited or killed
+'
+]
+--- no_error_log
+[alert]
+[error]
+[emerg]

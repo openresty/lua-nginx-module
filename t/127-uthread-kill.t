@@ -23,7 +23,7 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello from f()")
                 ngx.sleep(1)
             end
@@ -81,7 +81,7 @@ lua clean up the timer for pending ngx.sleep
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.say("hello from f()")
                 ngx.sleep(0.001)
                 return 32
@@ -138,12 +138,12 @@ lua clean up the timer for pending ngx.sleep
 
 === TEST 3: kill pending resolver
 --- config
-    resolver agentzh.org:12345;
+    resolver 127.0.0.2:12345;
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 local sock = ngx.socket.tcp()
-                sock:connect("some.agentzh.org", 12345)
+                sock:connect("some.127.0.0.2", 12345)
             end
 
             local t, err = ngx.thread.spawn(f)
@@ -194,13 +194,13 @@ resolve name done: -2
     location /lua {
         content_by_lua '
             local ready = false
-            function f()
+            local function f()
                 local sock = ngx.socket.tcp()
                 sock:connect("agentzh.org", 80)
                 sock:close()
                 ready = true
                 sock:settimeout(10000)
-                sock:connect("agentzh.org", 12345)
+                sock:connect("127.0.0.2", 12345)
             end
 
             local t, err = ngx.thread.spawn(f)
@@ -262,7 +262,7 @@ lua finalize socket
 
     location = /t {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.location.capture("/sub")
             end
 
@@ -309,11 +309,11 @@ lua tcp socket abort resolver
 
     location = /t {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.location.capture("/sub")
             end
 
-            function g()
+            local function g()
                 ngx.sleep(0.3)
             end
 
@@ -376,7 +376,7 @@ lua tcp socket abort resolver
     location = /t {
         content_by_lua '
             local ready = false
-            function f()
+            local function f()
                 ngx.location.capture("/sub")
                 ready = true
                 ngx.sleep(0.5)
@@ -424,7 +424,7 @@ lua tcp socket abort resolver
 --- config
     location = /t {
         content_by_lua '
-            function f()
+            local function f()
                 return
             end
 
@@ -473,7 +473,7 @@ lua tcp socket abort resolver
                 ngx.say("killed main thread.")
             end
 
-            function f()
+            local function f()
                 local ok, err = ngx.thread.kill(coroutine.running())
                 if not ok then
                     ngx.say("failed to kill user thread: ", err)
