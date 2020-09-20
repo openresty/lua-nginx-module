@@ -6307,7 +6307,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
 #if 1
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-			server_udata_metatable_key));
+        server_udata_metatable_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 #endif
@@ -6817,7 +6817,7 @@ ngx_http_lua_socket_tcp_master_listen(lua_State *L)
 
 #if 1
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-			server_udata_metatable_key));
+            server_udata_metatable_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 #endif
@@ -7138,7 +7138,7 @@ ngx_http_lua_socket_tcp_accept_retval_handler(ngx_http_request_t *r,
 
 #if 1
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-			upstream_udata_metatable_key));
+            upstream_udata_metatable_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 #endif
@@ -7456,7 +7456,7 @@ ngx_http_lua_socket_tcp_server_finalize(ngx_http_request_t *r,
 
             if (ngx_delete_file(name) == NGX_FILE_ERROR) {
                 ngx_log_error(NGX_LOG_EMERG, r->connection->log, 
-		   ngx_socket_errno, ngx_delete_file_n " %s failed", name);
+                ngx_socket_errno, ngx_delete_file_n " %s failed", name);
             }
         }
 
@@ -7479,7 +7479,7 @@ ngx_http_lua_socket_tcp_server_destroy(lua_State *L)
     }
 
     if (s->cleanup) {
-	/* it will clear s->cleanup */
+        /* it will clear s->cleanup */
         ngx_http_lua_socket_tcp_server_cleanup(s); 
     }
 
