@@ -6936,8 +6936,9 @@ ngx_http_lua_socket_init_listening(ngx_http_request_t *r,
 
     ngx_memzero(&lsopt, sizeof(ngx_http_listen_opt_t));
 
-    ngx_memcpy(&lsopt.sockaddr.sockaddr, &u.sockaddr, u.socklen);
-
+    lsopt.sockaddr = u.addrs[0].sockaddr;
+    lsopt.socklen = u.addrs[0].socklen;
+    lsopt.addr_text = u.addrs[0].name;
     lsopt.socklen = u.socklen;
     lsopt.backlog = NGX_LISTEN_BACKLOG;
     lsopt.rcvbuf = -1;
@@ -6952,9 +6953,6 @@ ngx_http_lua_socket_init_listening(ngx_http_request_t *r,
 #if (NGX_HAVE_INET6)
     lsopt.ipv6only = 1;
 #endif
-
-    (void) ngx_sock_ntop(&lsopt.sockaddr.sockaddr, lsopt.socklen, lsopt.addr,
-                         NGX_SOCKADDR_STRLEN, 1);
 
     lsopt.set = 1;
     lsopt.bind = 1;
@@ -6977,12 +6975,12 @@ ngx_http_lua_socket_init_listening(ngx_http_request_t *r,
     addr->default_server = NULL;
     addr->servers.elts = NULL;
 
-    ls = ngx_http_lua_socket_create_listening(r, &addr->opt.sockaddr.sockaddr,
+    ls = ngx_http_lua_socket_create_listening(r, addr->opt.sockaddr,
                               addr->opt.socklen);
     if (ls == NULL) {
         return NULL;
     }
-
+    
     ls->addr_ntop = 1;
 
     ls->handler = ngx_http_lua_socket_accept_handler;
