@@ -28,7 +28,6 @@ static int ngx_http_lua_socket_tcp_receive(lua_State *L);
 static int ngx_http_lua_socket_tcp_receiveany(lua_State *L);
 static int ngx_http_lua_socket_tcp_send(lua_State *L);
 static int ngx_http_lua_socket_tcp_close(lua_State *L);
-static int ngx_http_lua_socket_tcp_setoption(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeouts(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
@@ -178,6 +177,15 @@ enum {
 };
 
 
+enum {
+    OPTION_NAME_KEEPALIVE = 1,
+    OPTION_NAME_REUSEADDR,
+    OPTION_NAME_TCP_NODELAY,
+    OPTION_NAME_SNDBUF,
+    OPTION_NAME_RCVBUF,
+};
+
+
 #define ngx_http_lua_socket_check_busy_connecting(r, u, L)                   \
     if ((u)->conn_waiting) {                                                 \
         lua_pushnil(L);                                                      \
@@ -220,6 +228,7 @@ static char ngx_http_lua_pattern_udata_metatable_key;
 static char ngx_http_lua_ssl_session_metatable_key;
 #endif
 
+#define ngx_http_lua_tcp_socket_metatable_literal_key  "__tcp_cosocket_mt"
 
 #define ngx_http_lua_tcp_socket_metatable_literal_key  "__tcp_cosocket_mt"
 
@@ -313,7 +322,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{tcp object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           tcp_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 13 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 14 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -339,9 +348,6 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_close);
     lua_setfield(L, -2, "close");
-
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_setoption);
-    lua_setfield(L, -2, "setoption");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
@@ -3102,14 +3108,6 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
 
     lua_pushinteger(L, 1);
     return 1;
-}
-
-
-static int
-ngx_http_lua_socket_tcp_setoption(lua_State *L)
-{
-    /* TODO */
-    return 0;
 }
 
 
@@ -6392,6 +6390,144 @@ ngx_http_lua_ffi_socket_tcp_del_udata(ngx_http_lua_socket_tcp_upstream_t *u,
 
     *err_msg = "not found";
     return NGX_ERROR;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
+    int option, int *val, char **err_msg)
+{
+    socklen_t len;
+    int       fd;
+
+    if (u == NULL || u->peer.connection == NULL) {
+        *err_msg = "closed";
+        return NGX_ERROR;
+    }
+
+    fd = u->peer.connection->fd;
+    len = sizeof(int);
+    switch (option) {
+    case OPTION_NAME_KEEPALIVE:
+        if (getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) val, &len)
+            == -1)
+        {
+            *err_msg = "set keepalive failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_REUSEADDR:
+        if (getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *) val, &len)
+            == -1)
+        {
+            *err_msg = "set reuseaddr failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_TCP_NODELAY:
+        if (getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) val, &len)
+            == -1)
+        {
+            *err_msg = "set tcp-nodelay failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_SNDBUF:
+        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len)
+            == -1)
+        {
+            *err_msg = "set rcvbuf failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_RCVBUF:
+        if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len)
+            == -1)
+        {
+            *err_msg = "set sndbuf failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    default:
+        *err_msg = "unsupported option";
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
+    int option, int val, char **err_msg)
+{
+    socklen_t len;
+    int       fd;
+
+    if (u == NULL || u->peer.connection == NULL) {
+        *err_msg = "closed";
+        return NGX_ERROR;
+    }
+
+    len = sizeof(int);
+    fd = u->peer.connection->fd;
+    switch (option) {
+    case OPTION_NAME_KEEPALIVE:
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (const void *) &val, len)
+            == -1)
+        {
+            *err_msg = "set keepalive failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_REUSEADDR:
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *) &val, len)
+            == -1)
+        {
+            *err_msg = "set reuseaddr failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_TCP_NODELAY:
+        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &val, len)
+            == -1)
+        {
+            *err_msg = "set tcp-nodelay failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_SNDBUF:
+        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *) &val, len)
+            == -1)
+        {
+            *err_msg = "set rcvbuf failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    case OPTION_NAME_RCVBUF:
+        if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const void *) &val, len)
+            == -1)
+        {
+            *err_msg = "set sndbuf failed";
+            return NGX_ERROR;
+        }
+        break;
+
+    default:
+        *err_msg = "unsupported option";
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
 }
 
 
