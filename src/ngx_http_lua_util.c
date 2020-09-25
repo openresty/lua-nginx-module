@@ -2156,6 +2156,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 
             state = sw_usual;
 
+            *d++ = '%';
             *d++ = ch;
 
             break;
@@ -2217,6 +2218,8 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             }
 
             /* the invalid quoted character */
+
+            *d++ = '%'; *d++ = *(s - 2); *d++ = *(s - 1);
 
             break;
         }
