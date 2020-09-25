@@ -28,7 +28,6 @@ static int ngx_http_lua_socket_tcp_receive(lua_State *L);
 static int ngx_http_lua_socket_tcp_receiveany(lua_State *L);
 static int ngx_http_lua_socket_tcp_send(lua_State *L);
 static int ngx_http_lua_socket_tcp_close(lua_State *L);
-static int ngx_http_lua_socket_tcp_setoption(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeout(lua_State *L);
 static int ngx_http_lua_socket_tcp_settimeouts(lua_State *L);
 static void ngx_http_lua_socket_tcp_handler(ngx_event_t *ev);
@@ -178,6 +177,15 @@ enum {
 };
 
 
+enum {
+    NGX_HTTP_LUA_SOCKOPT_KEEPALIVE = 1,
+    NGX_HTTP_LUA_SOCKOPT_REUSEADDR,
+    NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY,
+    NGX_HTTP_LUA_SOCKOPT_SNDBUF,
+    NGX_HTTP_LUA_SOCKOPT_RCVBUF,
+};
+
+
 #define ngx_http_lua_socket_check_busy_connecting(r, u, L)                   \
     if ((u)->conn_waiting) {                                                 \
         lua_pushnil(L);                                                      \
@@ -313,7 +321,7 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{tcp object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           tcp_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 13 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 14 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -339,9 +347,6 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_close);
     lua_setfield(L, -2, "close");
-
-    lua_pushcfunction(L, ngx_http_lua_socket_tcp_setoption);
-    lua_setfield(L, -2, "setoption");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_settimeout);
     lua_setfield(L, -2, "settimeout"); /* ngx socket mt */
@@ -3102,14 +3107,6 @@ ngx_http_lua_socket_tcp_close(lua_State *L)
 
     lua_pushinteger(L, 1);
     return 1;
-}
-
-
-static int
-ngx_http_lua_socket_tcp_setoption(lua_State *L)
-{
-    /* TODO */
-    return 0;
 }
 
 
@@ -6392,6 +6389,154 @@ ngx_http_lua_ffi_socket_tcp_del_udata(ngx_http_lua_socket_tcp_upstream_t *u,
 
     *err_msg = "not found";
     return NGX_ERROR;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
+    int option, int *val, u_char *err, size_t *errlen)
+{
+    socklen_t len;
+    int       fd, rc;
+
+    if (u == NULL || u->peer.connection == NULL) {
+        *errlen = ngx_snprintf(err, *errlen, "closed") - err;
+        return NGX_ERROR;
+    }
+
+    fd = u->peer.connection->fd;
+
+    if (fd == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
+        return NGX_ERROR;
+    }
+
+    len = sizeof(int);
+
+    switch (option) {
+    case NGX_HTTP_LUA_SOCKOPT_KEEPALIVE:
+        rc = getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) val, &len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
+        rc = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *) val, &len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY:
+        rc = getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) val, &len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
+        rc = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
+        rc = getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len);
+        break;
+
+    default:
+        *errlen = ngx_snprintf(err, *errlen, "unsupported option %d", option)
+                  - err;
+        return NGX_ERROR;
+    }
+
+    if (rc == -1) {
+        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
+    int option, int val, u_char *err, size_t *errlen)
+{
+    socklen_t len;
+    int       fd, rc;
+
+    if (u == NULL || u->peer.connection == NULL) {
+        *errlen = ngx_snprintf(err, *errlen, "closed") - err;
+        return NGX_ERROR;
+    }
+
+    fd = u->peer.connection->fd;
+
+    if (fd == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
+        return NGX_ERROR;
+    }
+
+    len = sizeof(int);
+
+    switch (option) {
+    case NGX_HTTP_LUA_SOCKOPT_KEEPALIVE:
+        rc = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
+        rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY:
+        rc = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
+        rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
+        rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
+                        (const void *) &val, len);
+        break;
+
+    default:
+        *errlen = ngx_snprintf(err, *errlen, "unsupported option: %d", option)
+                  - err;
+        return NGX_ERROR;
+    }
+
+    if (rc == -1) {
+        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+/* just hack the fd for testing bad case, it will also return the original fd */
+int
+ngx_http_lua_ffi_socket_tcp_hack_fd(ngx_http_lua_socket_tcp_upstream_t *u,
+    int fd, u_char *err, size_t *errlen)
+{
+    int rc;
+
+    if (u == NULL || u->peer.connection == NULL) {
+        *errlen = ngx_snprintf(err, *errlen, "closed") - err;
+        return -1;
+    }
+
+    rc = u->peer.connection->fd;
+    if (rc == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
+        return -1;
+    }
+
+    /* return the original fd value directly when the new fd is invalid */
+    if (fd < 0) {
+        return rc;
+    }
+
+    u->peer.connection->fd = fd;
+
+    return rc;
 }
 
 

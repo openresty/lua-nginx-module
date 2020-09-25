@@ -7789,13 +7789,103 @@ This feature was first introduced in the `v0.10.7` release.
 tcpsock:setoption
 -----------------
 
-**syntax:** *tcpsock:setoption(option, value?)*
+**syntax:** *ok, err = tcpsock:setoption(option, value?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
-This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality will be implemented in future.
+This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality is implemented `v0.10.18`.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+In case of success, it returns `true`. Otherwise, it returns nil and a string describing the error.
+
+The `option` is a string with the option name, and the value depends on the option being set:
+
+* `keepalive`
+
+	Setting this option to true enables sending of keep-alive messages on
+	connection-oriented sockets. Make sure the `connect` function
+	had been called before, for example,
+
+    ```lua
+
+    local ok, err = tcpsock:setoption("keepalive", true)
+    if not ok then
+        ngx.say("setoption keepalive failed: ", err)
+    end
+    ```
+* `reuseaddr`
+
+	Enabling this option indicates that the rules used in validating addresses
+	supplied in a call to bind should allow reuse of local addresses. Make sure
+	the `connect` function had been called before, for example,
+
+    ```lua
+
+    local ok, err = tcpsock:setoption("reuseaddr", 0)
+    if not ok then
+        ngx.say("setoption reuseaddr failed: ", err)
+    end
+    ```
+* `tcp-nodelay`
+
+	Setting this option to true disables the Nagle's algorithm for the connection.
+	Make sure the `connect` function had been called before, for example,
+
+    ```lua
+
+    local ok, err = tcpsock:setoption("tcp-nodelay", true)
+    if not ok then
+        ngx.say("setoption tcp-nodelay failed: ", err)
+    end
+    ```
+* `sndbuf`
+
+	Sets the maximum socket send buffer in bytes. The kernel doubles this value
+	(to allow space for bookkeeping overhead) when it is set using setsockopt().
+	Make sure the `connect` function had been called before, for example,
+
+    ```lua
+
+    local ok, err = tcpsock:setoption("sndbuf", 1024 * 10)
+    if not ok then
+        ngx.say("setoption sndbuf failed: ", err)
+    end
+    ```
+* `rcvbuf`
+
+	Sets the maximum socket receive buffer in bytes. The kernel doubles this value
+	(to allow space for bookkeeping overhead) when it is set using setsockopt. Make
+	sure the `connect` function had been called before, for example,
+
+    ```lua
+
+    local ok, err = tcpsock:setoption("rcvbuf", 1024 * 10)
+    if not ok then
+        ngx.say("setoption rcvbuf failed: ", err)
+    end
+    ```
+
+NOTE: Once the option is set, it will become effective until the connection is closed. If you know the connection is from the connection pool and all the in-pool connections already have called the setoption() method with the desired socket option state, then you can just skip calling setoption() again to avoid the overhead of repeated calls, for example,
+
+```lua
+
+ local count, err = tcpsock:getreusedtimes()
+ if not count then
+     ngx.say("getreusedtimes failed: ", err)
+     return
+ end
+
+ if count == 0 then
+     local ok, err = tcpsock:setoption("rcvbuf", 1024 * 10)
+     if not ok then
+         ngx.say("setoption rcvbuf failed: ", err)
+         return
+     end
+ end
+```
+
+These options described above are supported in `v0.10.18`, and more options will be implemented in future.
 
 [Back to TOC](#nginx-api-for-lua)
 
