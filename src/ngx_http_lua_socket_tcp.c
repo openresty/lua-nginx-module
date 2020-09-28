@@ -901,7 +901,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             pool_size = (ngx_int_t) lua_tointeger(L, -1);
 
             if (pool_size <= 0) {
-                msg = lua_pushfstring(L, "bad \"pool_size\" option value: %i",
+                msg = lua_pushfstring(L, "bad \"pool_size\" option value: %d",
                                       pool_size);
                 return luaL_argerror(L, n, msg);
             }
@@ -920,7 +920,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
             backlog = (ngx_int_t) lua_tointeger(L, -1);
 
             if (backlog < 0) {
-                msg = lua_pushfstring(L, "bad \"backlog\" option value: %i",
+                msg = lua_pushfstring(L, "bad \"backlog\" option value: %d",
                                       backlog);
                 return luaL_argerror(L, n, msg);
             }
@@ -5286,7 +5286,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         }
 
         if (pool_size <= 0) {
-            msg = lua_pushfstring(L, "bad \"pool_size\" option value: %i",
+            msg = lua_pushfstring(L, "bad \"pool_size\" option value: %d",
                                   pool_size);
             return luaL_argerror(L, n, msg);
         }
