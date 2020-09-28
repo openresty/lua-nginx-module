@@ -485,7 +485,17 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
     {
         extra++;
         lua_pushliteral(L, "content-length");
-        lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
+        if (r->headers_out.content_length_n > NGX_MAX_INT32_VALUE) {
+            u_char *p = ngx_palloc(r->pool, NGX_OFF_T_LEN);
+            if (p == NULL) {
+                return luaL_error(L, "no memory");
+            }
+            size_t len = ngx_snprintf(p, NGX_OFF_T_LEN, "%O",
+                         r->headers_out.content_length_n) - p;
+            lua_pushfstring(L, "%s", (char *) p, len);
+        } else {
+            lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
+        }
         lua_rawset(L, -3);
     }
 
