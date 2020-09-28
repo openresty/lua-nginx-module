@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 77);
+plan tests => repeat_each() * (blocks() * 3 + 79);
 
 #no_diff();
 no_long_string();
@@ -2104,3 +2104,40 @@ xxx:
 foo: foo%0Axx:bar\r\nfoo: bar%0Dxxx:foo\r\n
 --- no_error_log
 [error]
+
+
+
+=== TEST 94: fix negative content-length number(#1791)
+--- config
+    location = /big-upstream {
+        content_by_lua_block {
+            ngx.header['Content-Length'] = math.pow(2, 33) - 1
+            ngx.say('hi')
+        }
+    }
+
+    location = /t {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/big-upstream;
+        proxy_buffering off;
+
+        header_filter_by_lua_block {
+            local hs, err = ngx.resp.get_headers()
+            if err then
+                ngx.log(ngx.ERR, "err: ", err)
+                return ngx.exit(500)
+            end
+
+            print("my Content-Length: ", hs["Content-Length"])
+
+            ngx.header['Content-Length'] = 3
+        }
+    }
+--- request
+    GET /t
+--- response_body
+hi
+--- no_error_log
+[alert]
+--- error_log
+my Content-Length: 8589934591
+upstream prematurely closed connection while sending to client
