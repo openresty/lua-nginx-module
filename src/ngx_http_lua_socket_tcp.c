@@ -6024,8 +6024,17 @@ ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
                    "lua tcp socket abort queueing, conn_op_ctx: %p, u: %p",
                    conn_op_ctx, u);
 
+#if (nginx_version >= 1007005)
     if (conn_op_ctx->event.posted) {
-        ngx_delete_posted_event(&conn_op_ctx->event);
+#else
+    if (conn_op_ctx->event.prev) {
+#endif
+        /*
+        * We need the extra parentheses around the argument
+        * of ngx_delete_posted_event() just to work around macro issues in
+        * nginx cores older than 1.7.5 (exclusive).
+        */
+        ngx_delete_posted_event((&conn_op_ctx->event));
 
     } else if (conn_op_ctx->event.timer_set) {
         ngx_del_timer(&conn_op_ctx->event);
