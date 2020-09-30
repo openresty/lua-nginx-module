@@ -1338,13 +1338,13 @@ close: 1 nil
 --- grep_error_log_out eval
 [
 qr/\A(?:reusable connection: [01]\n)+\z/s,
-qr/^reusable connection: 1
-ssl session fetch: connection reusable: 1
+qr/^reusable connection: 0
+ssl session fetch: connection reusable: 0
 reusable connection: 0
 ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
 /m,
-qr/^reusable connection: 1
-ssl session fetch: connection reusable: 1
+qr/^reusable connection: 0
+ssl session fetch: connection reusable: 0
 reusable connection: 0
 ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
 /m,
