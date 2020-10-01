@@ -86,6 +86,9 @@ close: 1 nil
 --- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 
 --- grep_error_log_out eval
+# Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
+# before call ssl callback function
+$Test::Nginx::Util::NginxVersion >= 1.017009 ?
 [
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
@@ -97,7 +100,20 @@ ssl session fetch: connection reusable: 0
 ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
 /m,
 ]
-
+:
+[
+qr/\A(?:reusable connection: [01]\n)+\z/s,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+/m,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+/m,
+]
 --- no_error_log
 [error]
 [alert]
@@ -1334,6 +1350,9 @@ ssl handshake: userdata
 close: 1 nil
 --- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
+# Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
+# before call ssl callback function
+$Test::Nginx::Util::NginxVersion >= 1.017009 ?
 [
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
@@ -1342,6 +1361,20 @@ ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
 /m,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
+ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+/m,
+]
+:
+[
+qr/\A(?:reusable connection: [01]\n)+\z/s,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
+ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+/m,
+qr/^reusable connection: 1
+ssl session fetch: connection reusable: 1
+reusable connection: 0
 ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
 /m,
 ]
