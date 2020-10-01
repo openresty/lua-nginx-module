@@ -48,9 +48,9 @@ env:
     - TEST_NGINX_SLEEP=0.006
   jobs:
     - NGINX_VERSION=1.17.8 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.19.2 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.19.2 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
-    - NGINX_VERSION=1.19.2 OPENSSL_VER=1.1.1g OPENSSL_PATCH_VER=1.1.1f
+    - NGINX_VERSION=1.19.3 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
+    - NGINX_VERSION=1.19.3 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
+    - NGINX_VERSION=1.19.3 OPENSSL_VER=1.1.1g OPENSSL_PATCH_VER=1.1.1f
 
 services:
  - memcached
@@ -68,7 +68,7 @@ install:
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
-  - git clone -b 1.19.2.x https://github.com/xiaocang/no-pool-nginx.git ../no-pool-nginx
+  - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
   - git clone https://github.com/openresty/lua-cjson.git lua-cjson
