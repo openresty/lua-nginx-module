@@ -1105,8 +1105,8 @@ CORE::join("", @k);
     }
 --- request
     GET /foo?world
---- response_body
-HTTP/1.0 a=3&b=5&b=6
+--- response_body eval
+qr/HTTP\/1.0 (a=3&b=5&b=6|b=5&b=6&a=3|b=6&b=5&a=3)/
 
 
 
