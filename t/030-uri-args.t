@@ -690,8 +690,8 @@ err: API disabled in the context of set_by_lua*
     }
 --- request
 GET /lua
---- response_body
-a=bar&b=foo
+--- response_body eval
+qr/a=bar&b=foo|b=foo&a=bar/
 
 
 
@@ -1105,8 +1105,8 @@ CORE::join("", @k);
     }
 --- request
     GET /foo?world
---- response_body
-HTTP/1.0 a=3&b=5&b=6
+--- response_body eval
+qr/HTTP\/1.0 (a=3&b=5&b=6|b=5&b=6&a=3|b=6&b=5&a=3)/
 
 
 
@@ -1552,8 +1552,8 @@ GET /lua
     }
 --- request
 GET /lua
---- response_body
-args: foo=%2C%24%40%7C%60&bar=-_.!~*'()
+--- response_body eval
+qr/(\Qargs: foo=%2C%24%40%7C%60&bar=-_.!~*'()\E)|(\Qargs: bar=-_.!~*'()&foo=%2C%24%40%7C%60\E)/
 --- no_error_log
 [error]
 
