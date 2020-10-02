@@ -45,7 +45,7 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
     int        n;
 
     num = (double) lua_tonumber(L, idx);
-    /**
+    /*
      * Between 2^52=4,503,599,627,370,496 and 2^53=9,007,199,254,740,992
      * the representable numbers are exactly the integers.
      * Don't use (double) (long) or the number in 2^53 ~ 2^63 will be printed
@@ -55,7 +55,7 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
         dst = ngx_snprintf(dst, NGX_INT64_LEN, "%D", (int32_t) num);
 
     } else {
-        /**
+        /*
          * The maximum number of significant digits is 14 in lua.
          * Please refer to lj_strfmt.c for more details.
          */
