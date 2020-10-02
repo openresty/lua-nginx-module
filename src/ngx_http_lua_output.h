@@ -30,8 +30,8 @@ ngx_http_lua_get_num_len(lua_State *L, int idx)
     double     num;
 
     num = (double) lua_tonumber(L, idx);
-    if (num == (double) (long) num) {
-        return NGX_INT64_LEN;
+    if (num == (double) (int32_t) num) {
+        return NGX_INT32_LEN;
     }
 
     return NGX_DOUBLE_LEN;
@@ -45,8 +45,14 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
     int        n;
 
     num = (double) lua_tonumber(L, idx);
-    if (num == (double) (long) num) {
-        dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
+    /**
+     * Between 2^52=4,503,599,627,370,496 and 2^53=9,007,199,254,740,992
+     * the representable numbers are exactly the integers.
+     * Don't use (double) (long) or the number in 2^53 ~ 2^63 will be printed
+     * as integer while it is printed as double in lua.
+     */
+    if (num == (double) (int32_t) num) {
+        dst = ngx_snprintf(dst, NGX_INT64_LEN, "%D", (int32_t) num);
 
     } else {
         /**

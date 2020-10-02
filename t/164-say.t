@@ -53,3 +53,59 @@ GET /lua
 GET /lua
 --- response_body
 123 3.1415926
+
+
+
+=== TEST 4: ngx.say min int32 -2147483648
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(-2147483648)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+-2147483648
+
+
+
+=== TEST 5: ngx.say big integer 2147483647
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(2147483647)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+2147483647
+
+
+
+=== TEST 6: ngx.say big integer -9223372036854775808
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(-9223372036854775808)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+-9.2233720368548e+18
+
+
+
+=== TEST 7: ngx.say big integer 18446744073709551615
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(18446744073709551615)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+1.844674407371e+19
