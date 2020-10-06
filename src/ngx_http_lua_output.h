@@ -30,8 +30,8 @@ ngx_http_lua_get_num_len(lua_State *L, int idx)
     double     num;
 
     num = (double) lua_tonumber(L, idx);
-    if (num == (double) (long) num) {
-        return NGX_INT64_LEN;
+    if (num == (double) (int32_t) num) {
+        return NGX_INT32_LEN;
     }
 
     return NGX_DOUBLE_LEN;
@@ -45,11 +45,16 @@ ngx_http_lua_write_num(lua_State *L, int idx, u_char *dst)
     int        n;
 
     num = (double) lua_tonumber(L, idx);
-    if (num == (double) (long) num) {
-        dst = ngx_snprintf(dst, NGX_INT64_LEN, "%l", (long) num);
+    /*
+     * luajit format number with only 14 significant digits.
+     * To be consistent with lujit, don't use (double) (long) below
+     * or integer greater than 99,999,999,999,999 will different from luajit.
+     */
+    if (num == (double) (int32_t) num) {
+        dst = ngx_snprintf(dst, NGX_INT64_LEN, "%D", (int32_t) num);
 
     } else {
-        /**
+        /*
          * The maximum number of significant digits is 14 in lua.
          * Please refer to lj_strfmt.c for more details.
          */
