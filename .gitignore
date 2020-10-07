@@ -177,3 +177,4 @@ src/filters.c
 src/filters.h
 src/ringbuf.c
 src/ringbuf.h
+src/pipe.[ch]
