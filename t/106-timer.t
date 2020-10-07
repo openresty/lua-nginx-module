@@ -12,7 +12,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 8 + 63);
+plan tests => repeat_each() * (blocks() * 8 + 64);
 
 #no_diff();
 no_long_string();
@@ -72,6 +72,18 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "timer prematurely expired: false",
+]
+--- grep_error_log eval: qr/lua caching unused lua thread|lua reusing cached lua thread/
+--- grep_error_log_out eval
+[
+    "lua caching unused lua thread
+lua caching unused lua thread
+",
+    "lua reusing cached lua thread
+lua reusing cached lua thread
+lua caching unused lua thread
+lua caching unused lua thread
+",
 ]
 
 

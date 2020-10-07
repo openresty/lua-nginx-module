@@ -132,7 +132,8 @@ ngx_http_lua_ngx_timer_every(lua_State *L)
 static int
 ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 {
-    int                      nargs, co_ref;
+    int                      nargs;
+    int                      co_ref;
     u_char                  *p;
     lua_State               *vm;  /* the main thread */
     lua_State               *co;
@@ -217,32 +218,21 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     vm = ngx_http_lua_get_lua_vm(r, ctx);
 
-    co = lua_newthread(vm);
+    co_ref = ngx_http_lua_new_cached_thread(vm, &co, lmcf, 1);
+
+    /* vm stack: coroutines thread */
 
     /* L stack: time func [args] */
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
-
-#ifndef OPENRESTY_LUAJIT
-    lua_createtable(co, 0, 0);  /* the new globals table */
-
-    /* co stack: global_tb */
-
-    lua_createtable(co, 0, 1);  /* the metatable */
-    ngx_http_lua_get_globals_table(co);
-    lua_setfield(co, -2, "__index");
-    lua_setmetatable(co, -2);
-
-    /* co stack: global_tb */
-
-    ngx_http_lua_set_globals_table(co);
-#endif
 
     /* co stack: <empty> */
 
     dd("stack top: %d", lua_gettop(L));
 
     lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
+
+    lua_pop(vm, 1);  /* pop coroutines */
 
     /* L stack: time func [args] thread */
     /* vm stack: empty */
@@ -262,19 +252,6 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 #endif
 
     /* co stack: func */
-
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    /* L stack: time func [args] thread coroutines */
-
-    lua_pushvalue(L, -2);
-
-    /* L stack: time func [args] thread coroutines thread */
-
-    co_ref = luaL_ref(L, -2);
-    lua_pop(L, 1);
 
     /* L stack: time func [args] thread */
 
@@ -369,10 +346,7 @@ nomem:
         ngx_free(ev);
     }
 
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    luaL_unref(L, -1, co_ref);
+    ngx_http_lua_free_thread(r, L, co_ref, co, lmcf);
 
     return luaL_error(L, "no memory");
 }
@@ -397,28 +371,15 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
 
     vm = old_tctx->vm_state ? old_tctx->vm_state->vm : lmcf->lua;
 
-    co = lua_newthread(vm);
-
-#ifndef OPENRESTY_LUAJIT
-    lua_createtable(co, 0, 0);  /* the new globals table */
-
-    /* co stack: global_tb */
-
-    lua_createtable(co, 0, 1);  /* the metatable */
-    ngx_http_lua_get_globals_table(co);
-    lua_setfield(co, -2, "__index");
-    lua_setmetatable(co, -2);
-
-    /* co stack: global_tb */
-
-    ngx_http_lua_set_globals_table(co);
-#endif
+    co_ref = ngx_http_lua_new_cached_thread(vm, &co, lmcf, 1);
 
     /* co stack: <empty> */
 
     dd("stack top: %d", lua_gettop(L));
 
     lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
+
+    lua_pop(vm, 1);  /* pop coroutines */
 
     /* L stack: func [args] thread */
     /* vm stack: empty */
@@ -439,18 +400,7 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
 
     /* co stack: func */
 
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-
-    /* L stack: func [args] thread coroutines */
-
-    lua_pushvalue(L, -2);
-
-    /* L stack: func [args] thread coroutines thread */
-
-    co_ref = luaL_ref(L, -2);
-    lua_pop(L, 2);
+    lua_pop(L, 1);  /* pop thread */
 
     /* L stack: func [args] */
 
@@ -533,14 +483,7 @@ nomem:
 
     /* L stack: func [args] */
 
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    luaL_unref(L, -1, co_ref);
-
-    /* L stack: func [args] coroutines */
-
-    lua_pop(L, 1);
+    ngx_http_lua_free_thread(NULL, L, co_ref, co, lmcf);
 
     return NGX_ERROR;
 }
@@ -550,7 +493,7 @@ static void
 ngx_http_lua_timer_handler(ngx_event_t *ev)
 {
     int                      n;
-    lua_State               *L;
+    lua_State               *L = NULL;
     ngx_int_t                rc;
     ngx_connection_t        *c = NULL;
     ngx_http_request_t      *r = NULL;
@@ -726,17 +669,15 @@ failed:
                   "lua failed to run timer with function defined at %s:%d: %s",
                   source, ar.linedefined, errmsg);
 
-    lua_pushlightuserdata(tctx.co, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(tctx.co, LUA_REGISTRYINDEX);
-    luaL_unref(tctx.co, -1, tctx.co_ref);
-    lua_settop(tctx.co, 0);
+    if (L != NULL) {
+        ngx_http_lua_free_thread(r, L, tctx.co_ref, tctx.co, lmcf);
+    }
 
-    if (tctx.vm_state) {
+    if (tctx.vm_state != NULL) {
         ngx_http_lua_cleanup_vm(tctx.vm_state);
     }
 
-    if (c) {
+    if (c != NULL) {
         ngx_http_lua_close_fake_connection(c);
 
     } else if (tctx.pool) {

@@ -59,7 +59,7 @@ ngx_http_lua_coroutine_create(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    return ngx_http_lua_coroutine_create_helper(L, r, ctx, NULL);
+    return ngx_http_lua_coroutine_create_helper(L, r, ctx, NULL, NULL);
 }
 
 
@@ -92,7 +92,7 @@ ngx_http_lua_coroutine_wrap(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
+    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx, NULL);
 
     coctx->is_wrap = 1;
 
@@ -104,11 +104,12 @@ ngx_http_lua_coroutine_wrap(lua_State *L)
 
 int
 ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
-    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t **pcoctx)
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_co_ctx_t **pcoctx, int *co_ref)
 {
     lua_State                     *vm;  /* the Lua VM */
     lua_State                     *co;  /* new coroutine to be created */
     ngx_http_lua_co_ctx_t         *coctx; /* co ctx for the new coroutine */
+    ngx_http_lua_main_conf_t      *lmcf;
 
     luaL_argcheck(L, lua_isfunction(L, 1) && !lua_iscfunction(L, 1), 1,
                   "Lua function expected");
@@ -120,7 +121,13 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
     /* create new coroutine on root Lua state, so it always yields
      * to main Lua thread
      */
-    co = lua_newthread(vm);
+    if (co_ref == NULL) {
+        co = lua_newthread(vm);
+
+    } else {
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+        *co_ref = ngx_http_lua_new_cached_thread(vm, &co, lmcf, 0);
+    }
 
     ngx_http_lua_probe_user_coroutine_create(r, L, co);
 
@@ -150,6 +157,10 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 #endif
 
     lua_xmove(vm, L, 1);    /* move coroutine from main thread to L */
+
+    if (co_ref) {
+        lua_pop(vm, 1);  /* pop coroutines */
+    }
 
     lua_pushvalue(L, 1);    /* copy entry function to top of L*/
     lua_xmove(L, co, 1);    /* move entry function from L to co */

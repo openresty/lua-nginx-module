@@ -1063,6 +1063,7 @@ Directives
 * [lua_use_default_type](#lua_use_default_type)
 * [lua_malloc_trim](#lua_malloc_trim)
 * [lua_code_cache](#lua_code_cache)
+* [lua_thread_cache_max_entries](#lua_thread_cache_max_entries)
 * [lua_regex_cache_max_entries](#lua_regex_cache_max_entries)
 * [lua_regex_match_limit](#lua_regex_match_limit)
 * [lua_package_path](#lua_package_path)
@@ -1290,6 +1291,27 @@ Apache `mod_lua` module (yet).
 Disabling the Lua code cache is strongly
 discouraged for production use and should only be used during
 development as it has a significant negative impact on overall performance. For example, the performance of a "hello world" Lua example can drop by an order of magnitude after disabling the Lua code cache.
+
+[Back to TOC](#directives)
+
+lua_thread_cache_max_entries
+----------------------------
+
+**syntax:** *lua_thread_cache_max_entries &lt;num&gt;*
+
+**default:** *lua_thread_cache_max_entries 1024*
+
+**context:** *http*
+
+Specifies the maximum number of entries allowed in the worker process level lua thread object cache.
+
+This cache recycles the lua thread GC objects among all our "light threads".
+
+A zero value of `<num>` disables the cache.
+
+Note that this feature requires OpenResty's LuaJIT with the new C API `lua_resetthread`.
+
+This feature was first introduced in verson `v0.10.9`.
 
 [Back to TOC](#directives)
 
