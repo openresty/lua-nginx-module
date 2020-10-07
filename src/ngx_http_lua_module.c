@@ -85,6 +85,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+    { ngx_string("lua_thread_cache_max_entries"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, lua_thread_cache_max_entries),
+      NULL },
+
     { ngx_string("lua_max_running_timers"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -915,6 +922,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
     lmcf->pool = cf->pool;
     lmcf->max_pending_timers = NGX_CONF_UNSET;
     lmcf->max_running_timers = NGX_CONF_UNSET;
+    lmcf->lua_thread_cache_max_entries = NGX_CONF_UNSET;
 #if (NGX_PCRE)
     lmcf->regex_cache_max_entries = NGX_CONF_UNSET;
     lmcf->regex_match_limit = NGX_CONF_UNSET;
@@ -942,7 +950,25 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
-    ngx_http_lua_main_conf_t *lmcf = conf;
+#ifdef HAVE_LUA_RESETTHREAD
+    ngx_int_t                    i, n;
+    ngx_http_lua_thread_ref_t   *trefs;
+#endif
+
+    ngx_http_lua_main_conf_t     *lmcf = conf;
+
+    if (lmcf->lua_thread_cache_max_entries < 0) {
+        lmcf->lua_thread_cache_max_entries = 1024;
+
+#ifndef HAVE_LUA_RESETTHREAD
+    } else if (lmcf->lua_thread_cache_max_entries > 0) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "lua_thread_cache_max_entries has no effect when "
+                      "LuaJIT has no support for the lua_resetthread API "
+                      "(you forgot to use OpenResty's LuaJIT?)");
+        return NGX_CONF_ERROR;
+#endif
+    }
 
 #if (NGX_PCRE)
     if (lmcf->regex_cache_max_entries == NGX_CONF_UNSET) {
@@ -975,6 +1001,26 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 #endif
 
     lmcf->cycle = cf->cycle;
+
+    ngx_queue_init(&lmcf->free_lua_threads);
+    ngx_queue_init(&lmcf->cached_lua_threads);
+
+#ifdef HAVE_LUA_RESETTHREAD
+    n = lmcf->lua_thread_cache_max_entries;
+
+    if (n > 0) {
+        trefs = ngx_palloc(cf->pool, n * sizeof(ngx_http_lua_thread_ref_t));
+        if (trefs == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        for (i = 0; i < n; i++) {
+            trefs[i].ref = LUA_NOREF;
+            trefs[i].co = NULL;
+            ngx_queue_insert_head(&lmcf->free_lua_threads, &trefs[i].queue);
+        }
+    }
+#endif
 
     return NGX_CONF_OK;
 }

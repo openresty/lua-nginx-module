@@ -185,6 +185,13 @@ typedef struct {
 } ngx_http_lua_preload_hook_t;
 
 
+typedef struct {
+    int             ref;
+    lua_State      *co;
+    ngx_queue_t     queue;
+} ngx_http_lua_thread_ref_t;
+
+
 struct ngx_http_lua_main_conf_s {
     lua_State           *lua;
     ngx_pool_cleanup_t  *vm_cleanup;
@@ -202,6 +209,8 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            running_timers;
 
     ngx_connection_t    *watcher;  /* for watching the process exit event */
+
+    ngx_int_t            lua_thread_cache_max_entries;
 
 #if (NGX_PCRE)
     ngx_int_t            regex_cache_entries;
@@ -275,6 +284,9 @@ struct ngx_http_lua_main_conf_s {
     ngx_int_t            host_var_index;
 
     ngx_flag_t           set_sa_restart;
+
+    ngx_queue_t          free_lua_threads;  /* of ngx_http_lua_thread_ref_t */
+    ngx_queue_t          cached_lua_threads;  /* of ngx_http_lua_thread_ref_t */
 
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;

@@ -305,6 +305,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 static int
 ngx_http_lua_on_abort(lua_State *L)
 {
+    int                           co_ref;
     ngx_http_request_t           *r;
     ngx_http_lua_ctx_t           *ctx;
     ngx_http_lua_co_ctx_t        *coctx = NULL;
@@ -335,18 +336,9 @@ ngx_http_lua_on_abort(lua_State *L)
         return 2;
     }
 
-    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
+    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx, &co_ref);
 
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_pushvalue(L, -2);
-
-    dd("on_wait thread 1: %p", lua_tothread(L, -1));
-
-    coctx->co_ref = luaL_ref(L, -2);
-    lua_pop(L, 1);
-
+    coctx->co_ref = co_ref;
     coctx->is_uthread = 1;
     ctx->on_abort_co_ctx = coctx;
 

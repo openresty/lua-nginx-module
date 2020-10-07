@@ -544,6 +544,111 @@ ngx_http_lua_check_unsafe_uri_bytes(ngx_http_request_t *r, u_char *str,
 }
 
 
+static ngx_inline void
+ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
+    lua_State *co, ngx_http_lua_main_conf_t *lmcf)
+{
+#ifdef HAVE_LUA_RESETTHREAD
+    ngx_queue_t                 *q;
+    ngx_http_lua_thread_ref_t   *tref ;
+
+    if (L == lmcf->lua && !ngx_queue_empty(&lmcf->free_lua_threads)) {
+        lua_resetthread(L, co);
+
+        q = ngx_queue_head(&lmcf->free_lua_threads);
+        tref = ngx_queue_data(q, ngx_http_lua_thread_ref_t, queue);
+
+        ngx_http_lua_assert(tref->ref == LUA_NOREF);
+        ngx_http_lua_assert(tref->co == NULL);
+
+        tref->ref = co_ref;
+        tref->co = co;
+
+        ngx_queue_remove(q);
+        ngx_queue_insert_head(&lmcf->cached_lua_threads, q);
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
+                       r != NULL ? r->connection->log : ngx_cycle->log, 0,
+                       "lua caching unused lua thread %p (ref %d)", co,
+                       co_ref);
+
+        return;
+    }
+#endif
+
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          coroutines_key));
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    luaL_unref(L, -1, co_ref);
+    lua_pop(L, 1);
+}
+
+
+static ngx_inline int
+ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
+    ngx_http_lua_main_conf_t *lmcf, int set_globals)
+{
+    int                          co_ref;
+    lua_State                   *co;
+    ngx_queue_t                 *q;
+    ngx_http_lua_thread_ref_t   *tref;
+
+    if (L == lmcf->lua && !ngx_queue_empty(&lmcf->cached_lua_threads)) {
+        q = ngx_queue_head(&lmcf->cached_lua_threads);
+        tref = ngx_queue_data(q, ngx_http_lua_thread_ref_t, queue);
+
+        ngx_http_lua_assert(tref->ref != LUA_NOREF);
+        ngx_http_lua_assert(tref->co != NULL);
+
+        co = tref->co;
+        co_ref = tref->ref;
+
+        tref->co = NULL;
+        tref->ref = LUA_NOREF;
+
+        ngx_queue_remove(q);
+        ngx_queue_insert_head(&lmcf->free_lua_threads, q);
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua reusing cached lua thread %p (ref %d)", co, co_ref);
+
+        lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                              coroutines_key));
+        lua_rawget(L, LUA_REGISTRYINDEX);
+        lua_rawgeti(L, -1, co_ref);
+
+    } else {
+        lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                              coroutines_key));
+        lua_rawget(L, LUA_REGISTRYINDEX);
+        co = lua_newthread(L);
+        lua_pushvalue(L, -1);
+        co_ref = luaL_ref(L, -3);
+
+#ifndef OPENRESTY_LUAJIT
+        if (set_globals) {
+            lua_createtable(co, 0, 0);  /* the new globals table */
+
+            /* co stack: global_tb */
+
+            lua_createtable(co, 0, 1);  /* the metatable */
+            ngx_http_lua_get_globals_table(co);
+            lua_setfield(co, -2, "__index");
+            lua_setmetatable(co, -2);
+
+            /* co stack: global_tb */
+
+            ngx_http_lua_set_globals_table(co);
+        }
+#endif
+    }
+
+    *out_co = co;
+
+    return co_ref;
+}
+
+
 extern ngx_uint_t  ngx_http_lua_location_hash;
 extern ngx_uint_t  ngx_http_lua_content_length_hash;
 

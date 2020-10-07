@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 23);
+plan tests => repeat_each() * (blocks() * 2 + 24);
 
 #no_diff();
 #no_long_string();
@@ -36,6 +36,14 @@ GET /lua
 Hello, Lua!
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/lua caching unused lua thread|lua reusing cached lua thread/
+--- grep_error_log_out eval
+[
+    "lua caching unused lua thread\n",
+    "lua reusing cached lua thread
+lua caching unused lua thread
+",
+]
 
 
 

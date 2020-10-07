@@ -3,6 +3,7 @@
 use Test::Nginx::Socket::Lua;
 
 #repeat_each(20000);
+#repeat_each(200);
 repeat_each(2);
 #master_on();
 #workers(1);

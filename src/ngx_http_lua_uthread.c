@@ -49,7 +49,7 @@ ngx_http_lua_inject_uthread_api(ngx_log_t *log, lua_State *L)
 static int
 ngx_http_lua_uthread_spawn(lua_State *L)
 {
-    int                           n;
+    int                           n, co_ref;
     ngx_http_request_t           *r;
     ngx_http_lua_ctx_t           *ctx;
     ngx_http_lua_co_ctx_t        *coctx = NULL;
@@ -66,22 +66,16 @@ ngx_http_lua_uthread_spawn(lua_State *L)
         return luaL_error(L, "no request ctx found");
     }
 
-    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx);
+    ngx_http_lua_coroutine_create_helper(L, r, ctx, &coctx, &co_ref);
 
     /* anchor the newly created coroutine into the Lua registry */
-
-    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                          coroutines_key));
-    lua_rawget(L, LUA_REGISTRYINDEX);
-    lua_pushvalue(L, -2);
-    coctx->co_ref = luaL_ref(L, -2);
-    lua_pop(L, 1);
 
     if (n > 1) {
         lua_replace(L, 1);
         lua_xmove(L, coctx->co, n - 1);
     }
 
+    coctx->co_ref = co_ref;
     coctx->is_uthread = 1;
     ctx->uthreads++;
 
