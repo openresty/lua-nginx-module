@@ -91,6 +91,8 @@ ngx_http_lua_uthread_spawn(lua_State *L)
     coctx->parent_co_ctx = ctx->cur_co_ctx;
     ctx->cur_co_ctx = coctx;
 
+    ngx_http_lua_attach_co_ctx_to_L(coctx->co, coctx);
+
     ngx_http_lua_probe_user_thread_spawn(r, L, coctx->co);
 
     dd("yielding with arg %s, top=%d, index-1:%s", luaL_typename(L, -1),

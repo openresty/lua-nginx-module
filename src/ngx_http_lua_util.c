@@ -422,7 +422,10 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
 #ifdef HAVE_LUA_RESETTHREAD
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (L == lmcf->lua && !ngx_queue_empty(&lmcf->free_lua_threads)) {
+    if (ctx != NULL
+        && coctx->co == ctx->entry_co_ctx.co
+        && L == lmcf->lua && !ngx_queue_empty(&lmcf->free_lua_threads))
+    {
         lua_resetthread(L, coctx->co);
         q = ngx_queue_head(&lmcf->free_lua_threads);
         tref = ngx_queue_data(q, ngx_http_lua_thread_ref_t, queue);
