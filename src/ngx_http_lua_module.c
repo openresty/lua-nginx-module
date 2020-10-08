@@ -961,12 +961,14 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         lmcf->lua_thread_cache_max_entries = 1024;
 
 #ifndef HAVE_LUA_RESETTHREAD
+
     } else if (lmcf->lua_thread_cache_max_entries > 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "lua_thread_cache_max_entries has no effect when "
                       "LuaJIT has no support for the lua_resetthread API "
                       "(you forgot to use OpenResty's LuaJIT?)");
         return NGX_CONF_ERROR;
+
 #endif
     }
 
