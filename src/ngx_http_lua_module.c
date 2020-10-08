@@ -800,13 +800,23 @@ ngx_http_lua_init(ngx_conf_t *cf)
                           "the OpenResty releases from https://openresty.org/"
                           "en/download.html)");
         }
-#elif !defined(HAVE_LUA_RESETTHREAD)
+#else
+#   if !defined(HAVE_LUA_RESETTHREAD)
         ngx_log_error(NGX_LOG_ALERT, cf->log, 0,
                       "detected an old version of OpenResty's LuaJIT missing "
                       "the lua_resetthread API and thus the "
                       "performance will be compromised; please upgrade to the "
                       "latest version of OpenResty's LuaJIT: "
                       "https://github.com/openresty/luajit2");
+#   endif
+#   if !defined(HAVE_LUA_EXDATA2)
+        ngx_log_error(NGX_LOG_ALERT, cf->log, 0,
+                      "detected an old version of OpenResty's LuaJIT missing "
+                      "the exdata2 API and thus the "
+                      "performance will be compromised; please upgrade to the "
+                      "latest version of OpenResty's LuaJIT: "
+                      "https://github.com/openresty/luajit2");
+#   endif
 #endif
 
         ngx_http_lua_content_length_hash =

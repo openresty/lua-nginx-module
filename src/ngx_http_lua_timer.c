@@ -621,6 +621,8 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     /*  save the request in coroutine globals table */
     ngx_http_lua_set_req(tctx.co, r);
 
+    ngx_http_lua_attach_co_ctx_to_L(tctx.co, ctx->cur_co_ctx);
+
     lmcf->running_timers++;
 
     lua_pushboolean(tctx.co, tctx.premature);

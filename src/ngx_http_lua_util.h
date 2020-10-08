@@ -398,6 +398,15 @@ ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 }
 
 
+static ngx_inline void
+ngx_http_lua_attach_co_ctx_to_L(lua_State *L, ngx_http_lua_co_ctx_t *coctx)
+{
+#ifdef HAVE_LUA_EXDATA2
+    lua_setexdata2(L, (void *) coctx);
+#endif
+}
+
+
 #ifndef OPENRESTY_LUAJIT
 static ngx_inline void
 ngx_http_lua_get_globals_table(lua_State *L)

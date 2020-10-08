@@ -287,6 +287,8 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     ctx->cur_co_ctx->co_top = 1;
 #endif
 
+    ngx_http_lua_attach_co_ctx_to_L(co, ctx->cur_co_ctx);
+
     /*  }}} */
 
     /*  {{{ register request cleanup hooks */

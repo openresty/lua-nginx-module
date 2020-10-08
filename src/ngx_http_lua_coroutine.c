@@ -148,6 +148,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 
 #ifdef OPENRESTY_LUAJIT
     ngx_http_lua_set_req(co, r);
+    ngx_http_lua_attach_co_ctx_to_L(co, coctx);
 #else
     /* make new coroutine share globals of the parent coroutine.
      * NOTE: globals don't have to be separated! */
