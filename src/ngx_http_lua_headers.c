@@ -492,8 +492,9 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
             if (p == NULL) {
                 return luaL_error(L, "no memory");
             }
+
             len = ngx_snprintf(p, NGX_OFF_T_LEN, "%O",
-                         r->headers_out.content_length_n) - p;
+                               r->headers_out.content_length_n) - p;
             lua_pushfstring(L, "%s", (char *) p, len);
         } else {
             lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
