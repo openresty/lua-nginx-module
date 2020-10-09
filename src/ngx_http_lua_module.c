@@ -633,7 +633,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
 };
 
 
-ngx_http_module_t ngx_http_lua_module_ctx = {
+static ngx_http_module_t ngx_http_lua_module_ctx = {
     NULL,                             /*  preconfiguration */
     ngx_http_lua_init,                /*  postconfiguration */
 
