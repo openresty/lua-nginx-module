@@ -119,11 +119,16 @@ lua ssl server name: "test.com"
 [alert]
 --- grep_error_log eval: qr/ssl_certificate_by_lua:.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
-qr/reusable connection: 1
+# Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
+# before call ssl callback function
+$Test::Nginx::Util::NginxVersion >= 1.017009 ?
+qr/reusable connection: 0
+ssl cert: connection reusable: 0
+ssl_certificate_by_lua:1: ssl cert by lua is running!,/
+: qr /reusable connection: 1
 ssl cert: connection reusable: 1
 reusable connection: 0
-ssl_certificate_by_lua:1: ssl cert by lua is running!,
-/
+ssl_certificate_by_lua:1: ssl cert by lua is running!,/
 
 
 

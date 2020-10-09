@@ -237,7 +237,9 @@ ngx_http_lua_ssl_sess_fetch_handler(ngx_ssl_conn_t *ssl_conn,
 
     dd("first time");
 
+#if (nginx_version < 1017009)
     ngx_reusable_connection(c, 0);
+#endif
 
     hc = c->data;
 
