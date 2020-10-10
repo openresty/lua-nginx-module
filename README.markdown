@@ -7807,7 +7807,7 @@ This feature was first introduced in the `v0.5.0rc1` release.
 * `reuseaddr`
 	Enable this option indicates that the rules used in validating addresses
 	supplied in a call to bind should allow reuse of local addresses(e.g.,
-	tcpsock:setoption("keepalive", true) and tcpsock:setoption("keepalive", 0)).
+	tcpsock:setoption("reuseaddr", true) and tcpsock:setoption("reuseaddr", 0)).
 
 * `tcp-nodelay`
 	Setting this option to true disables the Nagle's algorithm for the connectio(e.g.,
