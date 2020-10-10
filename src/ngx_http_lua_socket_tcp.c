@@ -228,7 +228,6 @@ static char ngx_http_lua_pattern_udata_metatable_key;
 static char ngx_http_lua_ssl_session_metatable_key;
 #endif
 
-#define ngx_http_lua_tcp_socket_metatable_literal_key  "__tcp_cosocket_mt"
 
 #define ngx_http_lua_tcp_socket_metatable_literal_key  "__tcp_cosocket_mt"
 
