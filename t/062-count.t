@@ -459,7 +459,7 @@ worker: 4
 --- request
 GET /test
 --- response_body
-n = 13
+n = 15
 --- no_error_log
 [error]
 
