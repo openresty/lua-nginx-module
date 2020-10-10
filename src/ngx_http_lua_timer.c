@@ -329,7 +329,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     lmcf->pending_timers++;
 
 #ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
-    if (delay == 0) {
+    if (delay == 0 && !ngx_exiting) {
         dd("posting 0 sec sleep event to head of delayed queue");
         ngx_post_event(ev, &ngx_posted_delayed_events);
 
