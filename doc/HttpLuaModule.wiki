@@ -6201,7 +6201,6 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [[#tcpsock:settimeout|settimeout]]
 * [[#tcpsock:settimeouts|settimeouts]]
 * [[#tcpsock:setoption|setoption]]
-* [[#tcpsock:getoption|getoption]]
 * [[#tcpsock:receiveany|receiveany]]
 * [[#tcpsock:receiveuntil|receiveuntil]]
 * [[#tcpsock:setkeepalive|setkeepalive]]
@@ -6631,42 +6630,37 @@ This feature was first introduced in the <code>v0.10.7</code> release.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*''
 
-This function is added for [http://w3.impa.br/~diego/software/luasocket/tcp.html LuaSocket] API compatibility and does nothing for now. Its functionality will be implemented in future.
+This function is added for [http://w3.impa.br/~diego/software/luasocket/tcp.html LuaSocket] API compatibility and does nothing for now. Its functionality is implemented <code>v0.10.18</code>.
+
+This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 <code>option</code> is a string with the option name, and value depends on the option being set:
 
 * <code>keepalive</code>
 : Setting this option to true enables sending of keep-alive messages on
-: connection-oriented sockets.
+: connection-oriented sockets(e.g., tcpsock:setoption("keepalive", 1) and
+: tcpsock:setoption("keepalive", false)).
 
 * <code>reuseaddr</code>
 : Enable this option indicates that the rules used in validating addresses
-: supplied in a call to bind should allow reuse of local addresses.
+: supplied in a call to bind should allow reuse of local addresses(e.g.,
+: tcpsock:setoption("keepalive", true) and tcpsock:setoption("keepalive", 0)).
 
 * <code>tcp-nodelay</code>
-: Setting this option to true disables the Nagle's algorithm for the connection.
+: Setting this option to true disables the Nagle's algorithm for the connectio(e.g.,
+: tcpsock:setoption("tcp-nodelay", 1) and tcpsock:setoption("tcp-nodelay", false)).
 
 * <code>sndbuf</code>
 : Sets the maximum socket send buffer in bytes. The kernel doubles this value
-: (to allow space for bookkeeping overhead) when it is set using setsockopt().
+: (to allow space for bookkeeping overhead) when it is set using setsockopt()
+: (e.g., tcpsock:setoption("sndbuf", 1024 * 10)).
 
 * <code>rcvbuf</code>
 : Sets the maximum socket receive buffer in bytes. The kernel doubles this value
-: (to allow space for bookkeeping overhead) when it is set using setsockopt().
+: (to allow space for bookkeeping overhead) when it is set using setsockopt()
+: (e.g., tcpsock:setoption("rcvbuf", 1024 * 10)).
 
-These options described above are supported in <code>vXXX</code>, and more options will be implemented in future.
-
-This feature was first introduced in the <code>v0.5.0rc1</code> release.
-
-== tcpsock:getoption ==
-
-'''syntax:''' ''tcpsock:getoption(option)''
-
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*''
-
-This function is added to get the option values of socket, the paramters of <code>option</code> suported now is the same as <code>setopion</code>.
-
-This feature was first introduced in the <code>vXXX</code> release.
+These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
 == tcpsock:setkeepalive ==
 

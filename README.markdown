@@ -3380,7 +3380,6 @@ Nginx API for Lua
 * [tcpsock:settimeout](#tcpsocksettimeout)
 * [tcpsock:settimeouts](#tcpsocksettimeouts)
 * [tcpsock:setoption](#tcpsocksetoption)
-* [tcpsock:getoption](#tcpsockgetoption)
 * [tcpsock:setkeepalive](#tcpsocksetkeepalive)
 * [tcpsock:getreusedtimes](#tcpsockgetreusedtimes)
 * [ngx.socket.connect](#ngxsocketconnect)
@@ -7324,7 +7323,6 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [settimeout](#tcpsocksettimeout)
 * [settimeouts](#tcpsocksettimeouts)
 * [setoption](#tcpsocksetoption)
-* [getoption](#tcpsockgetoption)
 * [receiveany](#tcpsockreceiveany)
 * [receiveuntil](#tcpsockreceiveuntil)
 * [setkeepalive](#tcpsocksetkeepalive)
@@ -7795,45 +7793,37 @@ tcpsock:setoption
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
-This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality will be implemented in future.
+This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality is implemented `v0.10.18`.
+
+This feature was first introduced in the `v0.5.0rc1` release.
 
 `option` is a string with the option name, and value depends on the option being set:
 
 * `keepalive`
 	Setting this option to true enables sending of keep-alive messages on
-	connection-oriented sockets.
+	connection-oriented sockets(e.g., tcpsock:setoption("keepalive", 1) and
+	tcpsock:setoption("keepalive", false)).
 
 * `reuseaddr`
 	Enable this option indicates that the rules used in validating addresses
-	supplied in a call to bind should allow reuse of local addresses.
+	supplied in a call to bind should allow reuse of local addresses(e.g.,
+	tcpsock:setoption("keepalive", true) and tcpsock:setoption("keepalive", 0)).
 
 * `tcp-nodelay`
-	Setting this option to true disables the Nagle's algorithm for the connection.
+	Setting this option to true disables the Nagle's algorithm for the connectio(e.g.,
+	tcpsock:setoption("tcp-nodelay", 1) and tcpsock:setoption("tcp-nodelay", false)).
 
 * `sndbuf`
 	Sets the maximum socket send buffer in bytes. The kernel doubles this value
-	(to allow space for bookkeeping overhead) when it is set using setsockopt().
+	(to allow space for bookkeeping overhead) when it is set using setsockopt()
+	(e.g., tcpsock:setoption("sndbuf", 1024 * 10)).
 
 * `rcvbuf`
 	Sets the maximum socket receive buffer in bytes. The kernel doubles this value
-	(to allow space for bookkeeping overhead) when it is set using setsockopt().
+	(to allow space for bookkeeping overhead) when it is set using setsockopt()
+	(e.g., tcpsock:setoption("rcvbuf", 1024 * 10)).
 
-These options described above are supported in `vXXX`, and more options will be implemented in future.
-
-This feature was first introduced in the `v0.5.0rc1` release.
-
-[Back to TOC](#nginx-api-for-lua)
-
-tcpsock:getoption
------------------
-
-**syntax:** *tcpsock:getoption(option)*
-
-**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
-
-This function is added to get the option values of socket, the paramters of `option` suported now is the same as `setopion`.
-
-This feature was first introduced in the `vXXX` release.
+These options described above are supported in `v0.10.18`, and more options will be implemented in future.
 
 [Back to TOC](#nginx-api-for-lua)
 
