@@ -39,6 +39,11 @@
                                         | NGX_HTTP_LUA_CONTEXT_SSL_CERT      \
                                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
 
+#define NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET NGX_HTTP_LUA_CONTEXT_INIT_WORKER
+
+#define NGX_HTTP_LUA_CONTEXT_COSOCKET (NGX_HTTP_LUA_CONTEXT_YIELDABLE         \
+                                       | NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET)
+
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"

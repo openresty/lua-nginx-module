@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 231;
+plan tests => repeat_each() * 234;
 
 our $HtmlDir = html_dir;
 
@@ -4367,3 +4367,64 @@ connect failed: missing the port number
 finish
 --- no_error_log
 [error]
+
+
+
+=== TEST 73: run in init_worker_by_lua
+--- http_config
+    init_worker_by_lua_block {
+        local sock = ngx.socket.tcp()
+        local port = 80
+        local ok, err = sock:connect("agentzh.org", port)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "connected: ", ok)
+
+        local req = "GET / HTTP/1.0\r\nHost: agentzh.org\r\nConnection: close\r\n\r\n"
+        -- req = "OK"
+
+        local bytes, err = sock:send(req)
+        if not bytes then
+            ngx.log(ngx.ERR, "failed to send request: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "request sent: ", bytes)
+
+        local line, err = sock:receive()
+        if line then
+            ngx.log(ngx.INFO, "first line received: ", line)
+
+        else
+            ngx.log(ngx.ERR, "failed to receive the first line: ", err)
+        end
+
+        line, err = sock:receive()
+        if line then
+            ngx.log(ngx.INFO, "second line received: ", line)
+
+        else
+            ngx.log(ngx.ERR, "failed to receive the second line: ", err)
+        end
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello")
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log_like
+connected: 1
+request sent: 56
+first line received: HTTP\/1\.1 200 OK
+second line received: (?:Date|Server): .*?
+--- no_error_log
+[error]
+--- timeout: 10

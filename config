@@ -299,6 +299,18 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_worker_thread.c \
             "
 
+if echo "$EVENT_MODULES" | grep ngx_epoll_module 2>&1 >/dev/null; then
+    HTTP_LUA_SRCS="$HTTP_LUA_SRCS $ngx_addon_dir/src/event/ngx_http_lua_epoll.c"
+fi
+
+if echo "$EVENT_MODULES" | grep ngx_poll_module 2>&1 >/dev/null; then
+    HTTP_LUA_SRCS="$HTTP_LUA_SRCS $ngx_addon_dir/src/event/ngx_http_lua_poll.c"
+fi
+
+if echo "$EVENT_MODULES" | grep ngx_kqueue_module 2>&1 >/dev/null; then
+    HTTP_LUA_SRCS="$HTTP_LUA_SRCS $ngx_addon_dir/src/event/ngx_http_lua_kqueue.c"
+fi
+
 HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ddebug.h \
             $ngx_addon_dir/src/ngx_http_lua_autoconf.h \
@@ -357,6 +369,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.h \
             $ngx_addon_dir/src/ngx_http_lua_pipe.h \
             $ngx_addon_dir/src/ngx_http_lua_worker_thread.h \
+            $ngx_addon_dir/src/ngx_http_lua_event.h \
             "
 
 # ----------------------------------------
