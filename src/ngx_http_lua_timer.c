@@ -682,6 +682,18 @@ failed:
                   "lua failed to run timer with function defined at %s:%d: %s",
                   source, ar.linedefined, errmsg);
 
+#if 1
+    if (L == NULL) {
+        if (tctx.vm_state != NULL) {
+            L = tctx.vm_state->vm;
+        }
+
+        if (L == NULL) {
+            L = lmcf->lua;
+        }
+    }
+#endif
+
     if (L != NULL) {
         ngx_http_lua_free_thread(r, L, tctx.co_ref, tctx.co, lmcf);
     }

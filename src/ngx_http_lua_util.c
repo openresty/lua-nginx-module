@@ -362,6 +362,27 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua reusing cached lua thread %p (ref %d)", co, *ref);
 
+#if 0
+        {
+            int n = 0;
+            lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                                  coroutines_key));
+            lua_rawget(L, LUA_REGISTRYINDEX);
+            lua_pushnil(L);  /* first key */
+            while (lua_next(L, -2) != 0) {
+                if (!lua_isnil(L, -1) && !lua_isnil(L, -2)) {
+                    n++;
+                }
+                lua_pop(L, 1);
+            }
+            lua_pop(L, 1);
+
+            ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "! lua reusing cached lua thread %p (ref %d, n %d)",
+                           co, *ref, n);
+        }
+#endif
+
     } else {
 #else
     {
@@ -393,6 +414,10 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
         *ref = luaL_ref(L, -2);
 
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
+                       ngx_cycle->log, 0, "lua ref lua thread %p (ref %d)", co,
+                       *ref);
+
         if (*ref == LUA_NOREF) {
             lua_settop(L, base);  /* restore main thread stack */
             return NULL;
@@ -419,8 +444,9 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
         return;
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua deleting light thread");
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua deleting light thread %p (ref %d)", coctx->co,
+                   coctx->co_ref);
 
     ngx_http_lua_probe_thread_delete(r, coctx->co, ctx);
 
@@ -450,6 +476,10 @@ ngx_http_lua_del_thread(ngx_http_request_t *r, lua_State *L,
 
     } else {
 #endif
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http lua unref thread %p: %d", coctx->co,
+                       coctx->co_ref);
+
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(L, LUA_REGISTRYINDEX);
@@ -3328,6 +3358,9 @@ ngx_http_lua_finalize_threads(ngx_http_request_t *r,
     ngx_uint_t                       i;
     ngx_list_part_t                 *part;
     ngx_http_lua_co_ctx_t           *cc, *coctx;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http lua finalize threads");
 
 #if 1
     coctx = ctx->on_abort_co_ctx;
