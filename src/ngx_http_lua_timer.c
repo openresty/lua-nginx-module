@@ -340,8 +340,9 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     ngx_add_timer(ev, delay);
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                   "created timer (co: %p delay: %M ms)", tctx->co, delay);
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "created timer (co: %p delay: %M ms): sz=%d", tctx->co,
+                   delay, lua_gettop(L));
 
     lua_pushinteger(L, 1);
     return 1;
