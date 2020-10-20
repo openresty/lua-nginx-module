@@ -331,6 +331,8 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 {
     int              base;
     lua_State       *co;
+
+#ifdef HAVE_LUA_RESETTHREAD
     ngx_queue_t     *q;
 
     ngx_http_lua_main_conf_t    *lmcf;
@@ -361,6 +363,9 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
                        "lua reusing cached lua thread %p (ref %d)", co, *ref);
 
     } else {
+#else
+    {
+#endif
         base = lua_gettop(L);
 
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(

@@ -605,6 +605,8 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
 {
     int                          co_ref;
     lua_State                   *co;
+
+#ifdef HAVE_LUA_RESETTHREAD
     ngx_queue_t                 *q;
     ngx_http_lua_thread_ref_t   *tref;
 
@@ -633,6 +635,9 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
         lua_rawgeti(L, -1, co_ref);
 
     } else {
+#else
+    {
+#endif
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(L, LUA_REGISTRYINDEX);
