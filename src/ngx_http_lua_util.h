@@ -562,7 +562,11 @@ ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
     ngx_http_lua_thread_ref_t   *tref ;
     ngx_http_lua_ctx_t          *ctx;
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
+                   r == NULL ? ngx_cycle->log : r->connection->log, 0,
+                   "lua freeing light thread %p (ref %d)", co, co_ref);
+
+    ctx = r != NULL ? ngx_http_get_module_ctx(r, ngx_http_lua_module) : NULL;
     if (ctx != NULL
         && L == ctx->entry_co_ctx.co
         && L == lmcf->lua
@@ -591,9 +595,14 @@ ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
     }
 #endif
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
+                   r != NULL ? r->connection->log : ngx_cycle->log, 0,
+                   "lua unref lua thread %p (ref %d)", co, co_ref);
+
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           coroutines_key));
     lua_rawget(L, LUA_REGISTRYINDEX);
+
     luaL_unref(L, -1, co_ref);
     lua_pop(L, 1);
 }
@@ -644,6 +653,9 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
         co = lua_newthread(L);
         lua_pushvalue(L, -1);
         co_ref = luaL_ref(L, -3);
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua ref lua thread %p (ref %d)", co, co_ref);
 
 #ifndef OPENRESTY_LUAJIT
         if (set_globals) {
