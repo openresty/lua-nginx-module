@@ -7855,6 +7855,8 @@ The `option` is a string with the option name, and the value depends on the opti
 
 These options described above are supported in `v0.10.18`, and more options will be implemented in future.
 
+NOTE: Once the option is set, it will become effective until the function `close` is called. So while using the socket from the connetion pool, make sure the option state is just what you need.
+
 [Back to TOC](#nginx-api-for-lua)
 
 tcpsock:setkeepalive

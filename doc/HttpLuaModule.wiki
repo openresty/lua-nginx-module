@@ -6687,6 +6687,8 @@ The <code>option</code> is a string with the option name, and the value depends 
 
 These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
+NOTE: Once the option is set, it will become effective until the function <code>close</code> is called. So while using the socket from the connetion pool, make sure the option state is just what you need.
+
 == tcpsock:setkeepalive ==
 
 '''syntax:''' ''ok, err = tcpsock:setkeepalive(timeout?, size?)''
