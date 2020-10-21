@@ -6648,7 +6648,7 @@ The <code>option</code> is a string with the option name, and the value depends 
     tcpsock:setoption("keepalive", 1)
 </geshi>
 
-or,
+: or,
 
 <geshi lang="lua">
     tcpsock:connect("127.0.0.1", 80)
@@ -6668,7 +6668,7 @@ or,
     tcpsock:setoption("reuseaddr", false)
 </geshi>
 
-or,
+: or,
 
 <geshi lang="lua">
     tcpsock:connect("127.0.0.1", 80)
@@ -6687,7 +6687,7 @@ or,
     tcpsock:setoption("tcp-nodelay", 1)
 </geshi>
 
-or,
+: or,
 
 <geshi lang="lua">
     tcpsock:connect("127.0.0.1", 80)

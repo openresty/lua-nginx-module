@@ -7812,7 +7812,7 @@ The `option` is a string with the option name, and the value depends on the opti
  tcpsock:setoption("keepalive", 1)
 ```
 
-or,
+	or,
 
 ```lua
 
@@ -7834,7 +7834,7 @@ or,
  tcpsock:setoption("reuseaddr", false)
 ```
 
-or,
+	or,
 
 ```lua
 
@@ -7855,7 +7855,7 @@ or,
  tcpsock:setoption("tcp-nodelay", 1)
 ```
 
-or,
+	or,
 
 ```lua
 
