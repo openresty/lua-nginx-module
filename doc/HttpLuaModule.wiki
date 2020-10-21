@@ -6642,15 +6642,9 @@ The <code>option</code> is a string with the option name, and the value depends 
 : connection-oriented sockets. Make sure the <code>connect</code> function
 : had been called before, for example,
 
-<code>
-    tcpsock:setoption("keepalive", 1)
-</code>
-
-: or,
-
-<code>
+<geshi lang="lua">
     tcpsock:setoption("keepalive", true)
-</code>
+</geshi>
 
 * <code>reuseaddr</code>
 
@@ -6658,30 +6652,18 @@ The <code>option</code> is a string with the option name, and the value depends 
 : supplied in a call to bind should allow reuse of local addresses. Make sure
 : the <code>connect</code> function had been called before, for example,
 
-<code>
-    tcpsock:setoption("reuseaddr", false)
-</code>
-
-: or,
-
-<code>
+<geshi lang="lua">
     tcpsock:setoption("reuseaddr", 0)
-</code>
+</geshi>
 
 * <code>tcp-nodelay</code>
 
 : Setting this option to true disables the Nagle's algorithm for the connection.
 : Make sure the <code>connect</code> function had been called before, for example,
 
-<code>
-    tcpsock:setoption("tcp-nodelay", 1)
-</code>
-
-: or,
-
-<code>
+<geshi lang="lua">
     tcpsock:setoption("tcp-nodelay", true)
-</code>
+</geshi>
 
 * <code>sndbuf</code>
 
@@ -6689,9 +6671,9 @@ The <code>option</code> is a string with the option name, and the value depends 
 : (to allow space for bookkeeping overhead) when it is set using setsockopt().
 : Make sure the <code>connect</code> function had been called before, for example,
 
-<code>
+<geshi lang="lua">
     tcpsock:setoption("sndbuf", 1024 * 10)
-</code>
+</geshi>
 
 * <code>rcvbuf</code>
 
@@ -6699,9 +6681,9 @@ The <code>option</code> is a string with the option name, and the value depends 
 : (to allow space for bookkeeping overhead) when it is set using setsockopt. Make
 : sure the <code>connect</code> function had been called before, for example,
 
-<code>
+<geshi lang="lua">
     tcpsock:setoption("rcvbuf", 1024 * 10)
-</code>
+</geshi>
 
 These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
