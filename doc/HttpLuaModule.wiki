@@ -6642,58 +6642,46 @@ The <code>option</code> is a string with the option name, and the value depends 
 : connection-oriented sockets. Make sure the <code>connect</code> function
 : had been called before, for example,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("keepalive", 1)
-</geshi>
+</code>
 
 : or,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("keepalive", true)
-</geshi>
+</code>
 
 * <code>reuseaddr</code>
 
-: Enableing this option indicates that the rules used in validating addresses
+: Enabling this option indicates that the rules used in validating addresses
 : supplied in a call to bind should allow reuse of local addresses. Make sure
 : the <code>connect</code> function had been called before, for example,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("reuseaddr", false)
-</geshi>
+</code>
 
 : or,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("reuseaddr", 0)
-</geshi>
+</code>
 
 * <code>tcp-nodelay</code>
 
-: Setting this option to true disables the Nagle's algorithm for the connectio.
+: Setting this option to true disables the Nagle's algorithm for the connection.
 : Make sure the <code>connect</code> function had been called before, for example,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("tcp-nodelay", 1)
-</geshi>
+</code>
 
 : or,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("tcp-nodelay", true)
-</geshi>
+</code>
 
 * <code>sndbuf</code>
 
@@ -6701,11 +6689,9 @@ The <code>option</code> is a string with the option name, and the value depends 
 : (to allow space for bookkeeping overhead) when it is set using setsockopt().
 : Make sure the <code>connect</code> function had been called before, for example,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("sndbuf", 1024 * 10)
-</geshi>
+</code>
 
 * <code>rcvbuf</code>
 
@@ -6713,11 +6699,9 @@ The <code>option</code> is a string with the option name, and the value depends 
 : (to allow space for bookkeeping overhead) when it is set using setsockopt. Make
 : sure the <code>connect</code> function had been called before, for example,
 
-<geshi lang="lua">
-    tcpsock:connect("127.0.0.1", 80)
-    ...
+<code>
     tcpsock:setoption("rcvbuf", 1024 * 10)
-</geshi>
+</code>
 
 These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 

@@ -7805,64 +7805,46 @@ The `option` is a string with the option name, and the value depends on the opti
 	connection-oriented sockets. Make sure the `connect` function
 	had been called before, for example,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("keepalive", 1)
-```
+<code>
+    tcpsock:setoption("keepalive", 1)
+</code>
 
 	or,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("keepalive", true)
-```
+<code>
+    tcpsock:setoption("keepalive", true)
+</code>
 
 * `reuseaddr`
 
-	Enableing this option indicates that the rules used in validating addresses
+	Enabling this option indicates that the rules used in validating addresses
 	supplied in a call to bind should allow reuse of local addresses. Make sure
 	the `connect` function had been called before, for example,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("reuseaddr", false)
-```
+<code>
+    tcpsock:setoption("reuseaddr", false)
+</code>
 
 	or,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("reuseaddr", 0)
-```
+<code>
+    tcpsock:setoption("reuseaddr", 0)
+</code>
 
 * `tcp-nodelay`
 
-	Setting this option to true disables the Nagle's algorithm for the connectio.
+	Setting this option to true disables the Nagle's algorithm for the connection.
 	Make sure the `connect` function had been called before, for example,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("tcp-nodelay", 1)
-```
+<code>
+    tcpsock:setoption("tcp-nodelay", 1)
+</code>
 
 	or,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("tcp-nodelay", true)
-```
+<code>
+    tcpsock:setoption("tcp-nodelay", true)
+</code>
 
 * `sndbuf`
 
@@ -7870,12 +7852,9 @@ The `option` is a string with the option name, and the value depends on the opti
 	(to allow space for bookkeeping overhead) when it is set using setsockopt().
 	Make sure the `connect` function had been called before, for example,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("sndbuf", 1024 * 10)
-```
+<code>
+    tcpsock:setoption("sndbuf", 1024 * 10)
+</code>
 
 * `rcvbuf`
 
@@ -7883,12 +7862,9 @@ The `option` is a string with the option name, and the value depends on the opti
 	(to allow space for bookkeeping overhead) when it is set using setsockopt. Make
 	sure the `connect` function had been called before, for example,
 
-```lua
-
- tcpsock:connect("127.0.0.1", 80)
- ...
- tcpsock:setoption("rcvbuf", 1024 * 10)
-```
+<code>
+    tcpsock:setoption("rcvbuf", 1024 * 10)
+</code>
 
 These options described above are supported in `v0.10.18`, and more options will be implemented in future.
 
