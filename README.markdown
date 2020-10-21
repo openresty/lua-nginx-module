@@ -7797,31 +7797,98 @@ This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasock
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
-`option` is a string with the option name, and value depends on the option being set:
+The `option` is a string with the option name, and the value depends on the option being set:
 
 * `keepalive`
+
 	Setting this option to true enables sending of keep-alive messages on
-	connection-oriented sockets(e.g., tcpsock:setoption("keepalive", 1) and
-	tcpsock:setoption("keepalive", false)).
+	connection-oriented sockets. Make sure the `connect` function
+	had been called before, for example,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("keepalive", 1)
+```
+
+or,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("keepalive", true)
+```
 
 * `reuseaddr`
-	Enable this option indicates that the rules used in validating addresses
-	supplied in a call to bind should allow reuse of local addresses(e.g.,
-	tcpsock:setoption("reuseaddr", true) and tcpsock:setoption("reuseaddr", 0)).
+
+	Enableing this option indicates that the rules used in validating addresses
+	supplied in a call to bind should allow reuse of local addresses. Make sure
+	the `connect` function had been called before, for example,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("reuseaddr", false)
+```
+
+or,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("reuseaddr", 0)
+```
 
 * `tcp-nodelay`
-	Setting this option to true disables the Nagle's algorithm for the connectio(e.g.,
-	tcpsock:setoption("tcp-nodelay", 1) and tcpsock:setoption("tcp-nodelay", false)).
+
+	Setting this option to true disables the Nagle's algorithm for the connectio.
+	Make sure the `connect` function had been called before, for example,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("tcp-nodelay", 1)
+```
+
+or,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("tcp-nodelay", true)
+```
 
 * `sndbuf`
+
 	Sets the maximum socket send buffer in bytes. The kernel doubles this value
-	(to allow space for bookkeeping overhead) when it is set using setsockopt()
-	(e.g., tcpsock:setoption("sndbuf", 1024 * 10)).
+	(to allow space for bookkeeping overhead) when it is set using setsockopt().
+	Make sure the `connect` function had been called before, for example,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("sndbuf", 1024 * 10)
+```
 
 * `rcvbuf`
+
 	Sets the maximum socket receive buffer in bytes. The kernel doubles this value
-	(to allow space for bookkeeping overhead) when it is set using setsockopt()
-	(e.g., tcpsock:setoption("rcvbuf", 1024 * 10)).
+	(to allow space for bookkeeping overhead) when it is set using setsockopt. Make
+	sure the `connect` function had been called before, for example,
+
+```lua
+
+ tcpsock:connect("127.0.0.1", 80)
+ ...
+ tcpsock:setoption("rcvbuf", 1024 * 10)
+```
 
 These options described above are supported in `v0.10.18`, and more options will be implemented in future.
 

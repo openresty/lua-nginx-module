@@ -178,11 +178,11 @@ enum {
 
 
 enum {
-    OPTION_NAME_KEEPALIVE = 1,
-    OPTION_NAME_REUSEADDR,
-    OPTION_NAME_TCP_NODELAY,
-    OPTION_NAME_SNDBUF,
-    OPTION_NAME_RCVBUF,
+    NGX_HTTP_LUA_SOCKOPT_KEEPALIVE = 1,
+    NGX_HTTP_LUA_SOCKOPT_REUSEADDR,
+    NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY,
+    NGX_HTTP_LUA_SOCKOPT_SNDBUF,
+    NGX_HTTP_LUA_SOCKOPT_RCVBUF,
 };
 
 
@@ -6396,10 +6396,8 @@ int
 ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
     int option, int *val, u_char *err, size_t *errlen)
 {
-    u_char    errstr[NGX_MAX_ERROR_STR];
     socklen_t len;
-    u_char   *p;
-    int       fd, r;
+    int       fd, rc;
 
     if (u == NULL || u->peer.connection == NULL) {
         *errlen = ngx_snprintf(err, *errlen, "closed") - err;
@@ -6407,27 +6405,33 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
     }
 
     fd = u->peer.connection->fd;
+
+    if (fd == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
+        return NGX_ERROR;
+    }
+
     len = sizeof(int);
 
     switch (option) {
-    case OPTION_NAME_KEEPALIVE:
-        r = getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) val, &len);
+    case NGX_HTTP_LUA_SOCKOPT_KEEPALIVE:
+        rc = getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) val, &len);
         break;
 
-    case OPTION_NAME_REUSEADDR:
-        r = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *) val, &len);
+    case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
+        rc = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *) val, &len);
         break;
 
-    case OPTION_NAME_TCP_NODELAY:
-        r = getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) val, &len);
+    case NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY:
+        rc = getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) val, &len);
         break;
 
-    case OPTION_NAME_SNDBUF:
-        r = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len);
+    case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
+        rc = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len);
         break;
 
-    case OPTION_NAME_RCVBUF:
-        r = getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len);
+    case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
+        rc = getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len);
         break;
 
     default:
@@ -6435,10 +6439,8 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
         return NGX_ERROR;
     }
 
-    if (r == -1) {
-        p = ngx_strerror(ngx_errno, errstr, sizeof(errstr));
-        *p = '\0';
-        *errlen = ngx_snprintf(err, *errlen, "%s", errstr) - err;
+    if (rc == -1) {
+        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
         return NGX_ERROR;
     }
 
@@ -6450,49 +6452,57 @@ int
 ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
     int option, int val, u_char *err, size_t *errlen)
 {
-    u_char    errstr[NGX_MAX_ERROR_STR];
     socklen_t len;
-    u_char   *p;
-    int       fd, r;
+    int       fd, rc;
 
     if (u == NULL || u->peer.connection == NULL) {
         *errlen = ngx_snprintf(err, *errlen, "closed") - err;
         return NGX_ERROR;
     }
 
-    len = sizeof(int);
     fd = u->peer.connection->fd;
 
-    switch (option) {
-    case OPTION_NAME_KEEPALIVE:
-        r = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (const void *) &val, len);
-        break;
-
-    case OPTION_NAME_REUSEADDR:
-        r = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *) &val, len);
-        break;
-
-    case OPTION_NAME_TCP_NODELAY:
-        r = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const void *) &val, len);
-        break;
-
-    case OPTION_NAME_SNDBUF:
-        r = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const void *) &val, len);
-        break;
-
-    case OPTION_NAME_RCVBUF:
-        r = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const void *) &val, len);
-        break;
-
-    default:
-        *errlen = ngx_snprintf(err, *errlen, "unsupported option") - err;
+    if (fd == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
         return NGX_ERROR;
     }
 
-    if (r == -1) {
-        p = ngx_strerror(ngx_errno, errstr, sizeof(errstr));
-        *p = '\0';
-        *errlen = ngx_snprintf(err, *errlen, "%s", errstr) - err;
+    len = sizeof(int);
+
+    switch (option) {
+    case NGX_HTTP_LUA_SOCKOPT_KEEPALIVE:
+        rc = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
+        rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY:
+        rc = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
+        rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
+        rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
+                        (const void *) &val, len);
+        break;
+
+    default:
+        *errlen = ngx_snprintf(err, *errlen, "unsupported option: %d", option)
+                  - err;
+        return NGX_ERROR;
+    }
+
+    if (rc == -1) {
+        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
         return NGX_ERROR;
     }
 

@@ -6634,31 +6634,90 @@ This function is added for [http://w3.impa.br/~diego/software/luasocket/tcp.html
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
-<code>option</code> is a string with the option name, and value depends on the option being set:
+The <code>option</code> is a string with the option name, and the value depends on the option being set:
 
 * <code>keepalive</code>
+
 : Setting this option to true enables sending of keep-alive messages on
-: connection-oriented sockets(e.g., tcpsock:setoption("keepalive", 1) and
-: tcpsock:setoption("keepalive", false)).
+: connection-oriented sockets. Make sure the <code>connect</code> function
+: had been called before, for example,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("keepalive", 1)
+</geshi>
+
+or,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("keepalive", true)
+</geshi>
 
 * <code>reuseaddr</code>
-: Enable this option indicates that the rules used in validating addresses
-: supplied in a call to bind should allow reuse of local addresses(e.g.,
-: tcpsock:setoption("reuseaddr", true) and tcpsock:setoption("reuseaddr", 0)).
+
+: Enableing this option indicates that the rules used in validating addresses
+: supplied in a call to bind should allow reuse of local addresses. Make sure
+: the <code>connect</code> function had been called before, for example,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("reuseaddr", false)
+</geshi>
+
+or,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("reuseaddr", 0)
+</geshi>
 
 * <code>tcp-nodelay</code>
-: Setting this option to true disables the Nagle's algorithm for the connectio(e.g.,
-: tcpsock:setoption("tcp-nodelay", 1) and tcpsock:setoption("tcp-nodelay", false)).
+
+: Setting this option to true disables the Nagle's algorithm for the connectio.
+: Make sure the <code>connect</code> function had been called before, for example,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("tcp-nodelay", 1)
+</geshi>
+
+or,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("tcp-nodelay", true)
+</geshi>
 
 * <code>sndbuf</code>
+
 : Sets the maximum socket send buffer in bytes. The kernel doubles this value
-: (to allow space for bookkeeping overhead) when it is set using setsockopt()
-: (e.g., tcpsock:setoption("sndbuf", 1024 * 10)).
+: (to allow space for bookkeeping overhead) when it is set using setsockopt().
+: Make sure the <code>connect</code> function had been called before, for example,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("sndbuf", 1024 * 10)
+</geshi>
 
 * <code>rcvbuf</code>
+
 : Sets the maximum socket receive buffer in bytes. The kernel doubles this value
-: (to allow space for bookkeeping overhead) when it is set using setsockopt()
-: (e.g., tcpsock:setoption("rcvbuf", 1024 * 10)).
+: (to allow space for bookkeeping overhead) when it is set using setsockopt. Make
+: sure the <code>connect</code> function had been called before, for example,
+
+<geshi lang="lua">
+    tcpsock:connect("127.0.0.1", 80)
+    ...
+    tcpsock:setoption("rcvbuf", 1024 * 10)
+</geshi>
 
 These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
