@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 master_on();
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 8);
+plan tests => repeat_each() * (blocks() * 2 + 2) + 12;
 
 #log_level("warn");
 no_long_string();
