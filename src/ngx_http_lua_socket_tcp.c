@@ -6435,7 +6435,8 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
         break;
 
     default:
-        *errlen = ngx_snprintf(err, *errlen, "unsupported option") - err;
+        *errlen = ngx_snprintf(err, *errlen, "unsupported option %d", option)
+                  - err;
         return NGX_ERROR;
     }
 
