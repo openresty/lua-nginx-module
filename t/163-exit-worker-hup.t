@@ -16,7 +16,7 @@ use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2);
+plan tests => repeat_each() * (blocks() * 2 + 1) + 2;
 
 no_long_string();
 
