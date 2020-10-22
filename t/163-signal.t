@@ -1,6 +1,14 @@
 # vi:ft=
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+
+BEGIN {
+    if ($ENV{TEST_NGINX_USE_HUP}) {
+        $SkipReason = "unavailable under hup test mode";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 plan tests => 2 * blocks();
 
