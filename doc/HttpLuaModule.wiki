@@ -6626,13 +6626,15 @@ This feature was first introduced in the <code>v0.10.7</code> release.
 
 == tcpsock:setoption ==
 
-'''syntax:''' ''tcpsock:setoption(option, value?)''
+'''syntax:''' ''ok, err = tcpsock:setoption(option, value?)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*''
 
 This function is added for [http://w3.impa.br/~diego/software/luasocket/tcp.html LuaSocket] API compatibility and does nothing for now. Its functionality is implemented <code>v0.10.18</code>.
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
+
+In case of success, it returns <code>true</code>. Otherwise, it returns nil and a string describing the error.
 
 The <code>option</code> is a string with the option name, and the value depends on the option being set:
 
@@ -6643,7 +6645,10 @@ The <code>option</code> is a string with the option name, and the value depends 
 : had been called before, for example,
 
     <geshi lang="lua">
-    tcpsock:setoption("keepalive", true)
+    local ok, err = tcpsock:setoption("keepalive", true)
+    if not ok then
+        ngx.say("setoption keepalive failed: ", err)
+    end
     </geshi>
 * <code>reuseaddr</code>
 
@@ -6652,7 +6657,10 @@ The <code>option</code> is a string with the option name, and the value depends 
 : the <code>connect</code> function had been called before, for example,
 
     <geshi lang="lua">
-    tcpsock:setoption("reuseaddr", 0)
+    local ok, err = tcpsock:setoption("reuseaddr", 0)
+    if not ok then
+        ngx.say("setoption reuseaddr failed: ", err)
+    end
     </geshi>
 * <code>tcp-nodelay</code>
 
@@ -6660,7 +6668,10 @@ The <code>option</code> is a string with the option name, and the value depends 
 : Make sure the <code>connect</code> function had been called before, for example,
 
     <geshi lang="lua">
-    tcpsock:setoption("tcp-nodelay", true)
+    local ok, err = tcpsock:setoption("tcp-nodelay", true)
+    if not ok then
+        ngx.say("setoption tcp-nodelay failed: ", err)
+    end
     </geshi>
 * <code>sndbuf</code>
 
@@ -6669,7 +6680,10 @@ The <code>option</code> is a string with the option name, and the value depends 
 : Make sure the <code>connect</code> function had been called before, for example,
 
     <geshi lang="lua">
-    tcpsock:setoption("sndbuf", 1024 * 10)
+    local ok, err = tcpsock:setoption("sndbuf", 1024 * 10)
+    if not ok then
+        ngx.say("setoption sndbuf failed: ", err)
+    end
     </geshi>
 * <code>rcvbuf</code>
 
@@ -6678,18 +6692,31 @@ The <code>option</code> is a string with the option name, and the value depends 
 : sure the <code>connect</code> function had been called before, for example,
 
     <geshi lang="lua">
-    tcpsock:setoption("rcvbuf", 1024 * 10)
+    local ok, err = tcpsock:setoption("rcvbuf", 1024 * 10)
+    if not ok then
+        ngx.say("setoption rcvbuf failed: ", err)
+    end
     </geshi>
-These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
-NOTE: Once the option is set, it will become effective until the function <code>close</code> is called. So while using the socket from the connetion pool, make sure the option state is just what you need, for example,
+NOTE: Once the option is set, it will become effective until the connection is closed. If you know the connection is from the connection pool and all the in-pool connections already have called the setoption() method with the desired socket option state, then you can just skip calling setoption() again to avoid the overhead of repeated calls, for example,
 
 <geshi lang="lua">
     local count, err = tcpsock:getreusedtimes()
+    if not count then
+        ngx.say("getreusedtimes failed: ", err)
+        return
+    end
+
     if count == 0 then
-        tcpsock:setoption("rcvbuf", 1024 * 10)
+        local ok, err = tcpsock:setoption("rcvbuf", 1024 * 10)
+        if not ok then
+            ngx.say("setoption rcvbuf failed: ", err)
+            return
+        end
     end
 </geshi>
+
+These options described above are supported in <code>v0.10.18</code>, and more options will be implemented in future.
 
 == tcpsock:setkeepalive ==
 
