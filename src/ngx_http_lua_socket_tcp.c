@@ -6511,4 +6511,22 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
 }
 
 
+int
+ngx_http_lua_ffi_socket_tcp_test_strerr(u_char *err, size_t *errlen)
+{
+    int val, rc, len;
+
+    val = 1024;
+    len = sizeof(int);
+    rc = setsockopt(12345, SOL_SOCKET, SO_SNDBUF, (const void *) &val, len);
+
+    if (rc == -1) {
+        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
