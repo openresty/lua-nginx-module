@@ -69,7 +69,7 @@ install:
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
-  - git clone https://github.com/openresty/openresty-devel-utils.git
+  - git clone -b pipelined_header https://github.com/zhuizhuhaomeng/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
   - git clone https://github.com/openresty/lua-cjson.git lua-cjson
   - git clone https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
