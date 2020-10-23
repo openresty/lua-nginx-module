@@ -559,7 +559,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     wev = r->connection->write;
 
-    if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED
+    if (wait && (r->connection->buffered
+                 & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED)
                  || wev->delayed))
     {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
