@@ -6511,7 +6511,7 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
 }
 
 
-/* just hack the fd for testing */
+/* just hack the fd for bad case testing and return the real fd */
 int
 ngx_http_lua_ffi_socket_tcp_hack_fd(ngx_http_lua_socket_tcp_upstream_t *u,
     int fd, u_char *err, size_t *errlen)
@@ -6529,6 +6529,7 @@ ngx_http_lua_ffi_socket_tcp_hack_fd(ngx_http_lua_socket_tcp_upstream_t *u,
         return -1;
     }
 
+    /* if hack fd is invalid, stop and return the real fd only */
     if (fd < 0) {
         return rc;
     }
