@@ -6511,21 +6511,31 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
 }
 
 
+/* just hack the fd for testing */
 int
-ngx_http_lua_ffi_socket_tcp_test_strerr(u_char *err, size_t *errlen)
+ngx_http_lua_ffi_socket_tcp_hack_fd(ngx_http_lua_socket_tcp_upstream_t *u,
+    int fd, u_char *err, size_t *errlen)
 {
-    int val, rc, len;
+    int rc;
 
-    val = 1024;
-    len = sizeof(int);
-    rc = setsockopt(12345, SOL_SOCKET, SO_SNDBUF, (const void *) &val, len);
-
-    if (rc == -1) {
-        *errlen = ngx_strerror(ngx_errno, err, NGX_MAX_ERROR_STR) - err;
-        return NGX_ERROR;
+    if (u == NULL || u->peer.connection == NULL) {
+        *errlen = ngx_snprintf(err, *errlen, "closed") - err;
+        return -1;
     }
 
-    return NGX_OK;
+    rc = u->peer.connection->fd;
+    if (rc == (ngx_socket_t) -1) {
+        *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
+        return -1;
+    }
+
+    if (fd < 0) {
+        return rc;
+    }
+
+    u->peer.connection->fd = fd;
+
+    return rc;
 }
 
 
