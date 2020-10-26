@@ -1637,7 +1637,7 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
 {
     ngx_table_elt_t                 *clh, *header;
     ngx_list_part_t                 *part;
-    ngx_chain_t                     *in
+    ngx_chain_t                     *in;
     ngx_uint_t                       i;
     u_char                          *p;
     off_t                            len;
