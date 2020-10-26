@@ -1637,6 +1637,7 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
 {
     ngx_table_elt_t                 *clh, *header;
     ngx_list_part_t                 *part;
+    ngx_chain_t                     *in
     ngx_uint_t                       i;
     u_char                          *p;
     off_t                            len;
@@ -1653,12 +1654,10 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
     if (sr->request_body && !pr_not_chunked) {
 
         /* craft our own Content-Length */
-        if (pr && sr->request_body == pr->request_body) {
-            len = pr->headers_in.content_length_n;
+        len = 0;
 
-        } else {
-            len = sr->request_body->buf
-                  ? ngx_buf_size(sr->request_body->buf) : 0;
+        for (in = sr->request_body->bufs; in; in = in->next) {
+            len += ngx_buf_size(in->buf);
         }
 
         clh = ngx_list_push(&sr->headers_in.headers);
