@@ -1653,8 +1653,11 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
     if (sr->request_body && !pr_not_chunked) {
 
         /* craft our own Content-Length */
-
-        len = sr->request_body->buf ? ngx_buf_size(sr->request_body->buf) : 0;
+        if (pr && sr->request_body == pr->request_body) {
+            len = pr->headers_in.content_length_n;
+        } else {
+            len = sr->request_body->buf ? ngx_buf_size(sr->request_body->buf) : 0;
+        }
 
         clh = ngx_list_push(&sr->headers_in.headers);
         if (clh == NULL) {
