@@ -2627,7 +2627,7 @@ success:
 #endif
 
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "lua tcp socket try to recv data %uz: \"%V?%V\"",
+                       "lua tcp socket try to recv data %O: \"%V?%V\"",
                        size, &r->uri, &r->args);
 
         n = c->recv(c, b->last, size);
