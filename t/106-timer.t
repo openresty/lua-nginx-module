@@ -2349,3 +2349,49 @@ ok
 [error]
 --- error_log eval
 qr/\[alert\] .*? lua failed to run timer with function defined at @.+\/test.lua:3: 1 lua_max_running_timers are not enough/
+
+
+
+=== TEST 36: log function location when failed to run a timer with args (lua file)
+--- user_files
+>>> test.lua
+local _M = {}
+
+function _M.run(premature, arg)
+    ngx.sleep(0.01)
+end
+
+return _M
+--- http_config
+    lua_package_path '$TEST_NGINX_HTML_DIR/?.lua;./?.lua;;';
+    lua_max_running_timers 1;
+--- config
+    location /t {
+        content_by_lua_block {
+            local test = require "test"
+
+            local ok, err = ngx.timer.at(0, test.run, "arg")
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+
+            local ok, err = ngx.timer.at(0, test.run, "arg")
+            if not ok then
+                ngx.say("failed to set timer: ", err)
+                return
+            end
+
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- wait: 0.1
+--- no_error_log
+[crit]
+[error]
+--- error_log eval
+qr/\[alert\] .*? lua failed to run timer with function defined at @.+\/test.lua:3: 1 lua_max_running_timers are not enough/
