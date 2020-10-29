@@ -670,6 +670,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 failed:
 
     /* co stack: func [args] */
+    lua_pushvalue(tctx.co, 1);
     lua_getinfo(tctx.co, ">Sf", &ar);
 
     source = ar.source;
