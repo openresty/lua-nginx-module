@@ -450,7 +450,7 @@ ngx_http_set_content_length_header(ngx_http_request_t *r,
         return ngx_http_clear_content_length_header(r, hv, value);
     }
 
-    len = ngx_atosz(value->data, value->len);
+    len = ngx_atoof(value->data, value->len);
     if (len == NGX_ERROR) {
         return NGX_ERROR;
     }
