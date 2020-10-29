@@ -671,6 +671,7 @@ failed:
 
     /* co stack: func [args] */
     lua_pushvalue(tctx.co, 1);
+    /* co stack: func [args] func */
     lua_getinfo(tctx.co, ">Sf", &ar);
 
     source = ar.source;
