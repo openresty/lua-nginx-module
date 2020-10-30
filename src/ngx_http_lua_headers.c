@@ -496,7 +496,7 @@ ngx_http_lua_ngx_resp_get_headers(lua_State *L)
             len = ngx_snprintf(p, NGX_OFF_T_LEN, "%O",
                                r->headers_out.content_length_n) - p;
 
-            lua_pushfstring(L, "%s", (char *) p, len);
+            lua_pushlstring(L, (char *) p, len);
 
         } else {
             lua_pushfstring(L, "%d", (int) r->headers_out.content_length_n);
