@@ -266,6 +266,8 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
     ngx_memzero(ctx, sizeof(ngx_http_lua_ctx_t));
     ctx->ctx_ref = LUA_NOREF;
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
+    ctx->entry_co_ctx.next_zombie_child_thread =
+        &ctx->entry_co_ctx.zombie_child_threads;
     ctx->resume_handler = ngx_http_lua_wev_handler;
     ctx->request = r;
 }
