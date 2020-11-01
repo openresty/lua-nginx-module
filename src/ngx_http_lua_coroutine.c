@@ -140,6 +140,7 @@ ngx_http_lua_coroutine_create_helper(lua_State *L, ngx_http_request_t *r,
 
     } else {
         ngx_memzero(coctx, sizeof(ngx_http_lua_co_ctx_t));
+        coctx->next_zombie_child_thread = &coctx->zombie_child_threads;
         coctx->co_ref = LUA_NOREF;
     }
 

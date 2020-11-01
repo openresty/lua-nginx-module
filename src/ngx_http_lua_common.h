@@ -446,6 +446,7 @@ struct ngx_http_lua_co_ctx_s {
     ngx_http_lua_co_ctx_t   *parent_co_ctx;
 
     ngx_http_lua_posted_thread_t    *zombie_child_threads;
+    ngx_http_lua_posted_thread_t   **next_zombie_child_thread;
 
     ngx_http_cleanup_pt      cleanup;
 

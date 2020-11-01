@@ -986,6 +986,9 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ngx_memzero(&ctx->entry_co_ctx, sizeof(ngx_http_lua_co_ctx_t));
 
+    ctx->entry_co_ctx.next_zombie_child_thread =
+        &ctx->entry_co_ctx.zombie_child_threads;
+
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
 
     ctx->entered_rewrite_phase = 0;
@@ -3268,6 +3271,7 @@ ngx_http_lua_create_co_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 
     ngx_memzero(coctx, sizeof(ngx_http_lua_co_ctx_t));
 
+    coctx->next_zombie_child_thread = &coctx->zombie_child_threads;
     coctx->co_ref = LUA_NOREF;
 
     return coctx;
@@ -3425,7 +3429,6 @@ static ngx_int_t
 ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t *parent, ngx_http_lua_co_ctx_t *thread)
 {
-    ngx_http_lua_posted_thread_t  **p;
     ngx_http_lua_posted_thread_t   *pt;
 
     pt = ngx_palloc(r->pool, sizeof(ngx_http_lua_posted_thread_t));
@@ -3436,9 +3439,10 @@ ngx_http_lua_post_zombie_thread(ngx_http_request_t *r,
     pt->co_ctx = thread;
     pt->next = NULL;
 
-    for (p = &parent->zombie_child_threads; *p; p = &(*p)->next) { /* void */ }
+    ngx_http_lua_assert(parent->next_zombie_child_thread != NULL);
 
-    *p = pt;
+    *parent->next_zombie_child_thread = pt;
+    parent->next_zombie_child_thread = &pt->next;
 
     return NGX_OK;
 }
@@ -3458,6 +3462,7 @@ ngx_http_lua_cleanup_zombie_child_uthreads(ngx_http_request_t *r,
     }
 
     coctx->zombie_child_threads = NULL;
+    coctx->next_zombie_child_thread = &coctx->zombie_child_threads;
 }
 
 
