@@ -98,7 +98,7 @@ ngx_http_lua_ffi_get_process_type(void)
 
 
 int
-ngx_http_lua_ffi_enable_privileged_agent(char **err)
+ngx_http_lua_ffi_enable_privileged_agent(char **err, unsigned int connections)
 {
 #ifdef HAVE_PRIVILEGED_PROCESS_PATCH
     ngx_core_conf_t   *ccf;
@@ -107,6 +107,7 @@ ngx_http_lua_ffi_enable_privileged_agent(char **err)
                                            ngx_core_module);
 
     ccf->privileged_agent = 1;
+    ccf->privileged_agent_connections = connections;
 
     return NGX_OK;
 
