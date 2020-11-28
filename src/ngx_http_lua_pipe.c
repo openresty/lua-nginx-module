@@ -688,8 +688,10 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
         /* close listening socket fd */
         ls = ngx_cycle->listening.elts;
         for (i = 0; i < ngx_cycle->listening.nelts; i++) {
-            if (ls[i].fd != (ngx_socket_t) -1 && ngx_close_socket(ls[i].fd) == -1) {
-                ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_socket_errno,
+            if (ls[i].fd != (ngx_socket_t) -1 &&
+                ngx_close_socket(ls[i].fd) == -1)
+            {
+                ngx_log_error(NGX_LOG_WARN, ngx_cycle->log, ngx_socket_errno,
                               "lua pipe child " ngx_close_socket_n
                               " %V failed", &ls[i].addr_text);
             }
