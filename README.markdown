@@ -20,6 +20,7 @@ Table of Contents
 * [Name](#name)
 * [Status](#status)
 * [Version](#version)
+* [Videos](#videos)
 * [Synopsis](#synopsis)
 * [Description](#description)
 * [Typical Uses](#typical-uses)
@@ -69,6 +70,25 @@ Version
 This document describes ngx_lua
 [v0.10.19](https://github.com/openresty/lua-nginx-module/tags), which was released
 on 3 Nov, 2020.
+
+Videos
+======
+
+* YouTube video "[Hello World HTTP Example with OpenResty/Lua](https://youtu.be/eSfYLvVQMxw)"
+
+    [![Hello World HTTP Example with OpenResty/Lua](https://img.youtube.com/vi/eSfYLvVQMxw/0.jpg)](https://youtu.be/eSfYLvVQMxw)
+
+* YouTube video "[Write Your Own Lua Modules in OpenResty/Nginx Applications](https://youtu.be/vfYxOMl5LVY)"
+
+    [![Write Your Own Lua Modules in OpenResty/Nginx Applications](https://img.youtube.com/vi/vfYxOMl5LVY/0.jpg)](https://youtu.be/vfYxOMl5LVY)
+
+* YouTube video "[OpenResty's resty Command-Line Utility Demo](https://youtu.be/L1c7aw4mSOo)"
+
+    [![OpenResty's resty Command-Line Utility Demo](https://img.youtube.com/vi/L1c7aw4mSOo/0.jpg)](https://youtu.be/L1c7aw4mSOo)
+
+You are welcome to subscribe to our [official YouTube channel, OpenResty](https://www.youtube.com/channel/UCXVmwF-UCScv2ftsGoMqxhw).
+
+[Back to TOC](#table-of-contents)
 
 Synopsis
 ========
