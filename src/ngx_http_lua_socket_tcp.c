@@ -159,9 +159,10 @@ static void ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c);
 static int ngx_http_lua_ssl_free_session(lua_State *L);
 #endif
 static void ngx_http_lua_socket_tcp_close_connection(ngx_connection_t *c);
+static void ngx_http_lua_socket_tcp_clean_events(ngx_connection_t *c);
 static ngx_int_t ngx_http_lua_socket_tcp_blocked_conn(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
-static ngx_int_t ngx_http_lua_socket_tcp_blocked_sslhandshake(
+static void ngx_http_lua_socket_tcp_blocked_sslhandshake(
     ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_tcp_blocked_write(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
@@ -1804,38 +1805,38 @@ new_ssl_name:
 
     rc = ngx_ssl_handshake(c);
 
-    dd("ngx_ssl_handshake returned %d", (int) rc);
-
-    if (rc == NGX_AGAIN
-        && (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET))
-    {
-        rc = ngx_http_lua_socket_tcp_blocked_sslhandshake(r, u);
-    }
+    dd("ngx_ssl_handshake returned %d", (int) rc); 
 
     if (rc == NGX_AGAIN) {
-        if (c->write->timer_set) {
-            ngx_del_timer(c->write);
-        }
-
-        ngx_add_timer(c->read, u->connect_timeout);
-
-        u->conn_waiting = 1;
-        u->write_prepare_retvals = ngx_http_lua_ssl_handshake_retval_handler;
-
-        ngx_http_lua_cleanup_pending_operation(coctx);
-        coctx->cleanup = ngx_http_lua_coctx_cleanup;
-        coctx->data = u;
-
-        c->ssl->handler = ngx_http_lua_ssl_handshake_handler;
-
-        if (ctx->entered_content_phase) {
-            r->write_event_handler = ngx_http_lua_content_wev_handler;
+        if (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET) {
+            ngx_http_lua_socket_tcp_blocked_sslhandshake(r, u);
 
         } else {
-            r->write_event_handler = ngx_http_core_run_phases;
-        }
+            if (c->write->timer_set) {
+                ngx_del_timer(c->write);
+            }
 
-        return lua_yield(L, 0);
+            ngx_add_timer(c->read, u->connect_timeout);
+
+            u->conn_waiting = 1;
+            u->write_prepare_retvals =
+                ngx_http_lua_ssl_handshake_retval_handler;
+
+            ngx_http_lua_cleanup_pending_operation(coctx);
+            coctx->cleanup = ngx_http_lua_coctx_cleanup;
+            coctx->data = u;
+
+            c->ssl->handler = ngx_http_lua_ssl_handshake_handler;
+
+            if (ctx->entered_content_phase) {
+                r->write_event_handler = ngx_http_lua_content_wev_handler;
+
+            } else {
+                r->write_event_handler = ngx_http_core_run_phases;
+            }
+
+            return lua_yield(L, 0);
+        }
     }
 
     top = lua_gettop(L);
@@ -1872,7 +1873,13 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
     waiting = u->conn_waiting;
 
     dc = r->connection;
-    L = u->write_co_ctx->co;
+
+    if (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET) {
+        L = ngx_http_lua_get_lua_vm(r, ctx);
+
+    } else {
+        L = u->write_co_ctx->co;
+    }
 
     if (c->read->timedout) {
         lua_pushnil(L);
@@ -6156,6 +6163,28 @@ ngx_http_lua_coctx_cleanup(void *data)
     ngx_http_lua_socket_tcp_finalize(u->request, u);
 }
 
+
+static void
+ngx_http_lua_socket_tcp_clean_events(ngx_connection_t *c)
+{
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+
+    if (c->read->active) {
+        ngx_del_event(c->read, NGX_READ_EVENT, 0);
+    }
+
+    if (c->write->timer_set) {
+        ngx_del_timer(c->write);
+    }
+
+    if (c->write->active) {
+        ngx_del_event(c->write, NGX_WRITE_EVENT, 0);
+    }
+}
+
+
 static ngx_int_t
 ngx_http_lua_socket_tcp_blocked_conn(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
@@ -6167,13 +6196,7 @@ ngx_http_lua_socket_tcp_blocked_conn(ngx_http_request_t *r,
     ft_type = 0;
     c = u->peer.connection;
 
-    if (c->write->timer_set) {
-        ngx_del_timer(c->write);
-    }
-
-    if (c->write->active) {
-        ngx_del_event(c->write, NGX_WRITE_EVENT, 0);
-    }
+    ngx_http_lua_socket_tcp_clean_events(c);
 
     if (ngx_http_lua_set_event(c->write, NGX_WRITE_EVENT) == NGX_ERROR) {
         ft_type = NGX_HTTP_LUA_SOCKET_FT_ERROR;
@@ -6209,56 +6232,59 @@ finish:
     return NGX_OK;
 }
 
-static ngx_int_t
+
+static void
 ngx_http_lua_socket_tcp_blocked_sslhandshake(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u)
 {
     ngx_connection_t   *c;
     ngx_int_t           rc;
-    ngx_msec_t          timer, start_time;
+    ngx_msec_t          timer, timeout, start_time;
 
     rc = NGX_OK;
     c = u->peer.connection;
 
-    if (c->read->timer_set) {
-        ngx_del_timer(c->read);
-    }
+    ngx_http_lua_socket_tcp_clean_events(c);
 
-    if (c->read->active) {
-        ngx_del_event(c->read, NGX_READ_EVENT, 0);
-    }
-
-    rc = ngx_http_lua_set_event(c->read, NGX_READ_EVENT);
-    if (rc == NGX_ERROR) {
+    if (ngx_http_lua_set_event(c->read, NGX_READ_EVENT)) {
         goto finish;
     }
 
-    timer = u->connect_timeout;
+    if (ngx_http_lua_set_event(c->write, NGX_WRITE_EVENT)) {
+        goto finish;
+    }
+
+    timeout = u->connect_timeout;
     start_time = ngx_current_msec;
 
-    rc = ngx_http_lua_process_event(r, timer);
-    if (rc == NGX_ERROR) {
-        goto finish;
+    for (;;) {
+
+        timer = timeout - (ngx_current_msec - start_time);
+
+        if (ngx_http_lua_process_event(r, timer) == NGX_ERROR) {
+            goto finish;
+        }
+
+        ngx_time_update();
+
+        if (ngx_current_msec - start_time >= timeout) {
+            c->read->timedout = 1;
+            goto finish;
+        }
+
+        rc = ngx_ssl_handshake(c);
+
+        if (rc == NGX_ERROR || rc == NGX_OK) {
+            break;
+        }
+
+        /* NGX_AGAIN, continue in loop*/
     }
-
-    ngx_time_update();
-
-    if (ngx_current_msec - start_time >= timer) {
-        c->read->timedout = 1;
-
-        rc = NGX_ERROR;
-        goto finish;
-    }
-
-    ngx_http_lua_ssl_handshake_retval_handler(r, u, u->write_co_ctx->co);
 
 finish:
 
-    if (ngx_http_lua_clear_event(c->read, NGX_READ_EVENT) == NGX_ERROR) {
-        return NGX_ERROR;
-    }
-
-    return rc;
+    ngx_http_lua_clear_event(c->read, NGX_READ_EVENT);
+    ngx_http_lua_clear_event(c->write, NGX_WRITE_EVENT);
 }
 
 
@@ -6273,13 +6299,7 @@ ngx_http_lua_socket_tcp_blocked_write(ngx_http_request_t *r,
     ft_type = 0;
     c = u->peer.connection;
 
-    if (c->write->timer_set) {
-        ngx_del_timer(c->write);
-    }
-
-    if (c->write->active) {
-        ngx_del_event(c->write, NGX_WRITE_EVENT, 0);
-    }
+    ngx_http_lua_socket_tcp_clean_events(c);
 
     if (ngx_http_lua_set_event(c->write, NGX_WRITE_EVENT) == NGX_ERROR) {
         ft_type = NGX_HTTP_LUA_SOCKET_FT_ERROR;
@@ -6329,13 +6349,7 @@ ngx_http_lua_socket_tcp_blocked_read(ngx_http_request_t *r,
     ft_type = 0;
     c = u->peer.connection;
 
-    if (c->read->timer_set) {
-        ngx_del_timer(c->read);
-    }
-
-    if (c->read->active) {
-        ngx_del_event(c->read, NGX_READ_EVENT, 0);
-    }
+    ngx_http_lua_socket_tcp_clean_events(c);
 
     if (ngx_http_lua_set_event(c->read, NGX_READ_EVENT) == NGX_ERROR) {
         ft_type = NGX_HTTP_LUA_SOCKET_FT_ERROR;
@@ -6354,10 +6368,12 @@ ngx_http_lua_socket_tcp_blocked_read(ngx_http_request_t *r,
             goto finish;
         }
 
+#if (NGX_HAVE_KQUEUE)
         if (c->read->pending_eof) {
             ft_type = NGX_HTTP_LUA_SOCKET_FT_ERROR;
             goto finish;
         }
+#endif
 
         ngx_time_update();
 

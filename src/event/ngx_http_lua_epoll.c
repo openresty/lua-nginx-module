@@ -47,8 +47,10 @@ ngx_http_lua_epoll_init_event(ngx_cycle_t *cycle)
 static ngx_int_t
 ngx_http_lua_epoll_set_event(ngx_event_t *ev, ngx_int_t event)
 {
-    uint32_t             events;
+    int                  op;
+    uint32_t             events, prev;
     ngx_connection_t    *c;
+    ngx_event_t         *e;
     struct epoll_event   ee;
 
     c = ev->data;
@@ -56,20 +58,32 @@ ngx_http_lua_epoll_set_event(ngx_event_t *ev, ngx_int_t event)
     events = (uint32_t) event;
 
     if (event == NGX_READ_EVENT) {
+        e = c->write;
+        prev = EPOLLOUT;
 #if (NGX_READ_EVENT != EPOLLIN|EPOLLRDHUP)
         events = EPOLLIN|EPOLLRDHUP;
 #endif
 
     } else {
+        e = c->read;
+        prev = EPOLLIN|EPOLLRDHUP;
 #if (NGX_WRITE_EVENT != EPOLLOUT)
         events = EPOLLOUT;
 #endif
     }
 
+    if (e->active) {
+        op = EPOLL_CTL_MOD;
+        events |= prev;
+
+    } else {
+        op = EPOLL_CTL_ADD;
+    }
+
     ee.events = events;
     ee.data.ptr = c;
 
-    if (epoll_ctl(ep, EPOLL_CTL_ADD, c->fd, &ee) == -1) {
+    if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "lua epoll_ctl(EPOLL_CTL_ADD, %d) failed, add event: %d",
                       c->fd, events);
@@ -86,15 +100,35 @@ ngx_http_lua_epoll_set_event(ngx_event_t *ev, ngx_int_t event)
 static ngx_int_t
 ngx_http_lua_epoll_clear_event(ngx_event_t *ev, ngx_int_t event)
 {
+    ngx_event_t         *e;
     ngx_connection_t    *c;
+    int                  op;
+    uint32_t             prev;
     struct epoll_event   ee;
 
     c = ev->data;
 
-    ee.events = 0;
-    ee.data.ptr = NULL;
+    if (event == NGX_READ_EVENT) {
+        e = c->write;
+        prev = EPOLLOUT;
 
-    if (epoll_ctl(ep, EPOLL_CTL_DEL, c->fd, &ee) == -1) {
+    } else {
+        e = c->read;
+        prev = EPOLLIN|EPOLLRDHUP;
+    }
+
+    if (e->active) {
+        op = EPOLL_CTL_MOD;
+        ee.events = prev;
+        ee.data.ptr = c;
+
+    } else {
+        op = EPOLL_CTL_DEL;
+        ee.events = 0;
+        ee.data.ptr = NULL;
+    }
+
+    if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "lua epoll_ctl(EPOLL_CTL_DEL, %d) failed", c->fd);
 
