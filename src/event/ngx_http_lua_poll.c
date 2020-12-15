@@ -54,9 +54,14 @@ ngx_http_lua_poll_set_event(ngx_event_t *ev, ngx_int_t event)
 #endif
     }
 
-    pev.fd = c->fd;
-    pev.events = (short) event;
-    pev.revents = 0;
+    if (pev.fd != c->fd) {
+        pev.fd = c->fd;
+        pev.events = (short) event;
+        pev.revents = 0;
+
+    } else {
+        pev.events |= (short) event;
+    }
 
     return NGX_OK;
 }
@@ -65,6 +70,8 @@ ngx_http_lua_poll_set_event(ngx_event_t *ev, ngx_int_t event)
 static ngx_int_t
 ngx_http_lua_poll_clear_event(ngx_event_t *ev, ngx_int_t event)
 {
+    ev->active = 0;
+
     return NGX_OK;
 }
 

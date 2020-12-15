@@ -2843,7 +2843,7 @@ SSL reused session
             return
         end
 
-        ngx.log(ngx.ERR, "connected: ", ok)
+        ngx.log(ngx.INFO, "connected: ", ok)
 
         local sess, err = sock:sslhandshake()
         if not sess then
@@ -2853,7 +2853,7 @@ SSL reused session
 
         ngx.log(ngx.INFO, "ssl handshake: ", type(sess))
 
-        local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
+        local req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n"
         local bytes, err = sock:send(req)
         if not bytes then
             ngx.log(ngx.ERR, "failed to send http request: ", err)
@@ -2890,13 +2890,5 @@ sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
---- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl free session: ([0-9A-F]+)
-$/
---- no_error_log
-lua ssl server name:
-SSL reused session
 [error]
 --- timeout: 5
