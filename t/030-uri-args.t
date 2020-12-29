@@ -1690,7 +1690,7 @@ bad argument #1 to 'set_uri_args' (string, number, or table expected, but got us
 
 
 === TEST 64: set_uri binary option with unsafe uri
-explict specify binary option to true
+explicit specify binary option to true
 --- config
     location /t {
         rewrite_by_lua_block {
@@ -1717,7 +1717,7 @@ explict specify binary option to true
 
 
 === TEST 65: set_uri binary option with unsafe uri
-explict specify binary option to false
+explicit specify binary option to false
 --- config
     location /t {
         rewrite_by_lua_block {
@@ -1743,7 +1743,7 @@ qr{\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: rewrite_by_
 
 
 === TEST 66: set_uri binary option with safe uri
-explict specify binary option to false
+explicit specify binary option to false
 --- config
     location /t {
         rewrite_by_lua_block {
