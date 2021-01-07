@@ -77,7 +77,7 @@ c = true
 GET /lua?foo&baz=&bar=42
 --- response_body
 bar = 42
-baz = 
+baz =
 foo = true
 
 
@@ -812,7 +812,7 @@ rc: false, err: attempt to use userdata as query arg value
 --- request
 GET /lua
 --- response_body
-args: 
+args:
 
 
 
@@ -1221,8 +1221,8 @@ b = true
 --- request
 GET /lua
 --- response_body
-a = 
-b = 
+a =
+b =
 
 
 
@@ -1767,3 +1767,31 @@ request_uri: /foo%20bar
 uri: /foo bar
 --- no_error_log
 [error]
+
+
+
+=== TEST 67: invalid quoted character
+--- config
+    location /lua {
+        content_by_lua '
+            local args, err = ngx.req.get_uri_args()
+
+            if err then
+                ngx.say("err: ", err)
+            end
+
+            local keys = {}
+            for key, val in pairs(args) do
+                table.insert(keys, key)
+            end
+
+            table.sort(keys)
+            for i, key in ipairs(keys) do
+                ngx.say(key, " = ", args[key])
+            end
+        ';
+    }
+--- request
+GET /lua?test=hello%1world
+--- response_body
+test = hello%1world
