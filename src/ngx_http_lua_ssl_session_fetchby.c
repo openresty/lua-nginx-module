@@ -450,7 +450,8 @@ ngx_http_lua_log_ssl_sess_fetch_error(ngx_log_t *log, u_char *buf, size_t len)
         }
 
         if (c->listening && c->listening->addr_text.len) {
-            p = ngx_snprintf(buf, len, ", server: %V", &c->listening->addr_text);
+            p = ngx_snprintf(buf, len, ", server: %V", \
+                &c->listening->addr_text);
             buf = p;
         }
     }
