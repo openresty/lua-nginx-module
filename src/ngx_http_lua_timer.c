@@ -733,16 +733,19 @@ ngx_http_lua_log_timer_error(ngx_log_t *log, u_char *buf, size_t len)
     len -= p - buf;
     buf = p;
 
-    if (c->addr_text.len) {
-        p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
-        len -= p - buf;
-        buf = p;
-    }
+    if (c != NULL) {
+        if (c->addr_text.len) {
+            p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
+            len -= p - buf;
+            buf = p;
+        }
 
-    if (c && c->listening && c->listening->addr_text.len) {
-        p = ngx_snprintf(buf, len, ", server: %V", &c->listening->addr_text);
-        /* len -= p - buf; */
-        buf = p;
+        if (c->listening && c->listening->addr_text.len) {
+            p = ngx_snprintf(buf, len, ", server: %V", 
+                             &c->listening->addr_text);
+            /* len -= p - buf; */
+            buf = p;
+        }
     }
 
     return buf;
