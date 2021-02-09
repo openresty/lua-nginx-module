@@ -2288,6 +2288,26 @@ When a relative path like <code>foo/bar.lua</code> is given, they will be turned
 
 This directive was first introduced in the <code>v0.10.0</code> release.
 
+== balancer_keepalive ==
+
+'''syntax:''' ''balancer_keepalive <total-connections>''
+
+'''context:''' ''upstream''
+
+'''phase:''' ''loading-config''
+
+The <code>total-connections</code> parameter sets the maximum number of idle
+keepalive connections to upstream servers that are preserved in the cache of
+each worker process. When this number is exceeded, the least recently used
+connections are closed.
+
+It should be particularly noted that the keepalive directive does not limit the
+total number of connections to upstream servers that an nginx worker process
+can open. The connections parameter should be set to a number small enough to
+let upstream servers process new incoming connections as well.
+
+This directive was first introduced in the <code>v0.10.21</code> release.
+
 == lua_need_request_body ==
 
 '''syntax:''' ''lua_need_request_body <on|off>''

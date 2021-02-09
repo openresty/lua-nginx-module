@@ -167,7 +167,7 @@ typedef struct ngx_http_lua_co_ctx_s  ngx_http_lua_co_ctx_t;
 
 typedef struct ngx_http_lua_sema_mm_s  ngx_http_lua_sema_mm_t;
 
-typedef union ngx_http_lua_srv_conf_u  ngx_http_lua_srv_conf_t;
+typedef struct ngx_http_lua_srv_conf_s  ngx_http_lua_srv_conf_t;
 
 typedef struct ngx_http_lua_main_conf_s  ngx_http_lua_main_conf_t;
 
@@ -258,13 +258,6 @@ struct ngx_http_lua_main_conf_s {
     ngx_str_t                            exit_worker_src;
     u_char                              *exit_worker_chunkname;
 
-    ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
-                    /* neither yielding nor recursion is possible in
-                     * balancer_by_lua*, so there cannot be any races among
-                     * concurrent requests and it is safe to store the peer
-                     * data pointer in the main conf.
-                     */
-
     ngx_chain_t                            *body_filter_chain;
                     /* neither yielding nor recursion is possible in
                      * body_filter_by_lua*, so there cannot be any races among
@@ -323,7 +316,7 @@ struct ngx_http_lua_main_conf_s {
 };
 
 
-union ngx_http_lua_srv_conf_u {
+struct ngx_http_lua_srv_conf_s {
     struct {
 #if (NGX_HTTP_SSL)
         ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
@@ -359,6 +352,14 @@ union ngx_http_lua_srv_conf_u {
     } srv;
 
     struct {
+        ngx_uint_t                           max_cached;
+        ngx_queue_t                          cache;
+        ngx_queue_t                          free;
+        ngx_queue_t                         *buckets;
+        ngx_uint_t                           bucket_cnt;
+        ngx_http_upstream_init_pt            original_init_upstream;
+        ngx_http_upstream_init_peer_pt       original_init_peer;
+
         ngx_http_lua_srv_conf_handler_pt     handler;
         ngx_str_t                            src;
         u_char                              *src_key;
