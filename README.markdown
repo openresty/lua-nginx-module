@@ -8955,12 +8955,12 @@ local resty_str = require "resty.string"
 return function(str)
     local md5 = resty_md5:new()
     if not md5 then
-        return "fff"
+        return "md5 new error"
     end
     
     local ok = md5:update(str)
     if not ok then
-        return "fffxxx"
+        return "md5 update error"
     end
     
     local digest = md5:final()
