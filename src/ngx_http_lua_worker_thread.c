@@ -130,6 +130,7 @@ lauxh_xcopy(lua_State *from, lua_State *to, int idx, const int allow_nil)
                 lua_pushnil(to);
                 return LUA_TNIL;
             }
+            // fall through
 
         // ignore unsupported values
         // LUA_TNONE
