@@ -291,7 +291,7 @@ ngx_http_lua_run_worker_thread(lua_State *L)
     int rc = lua_pcall(vm, 1, 1, 0);
     if (rc != 0) {
         size_t len;
-        const char* err = lua_tolstring(L, 1, &len);
+        const char* err = lua_tolstring(vm, 1, &len);
         lua_pushboolean(L, 0);
         lua_pushlstring(L, err, len);
         put_task_ctx(tctx);
