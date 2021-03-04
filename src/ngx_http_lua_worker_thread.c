@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Jinhua Luo (kingluo)
+ */
+
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif

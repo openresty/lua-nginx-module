@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Jinhua Luo (kingluo)
+ */
+
 #ifndef _NGX_HTTP_LUA_WORKER_THREAD_H_INCLUDED_
 #define _NGX_HTTP_LUA_WORKER_THREAD_H_INCLUDED_
 
