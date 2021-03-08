@@ -2198,7 +2198,7 @@ void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
 {
-    u_char  *d, *s, ch, c, decoded;
+    u_char  *d, *s, ch, c, decoded, saved;
     enum {
         sw_usual = 0,
         sw_quoted,
@@ -2256,6 +2256,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 
             state = sw_usual;
 
+			*d++ = '%';
             *d++ = ch;
 
             break;
@@ -2317,6 +2318,10 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             }
 
             /* the invalid quoted character */
+            d[0]='%';
+            d[1]=saved;
+            d[2]=ch;
+            d=d+3;
 
             break;
         }
