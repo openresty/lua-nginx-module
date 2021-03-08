@@ -2192,142 +2192,87 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
     return (uintptr_t) dst;
 }
 
+static int hex2int(char xdigit)
+{
+    if (isdigit(xdigit))
+    {
+        return xdigit - '0';
+    }
+    else
+    {
+        xdigit = tolower(xdigit);
+        if (xdigit <= 'f' && xdigit >= 'a')
+        {
+            return xdigit - 'a' + 10;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+}
 
 /* XXX we also decode '+' to ' ' */
 void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
 {
-    u_char  *d, *s, ch, c, decoded, saved;
-    enum {
-        sw_usual = 0,
-        sw_quoted,
-        sw_quoted_second,
-    } state;
+    u_char *d = *dst, *s = *src, *de = (*dst+size);
 
-    d = *dst;
-    s = *src;
+    while (size--)
+    {
+        u_char curr = *s++;
 
-    state = 0;
-    decoded = 0;
-
-    while (size--) {
-
-        ch = *s++;
-
-        switch (state) {
-        case sw_usual:
-            if (ch == '?'
-                && (type & (NGX_UNESCAPE_URI|NGX_UNESCAPE_REDIRECT)))
+        if (curr == '?' && (type & (NGX_UNESCAPE_URI | NGX_UNESCAPE_REDIRECT)))
+        {
+            *d++ = '?';
+            break;
+        }
+        else if (curr == '%')
+        {
+            u_char ch;
+            if (size < 2 || !(isxdigit(s[0]) && isxdigit(s[1])))
             {
-                *d++ = ch;
-                goto done;
+                *d++ = '%';
+                continue;
             }
-
-            if (ch == '%') {
-                state = sw_quoted;
-                break;
+            ch = hex2int(s[0]) * 16 + hex2int(s[1]);
+            if ((type & NGX_UNESCAPE_REDIRECT) && (ch <= '%' || ch >= 0x7f))
+            {
+                *d++ = '%';
+                continue;
             }
-
-            if (ch == '+') {
-                *d++ = ' ';
-                break;
-            }
-
-            *d++ = ch;
-            break;
-
-        case sw_quoted:
-
-            if (ch >= '0' && ch <= '9') {
-                decoded = (u_char) (ch - '0');
-                state = sw_quoted_second;
-                break;
-            }
-
-            c = (u_char) (ch | 0x20);
-            if (c >= 'a' && c <= 'f') {
-                decoded = (u_char) (c - 'a' + 10);
-                state = sw_quoted_second;
-                break;
-            }
-
-            /* the invalid quoted character */
-
-            state = sw_usual;
-
-			*d++ = '%';
-            *d++ = ch;
-
-            break;
-
-        case sw_quoted_second:
-
-            state = sw_usual;
-
-            if (ch >= '0' && ch <= '9') {
-                ch = (u_char) ((decoded << 4) + ch - '0');
-
-                if (type & NGX_UNESCAPE_REDIRECT) {
-                    if (ch > '%' && ch < 0x7f) {
-                        *d++ = ch;
-                        break;
-                    }
-
-                    *d++ = '%'; *d++ = *(s - 2); *d++ = *(s - 1);
-                    break;
+            else if (type & NGX_UNESCAPE_REDIRECT)
+            {
+                if (ch > '%' && ch < 0x7f)
+                {
+                    *d++ = '%';
+                    continue;
                 }
-
-                *d++ = ch;
-
-                break;
-            }
-
-            c = (u_char) (ch | 0x20);
-            if (c >= 'a' && c <= 'f') {
-                ch = (u_char) ((decoded << 4) + c - 'a' + 10);
-
-                if (type & NGX_UNESCAPE_URI) {
-                    if (ch == '?') {
-                        *d++ = ch;
-                        goto done;
-                    }
-
+                else if (ch == '?')
+                {
                     *d++ = ch;
                     break;
                 }
-
-                if (type & NGX_UNESCAPE_REDIRECT) {
-                    if (ch == '?') {
-                        *d++ = ch;
-                        goto done;
-                    }
-
-                    if (ch > '%' && ch < 0x7f) {
-                        *d++ = ch;
-                        break;
-                    }
-
-                    *d++ = '%'; *d++ = *(s - 2); *d++ = *(s - 1);
-                    break;
-                }
-
-                *d++ = ch;
-
-                break;
             }
-
-            /* the invalid quoted character */
-            d[0]='%';
-            d[1]=saved;
-            d[2]=ch;
-            d=d+3;
-
-            break;
+            *d++ = ch;
+            s += 2;
+            size -= 2;
+        }
+        else if (curr == '+')
+        {
+            *d++ = ' ';
+            continue;
+        }
+        else{
+            *d++ = curr;
         }
     }
 
-done:
+    if (d != de)
+    {
+        *d = '\0';
+    }
 
     *dst = d;
     *src = s;
