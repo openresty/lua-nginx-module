@@ -297,7 +297,7 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is n
 
 
 
-=== TEST 14: invalid unescape sequences
+=== TEST 20: invalid unescape sequences
 --- config
     location /lua {
         content_by_lua_block {
