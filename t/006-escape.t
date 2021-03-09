@@ -301,7 +301,7 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is n
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.escape_uri("%ua%%20%au"))
+            ngx.say(ngx.unescape_uri("%ua%%20%au"))
         }
     }
 --- request
