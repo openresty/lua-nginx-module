@@ -5741,15 +5741,28 @@ Unescape `str` as an escaped URI component.
 For example,
 
 ```lua
-
  ngx.say(ngx.unescape_uri("b%20r56+7"))
 ```
 
 gives the output
 
 
-    b r56 7
+    `b r56 7`
 
+Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged.
+
+For example, 
+
+```lua
+ ngx.say(ngx.unescape_uri("%search%%20%again%"))
+```
+
+gives the output
+
+
+    `%search% %again%`
+
+(Note that `%20` following `%` got unescape to space, even it can be considered a part of invalid sequence.)
 
 [Back to TOC](#nginx-api-for-lua)
 
