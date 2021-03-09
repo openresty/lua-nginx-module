@@ -2192,21 +2192,16 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
     return (uintptr_t) dst;
 }
 
-static int hex2int(char xdigit)
+static int
+ngx_http_lua_util_hex2int(char xdigit)
 {
-    if (isdigit(xdigit))
-    {
+    if (isdigit(xdigit)) {
         return xdigit - '0';
-    }
-    else
-    {
+    } else {
         xdigit = tolower(xdigit);
-        if (xdigit <= 'f' && xdigit >= 'a')
-        {
+        if (xdigit <= 'f' && xdigit >= 'a') {
             return xdigit - 'a' + 10;
-        }
-        else
-        {
+        } else {
             return -1;
         }
     }
@@ -2219,38 +2214,28 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
 {
     u_char *d = *dst, *s = *src, *de = (*dst+size);
 
-    while (size--)
-    {
+    while (size--) {
         u_char curr = *s++;
 
-        if (curr == '?' && (type & (NGX_UNESCAPE_URI | NGX_UNESCAPE_REDIRECT)))
+        if (curr == '?' &&
+            (type & (NGX_UNESCAPE_URI | NGX_UNESCAPE_REDIRECT)))
         {
             *d++ = '?';
             break;
-        }
-        else if (curr == '%')
-        {
+        } else if (curr == '%') {
             u_char ch;
-            if (size < 2 || !(isxdigit(s[0]) && isxdigit(s[1])))
-            {
+            if (size < 2 || !(isxdigit(s[0]) && isxdigit(s[1]))) {
                 *d++ = '%';
                 continue;
             }
-            ch = hex2int(s[0]) * 16 + hex2int(s[1]);
-            if ((type & NGX_UNESCAPE_REDIRECT) && (ch <= '%' || ch >= 0x7f))
-            {
-                *d++ = '%';
-                continue;
-            }
-            else if (type & NGX_UNESCAPE_REDIRECT)
-            {
-                if (ch > '%' && ch < 0x7f)
-                {
+			// we can be sure here they must be hex digits
+            ch = ngx_http_lua_util_hex2int(s[0]) * 16 +
+    			ngx_http_lua_util_hex2int(s[1]);
+            if (type & NGX_UNESCAPE_REDIRECT) {
+                if (ch > '%' && ch < 0x7f) {
                     *d++ = '%';
                     continue;
-                }
-                else if (ch == '?')
-                {
+                } else if (ch == '?') {
                     *d++ = ch;
                     break;
                 }
@@ -2258,20 +2243,16 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             *d++ = ch;
             s += 2;
             size -= 2;
-        }
-        else if (curr == '+')
-        {
+        } else if (curr == '+') {
             *d++ = ' ';
             continue;
-        }
-        else{
+        } else {
             *d++ = curr;
         }
     }
 
-    if (d != de)
-    {
-        *d = '\0';
+    if (d != de) {
+        *d = '\0'; // a safe guard if dst need to be null-terminated
     }
 
     *dst = d;
