@@ -315,7 +315,8 @@ GET /lua
 --- config
     location /lua {
         content_by_lua_block {
-            ngx.say(ngx.unescape_uri("%u"))
+            ngx.say(ngx.unescape_uri("%a")) -- first charactor is good
+            ngx.say(ngx.unescape_uri("%u")) -- first charactor is bad
             ngx.say(ngx.unescape_uri("%"))
             ngx.say(ngx.unescape_uri("good%20job%"))
         }
@@ -323,6 +324,7 @@ GET /lua
 --- request
 GET /lua
 --- response_body
+%a
 %u
 %
 good jod%
