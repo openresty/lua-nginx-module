@@ -5750,19 +5750,19 @@ gives the output
 
     `b r56 7`
 
-Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged.
+Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, character that should not appear in escaped string are simply left unchanged.
 
 For example, 
 
 ```lua
 
- ngx.say(ngx.unescape_uri("%search%%20%again%"))
+ ngx.say(ngx.unescape_uri(" %search%%20%again%"))
 ```
 
 gives the output
 
 
-    `%search% %again%`
+    ` %search% %again%`
 
 (Note that `%20` following `%` got unescape to space, even it can be considered a part of invalid sequence.)
 
