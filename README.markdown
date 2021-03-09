@@ -5741,6 +5741,7 @@ Unescape `str` as an escaped URI component.
 For example,
 
 ```lua
+
  ngx.say(ngx.unescape_uri("b%20r56+7"))
 ```
 
@@ -5754,6 +5755,7 @@ Invalid escaping sequences are handled in a conventional way: `%`s are left unch
 For example, 
 
 ```lua
+
  ngx.say(ngx.unescape_uri("%search%%20%again%"))
 ```
 
