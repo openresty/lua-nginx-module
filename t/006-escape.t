@@ -307,4 +307,4 @@ qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is n
 --- request
 GET /lua
 --- response_body
-[%ua% %au]
+%ua% %au
