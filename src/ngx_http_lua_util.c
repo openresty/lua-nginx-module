@@ -2213,6 +2213,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
 {
     u_char *d = *dst, *s = *src, *de = (*dst+size);
+    int isuri = type & NGX_UNESCAPE_URI, isredirect = type & NGX_UNESCAPE_REDIRECT;
 
     while (size--) {
         u_char curr = *s++;
@@ -2228,17 +2229,16 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
                 *d++ = '%';
                 continue;
             }
-            // we can be sure here they must be hex digits
+            /* we can be sure here they must be hex digits */
             ch = ngx_http_lua_util_hex2int(s[0]) * 16 +
                 ngx_http_lua_util_hex2int(s[1]);
-            if (type & NGX_UNESCAPE_REDIRECT) {
-                if (ch == '?') {
-                    *d++ = ch;
-                    break;
-                } else if (ch <= '%' || ch >= 0x7f) {
-                    *d++ = '%';
-                    continue;
-                } 
+                
+            if ((isuri || isredirect) && ch == '?') {
+                *d++ = ch;
+                break;
+            }else if (isredirect && (ch <= '%' || ch >= 0x7f)) {
+                *d++ = '%';
+                continue;
             }
             *d++ = ch;
             s += 2;
@@ -2250,9 +2250,10 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             *d++ = curr;
         }
     }
-
+    
+    /* a safe guard if dst need to be null-terminated */
     if (d != de) {
-        *d = '\0'; // a safe guard if dst need to be null-terminated
+        *d = '\0';
     }
 
     *dst = d;
