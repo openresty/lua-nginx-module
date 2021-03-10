@@ -2213,7 +2213,8 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
 {
     u_char *d = *dst, *s = *src, *de = (*dst+size);
-    int isuri = type & NGX_UNESCAPE_URI, isredirect = type & NGX_UNESCAPE_REDIRECT;
+    int isuri = type & NGX_UNESCAPE_URI;
+    int isredirect = type & NGX_UNESCAPE_REDIRECT;
 
     while (size--) {
         u_char curr = *s++;
