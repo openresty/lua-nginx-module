@@ -2235,7 +2235,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
                 if (ch == '?') {
                     *d++ = ch;
                     break;
-                } else if (ch > '%' && ch < 0x7f) {
+                } else if (ch <= '%' || ch >= 0x7f) {
                     *d++ = '%';
                     continue;
                 } 
