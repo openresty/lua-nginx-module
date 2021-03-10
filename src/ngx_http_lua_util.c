@@ -2236,7 +2236,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             if ((isuri || isredirect) && ch == '?') {
                 *d++ = ch;
                 break;
-            }else if (isredirect && (ch <= '%' || ch >= 0x7f)) {
+            } else if (isredirect && (ch <= '%' || ch >= 0x7f)) {
                 *d++ = '%';
                 continue;
             }
