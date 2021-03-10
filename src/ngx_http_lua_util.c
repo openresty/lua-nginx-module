@@ -2232,13 +2232,13 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             ch = ngx_http_lua_util_hex2int(s[0]) * 16 +
                 ngx_http_lua_util_hex2int(s[1]);
             if (type & NGX_UNESCAPE_REDIRECT) {
-                if (ch > '%' && ch < 0x7f) {
-                    *d++ = '%';
-                    continue;
-                } else if (ch == '?') {
+                if (ch == '?') {
                     *d++ = ch;
                     break;
-                }
+                } else if (ch > '%' && ch < 0x7f) {
+                    *d++ = '%';
+                    continue;
+                } 
             }
             *d++ = ch;
             s += 2;
