@@ -327,4 +327,4 @@ GET /lua
 %a
 %u
 %
-good jod%
+good job%
