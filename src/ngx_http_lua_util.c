@@ -2228,9 +2228,9 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
                 *d++ = '%';
                 continue;
             }
-			// we can be sure here they must be hex digits
+            // we can be sure here they must be hex digits
             ch = ngx_http_lua_util_hex2int(s[0]) * 16 +
-    			ngx_http_lua_util_hex2int(s[1]);
+                ngx_http_lua_util_hex2int(s[1]);
             if (type & NGX_UNESCAPE_REDIRECT) {
                 if (ch > '%' && ch < 0x7f) {
                     *d++ = '%';
