@@ -5750,7 +5750,7 @@ gives the output
 
     b r56 7
 
-Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, character that should not appear in escaped string are simply left unchanged.
+Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, characters that should not appear in escaped string are simply left unchanged.
 
 For example, 
 
@@ -5764,7 +5764,7 @@ gives the output
 
     try %search% %again%
 
-(Note that `%20` following `%` got unescape to space, even it can be considered a part of invalid sequence.)
+(Note that `%20` following `%` got unescaped, even it can be considered a part of invalid sequence.)
 
 [Back to TOC](#nginx-api-for-lua)
 
