@@ -2197,14 +2197,14 @@ ngx_http_lua_util_hex2int(char xdigit)
 {
     if (isdigit(xdigit)) {
         return xdigit - '0';
-    } else {
-        xdigit = tolower(xdigit);
-        if (xdigit <= 'f' && xdigit >= 'a') {
-            return xdigit - 'a' + 10;
-        } else {
-            return -1;
-        }
     }
+
+    xdigit = tolower(xdigit);
+    if (xdigit <= 'f' && xdigit >= 'a') {
+        return xdigit - 'a' + 10;
+    }
+    
+    return -1;
 }
 
 /* XXX we also decode '+' to ' ' */
@@ -2224,6 +2224,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
         {
             *d++ = '?';
             break;
+
         } else if (curr == '%') {
             u_char ch;
             if (size < 2 || !(isxdigit(s[0]) && isxdigit(s[1]))) {
@@ -2244,9 +2245,11 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             *d++ = ch;
             s += 2;
             size -= 2;
+
         } else if (curr == '+') {
             *d++ = ' ';
             continue;
+
         } else {
             *d++ = curr;
         }
