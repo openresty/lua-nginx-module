@@ -5750,6 +5750,21 @@ gives the output
 
     b r56 7
 
+Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, characters that should not appear in escaped string are simply left unchanged.
+
+For example, 
+
+```lua
+
+ ngx.say(ngx.unescape_uri("try %search%%20%again%"))
+```
+
+gives the output
+
+
+    try %search% %again%
+
+(Note that `%20` following `%` got unescaped, even it can be considered a part of invalid sequence.)
 
 [Back to TOC](#nginx-api-for-lua)
 

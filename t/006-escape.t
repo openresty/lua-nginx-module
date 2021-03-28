@@ -294,3 +294,37 @@ GET /lua
 --- error_code: 500
 --- error_log eval
 qr/\[error\] \d+#\d+: \*\d+ lua entry thread aborted: runtime error: "type" is not a number/
+
+
+
+=== TEST 20: invalid unescape sequences
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.unescape_uri("%ua%%20%au"))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+%ua% %au
+
+
+
+=== TEST 21: invalid unescape sequences where remain length less than 2
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.unescape_uri("%a")) -- first charactor is good
+            ngx.say(ngx.unescape_uri("%u")) -- first charactor is bad
+            ngx.say(ngx.unescape_uri("%"))
+            ngx.say(ngx.unescape_uri("good%20job%"))
+        }
+    }
+--- request
+GET /lua
+--- response_body
+%a
+%u
+%
+good job%
