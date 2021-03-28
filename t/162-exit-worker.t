@@ -83,7 +83,7 @@ hello, world
 --- http_config
     exit_worker_by_lua_block {
         local function bar()
-            ngx.log(ngx.ERR, "run the timer!"
+            ngx.log(ngx.ERR, "run the timer!")
         end
 
         local ok, err = ngx.timer.at(0, bar)
