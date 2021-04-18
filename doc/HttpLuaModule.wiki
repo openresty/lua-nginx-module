@@ -4835,6 +4835,22 @@ gives the output
     b r56 7
 </geshi>
 
+Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, characters that should not appear in escaped string are simply left unchanged.
+
+For example,
+
+<geshi lang="lua">
+    ngx.say(ngx.unescape_uri("try %search%%20%again%"))
+</geshi>
+
+gives the output
+
+<geshi lang="text">
+    try %search% %again%
+</geshi>
+
+(Note that `%20` following `%` got unescaped, even it can be considered a part of invalid sequence.)
+
 == ngx.encode_args ==
 
 '''syntax:''' ''str = ngx.encode_args(table)''
