@@ -5750,9 +5750,10 @@ gives the output
 
     b r56 7
 
+
 Invalid escaping sequences are handled in a conventional way: `%`s are left unchanged. Also, characters that should not appear in escaped string are simply left unchanged.
 
-For example, 
+For example,
 
 ```lua
 
@@ -5763,6 +5764,7 @@ gives the output
 
 
     try %search% %again%
+
 
 (Note that `%20` following `%` got unescaped, even it can be considered a part of invalid sequence.)
 
