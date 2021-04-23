@@ -8505,6 +8505,11 @@ You must notice that each timer will be based on a fake request (this fake reque
 
 You can pass most of the standard Lua values (nils, booleans, numbers, strings, tables, closures, file handles, and etc) into the timer callback, either explicitly as user arguments or implicitly as upvalues for the callback closure. There are several exceptions, however: you *cannot* pass any thread objects returned by [coroutine.create](#coroutinecreate) and [ngx.thread.spawn](#ngxthreadspawn) or any cosocket objects returned by [ngx.socket.tcp](#ngxsockettcp), [ngx.socket.udp](#ngxsocketudp), and [ngx.req.socket](#ngxreqsocket) because these objects' lifetime is bound to the request context creating them while the timer callback is detached from the creating request's context (by design) and runs in its own (fake) request context. If you try to share the thread or cosocket objects across the boundary of the creating request, then you will get the "no co ctx found" error (for threads) or "bad request" (for cosockets). It is fine, however, to create all these objects inside your timer callback.
 
+Please note that the timer Lua handler has its own copy of the `ngx.ctx` magic
+table. It won't share the same `ngx.ctx` with the Lua handler creating the timer.
+If you need to pass data from the timer creator to the timer handler, please
+use the extra parameters of `ngx.timer.at()`.
+
 This API was first introduced in the `v0.8.0` release.
 
 [Back to TOC](#nginx-api-for-lua)
