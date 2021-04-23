@@ -3798,7 +3798,7 @@ Then `GET /main` will give the output
 
 Here, modification of the `ngx.ctx.blah` entry in the subrequest does not affect the one in the parent request. This is because they have two separate versions of `ngx.ctx.blah`.
 
-Internal redirection will destroy the original request `ngx.ctx` data (if any) and the new request will have an empty `ngx.ctx` table. For instance,
+Internal redirects (triggered by nginx configuration directives like `error_page`, `try_files`, `index` and etc) will destroy the original request `ngx.ctx` data (if any) and the new request will have an empty `ngx.ctx` table. For instance,
 
 ```nginx
 

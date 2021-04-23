@@ -3105,7 +3105,7 @@ Then <code>GET /main</code> will give the output
 
 Here, modification of the <code>ngx.ctx.blah</code> entry in the subrequest does not affect the one in the parent request. This is because they have two separate versions of <code>ngx.ctx.blah</code>.
 
-Internal redirection will destroy the original request <code>ngx.ctx</code> data (if any) and the new request will have an empty <code>ngx.ctx</code> table. For instance,
+Internal redirects (triggered by nginx configuration directives like `error_page`, `try_files`, `index` and etc) will destroy the original request <code>ngx.ctx</code> data (if any) and the new request will have an empty <code>ngx.ctx</code> table. For instance,
 
 <geshi lang="nginx">
     location /new {
