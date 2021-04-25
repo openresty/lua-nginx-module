@@ -87,6 +87,7 @@ __DATA__
                 ngx.log(ngx.WARN, out)
             end
             p:close()
+            collectgarbage("collect")
         }
     }
 --- error_log
@@ -134,6 +135,7 @@ qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
                 ngx.log(ngx.WARN, out)
             end
             p:close()
+            collectgarbage("collect")
         }
     }
 --- error_log
@@ -192,6 +194,7 @@ qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
                 ngx.log(ngx.WARN, out)
             end
             p:close()
+            collectgarbage("collect")
         }
     }
 --- error_log
