@@ -1471,8 +1471,9 @@ user_co_done:
                 break;
 
             case LUA_ERRMEM:
-                err = "memory allocation error";
-                ngx_quit = 1;
+                err = "memory allocation error when running lua coroutine";
+                ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, err);
+                abort();
                 break;
 
             case LUA_ERRERR:
@@ -2203,7 +2204,7 @@ ngx_http_lua_util_hex2int(char xdigit)
     if (xdigit <= 'f' && xdigit >= 'a') {
         return xdigit - 'a' + 10;
     }
-    
+
     return -1;
 }
 
@@ -2234,7 +2235,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             /* we can be sure here they must be hex digits */
             ch = ngx_http_lua_util_hex2int(s[0]) * 16 +
                  ngx_http_lua_util_hex2int(s[1]);
-                
+
             if ((isuri || isredirect) && ch == '?') {
                 *d++ = ch;
                 break;
@@ -2254,7 +2255,7 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             *d++ = curr;
         }
     }
-    
+
     /* a safe guard if dst need to be null-terminated */
     if (d != de) {
         *d = '\0';
