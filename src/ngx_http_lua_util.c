@@ -1471,8 +1471,9 @@ user_co_done:
                 break;
 
             case LUA_ERRMEM:
-                err = "memory allocation error";
-                ngx_quit = 1;
+                err = "[lua] memory allocation error";
+                ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, err);
+                abort();
                 break;
 
             case LUA_ERRERR:
