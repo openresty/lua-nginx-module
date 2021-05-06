@@ -1471,7 +1471,7 @@ user_co_done:
                 break;
 
             case LUA_ERRMEM:
-                err = "memory allocation error when running lua coroutine";
+                err = "[lua] memory allocation error";
                 ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, err);
                 abort();
                 break;
