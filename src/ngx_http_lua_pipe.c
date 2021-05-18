@@ -776,7 +776,8 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
 #if (NGX_HTTP_LUA_HAVE_EXECVPE)
         if (execvpe(file, (char * const *) argv, (char * const *) environ)
 #else
-        if (ngx_http_lua_execvpe(file, (char * const *) argv, (char * const *) environ)
+        if (ngx_http_lua_execvpe(file, (char * const *) argv,
+                                 (char * const *) environ)
 #endif
                 == -1)
             {
