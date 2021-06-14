@@ -1149,6 +1149,7 @@ Directives
 * [lua_socket_keepalive_timeout](#lua_socket_keepalive_timeout)
 * [lua_socket_log_errors](#lua_socket_log_errors)
 * [lua_ssl_ciphers](#lua_ssl_ciphers)
+* [lua_ssl_ciphersuites](#lua_ssl_ciphersuites)
 * [lua_ssl_crl](#lua_ssl_crl)
 * [lua_ssl_protocols](#lua_ssl_protocols)
 * [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
@@ -3069,6 +3070,23 @@ Specifies the enabled ciphers for requests to a SSL/TLS server in the [tcpsock:s
 The full list can be viewed using the “openssl ciphers” command.
 
 This directive was first introduced in the `v0.9.11` release.
+
+[Back to TOC](#directives)
+
+lua_ssl_ciphersuites
+---------------
+
+**syntax:** *lua_ssl_ciphersuites &lt;ciphersuites&gt;*
+
+**default:** *lua_ssl_ciphers TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256*
+
+**context:** *http, server, location*
+
+Specifies the enabled TLSV1.3 ciphersuites for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method. The ciphersuites are specified in the format understood by the OpenSSL library.
+
+The full list can be viewed using the “openssl ciphers” command.
+
+This directive was first introduced in the `v0.10.20` release.
 
 [Back to TOC](#directives)
 

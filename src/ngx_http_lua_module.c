@@ -557,6 +557,15 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_ciphers),
       NULL },
 
+#ifdef NGX_SSL_TLSv1_3
+    { ngx_string("lua_ssl_ciphersuites"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_ciphersuites),
+      NULL },
+#endif
+
     { ngx_string("ssl_certificate_by_lua_block"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
       ngx_http_lua_ssl_cert_by_lua_block,
@@ -1222,6 +1231,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->ssl = 0;
      *      conf->ssl_protocols = 0;
      *      conf->ssl_ciphers = { 0, NULL };
+     *      conf->ssl_ciphersuites = { 0, NULL };
      *      conf->ssl_trusted_certificate = { 0, NULL };
      *      conf->ssl_crl = { 0, NULL };
      */
@@ -1320,6 +1330,13 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers,
                              "DEFAULT");
 
+#ifdef NGX_SSL_TLSv1_3
+    ngx_conf_merge_str_value(conf->ssl_ciphersuites, prev->ssl_ciphersuites,
+                             "TLS_AES_256_GCM_SHA384"
+                             ":TLS_CHACHA20_POLY1305_SHA256"
+                             ":TLS_AES_128_GCM_SHA256");
+#endif
+
     ngx_conf_merge_uint_value(conf->ssl_verify_depth,
                               prev->ssl_verify_depth, 1);
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
@@ -1403,6 +1420,28 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
                       &llcf->ssl_ciphers);
         return NGX_ERROR;
     }
+
+#ifdef NGX_SSL_TLSv1_3
+#   if OPENSSL_VERSION_NUMBER >= 0x1010100fL
+
+    if (SSL_CTX_set_ciphersuites(llcf->ssl->ctx,
+                                (const char *) llcf->ssl_ciphersuites.data)
+        == 0)
+    {
+        ngx_ssl_error(NGX_LOG_EMERG, cf->log, 0,
+                      "SSL_CTX_set_ciphersuites(\"%V\") failed",
+                      &llcf->ssl_ciphersuites);
+        return NGX_ERROR;
+    }
+
+#   else
+
+    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                  "OpenSSL too old to support lua_ssl_ciphersuites");
+    return NGX_CONF_ERROR;
+
+#   endif
+#endif
 
     if (llcf->ssl_trusted_certificate.len
         && ngx_ssl_trusted_certificate(cf, llcf->ssl,
