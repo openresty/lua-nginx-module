@@ -3082,7 +3082,19 @@ lua_ssl_ciphersuites
 
 **context:** *http, server, location*
 
-Specifies the enabled TLSV1.3 ciphersuites for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method. The ciphersuites are specified in the format understood by the OpenSSL library.
+Specifies the enabled TLSV1.3 ciphersuites for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method. The ciphersuite list is separated by colon(:) in order of preference. Valid TLSv1.3 ciphersuite names are:
+
+TLS_AES_128_GCM_SHA256
+
+TLS_AES_256_GCM_SHA384
+
+TLS_CHACHA20_POLY1305_SHA256
+
+TLS_AES_128_CCM_SHA256
+
+TLS_AES_128_CCM_8_SHA256
+
+An empty list is permissible.
 
 The full list can be viewed using the “openssl ciphers” command.
 
