@@ -333,7 +333,9 @@ typedef struct {
     ngx_ssl_t              *ssl;  /* shared by SSL cosockets */
     ngx_uint_t              ssl_protocols;
     ngx_str_t               ssl_ciphers;
+#ifdef NGX_SSL_TLSv1_3
     ngx_str_t               ssl_ciphersuites;
+#endif
     ngx_uint_t              ssl_verify_depth;
     ngx_str_t               ssl_trusted_certificate;
     ngx_str_t               ssl_crl;
