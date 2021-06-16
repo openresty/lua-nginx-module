@@ -2584,7 +2584,7 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
     lua_ssl_protocols TLSv1.3;
 
     location /t {
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
@@ -2605,7 +2605,7 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -2626,7 +2626,7 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             collectgarbage()
-        ';
+        }
     }
 --- request
 GET /t
@@ -2677,7 +2677,7 @@ SSL reused session
     lua_ssl_conf_command Ciphersuites TLS_AES_128_GCM_SHA256;
 
     location /t {
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
@@ -2698,7 +2698,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -2719,7 +2719,7 @@ SSL reused session
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             collectgarbage()
-        ';
+        }
     }
 --- request
 GET /t
@@ -2770,7 +2770,7 @@ SSL reused session
     lua_ssl_conf_command Ciphersuites TLS_AES_128_CCM_SHA256;
 
     location /t {
-        content_by_lua '
+        content_by_lua_block {
             local sock = ngx.socket.tcp()
             sock:settimeout(2000)
 
@@ -2791,7 +2791,7 @@ SSL reused session
 
                 ngx.say("ssl handshake: ", type(session))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: test.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -2812,7 +2812,7 @@ SSL reused session
                 ngx.say("close: ", ok, " ", err)
             end  -- do
             collectgarbage()
-        ';
+        }
     }
 --- request
 GET /t

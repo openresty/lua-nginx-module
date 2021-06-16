@@ -3159,11 +3159,11 @@ ssl_conf_command Options PrioritizeChaCha;
 ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
 ```
 
-Configuration commands are applied after lua-nginx own configuration for SSL, so they can be used to override anything set by lua-nginx. 
+Configuration commands are applied after OpenResty own configuration for SSL, so they can be used to override anything set by OpenResty.
 
-Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might result in a behaviour nginx does not expect, and should be done with care.
+Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might result in a behaviour OpenResty does not expect, and should be done with care.
 
-This directive was first introduced in the `v0.10.20` release.
+This directive was first introduced in the `v0.10.21` release.
 
 [Back to TOC](#directives)
 
