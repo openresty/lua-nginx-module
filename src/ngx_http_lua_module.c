@@ -1346,18 +1346,14 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                              prev->ssl_trusted_certificate, "");
     ngx_conf_merge_str_value(conf->ssl_crl, prev->ssl_crl, "");
 
-    if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
-        return NGX_CONF_ERROR;
-    }
-
 #if (nginx_version >= 1019004)
     ngx_conf_merge_ptr_value(conf->ssl_conf_commands, prev->ssl_conf_commands,
                              NULL);
-    if (ngx_ssl_conf_commands(cf, conf->ssl, conf->ssl_conf_commands)
-        != NGX_OK) {
+#endif
+
+    if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
-#endif
 
 #endif
 
@@ -1447,6 +1443,13 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
     if (ngx_ssl_crl(cf, llcf->ssl, &llcf->ssl_crl) != NGX_OK) {
         return NGX_ERROR;
     }
+
+#if (nginx_version >= 1019004)
+    if (ngx_ssl_conf_commands(cf, conf->ssl, conf->ssl_conf_commands)
+        != NGX_OK) {
+        return NGX_ERROR;
+    }
+#endif
 
     return NGX_OK;
 }
