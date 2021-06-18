@@ -336,6 +336,9 @@ typedef struct {
     ngx_uint_t              ssl_verify_depth;
     ngx_str_t               ssl_trusted_certificate;
     ngx_str_t               ssl_crl;
+#if (nginx_version >= 1019004)
+    ngx_array_t            *ssl_conf_commands;
+#endif
 #endif
 
     ngx_flag_t              force_read_body; /* whether force request body to

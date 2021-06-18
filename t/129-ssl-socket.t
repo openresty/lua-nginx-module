@@ -2561,3 +2561,275 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 --- no_error_log
 [alert]
 --- timeout: 10
+
+
+=== TEST 32: default cipher -TLSv1.3
+--- skip_openssl: 8: < 1.1.1
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com")
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
+close: 1 nil
+
+--- log_level: debug
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
+--- grep_error_log_out eval
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+$/
+--- error_log eval
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv1.3, cipher: "TLS_AES_256_GCM_SHA384 TLSv1.3/]
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 10
+
+
+
+=== TEST 33: explicit cipher configuration - TLSv1.3
+--- skip_openssl: 8: < 1.1.1
+--- skip_nginx: 8: < 1.19.4
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+    lua_ssl_conf_command Ciphersuites TLS_AES_128_GCM_SHA256;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com")
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
+close: 1 nil
+
+--- log_level: debug
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
+--- grep_error_log_out eval
+qr/^lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+$/
+--- error_log eval
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv1.3, cipher: "TLS_AES_128_GCM_SHA256 TLSv1.3/]
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 10
+
+
+
+=== TEST 34: explicit cipher configuration not in the default list - TLSv1.3
+--- skip_openssl: 8: < 1.1.1
+--- skip_nginx: 8: < 1.19.4
+--- http_config
+    server {
+        listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+    lua_ssl_conf_command Ciphersuites TLS_AES_128_CCM_SHA256;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com")
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to do SSL handshake: handshake failed
+
+--- log_level: debug
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
+--- grep_error_log_out
+--- error_log eval
+[
+qr/\[info\] .*?SSL_do_handshake\(\) failed .*?no shared cipher/,
+'lua ssl server name: "test.com"',
+]
+--- no_error_log
+SSL reused session
+[alert]
+[emerg]
+--- timeout: 10

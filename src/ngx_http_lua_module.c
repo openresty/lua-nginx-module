@@ -47,6 +47,10 @@ static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 #if (NGX_HTTP_SSL)
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
+#if (nginx_version >= 1019004)
+static char *ngx_http_lua_ssl_conf_command_check(ngx_conf_t *cf, void *post,
+    void *data);
+#endif
 #endif
 static char *ngx_http_lua_malloc_trim(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -72,6 +76,11 @@ static ngx_conf_bitmask_t  ngx_http_lua_ssl_protocols[] = {
 #endif
     { ngx_null_string, 0 }
 };
+
+#if (nginx_version >= 1019004)
+static ngx_conf_post_t  ngx_http_lua_ssl_conf_command_post =
+    { ngx_http_lua_ssl_conf_command_check };
+#endif
 
 #endif
 
@@ -620,6 +629,14 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_crl),
       NULL },
 
+#if (nginx_version >= 1019004)
+    { ngx_string("lua_ssl_conf_command"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
+      ngx_conf_set_keyval_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_conf_commands),
+      &ngx_http_lua_ssl_conf_command_post },
+#endif
 #endif  /* NGX_HTTP_SSL */
 
      { ngx_string("lua_malloc_trim"),
@@ -1252,6 +1269,9 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
 #if (NGX_HTTP_SSL)
     conf->ssl_verify_depth = NGX_CONF_UNSET_UINT;
+#if (nginx_version >= 1019004)
+    conf->ssl_conf_commands = NGX_CONF_UNSET_PTR;
+#endif
 #endif
 
     return conf;
@@ -1325,6 +1345,11 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
                              prev->ssl_trusted_certificate, "");
     ngx_conf_merge_str_value(conf->ssl_crl, prev->ssl_crl, "");
+
+#if (nginx_version >= 1019004)
+    ngx_conf_merge_ptr_value(conf->ssl_conf_commands, prev->ssl_conf_commands,
+                             NULL);
+#endif
 
     if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
         return NGX_CONF_ERROR;
@@ -1419,8 +1444,27 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
         return NGX_ERROR;
     }
 
+#if (nginx_version >= 1019004)
+    if (ngx_ssl_conf_commands(cf, conf->ssl, conf->ssl_conf_commands)
+        != NGX_OK) {
+        return NGX_ERROR;
+    }
+#endif
+
     return NGX_OK;
 }
+
+#if (nginx_version >= 1019004)
+static char *
+ngx_http_lua_ssl_conf_command_check(ngx_conf_t *cf, void *post, void *data)
+{
+#ifndef SSL_CONF_FLAG_FILE
+    return "is not supported on this platform";
+#endif
+
+    return NGX_CONF_OK;
+}
+#endif
 
 #endif  /* NGX_HTTP_SSL */
 
