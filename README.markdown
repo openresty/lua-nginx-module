@@ -3155,8 +3155,8 @@ The directive is supported when using OpenSSL 1.0.2 or higher and nginx 1.19.4 o
 Several `lua_ssl_conf_command` directives can be specified on the same level:
 
 ```
-ssl_conf_command Options PrioritizeChaCha;
-ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
+lua_ssl_conf_command Options PrioritizeChaCha;
+lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
 ```
 
 Configuration commands are applied after OpenResty own configuration for SSL, so they can be used to override anything set by OpenResty.
