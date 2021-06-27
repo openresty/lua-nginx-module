@@ -43,6 +43,36 @@ typedef struct {
 } ngx_http_lua_timer_ctx_t;
 
 
+/*
+ *   +-------------------------------------------------------+
+ *   | 111....1111 | 11111..1111 | 111....1111 | 111....1111 |         reftable->full_refs_bits
+ *   +-------------------+-----------------------------------+
+ *                       |
+ *                       |
+ *                       v
+ *                   +----+------------------------------------+
+ *                   | 111....1111 | 111....1111 | 111....1111 |        reftable->open_refs
+ *                   +-----------+---------------------------+-+
+ *                               |                           |
+ *           +-------------------+                           |
+ *           |                                               |
+ *           v                                               v
+ *   +---------------+--------------+--------------+----------------+
+ *   | ngx_event_t*  | ngx_event_t* |   ........   |   ngx_event_t* |   reftable->ref
+ *   +---------------+--------------+--------------+----------------+
+ */
+struct ngx_lua_timer_reftable {
+    ngx_event_t** ref;
+
+    unsigned long *open_refs;
+    unsigned long *full_refs_bits;
+
+    unsigned      max_refs;
+    unsigned      next_ref;
+};
+static struct ngx_lua_timer_reftable *reftable = NULL;
+
+
 static int ngx_http_lua_ngx_timer_at(lua_State *L);
 static int ngx_http_lua_ngx_timer_every(lua_State *L);
 static int ngx_http_lua_ngx_timer_cancel(lua_State *L);
@@ -97,36 +127,6 @@ long find_first_zero_bit(const unsigned long start)
     if ((unsigned)idx >= reftable->max_refs) return -1;
     return idx;
 }
-
-
-/*
- *   +-------------------------------------------------------+
- *   | 111....1111 | 11111..1111 | 111....1111 | 111....1111 |         reftable->full_refs_bits
- *   +-------------------+-----------------------------------+
- *                       |
- *                       |
- *                       v
- *                   +----+------------------------------------+
- *                   | 111....1111 | 111....1111 | 111....1111 |        reftable->open_refs
- *                   +-----------+---------------------------+-+
- *                               |                           |
- *           +-------------------+                           |
- *           |                                               |
- *           v                                               v
- *   +---------------+--------------+--------------+----------------+
- *   | ngx_event_t*  | ngx_event_t* |   ........   |   ngx_event_t* |   reftable->ref
- *   +---------------+--------------+--------------+----------------+
- */
-struct ngx_lua_timer_reftable {
-    ngx_event_t** ref;
-
-    unsigned long *open_refs;
-    unsigned long *full_refs_bits;
-
-    unsigned      max_refs;
-    unsigned      next_ref;
-};
-static struct ngx_lua_timer_reftable *reftable = NULL;
 
 
 static
@@ -283,9 +283,11 @@ ngx_http_lua_ngx_timer_every(lua_State *L)
 static int 
 ngx_http_lua_ngx_timer_cancel(lua_State *L) 
 {
-    int                           nargs;
-    ngx_http_request_t            *r;
-    ngx_http_lua_main_conf_t      *lmcf;
+    int                             nargs;
+    ngx_event_t                     *ev;
+    ngx_http_request_t              *r;
+    ngx_http_lua_main_conf_t        *lmcf;
+    ngx_http_lua_timer_ctx_t         tctx;
 
     nargs = lua_gettop(L);
 
@@ -302,9 +304,6 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
         return 2;
     }
 
-    ngx_del_timer(reftable->ref[ref]);
-    ngx_free(reftable->ref[ref]);
-    bit_set(ref, 0);
 
     if (ref < reftable->next_ref) reftable->next_ref = ref;
     
@@ -312,10 +311,30 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "no request");
     }
+    ev = reftable->ref[ref];
 
+    ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    ngx_del_timer(ev);
+    ngx_free(ev);
+
+    ngx_http_lua_assert(tctx.co_ref && tctx.co);
+
+    lmcf = tctx.lmcf;
     lmcf->pending_timers--;
+
+
+    ngx_http_lua_free_thread(r, L, tctx.co_ref, tctx.co, lmcf);
+
+    if (tctx.vm_state != NULL) {
+        ngx_http_lua_cleanup_vm(tctx.vm_state);
+    }
+
+    if (tctx.pool) {
+        ngx_destroy_pool(tctx.pool);
+    }
+
+    bit_set(ref, 0);
 
     lua_pushinteger(L, 1);
     return 1;
