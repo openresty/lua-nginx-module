@@ -50,7 +50,7 @@ typedef struct {
  *                       |
  *                       |
  *                       v
- *                   +----+------------------------------------+
+ *                   +-----------------------------------------+
  *                   | 111....1111 | 111....1111 | 111....1111 |        reftable->open_refs
  *                   +-----------+---------------------------+-+
  *                               |                           |
@@ -287,7 +287,7 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
     ngx_event_t                     *ev;
     ngx_http_request_t              *r;
     ngx_http_lua_main_conf_t        *lmcf;
-    ngx_http_lua_timer_ctx_t         tctx;
+    ngx_http_lua_timer_ctx_t        tctx;
 
     nargs = lua_gettop(L);
 
@@ -303,17 +303,16 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
         lua_pushliteral(L, "timer does not exist");
         return 2;
     }
-
-
-    if (ref < reftable->next_ref) reftable->next_ref = ref;
     
     r = ngx_http_lua_get_req(L);
     if (r == NULL) {
         return luaL_error(L, "no request");
     }
+    
     ev = reftable->ref[ref];
 
     ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
+    
     if (tctx.delay) {
         ngx_del_timer(ev);
     } else {
@@ -345,6 +344,8 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
     }
 
     bit_set(ref, 0);
+
+    if (ref < reftable->next_ref) reftable->next_ref = ref;
 
     lua_pushinteger(L, 1);
     return 1;
