@@ -1333,6 +1333,7 @@ failed:
 }
 
 
+#ifndef LIBRESSL_VERSION_NUMBER
 static int
 ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 {
@@ -1344,6 +1345,7 @@ ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
      */
     return 1;
 }
+#endif
 
 
 int

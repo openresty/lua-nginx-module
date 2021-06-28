@@ -1153,6 +1153,7 @@ Directives
 * [lua_ssl_protocols](#lua_ssl_protocols)
 * [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
+* [lua_ssl_conf_command](#lua_ssl_conf_command)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
 * [access_by_lua_no_postpone](#access_by_lua_no_postpone)
@@ -3135,6 +3136,34 @@ Sets the verification depth in the server certificates chain.
 This directive was first introduced in the `v0.9.11` release.
 
 See also [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
+
+[Back to TOC](#directives)
+
+lua_ssl_conf_command
+--------------------
+
+**syntax:** *lua_ssl_conf_command &lt;command&gt;*
+
+**default:** *no*
+
+**context:** *http, server, location*
+
+Sets arbitrary OpenSSL configuration [commands](https://www.openssl.org/docs/man1.1.1/man3/SSL_CONF_cmd.html).
+
+The directive is supported when using OpenSSL 1.0.2 or higher and nginx 1.19.4 or higher. According to the specify command, higher OpenSSL version may be needed.
+
+Several `lua_ssl_conf_command` directives can be specified on the same level:
+
+```
+lua_ssl_conf_command Options PrioritizeChaCha;
+lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
+```
+
+Configuration commands are applied after OpenResty own configuration for SSL, so they can be used to override anything set by OpenResty.
+
+Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might result in a behaviour OpenResty does not expect, and should be done with care.
+
+This directive was first introduced in the `v0.10.21` release.
 
 [Back to TOC](#directives)
 
