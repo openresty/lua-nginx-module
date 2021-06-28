@@ -565,7 +565,9 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
             ngx_destroy_pool(tctx->pool);
         }
 
-        if (tctx && tctx->vm_state) tctx->vm_state->count--;
+        if (tctx && tctx->vm_state) {
+            tctx->vm_state->count--;
+        }
 
         ngx_http_lua_free_thread(r, L, co_ref, co, lmcf);
         
