@@ -314,8 +314,18 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
     ev = reftable->ref[ref];
 
     ngx_memcpy(&tctx, ev->data, sizeof(ngx_http_lua_timer_ctx_t));
+    if (tctx.delay) {
+        ngx_del_timer(ev);
+    } else {
 
-    ngx_del_timer(ev);
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+        ngx_delete_posted_event(ev);
+#else
+        ngx_del_timer(ev);
+#endif
+
+    }
+    
     ngx_free(ev);
 
     ngx_http_lua_assert(tctx.co_ref && tctx.co);
@@ -538,14 +548,42 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     ev->data = tctx;
     ev->log = ngx_cycle->log;
 
+    long ref = find_first_zero_bit(reftable->next_ref);
+
+    if (!~ref) {
+        /* try to expand reftable */
+        expand_reftable(ngx_cycle->log);
+        ref = find_first_zero_bit(reftable->next_ref);
+    }
+    
+    if (!~ref) { /* double check */
+        ngx_log_debug2(NGX_LOG_ERR, ngx_cycle->log, 0,
+                   "expand reftable error, next_ref:%ud, max_refs:%ud", reftable->next_ref, reftable->max_refs);
+
+        if (tctx && tctx->pool) {
+            ngx_destroy_pool(tctx->pool);
+        }
+
+        ngx_http_lua_free_thread(r, L, co_ref, co, lmcf);
+        
+        ngx_free(ev);
+
+        return luaL_error(L, "ngx.timer reftable expand error");
+    }
+
     lmcf->pending_timers++;
+
+    bit_set((unsigned long)ref, 1);
+    reftable->next_ref = ref+1;
+    reftable->ref[ref] = ev;
+    tctx->timer_ref = ref;
 
 #ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
     if (delay == 0 && !ngx_exiting) {
         dd("posting 0 sec sleep event to head of delayed queue");
         ngx_post_event(ev, &ngx_posted_delayed_events);
 
-        lua_pushinteger(L, 1);
+        lua_pushinteger(L, tctx->timer_ref);
         return 1;
     }
 #endif
@@ -556,21 +594,6 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
                    "created timer (co: %p delay: %M ms): sz=%d", tctx->co,
                    delay, lua_gettop(L));
 
-    long ref = find_first_zero_bit(reftable->next_ref);
-    if (!~ref) {
-        /* try to expand reftable */
-        expand_reftable(ngx_cycle->log);
-        ref = find_first_zero_bit(reftable->next_ref);
-    }
-    if (!~ref) { /* still can't find? */
-        return luaL_error(L, "ngx.timer reftable expand error");
-    }
-
-    bit_set((unsigned long)ref, 1);
-    reftable->next_ref = ref+1;
-    reftable->ref[ref] = ev;
-    tctx->timer_ref = ref;
-    
     lua_pushinteger(L, tctx->timer_ref);
     return 1;
 
