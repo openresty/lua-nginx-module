@@ -8,7 +8,7 @@ worker_connections(1014);
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 5 + 2);
+plan tests => repeat_each() * (blocks() * 5 + 1);
 
 #no_diff();
 no_long_string();
@@ -30,10 +30,9 @@ __DATA__
         content_by_lua_block {
             local begin = ngx.now()
             local function f(premature)
-                print("elapsed: ", ngx.now() - begin)
-                print("timer prematurely expired: ", premature)
+                print("never do this")
             end
-
+            -- timer.every
             local hdl, err = ngx.timer.every(0.05, f)
             if not hdl then
                 ngx.say("failed to set timer: ", err)
@@ -50,8 +49,21 @@ __DATA__
             local ok, err = ngx.timer.cancel(hdl)
             if not ok then
                 ngx.say("failed to cancel timer: ", err)
+            end
+
+            --timer.at 0
+            local hdl, err = ngx.timer.at(0, f)
+            if not hdl then
+                ngx.say("failed to set timer: ", err)
                 return
             end
+            ngx.say("timer create ", hdl)
+            local ok, err = ngx.timer.cancel(hdl)
+            if not ok then
+                ngx.say("failed to cancel timer: ", err)
+                return
+            end
+            ngx.say("cancel timer")
         }
     }
 --- request
@@ -60,11 +72,12 @@ GET /t
 timer create 0
 cancel timer
 failed to cancel timer: timer does not exist
+timer create 0
+cancel timer
 --- wait: 2
 --- no_error_log eval
 [
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.(?:09|10)\d*, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/
+"never do this"
 ]
 
 
@@ -132,8 +145,8 @@ growth1 == growth2: true
 
 === TEST 3: expend check
 --- http_config
-    lua_max_running_timers 10000;
-    lua_max_pending_timers 10000;
+    lua_max_running_timers 2050;
+    lua_max_pending_timers 2050;
 --- config
     location /t {
         content_by_lua_block {
@@ -170,8 +183,8 @@ success
 
 === TEST 4: ref order test
 --- http_config
-    lua_max_running_timers 1000000;
-    lua_max_pending_timers 1000000;
+    lua_max_running_timers 100000;
+    lua_max_pending_timers 100000;
 --- config
     location /t {
         content_by_lua_block {
@@ -314,8 +327,8 @@ cancel timer
             end
             ngx.say("registered timer")
             local before_pending_count = ngx.timer.pending_count()
-
-            for i = 1, 5000 do
+            local random_count = math.random(2, 9999)
+            for i = 1, random_count do
                 local ok, err = ngx.timer.cancel(i-1)
                 if not ok then
                     ngx.say("failed to cancel timer: ", err)
@@ -325,8 +338,8 @@ cancel timer
             ngx.sleep(1)
 
             local after_pending_count = ngx.timer.pending_count()
-            ngx.say("before should equal to after ", before_pending_count == (after_pending_count+5000))
-            for i = 5001, 10000 do
+            ngx.say("before should equal to after ", before_pending_count == (after_pending_count+random_count))
+            for i = random_count+1, 10000 do
                 local ok, err = ngx.timer.cancel(i-1)
                 if not ok then
                     ngx.say("failed to cancel timer ", " reason ", err)
