@@ -19,7 +19,7 @@
 #define NGX_HTTP_LUA_TIMER_ERRBUF_SIZE  128
 #define ffz(x)                          __builtin_ctzl(~(x))
 
-static const size_t BITS_PER_LONG = sizeof(long) * 8;
+static const size_t BPL = sizeof(long) * 8; /* BITS_PER_LONG */
 
 typedef struct {
     void        **main_conf;
@@ -43,24 +43,6 @@ typedef struct {
 } ngx_http_lua_timer_ctx_t;
 
 
-/*
- *   +-------------------------------------------------------+
- *   | 111....1111 | 11111..1111 | 111....1111 | 111....1111 |         reftable->full_refs_bits
- *   +-------------------+-----------------------------------+
- *                       |
- *                       |
- *                       v
- *                   +-----------------------------------------+
- *                   | 111....1111 | 111....1111 | 111....1111 |        reftable->open_refs
- *                   +-----------+---------------------------+-+
- *                               |                           |
- *           +-------------------+                           |
- *           |                                               |
- *           v                                               v
- *   +---------------+--------------+--------------+----------------+
- *   | ngx_event_t*  | ngx_event_t* |   ........   |   ngx_event_t* |   reftable->ref
- *   +---------------+--------------+--------------+----------------+
- */
 struct ngx_lua_timer_reftable {
     ngx_event_t** ref;
 
@@ -89,7 +71,7 @@ static void ngx_http_lua_abort_pending_timers(ngx_event_t *ev);
 static 
 ngx_inline unsigned long bit_check(const unsigned long pos) {
     if (pos >= reftable->max_refs) return 1;
-    return reftable->open_refs[pos / BITS_PER_LONG] & (1UL << (pos % BITS_PER_LONG));
+    return reftable->open_refs[pos / BPL] & (1UL << (pos % BPL));
 }
 
 
@@ -97,15 +79,15 @@ static
 void bit_set(const unsigned long pos, const int val)
 {
     if (pos >= reftable->max_refs) return;
-    unsigned full_refs_bits_idx = pos / BITS_PER_LONG;
+    unsigned idx = pos / BPL;
     if (val) {
-        reftable->open_refs[pos / BITS_PER_LONG] |= 1UL << (pos % BITS_PER_LONG);
-        if (reftable->open_refs[pos/BITS_PER_LONG] == ~0UL) {
-            reftable->full_refs_bits[full_refs_bits_idx/BITS_PER_LONG] |= (1UL << (full_refs_bits_idx%BITS_PER_LONG));
+        reftable->open_refs[pos / BPL] |= 1UL << (pos % BPL);
+        if (reftable->open_refs[pos/BPL] == ~0UL) {
+            reftable->full_refs_bits[idx/BPL] |= (1UL << (idx % BPL));
         }
     } else {
-        reftable->open_refs[pos / BITS_PER_LONG] &= ~(1UL << (pos % BITS_PER_LONG));
-        reftable->full_refs_bits[full_refs_bits_idx / BITS_PER_LONG] &= ~(1UL << (full_refs_bits_idx%BITS_PER_LONG));
+        reftable->open_refs[pos / BPL] &= ~(1UL << (pos % BPL));
+        reftable->full_refs_bits[idx / BPL] &= ~(1UL << (idx % BPL));
     }
 }
 
@@ -114,16 +96,19 @@ static
 long find_first_zero_bit(const unsigned long start)
 {
     if (!bit_check(start)) return start;
-    unsigned _start = start / BITS_PER_LONG / BITS_PER_LONG;
+    unsigned _start = start / BPL / BPL;
     int idx = -1;
-    for (; _start * BITS_PER_LONG * BITS_PER_LONG < reftable->max_refs; _start++) {
+    for (; _start * BPL * BPL < reftable->max_refs;
+          _start++) {
         if (reftable->full_refs_bits[_start] != ~0UL) {
             idx = ffz(reftable->full_refs_bits[_start]);
             break;
         }
     }
     if (idx == -1) return -1;
-    idx = ffz(reftable->open_refs[_start * BITS_PER_LONG + idx]) + (idx + _start * BITS_PER_LONG) * BITS_PER_LONG;
+    idx = ffz(reftable->open_refs[_start * BPL + idx]) + 
+          (idx + _start * BPL) * BPL;
+
     if ((unsigned)idx >= reftable->max_refs) return -1;
     return idx;
 }
@@ -152,7 +137,8 @@ void expand_reftable(ngx_log_t *log) {
 
     /* alloc new max_refs */
     unsigned long total_size = 0;
-    int size = max_refs / BITS_PER_LONG + (max_refs % BITS_PER_LONG == 0 ? 0 : 1);
+    int size = max_refs / BPL + (max_refs % BPL == 0 ? 0 : 1);
+
     ngx_event_t **new_ref = ngx_alloc(sizeof(ngx_event_t *)*max_refs, log);
     total_size += sizeof(ngx_event_t *)*max_refs;
 
@@ -163,23 +149,26 @@ void expand_reftable(ngx_log_t *log) {
     total_size += size * sizeof(long);
 
     /* alloc new full_refs_bits */
-    size = size / BITS_PER_LONG + (size % BITS_PER_LONG == 0 ? 0 : 1);
+    size = size / BPL + (size % BPL == 0 ? 0 : 1);
     unsigned long *new_full_refs_bits = ngx_alloc(size * sizeof(long), log);
     ngx_memzero(new_full_refs_bits, size * sizeof(long));
     total_size += size * sizeof(long);
 
     if (old_max_refs) { /* memcpy && free old */
-        int old_size = old_max_refs / BITS_PER_LONG + (old_max_refs % BITS_PER_LONG == 0 ? 0 : 1);
+        int old_size = old_max_refs / BPL + (old_max_refs % BPL == 0 ? 0 : 1);
 
-        ngx_memcpy(new_ref, reftable->ref, sizeof(ngx_event_t *) * old_max_refs);
+        ngx_memcpy(new_ref, reftable->ref,
+                   sizeof(ngx_event_t *) * old_max_refs);
         ngx_free(reftable->ref);
 
-        ngx_memcpy(new_open_refs, reftable->open_refs, sizeof(long) * old_size);
+        ngx_memcpy(new_open_refs, reftable->open_refs,
+                   sizeof(long) * old_size);
         ngx_free(reftable->open_refs);
 
-        old_size = old_size / BITS_PER_LONG + (old_size % BITS_PER_LONG == 0 ? 0 : 1);
+        old_size = old_size / BPL + (old_size % BPL == 0 ? 0 : 1);
 
-        ngx_memcpy(new_full_refs_bits, reftable->full_refs_bits, sizeof(long) * old_size);
+        ngx_memcpy(new_full_refs_bits, reftable->full_refs_bits, 
+                   sizeof(long) * old_size);
         ngx_free(reftable->full_refs_bits);
     }
 
@@ -192,7 +181,8 @@ void expand_reftable(ngx_log_t *log) {
     reftable->full_refs_bits = new_full_refs_bits;
 
     ngx_log_error(NGX_LOG_NOTICE, log, 0,
-                       "ngx.timer.reftable expand from %ul to %ul (%ul byte)", old_max_refs, max_refs, total_size);
+                       "ngx.timer.reftable expand from %ul to %ul (%ul byte)",
+                        old_max_refs, max_refs, total_size);
     /* finish */
 }
 
@@ -559,7 +549,8 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     
     if (!~ref) { /* double check */
         ngx_log_debug2(NGX_LOG_ERR, ngx_cycle->log, 0,
-                   "expand reftable error, next_ref:%ud, max_refs:%ud", reftable->next_ref, reftable->max_refs);
+                   "expand reftable error, next_ref:%ud, max_refs:%ud", 
+                   reftable->next_ref, reftable->max_refs);
 
         if (tctx && tctx->pool) {
             ngx_destroy_pool(tctx->pool);
@@ -730,8 +721,9 @@ ngx_http_lua_timer_copy(ngx_http_lua_timer_ctx_t *old_tctx)
     lmcf->pending_timers++;
 
     ngx_add_timer(ev, tctx->delay);
-
-    reftable->ref[tctx->timer_ref] = ev; /* reset with the new timer (ngx_event_t*) */
+    
+    /* reset with the new timer (ngx_event_t*) */
+    reftable->ref[tctx->timer_ref] = ev;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "created next timer (co: %p delay: %M ms)", tctx->co,
@@ -796,7 +788,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         if (rc != NGX_OK) {
 
             bit_set(tctx.timer_ref, 0);
-            if ((unsigned long)tctx.timer_ref < reftable->next_ref) reftable->next_ref = (unsigned long)tctx.timer_ref;
+            if ((unsigned long)tctx.timer_ref < reftable->next_ref) {
+                reftable->next_ref = (unsigned long)tctx.timer_ref;
+            }
 
             ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                           "failed to create the next timer of delay %ud ms",
@@ -804,7 +798,9 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         }
     } else {
         bit_set(tctx.timer_ref, 0);
-        if ((unsigned long)tctx.timer_ref < reftable->next_ref) reftable->next_ref = (unsigned long)tctx.timer_ref;
+        if ((unsigned long)tctx.timer_ref < reftable->next_ref) {
+            reftable->next_ref = (unsigned long)tctx.timer_ref;
+        }
     }
 
     if (lmcf->running_timers >= lmcf->max_running_timers) {
