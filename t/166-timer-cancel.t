@@ -309,8 +309,8 @@ cancel timer
 
 === TEST 6: lua_max_pending_timers test
 --- http_config
-    lua_max_running_timers 10000;
-    lua_max_pending_timers 10000;
+    lua_max_running_timers 1000;
+    lua_max_pending_timers 1000;
 --- config
     location /t {
         content_by_lua_block {
@@ -318,7 +318,7 @@ cancel timer
                 -- do nothing
             end
 
-            for i = 1, 10000 do
+            for i = 1, 1000 do
                 local ref, err = ngx.timer.at(999, f, i)
                 if not ref then
                     ngx.say("failed to set timer: ", err)
@@ -327,7 +327,7 @@ cancel timer
             end
             ngx.say("registered timer")
             local before_pending_count = ngx.timer.pending_count()
-            local random_count = math.random(2, 9999)
+            local random_count = math.random(2, 999)
             for i = 1, random_count do
                 local ok, err = ngx.timer.cancel(i-1)
                 if not ok then
@@ -339,7 +339,7 @@ cancel timer
 
             local after_pending_count = ngx.timer.pending_count()
             ngx.say("before should equal to after ", before_pending_count == (after_pending_count+random_count))
-            for i = random_count+1, 10000 do
+            for i = random_count+1, 1000 do
                 local ok, err = ngx.timer.cancel(i-1)
                 if not ok then
                     ngx.say("failed to cancel timer ", " reason ", err)
