@@ -2209,6 +2209,125 @@ It is recommended however, to use the [[#ngx.req.read_body|ngx.req.read_body]] a
 
 This also applies to [[#access_by_lua|access_by_lua*]].
 
+== ssl_client_hello_by_lua_block ==
+
+'''syntax:''' ''ssl_client_hello_by_lua_block { lua-script }''
+
+'''context:''' ''http, server''
+
+'''phase:''' ''right-after-client-hello-message-was-processed''
+
+This directive runs user Lua code when Nginx is about to post-process the SSL client hello message for the downstream
+SSL (https) connections.
+
+It is particularly useful for dynamically setting the SSL protocols according to the SNI.
+
+It is also useful to do some custom operations according to the per-connection information in the client hello message.
+
+For example, one can parse custom client hello extension and do the corresponding handling in pure Lua.
+
+This Lua handler will always run whether the SSL session is resumed (via SSL session IDs or TLS session tickets) or not.
+While the <code>ssl_certificate_by_lua*</code> Lua handler will only runs when only runs when initiating a full SSL handshake.
+
+The [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/clienthello.md ngx.ssl.clienthello] Lua modules
+provided by the [https://github.com/openresty/lua-resty-core/#readme lua-resty-core]
+library are particularly useful in this context.
+
+Note that this handler runs in extremelly early stage of SSL handshake, before the SSL client hello extensions are parsed.
+So you can not use some Lua API like <code>ssl.server_name()</code> which is dependent on the later stage's processing.
+
+Also note that only the directive in default server is valid for several virtual servers with the same IP address and port.
+
+Below is a trivial example using the
+[https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/clienthello.md ngx.ssl.clienthello] module
+at the same time:
+
+<geshi lang="nginx">
+server {
+    listen 443 ssl;
+    server_name   test.com;
+    ssl_certificate /path/to/cert.crt;
+    ssl_certificate_key /path/to/key.key;
+    ssl_client_hello_by_lua_block {
+        local ssl_clt = require "ngx.ssl.clienthello"
+        local host, err = ssl_clt.get_client_hello_server_name()
+        if host == "test.com" then
+            ssl_clt.set_protocols({"TLSv1", "TLSv1.1"})
+        elseif host == "tset2.com" then
+            ssl_clt.set_protocols({"TLSv1.2", "TLSv1.3"})
+        elseif not host then
+            ngx.log(ngx.ERR, "failed to get the SNI name: ", err)
+            ngx.exit(ngx.ERROR)
+        else
+            ngx.log(ngx.ERR, "unknown SNI name: ", host)
+            ngx.exit(ngx.ERROR)
+        end
+    }
+    ...
+}
+server {
+    listen 443 ssl;
+    server_name   test2.com;
+    ssl_certificate /path/to/cert.crt;
+    ssl_certificate_key /path/to/key.key;
+    ...
+}
+</geshi>
+
+See more information in the [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/clienthello.md ngx.ssl.clienthello]
+Lua modules' official documentation.
+
+Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
+[[#ngx.exit|ngx.exit]] call with an error code like <code>ngx.ERROR</code>.
+
+This Lua code execution context *does* support yielding, so Lua APIs that may yield
+(like cosockets, sleeping, and "light threads")
+are enabled in this context
+
+Note, you need to configure the [https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate ssl_certificate]
+and [https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key ssl_certificate_key]
+to avoid the following error while starting NGINX:
+
+<geshi>
+    nginx: [emerg] no ssl configured for the server
+</geshi>
+
+This directive requires OpenSSL 1.1.1 or greater.
+
+If you are using the [official pre-built
+packages](https://openresty.org/en/linux-packages.html) for
+[OpenResty](https://openresty.org/) 1.19.9.2 or later, then everything should
+work out of the box.
+
+If you are not using one of the [OpenSSL
+packages](https://openresty.org/en/linux-packages.html) provided by
+[OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
+in order to use this directive:
+
+https://openresty.org/en/openssl-patches.html
+
+Similarly, if you are not using the Nginx core shipped with
+[OpenResty](https://openresty.org) 1.19.9.2 or later, you will need to apply
+patches to the standard Nginx core:
+
+https://openresty.org/en/nginx-ssl-patches.html
+
+This directive was first introduced in the <code>v0.10.21</code> release.
+
+== ssl_client_hello_by_lua_file ==
+
+'''syntax:''' ''ssl_client_hello_by_lua_file <path-to-lua-script-file>''
+
+'''context:''' ''http, server''
+
+'''phase:''' ''right-after-client-hello-message-was-processed''
+
+Equivalent to [[#ssl_client_hello_by_lua_block|ssl_client_hello_by_lua_block]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code, or, as from the <code>v0.5.0rc32</code> release, the [[#LuaJIT bytecode support|LuaJIT bytecode]] to be executed.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absolute path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
+This directive was first introduced in the <code>v0.10.21</code> release.
+
 == ssl_certificate_by_lua_block ==
 
 '''syntax:''' ''ssl_certificate_by_lua_block { lua-script }''
