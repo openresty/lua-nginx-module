@@ -76,19 +76,24 @@ ngx_inline unsigned long bit_check(const unsigned long pos) {
 
 
 static 
-void bit_set(const unsigned long pos, const int val)
+ngx_inline void bit_set(const unsigned long pos)
 {
     if (pos >= reftable->max_refs) return;
     unsigned idx = pos / BPL;
-    if (val) {
-        reftable->open_refs[pos / BPL] |= 1UL << (pos % BPL);
-        if (reftable->open_refs[pos/BPL] == ~0UL) {
-            reftable->full_refs_bits[idx/BPL] |= (1UL << (idx % BPL));
-        }
-    } else {
-        reftable->open_refs[pos / BPL] &= ~(1UL << (pos % BPL));
-        reftable->full_refs_bits[idx / BPL] &= ~(1UL << (idx % BPL));
+    reftable->open_refs[pos / BPL] |= 1UL << (pos % BPL);
+    if (reftable->open_refs[pos/BPL] == ~0UL) {
+        reftable->full_refs_bits[idx/BPL] |= (1UL << (idx % BPL));
     }
+}
+
+
+static 
+ngx_inline void bit_clean(const unsigned long pos)
+{
+    if (pos >= reftable->max_refs) return;
+    unsigned idx = pos / BPL;
+    reftable->open_refs[pos / BPL] &= ~(1UL << (pos % BPL));
+    reftable->full_refs_bits[idx / BPL] &= ~(1UL << (idx % BPL));
 }
 
 
@@ -333,7 +338,7 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
         ngx_destroy_pool(tctx.pool);
     }
 
-    bit_set(ref, 0);
+    bit_clean(ref);
 
     if (ref < reftable->next_ref) reftable->next_ref = ref;
 
@@ -569,7 +574,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     lmcf->pending_timers++;
 
-    bit_set((unsigned long)ref, 1);
+    bit_set((unsigned long)ref);
     reftable->next_ref = ref + 1;
     reftable->ref[ref] = ev;
     tctx->timer_ref = ref;
@@ -787,7 +792,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         rc = ngx_http_lua_timer_copy(&tctx);
         if (rc != NGX_OK) {
 
-            bit_set(tctx.timer_ref, 0);
+            bit_clean(tctx.timer_ref);
             if ((unsigned long)tctx.timer_ref < reftable->next_ref) {
                 reftable->next_ref = (unsigned long)tctx.timer_ref;
             }
@@ -797,7 +802,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
                           (unsigned) tctx.delay);
         }
     } else {
-        bit_set(tctx.timer_ref, 0);
+        bit_clean(tctx.timer_ref);
         if ((unsigned long)tctx.timer_ref < reftable->next_ref) {
             reftable->next_ref = (unsigned long)tctx.timer_ref;
         }
