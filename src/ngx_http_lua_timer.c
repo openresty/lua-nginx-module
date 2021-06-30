@@ -570,7 +570,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     lmcf->pending_timers++;
 
     bit_set((unsigned long)ref, 1);
-    reftable->next_ref = ref+1;
+    reftable->next_ref = ref + 1;
     reftable->ref[ref] = ev;
     tctx->timer_ref = ref;
 
