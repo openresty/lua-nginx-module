@@ -26,6 +26,7 @@
 #include "ngx_http_lua_probe.h"
 #include "ngx_http_lua_semaphore.h"
 #include "ngx_http_lua_balancer.h"
+#include "ngx_http_lua_ssl_client_helloby.h"
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
@@ -566,6 +567,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_ciphers),
       NULL },
 
+    { ngx_string("ssl_client_hello_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_ssl_client_hello_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_client_hello_handler_inline },
+
+    { ngx_string("ssl_client_hello_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_ssl_client_hello_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_client_hello_handler_file },
+
     { ngx_string("ssl_certificate_by_lua_block"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
       ngx_http_lua_ssl_cert_by_lua_block,
@@ -1073,6 +1088,10 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     }
 
     /* set by ngx_pcalloc:
+     *      lscf->srv.ssl_client_hello_handler = NULL;
+     *      lscf->srv.ssl_client_hello_src = { 0, NULL };
+     *      lscf->srv.ssl_client_hello_src_key = NULL;
+     *
      *      lscf->srv.ssl_cert_handler = NULL;
      *      lscf->srv.ssl_cert_src = { 0, NULL };
      *      lscf->srv.ssl_cert_src_key = NULL;
@@ -1091,6 +1110,7 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      */
 
 #if (NGX_HTTP_SSL)
+    lscf->srv.ssl_client_hello_src_ref = LUA_REFNIL;
     lscf->srv.ssl_cert_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_store_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_fetch_src_ref = LUA_REFNIL;
@@ -1112,6 +1132,45 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_ssl_srv_conf_t *sscf;
 
     dd("merge srv conf");
+
+    if (conf->srv.ssl_client_hello_src.len == 0) {
+        conf->srv.ssl_client_hello_src = prev->srv.ssl_client_hello_src;
+        conf->srv.ssl_client_hello_src_ref = prev->srv.ssl_client_hello_src_ref;
+        conf->srv.ssl_client_hello_src_key = prev->srv.ssl_client_hello_src_key;
+        conf->srv.ssl_client_hello_handler = prev->srv.ssl_client_hello_handler;
+    }
+
+    if (conf->srv.ssl_client_hello_src.len) {
+        sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
+        if (sscf == NULL || sscf->ssl.ctx == NULL) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no ssl configured for the server");
+
+            return NGX_CONF_ERROR;
+        }
+#ifdef LIBRESSL_VERSION_NUMBER
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "LibreSSL does not support by ssl_client_hello_by_lua*");
+        return NGX_CONF_ERROR;
+
+#else
+
+#   ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+
+        SSL_CTX_set_client_hello_cb(sscf->ssl.ctx,
+                                    ngx_http_lua_ssl_client_hello_handler,
+                                    NULL);
+
+#   else
+
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "OpenSSL too old to support "
+                      "ssl_client_hello_by_lua*");
+        return NGX_CONF_ERROR;
+
+#   endif
+#endif
+    }
 
     if (conf->srv.ssl_cert_src.len == 0) {
         conf->srv.ssl_cert_src = prev->srv.ssl_cert_src;

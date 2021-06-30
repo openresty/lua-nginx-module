@@ -36,6 +36,7 @@
                                         | NGX_HTTP_LUA_CONTEXT_ACCESS        \
                                         | NGX_HTTP_LUA_CONTEXT_CONTENT       \
                                         | NGX_HTTP_LUA_CONTEXT_TIMER         \
+                                        | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
                                         | NGX_HTTP_LUA_CONTEXT_SSL_CERT      \
                                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
 
@@ -56,6 +57,8 @@
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_EXIT_WORKER ? "exit_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO ?                        \
+                                                 "ssl_client_hello_by_lua*"  \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"      \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE ?                          \
                                                  "ssl_session_store_by_lua*" \

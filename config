@@ -286,6 +286,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_timer.c \
             $ngx_addon_dir/src/ngx_http_lua_config.c \
             $ngx_addon_dir/src/ngx_http_lua_worker.c \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_client_helloby.c \
             $ngx_addon_dir/src/ngx_http_lua_ssl_certby.c \
             $ngx_addon_dir/src/ngx_http_lua_ssl_ocsp.c \
             $ngx_addon_dir/src/ngx_http_lua_lex.c \
@@ -346,6 +347,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_uthread.h \
             $ngx_addon_dir/src/ngx_http_lua_timer.h \
             $ngx_addon_dir/src/ngx_http_lua_config.h \
+            $ngx_addon_dir/src/ngx_http_lua_ssl_client_helloby.h \
             $ngx_addon_dir/src/ngx_http_lua_ssl_certby.h \
             $ngx_addon_dir/src/ngx_http_lua_lex.h \
             $ngx_addon_dir/src/ngx_http_lua_balancer.h \
