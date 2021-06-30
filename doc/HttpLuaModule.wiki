@@ -2227,7 +2227,7 @@ It is also useful to do some custom operations according to the per-connection i
 For example, one can parse custom client hello extension and do the corresponding handling in pure Lua.
 
 This Lua handler will always run whether the SSL session is resumed (via SSL session IDs or TLS session tickets) or not.
-While the <code>ssl_certificate_by_lua*</code> Lua handler will only runs when only runs when initiating a full SSL handshake.
+While the <code>ssl_certificate_by_lua*</code> Lua handler will only runs when initiating a full SSL handshake.
 
 The [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/clienthello.md ngx.ssl.clienthello] Lua modules
 provided by the [https://github.com/openresty/lua-resty-core/#readme lua-resty-core]
