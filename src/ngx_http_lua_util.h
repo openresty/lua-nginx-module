@@ -33,12 +33,12 @@
 #define NGX_HTTP_LUA_ESCAPE_HEADER_VALUE  8
 
 #define NGX_HTTP_LUA_CONTEXT_YIELDABLE (NGX_HTTP_LUA_CONTEXT_REWRITE         \
-                                        | NGX_HTTP_LUA_CONTEXT_ACCESS        \
-                                        | NGX_HTTP_LUA_CONTEXT_CONTENT       \
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER         \
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT      \
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
+                                | NGX_HTTP_LUA_CONTEXT_ACCESS                \
+                                | NGX_HTTP_LUA_CONTEXT_CONTENT               \
+                                | NGX_HTTP_LUA_CONTEXT_TIMER                 \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT              \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
 
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
