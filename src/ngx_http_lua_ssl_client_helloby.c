@@ -414,7 +414,7 @@ ngx_http_lua_log_ssl_client_hello_error(ngx_log_t *log,
 
     c = log->data;
 
-    if (c->addr_text.len) {
+    if (c && c->addr_text.len) {
         p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
         len -= p - buf;
         buf = p;
@@ -549,6 +549,8 @@ int ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
 #   ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
     remaining = 0;
 
+    /* This code block is taken from OpenSSL's client_hello_select_server_ctx()
+     * */
     if (!SSL_client_hello_get0_ext(ssl_conn, TLSEXT_TYPE_server_name, &p,
                                    &remaining)) {
         return NGX_DECLINED;
@@ -655,7 +657,7 @@ ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
 #if OPENSSL_VERSION_NUMBER >= 0x009080dfL
     /* only in 0.9.8m+ */
     SSL_clear_options(ssl_conn,
-                    SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3|SSL_OP_NO_TLSv1);
+                      SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3|SSL_OP_NO_TLSv1);
 #endif
 
     if (!(protocols & NGX_SSL_SSLv2)) {

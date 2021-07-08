@@ -2253,7 +2253,7 @@ server {
         local host, err = ssl_clt.get_client_hello_server_name()
         if host == "test.com" then
             ssl_clt.set_protocols({"TLSv1", "TLSv1.1"})
-        elseif host == "tset2.com" then
+        elseif host == "test2.com" then
             ssl_clt.set_protocols({"TLSv1.2", "TLSv1.3"})
         elseif not host then
             ngx.log(ngx.ERR, "failed to get the SNI name: ", err)
