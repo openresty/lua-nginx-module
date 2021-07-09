@@ -36,10 +36,10 @@ typedef struct {
     ngx_http_lua_main_conf_t          *lmcf;
     ngx_http_lua_vm_state_t           *vm_state;
 
-    int           co_ref;
-    unsigned      timer_ref;
-    unsigned      delay:31;
-    unsigned      premature:1;
+    int              co_ref;
+    unsigned         delay:31;
+    unsigned         premature:1;
+    unsigned long    timer_ref;
 } ngx_http_lua_timer_ctx_t;
 
 
@@ -49,8 +49,9 @@ struct ngx_lua_timer_reftable {
     unsigned long *open_refs;
     unsigned long *full_refs_bits;
 
-    unsigned      max_refs;
-    unsigned      next_ref;
+    /* max to ngx_int_t max_pending_timers; */
+    unsigned long   max_refs; 
+    unsigned long   next_ref;
 };
 static struct ngx_lua_timer_reftable *reftable = NULL;
 
@@ -98,11 +99,11 @@ ngx_inline void bit_clean(const unsigned long pos)
 
 
 static 
-long find_first_zero_bit(const unsigned long start)
+unsigned long find_first_zero_bit(const unsigned long start)
 {
     if (!bit_check(start)) return start;
-    unsigned _start = start / BPL / BPL;
-    int idx = -1;
+    unsigned long _start = start / BPL / BPL;
+    unsigned long idx = ~0UL; // Marked as not found in ~0UL
     for (; _start * BPL * BPL < reftable->max_refs;
           _start++) {
         if (reftable->full_refs_bits[_start] != ~0UL) {
@@ -110,11 +111,11 @@ long find_first_zero_bit(const unsigned long start)
             break;
         }
     }
-    if (idx == -1) return -1;
+    if (idx == ~0UL) return ~0UL;
     idx = ffz(reftable->open_refs[_start * BPL + idx]) + 
           (idx + _start * BPL) * BPL;
 
-    if ((unsigned)idx >= reftable->max_refs) return -1;
+    if (idx >= reftable->max_refs) return ~0UL;
     return idx;
 }
 
@@ -291,7 +292,7 @@ ngx_http_lua_ngx_timer_cancel(lua_State *L)
                           nargs);
     }
 
-    unsigned ref = (unsigned)luaL_checknumber(L, 1);
+    unsigned long ref = (unsigned long)luaL_checknumber(L, 1);
 
     if (ref >= reftable->max_refs || !bit_check(ref))  {
         lua_pushnil(L);
@@ -544,15 +545,15 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     ev->data = tctx;
     ev->log = ngx_cycle->log;
 
-    long ref = find_first_zero_bit(reftable->next_ref);
+    unsigned long ref = find_first_zero_bit(reftable->next_ref);
 
-    if (!~ref) {
+    if (ref == ~0UL) {
         /* try to expand reftable */
         expand_reftable(ngx_cycle->log);
         ref = find_first_zero_bit(reftable->next_ref);
     }
     
-    if (!~ref) { /* double check */
+    if (ref == ~0UL) { /* double check */
         ngx_log_debug2(NGX_LOG_ERR, ngx_cycle->log, 0,
                    "expand reftable error, next_ref:%ud, max_refs:%ud", 
                    reftable->next_ref, reftable->max_refs);
