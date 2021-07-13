@@ -8,7 +8,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4) - 2;
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -1321,3 +1321,20 @@ $s;
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 23: no parameters for ngx.thread.wait
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.thread.wait()
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+at least one coroutine should be specified

@@ -129,4 +129,4 @@ script:
   - dig +short myip.opendns.com @resolver1.opendns.com || exit 0
   - dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0
   - dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
-  - prove -Itest-nginx/lib -r t
+  - prove -Itest-nginx/lib -r t/098-uthread-wait.t
