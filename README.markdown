@@ -352,6 +352,8 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags)
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags)
 1. Download the latest supported version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
+1. Download the latest version of the lua-resty-core [HERE](https://lua-resty-core)
+1. Download the latest version of the lua-resty-lrucache [HERE](https://github.com/openresty/lua-resty-lrucache)
 
 Build the source with this module:
 
@@ -383,6 +385,18 @@ Build the source with this module:
  # machine.
  make -j2
  make install
+
+# Note that this version of lug-nginx-module not allow to set `lua_load_resty_core off;` any more.
+# So, you have to install `lua-resty-core` and `lua-resty-lrucache` manually as below.
+
+ cd lua-resty-core
+ make install PREFIX=/opt/nginx
+ cd lua-resty-lrucache
+ make install PREFIX=/opt/nginx
+
+ # add necessary `lua_package_path` directive to `nginx.conf`, in the http context
+ 
+ lua_package_path "/opt/nginx/luajit/lib/lua/?.lua;;";
 ```
 
 [Back to TOC](#table-of-contents)
