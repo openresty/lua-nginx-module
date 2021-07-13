@@ -5727,13 +5727,16 @@ ngx.sleep
 
 **syntax:** *ngx.sleep(seconds)*
 
-**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
+**context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;*
 
-Sleeps for the specified seconds without blocking. One can specify time resolution up to 0.001 seconds (i.e., one millisecond).
+Sleeps for the specified seconds without blocking in yieldable phases or blockingly in other phases.
+One can specify time resolution up to 0.001 seconds (i.e., one millisecond).
 
 Behind the scene, this method makes use of the Nginx timers.
 
 Since the `0.7.20` release, The `0` time argument can also be specified.
+
+Since the `FIXME` release, this method can be used in non-yieldable phases blockingly.
 
 This method was introduced in the `0.5.0rc30` release.
 

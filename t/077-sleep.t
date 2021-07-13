@@ -9,7 +9,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 71;
+plan tests => repeat_each() * (blocks() * 4);
 
 #no_diff();
 no_long_string();
@@ -237,21 +237,20 @@ lua sleep timer expired: "/test?"
 
 
 
-=== TEST 10: ngx.sleep unavailable in log_by_lua
+=== TEST 10: ngx.sleep available in log_by_lua
 --- config
     location /t {
         echo hello;
-        log_by_lua '
-            ngx.sleep(0.1)
-        ';
+        log_by_lua_block {
+            ngx.sleep(0.001)
+        }
     }
 --- request
 GET /t
 --- response_body
 hello
---- wait: 0.1
 --- error_log
-API disabled in the context of log_by_lua*
+lua sleep blockingly for 1 ms in log_by_lua*
 
 
 
@@ -500,3 +499,66 @@ f end
 worker cycle
 e?poll timer: 0
 /
+
+
+
+=== TEST 18: ngx.sleep(0) in no-yieldable phases
+--- config
+    location /t {
+        echo hello;
+        log_by_lua_block {
+            ngx.sleep(0)
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log
+lua sleep blockingly for 0 ms in log_by_lua*
+
+
+
+=== TEST 19: ngx.sleep available in init_worker_by_lua
+--- http_config
+    init_worker_by_lua_block {
+        local start = ngx.now()
+        ngx.sleep(0.1)
+        ngx.update_time()
+        package.loaded.gap = ngx.now() - start
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say(package.loaded.gap >= 0.1)
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+true
+
+
+
+=== TEST 20: ngx.sleep available in init_by_lua
+--- http_config
+    init_by_lua_block {
+        local start = ngx.now()
+        ngx.sleep(0.1)
+        ngx.update_time()
+        package.loaded.gap = ngx.now() - start
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say(package.loaded.gap >= 0.1)
+        }
+    }
+--- request
+GET /t
+--- no_error_log
+[error]
+--- response_body
+true
