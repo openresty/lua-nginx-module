@@ -625,3 +625,132 @@ settimeouts: ok
 failed to set timeouts: bad timeout value
 --- no_error_log
 [error]
+
+
+
+=== TEST 11: get timeouts by default config
+--- http_config
+    lua_socket_connect_timeout 10s;
+    lua_socket_send_timeout 20s;
+    lua_socket_read_timeout 30s;
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, connect_timeout, send_timeout, read_timeout
+                        = pcall(sock.gettimeouts, sock)
+            if not ok then
+                ngx.say("failed to get timeouts: ", connect_timeout)
+            else
+                ngx.say("connect_timeout: ", connect_timeout)
+                ngx.say("send_timeout: ", send_timeout)
+                ngx.say("read_timeout: ", read_timeout)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+connect_timeout: 10000
+send_timeout: 20000
+read_timeout: 30000
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: get current timeouts by set_timeout
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+            local ok, connect_timeout, send_timeout, read_timeout
+                        = pcall(sock.gettimeouts, sock)
+            if not ok then
+                ngx.say("failed to get timeouts: ", connect_timeout)
+            else
+                ngx.say("connect_timeout: ", connect_timeout)
+                ngx.say("send_timeout: ", send_timeout)
+                ngx.say("read_timeout: ", read_timeout)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+connect_timeout: 2000
+send_timeout: 2000
+read_timeout: 2000
+--- no_error_log
+[error]
+
+
+
+=== TEST 13: get current timeouts by set_timeouts
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeouts(1000, 2000, 3000)
+            local ok, connect_timeout, send_timeout, read_timeout
+                        = pcall(sock.gettimeouts, sock)
+            if not ok then
+                ngx.say("failed to get timeouts: ", connect_timeout)
+            else
+                ngx.say("connect_timeout: ", connect_timeout)
+                ngx.say("send_timeout: ", send_timeout)
+                ngx.say("read_timeout: ", read_timeout)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+connect_timeout: 1000
+send_timeout: 2000
+read_timeout: 3000
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: get current timeouts setted by multipule times
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeouts(1000, 2000, 3000)
+            local ok, connect_timeout, send_timeout, read_timeout
+                        = pcall(sock.gettimeouts, sock)
+            if not ok then
+                ngx.say("failed to get timeouts: ", connect_timeout)
+            else
+                ngx.say("first connect_timeout: ", connect_timeout)
+                ngx.say("first send_timeout: ", send_timeout)
+                ngx.say("first read_timeout: ", read_timeout)
+            end
+
+            sock:settimeouts(4000, 5000, 6000)
+            local ok, connect_timeout, send_timeout, read_timeout
+                        = pcall(sock.gettimeouts, sock)
+            if not ok then
+                ngx.say("failed to get timeouts: ", connect_timeout)
+            else
+                ngx.say("second connect_timeout: ", connect_timeout)
+                ngx.say("second send_timeout: ", send_timeout)
+                ngx.say("second read_timeout: ", read_timeout)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+first connect_timeout: 1000
+first send_timeout: 2000
+first read_timeout: 3000
+second connect_timeout: 4000
+second send_timeout: 5000
+second read_timeout: 6000
+--- no_error_log
+[error]
