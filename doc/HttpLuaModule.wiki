@@ -4735,7 +4735,7 @@ Since <code>v0.8.3</code> this function returns <code>1</code> on success, or re
 
 '''syntax:''' ''ngx.exit(status)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 When <code>status >= 200</code> (i.e., <code>ngx.HTTP_OK</code> and above), it will interrupt the execution of the current request and return status code to Nginx.
 
@@ -4777,7 +4777,7 @@ Note that while this method accepts all [[#HTTP status constants|HTTP status con
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the <code>return</code> statement, i.e., <code>return ngx.exit(...)</code> be used to reinforce the fact that the request processing is being terminated.
 
-When being used in the contexts of [[#header_filter_by_lua|header_filter_by_lua*]], [[#balancer_by_lua_block|balancer_by_lua*]], and
+When being used in the contexts of [[#header_filter_by_lua|header_filter_by_lua*]], [[#body_filter_by_lua_block|body_filter_by_lua*]], [[#balancer_by_lua_block|balancer_by_lua*]], and
 [[#ssl_session_store_by_lua_block|ssl_session_store_by_lua*]], <code>ngx.exit()</code> is
 an asynchronous operation and will return immediately. This behavior may change in future and it is recommended that users always use <code>return</code> in combination as suggested above.
 
