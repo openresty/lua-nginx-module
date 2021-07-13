@@ -177,6 +177,10 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_setfield(L, -2, "HTTP_INTERNAL_SERVER_ERROR");
 
     lua_pushinteger(L, NGX_HTTP_NOT_IMPLEMENTED);
+    lua_setfield(L, -2, "HTTP_NOT_IMPLEMENTED");
+
+    /* keep for backward compatibility */
+    lua_pushinteger(L, NGX_HTTP_NOT_IMPLEMENTED);
     lua_setfield(L, -2, "HTTP_METHOD_NOT_IMPLEMENTED");
 
     lua_pushinteger(L, NGX_HTTP_BAD_GATEWAY);
