@@ -5433,7 +5433,7 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
     spool = u->socket_pool;
 
     if (!ngx_queue_empty(&spool->cache)) {
-        q = ngx_queue_head(&spool->cache);
+        q = ngx_queue_last(&spool->cache);
 
         item = ngx_queue_data(q, ngx_http_lua_socket_pool_item_t, queue);
         c = item->connection;
