@@ -460,7 +460,7 @@ ngx_http_lua_ffi_req_get_uri_args_count(ngx_http_request_t *r, int max,
 
 
 int
-ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
+ngx_http_lua_ffi_req_args_helper(u_char *buf, int len,
     ngx_http_lua_ffi_table_elt_t *out, int count)
 {
     int                          i, parsing_value = 0;
@@ -471,10 +471,8 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
         return NGX_OK;
     }
 
-    ngx_memcpy(buf, r->args.data, r->args.len);
-
     i = 0;
-    last = buf + r->args.len;
+    last = buf + len;
     p = buf;
     q = p;
 
@@ -572,5 +570,108 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
     return i;
 }
 
+
+int
+ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
+    ngx_http_lua_ffi_table_elt_t *out, int count)
+{
+    ngx_memcpy(buf, r->args.data, r->args.len);
+
+    return ngx_http_lua_ffi_req_args_helper(buf, r->args.len, out, count);
+}
+
+
+
+int
+ngx_http_lua_ffi_req_get_post_args_len(ngx_http_request_t *r)
+{
+    size_t       len;
+    ngx_chain_t *cl;
+
+    if (r->connection->fd == (ngx_socket_t) -1) {
+        return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
+    }
+
+    if (r->discard_body || r->request_body->bufs == NULL) {
+        return -1;
+    }
+
+    if (r->request_body == NULL) {
+        return -2;
+    }
+
+    if (r->request_body->temp_file) {
+        return -3;
+    }
+
+    len = 0;
+    for (cl = r->request_body->bufs; cl; cl = cl->next) {
+        len += cl->buf->last - cl->buf->pos;
+    }
+
+    return len;
+}
+
+
+int
+ngx_http_lua_ffi_req_get_post_args_count(ngx_http_request_t *r,
+    u_char *buf, int len, int max)
+{
+    int                      count;
+    u_char                  *p, *last;
+    ngx_chain_t             *cl;
+
+    if (max < 0) {
+        max = NGX_HTTP_LUA_MAX_ARGS;
+    }
+
+    p = buf;
+    for (cl = r->request_body->bufs; cl; cl = cl->next) {
+        p = ngx_copy(p, cl->buf->pos, cl->buf->last - cl->buf->pos);
+    }
+
+    last = buf + len;
+    count = 0;
+
+    for (p = buf; p != last; p++) {
+        if (*p == '&') {
+            if (count == 0) {
+                count += 2;
+
+            } else {
+                count++;
+            }
+        }
+    }
+
+    if (count) {
+        if (max > 0 && count > max) {
+            count = max;
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "lua hit query args limit %d", max);
+        }
+
+        return count;
+    }
+
+    if (len) {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+int
+ngx_http_lua_ffi_req_get_post_args(ngx_http_request_t *r, u_char *buf,
+    int len, ngx_http_lua_ffi_table_elt_t *out, int count)
+{
+
+    /* buf has already been allocated in lua and filled via post_args_count */
+
+    return ngx_http_lua_ffi_req_args_helper(buf, len, out, count);
+}
+
+#endif /* NGX_LUA_NO_FFI_API */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
