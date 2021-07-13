@@ -8,7 +8,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 30);
+plan tests => repeat_each() * (blocks() * 2 + 33);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -1019,3 +1019,69 @@ write timer set: 1
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 42: the module ctx of ngx_lua was cleared when the filter_finalize was triggered
+(with internal redirect).  (github issue #1131)
+
+--- config
+    location = /t1 {
+        error_page 412 /t2;
+        content_by_lua_block {
+            ngx.say("Hello world")
+            ngx.flush()
+            ngx.log(ngx.ERR, "impossible to reach here")
+        }
+    }
+
+    location = /t2 {
+        content_by_lua_block {
+            ngx.status = 200
+            ngx.req.clear_header("If-Unmodified-Since")
+            ngx.say("new location")
+        }
+    }
+
+--- request
+GET /t1
+
+--- more_headers
+If-Unmodified-Since: Mon, 17 Apr 2006 03:10:35 GMT
+
+--- error_code: 200
+
+--- response_body
+new location
+
+--- no_error_log
+[error]
+
+
+=== TEST 43: the module ctx of ngx_lua was cleared when the filter_finalize was triggered
+(without internal redirect).  (github issue #1131)
+
+--- config
+    location = /t1 {
+        content_by_lua_block {
+            ngx.say("Hello World")
+            ngx.flush()
+            ngx.log(ngx.WARN, "print this normally")
+        }
+    }
+
+--- request
+GET /t1
+
+--- more_headers
+If-Unmodified-Since: Mon, 17 Apr 2006 03:10:35 GMT
+
+--- error_code: 412
+
+--- response_body_like: 412 Precondition Failed
+
+--- error_log
+print this normally
+
+--- no_error_log
+[error]

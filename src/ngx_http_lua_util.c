@@ -111,6 +111,8 @@ static ngx_int_t ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx);
 static ngx_int_t ngx_http_lua_handle_rewrite_jump(lua_State *L,
     ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx);
+static ngx_int_t ngx_http_lua_handle_filter_finalize(lua_State *L,
+    ngx_http_request_t *r, ngx_http_lua_ctx_t * ctx);
 static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
     ngx_http_lua_co_ctx_t *coctx);
 static void ngx_http_lua_inject_ngx_api(lua_State *L,
@@ -1206,6 +1208,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
 
                 if (ctx->exec_uri.len) {
                     return ngx_http_lua_handle_exec(L, r, ctx);
+                }
+
+                if (ctx->filter_finalize) {
+                    return ngx_http_lua_handle_filter_finalize(L, r, ctx);
                 }
 
                 /*
@@ -2763,6 +2769,25 @@ ngx_http_lua_handle_rewrite_jump(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_init_ctx(r, ctx);
 
     return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_handle_filter_finalize(lua_State *L, ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx)
+{
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua thread aborting request with filter finalization");
+
+    ngx_http_lua_cleanup_pending_operation(ctx->cur_co_ctx);
+
+    ngx_http_lua_probe_coroutine_done(r, ctx->cur_co_ctx->co, 1);
+
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_DEAD;
+
+    ngx_http_lua_request_cleanup(ctx, 1 /* forcible */);
+
+    return NGX_ERROR;
 }
 
 

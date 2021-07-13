@@ -49,6 +49,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     int                          i;
     int                          nargs;
     int                          type;
+    int                          uri_changes;
     const char                  *msg;
 
     r = ngx_http_lua_get_req(L);
@@ -149,8 +150,23 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         size += sizeof("\n") - 1;
     }
 
+    uri_changes = r->uri_changes;
+
     if (size == 0) {
         rc = ngx_http_lua_send_header_if_needed(r, ctx);
+
+        if (ctx != ngx_http_get_module_ctx(r, ngx_http_lua_module)
+            && r->filter_finalize)
+        {
+            if (uri_changes > r->uri_changes) {
+                ctx->filter_finalize = 1;
+                return lua_yield(L, 0);
+
+            } else {
+                ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+            }
+        }
+
         if (rc == NGX_ERROR || rc > NGX_OK) {
             lua_pushnil(L);
             lua_pushliteral(L, "nginx output filter error");
@@ -237,6 +253,18 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
                    newline ? "lua say response" : "lua print response");
 
     rc = ngx_http_lua_send_chain_link(r, ctx, cl);
+
+    if (ctx != ngx_http_get_module_ctx(r, ngx_http_lua_module)
+        && r->filter_finalize)
+    {
+        if (uri_changes > r->uri_changes) {
+            ctx->filter_finalize = 1;
+            return lua_yield(L, 0);
+
+        } else {
+            ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+        }
+    }
 
     if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         lua_pushnil(L);
@@ -695,6 +723,7 @@ ngx_http_lua_inject_output_api(lua_State *L)
 static int
 ngx_http_lua_ngx_send_headers(lua_State *L)
 {
+    int                      uri_changes;
     ngx_int_t                rc;
     ngx_http_request_t      *r;
     ngx_http_lua_ctx_t      *ctx;
@@ -717,7 +746,22 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "lua send headers");
 
+        uri_changes = r->uri_changes;
+
         rc = ngx_http_lua_send_header_if_needed(r, ctx);
+
+        if (ctx != ngx_http_get_module_ctx(r, ngx_http_lua_module)
+            && r->filter_finalize)
+        {
+            if (uri_changes > r->uri_changes) {
+                ctx->filter_finalize = 1;
+                return lua_yield(L, 0);
+
+            } else {
+                ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+            }
+        }
+
         if (rc == NGX_ERROR || rc > NGX_OK) {
             lua_pushnil(L);
             lua_pushliteral(L, "nginx output filter error");
