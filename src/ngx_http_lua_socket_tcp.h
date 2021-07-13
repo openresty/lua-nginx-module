@@ -140,6 +140,15 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 };
 
 
+typedef struct ngx_http_lua_socket_tcp_select_context_s
+        ngx_http_lua_socket_tcp_select_context_t;
+
+struct ngx_http_lua_socket_tcp_select_context_s {
+    ngx_http_lua_socket_tcp_upstream_t  *u;
+    ngx_array_t                         u_array;
+};
+
+
 typedef struct ngx_http_lua_dfa_edge_s  ngx_http_lua_dfa_edge_t;
 
 

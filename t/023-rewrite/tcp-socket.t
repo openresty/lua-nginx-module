@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 107;
+plan tests => repeat_each() * 113;
 
 our $HtmlDir = html_dir;
 
@@ -2390,3 +2390,134 @@ qr/runtime error: rewrite_by_lua\(nginx\.conf:\d+\):16: bad request/
 
 --- no_error_log
 [alert]
+
+
+
+=== TEST 39: ngx.socket.select (working)
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        rewrite_by_lua '
+            local port = ngx.var.port
+            local sock1, err = ngx.socket.connect("127.0.0.1", port)
+            if not sock1 then
+                ngx.say("failed to connect in sock1: ", err)
+                return
+            end
+
+            local sock2
+            sock2, err = ngx.socket.connect("127.0.0.1", port)
+            if not sock2 then
+                ngx.say("failed to connect in sock2: ", err)
+                return
+            end
+
+            ngx.say("connected.")
+
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+
+            local bytes, err = sock1:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local sockindex
+            sockindex, err = ngx.socket.select({ sock1, sock2 })
+            if err ~= nil then
+                ngx.say("select returned index ", tostring(sockindex), " with the err: ", err)
+                return
+            end
+
+            ngx.say("select succeeded with returned index: ", tostring(sockindex))
+
+            local ok, err = sock1:close()
+            ngx.say("close sock1: ", ok, " ", err)
+            ok, err = sock2:close()
+            ngx.say("close sock2: ", ok, " ", err)
+        ';
+
+        content_by_lua return;
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected.
+request sent: 57
+select succeeded with returned index: 1
+close sock1: 1 nil
+close sock2: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 40: ngx.socket.select (timeout)
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        rewrite_by_lua '
+            local port = ngx.var.port
+            local sock1, err = ngx.socket.connect("127.0.0.1", port)
+            if not sock1 then
+                ngx.say("failed to connect in sock1: ", err)
+                return
+            end
+
+            local sock2
+            sock2, err = ngx.socket.connect("127.0.0.1", port)
+            if not sock2 then
+                ngx.say("failed to connect in sock2: ", err)
+                return
+            end
+
+            ngx.say("connected.")
+
+            sock1:settimeout(5000)
+            sock2:settimeout(500)
+
+            ngx.say("set timeouts.")
+
+            local sockindex
+            sockindex, err = ngx.socket.select({ sock1, sock2 })
+            if err == nil then
+                ngx.say("select returned without any error for index: ", tostring(sockindex))
+                return
+            end
+
+            ngx.say("select returned index ", tostring(sockindex), " with the err: ", err)
+
+            local ok, err = sock1:close()
+            ngx.say("close sock1: ", ok, " ", err)
+            ok, err = sock2:close()
+            ngx.say("close sock2: ", ok, " ", err)
+        ';
+
+        content_by_lua return;
+    }
+
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
+--- request
+GET /t
+--- response_body
+connected.
+set timeouts.
+select returned index 2 with the err: timeout
+close sock1: 1 nil
+close sock2: 1 nil
+--- error_log
+lua tcp socket select timed out

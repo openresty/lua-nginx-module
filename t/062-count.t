@@ -212,7 +212,7 @@ n = 2
 --- request
 GET /test
 --- response_body
-n = 4
+n = 5
 --- no_error_log
 [error]
 

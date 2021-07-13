@@ -6869,6 +6869,20 @@ There is no way to use the [[#tcpsock:settimeout|settimeout]] method to specify 
 
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
+== ngx.socket.select ==
+
+'''syntax:''' ''sockindex, err = ngx.socket.select({ sock1, sock2, ... })''
+
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*''
+
+This method implements a slim version of the select() syscall on TCP sockets created by [[#ngx.socket.tcp|ngx.socket.tcp()]]. 
+
+It receives one argument - a table of TCP sockets.
+
+In case one of the sockets is ready to read - it will return its index within the table (1-based), with <code>nil</code> as the second argument.
+
+In case one of the sockets had an error (such as timeout) - it will return the errored socket's index within the table (1-based), with the error as the 2nd argument.
+
 == ngx.get_phase ==
 
 '''syntax:''' ''str = ngx.get_phase()''

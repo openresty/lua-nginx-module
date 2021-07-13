@@ -3445,6 +3445,7 @@ Nginx API for Lua
 * [tcpsock:setkeepalive](#tcpsocksetkeepalive)
 * [tcpsock:getreusedtimes](#tcpsockgetreusedtimes)
 * [ngx.socket.connect](#ngxsocketconnect)
+* [ngx.socket.select](#ngxsocketselect)
 * [ngx.get_phase](#ngxget_phase)
 * [ngx.thread.spawn](#ngxthreadspawn)
 * [ngx.thread.wait](#ngxthreadwait)
@@ -8054,6 +8055,23 @@ This function is a shortcut for combining [ngx.socket.tcp()](#ngxsockettcp) and 
 There is no way to use the [settimeout](#tcpsocksettimeout) method to specify connecting timeout for this method and the [lua_socket_connect_timeout](#lua_socket_connect_timeout) directive must be set at configure time instead.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.socket.select
+------------------
+
+**syntax:** *sockindex, err = ngx.socket.select({ sock1, sock2, ... })*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;*
+
+This method implements a slim version of the select() syscall on TCP sockets created by [ngx.socket.tcp()](#ngxsockettcp). 
+
+It receives one argument - a table of TCP sockets.
+
+In case one of the sockets is ready to read - it will return its index within the table (1-based), with `nil` as the second argument.
+
+In case one of the sockets had an error (such as timeout) - it will return the errored socket's index within the table (1-based), with the error as the 2nd argument.
 
 [Back to TOC](#nginx-api-for-lua)
 
