@@ -296,6 +296,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.c \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.c \
             $ngx_addon_dir/src/ngx_http_lua_pipe.c \
+            $ngx_addon_dir/src/ngx_http_lua_resolver.c \
             "
 
 HTTP_LUA_DEPS=" \
