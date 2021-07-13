@@ -44,3 +44,17 @@ GET /read
 GET /read
 --- response_body
 504
+
+
+
+=== TEST 3: http constants UNSUPPORTED_MEDIA_TYPE
+--- config
+    location /read {
+        content_by_lua '
+            ngx.say(ngx.HTTP_UNSUPPORTED_MEDIA_TYPE)
+        ';
+    }
+--- request
+GET /read
+--- response_body
+415

@@ -161,6 +161,9 @@ ngx_http_lua_inject_http_consts(lua_State *L)
     lua_pushinteger(L, 410);
     lua_setfield(L, -2, "HTTP_GONE");
 
+    lua_pushinteger(L, 415);
+    lua_setfield(L, -2, "HTTP_UNSUPPORTED_MEDIA_TYPE");
+
     lua_pushinteger(L, 426);
     lua_setfield(L, -2, "HTTP_UPGRADE_REQUIRED");
 
