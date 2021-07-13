@@ -317,6 +317,17 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
 
     pa = (ngx_array_t *) ((char *) &r->headers_out + hv->offset);
 
+    if (value->data == NULL) {
+        if (!hv->no_override) {
+            ph = pa->elts;
+            for (i = 0; i < pa->nelts; i++) {
+                ph[i]->hash = 0;
+                ph[i]->value.len = 0;
+            }
+        }
+        return NGX_OK;
+    }
+
     if (pa->elts == NULL) {
         if (ngx_array_init(pa, r->pool, 2, sizeof(ngx_table_elt_t *))
             != NGX_OK)
