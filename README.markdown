@@ -3407,6 +3407,8 @@ Nginx API for Lua
 * [ngx.shared.DICT.get_stale](#ngxshareddictget_stale)
 * [ngx.shared.DICT.set](#ngxshareddictset)
 * [ngx.shared.DICT.safe_set](#ngxshareddictsafe_set)
+* [ngx.shared.DICT.set_when](#ngxshareddictset_when)
+* [ngx.shared.DICT.safe_set_when](#ngxshareddictsafe_set_when)
 * [ngx.shared.DICT.add](#ngxshareddictadd)
 * [ngx.shared.DICT.safe_add](#ngxshareddictsafe_add)
 * [ngx.shared.DICT.replace](#ngxshareddictreplace)
@@ -6602,6 +6604,8 @@ The resulting object `dict` has the following methods:
 * [get_stale](#ngxshareddictget_stale)
 * [set](#ngxshareddictset)
 * [safe_set](#ngxshareddictsafe_set)
+* [set_when](#ngxshareddictset_when)
+* [safe_set_when](#ngxshareddictsafe_set_when)
 * [add](#ngxshareddictadd)
 * [safe_add](#ngxshareddictsafe_add)
 * [replace](#ngxshareddictreplace)
@@ -6791,6 +6795,42 @@ ngx.shared.DICT.safe_set
 Similar to the [set](#ngxshareddictset) method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
 
 This feature was first introduced in the `v0.7.18` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.set_when
+------------------------
+**syntax:** *success, err, forcible = ngx.shared.DICT:set(key, old_value, value, exptime?, flags?)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Just like the [set](#ngxshareddictset) method, but only stores the key-value pair into the dictionary [ngx.shared.DICT](#ngxshareddict) if the value for key is the same as `old_value`.
+
+If the `key` argument does *not* exist in the dictionary (or expired already), the `success` return value will be `true`.
+
+If the value for the key is *not* the same as `old_value`, the `success` return value will be `false` and the `err` value will be `"already modified"`.
+
+This feature was first introduced in the `v0.10.16rc1` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.safe_set_when
+-----------------------------
+**syntax:** *ok, err = ngx.shared.DICT:safe_set_when(key, old_value, value, exptime?, flags?)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+Similar to the [set_when](#ngxshareddictset_when) method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
+
+If the `key` argument does *not* exist in the dictionary (or expired already), the `success` return value will be `true`.
+
+If the value for the key is *not* the same as `old_value`, the `success` return value will be `false` and the `err` value will be `"already modified"`.
+
+This feature was first introduced in the `v0.10.16rc1` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
