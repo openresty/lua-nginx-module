@@ -33,3 +33,11 @@ pull_request_rules:
       label:
         remove:
           - needs-test-cases
+  - name: add label could-be-merged
+    conditions:
+      - "#approved-reviews-by>=2"
+      - status-success=Travis CI - Pull Request
+    actions:
+      label:
+        add:
+          - could-be-merged

@@ -1,0 +1,21 @@
+name: Auto Assign to Project(s)
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  assign_to_project:
+    runs-on: ubuntu-latest
+    name: Assign to Project
+    steps:
+    - name: Assign pull requests with `could-be-merged` label to `Waiting review`
+      uses: srggrs/assign-one-project-github-action@1.2.0
+      if: |
+        contains(github.event.issue.labels.*.name, 'could-be-merged') ||
+        contains(github.event.pull_request.labels.*.name, 'could-be-merged')
+      with:
+        project: "https://github.com/orgs/openresty/projects/1"
+        column_name: "Waiting Review from agentzh"
