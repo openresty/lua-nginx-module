@@ -216,7 +216,7 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -228,7 +228,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-lua ssl server name: "test.com"
+lua tls server name: "test.com"
 
 --- no_error_log
 [error]
@@ -370,7 +370,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -382,7 +382,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-lua ssl server name: "test.com"
+lua tls server name: "test.com"
 
 --- no_error_log
 [error]
@@ -498,7 +498,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -510,7 +510,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-lua ssl server name: "test.com"
+lua tls server name: "test.com"
 failed to parse PEM cert: PEM_read_bio_X509_AUX()
 failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 
@@ -649,7 +649,7 @@ failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -661,7 +661,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-lua ssl server name: "test.com"
+lua tls server name: "test.com"
 
 --- no_error_log
 [error]
@@ -799,7 +799,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -811,7 +811,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-lua ssl server name: "test.com"
+lua tls server name: "test.com"
 
 --- no_error_log
 [error]

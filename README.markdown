@@ -960,7 +960,6 @@ TODO
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
-* cosocket: add client SSL certificate support.
 
 [Back to TOC](#table-of-contents)
 
@@ -3065,7 +3064,7 @@ lua_ssl_ciphers
 
 **context:** *http, server, location*
 
-Specifies the enabled ciphers for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method. The ciphers are specified in the format understood by the OpenSSL library.
+Specifies the enabled ciphers for requests to a SSL/TLS server in the [tcpsock:tlshandshake](#tcpsocktlshandshake) method. The ciphers are specified in the format understood by the OpenSSL library.
 
 The full list can be viewed using the “openssl ciphers” command.
 
@@ -3082,7 +3081,7 @@ lua_ssl_crl
 
 **context:** *http, server, location*
 
-Specifies a file with revoked certificates (CRL) in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+Specifies a file with revoked certificates (CRL) in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:tlshandshake](#tcpsocktlshandshake) method.
 
 This directive was first introduced in the `v0.9.11` release.
 
@@ -3097,7 +3096,7 @@ lua_ssl_protocols
 
 **context:** *http, server, location*
 
-Enables the specified protocols for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+Enables the specified protocols for requests to a SSL/TLS server in the [tcpsock:tlshandshake](#tcpsocktlshandshake) method.
 
 The support for the `TLSv1.3` parameter requires version `v0.10.12` *and* OpenSSL 1.1.1.
 
@@ -3114,7 +3113,7 @@ lua_ssl_trusted_certificate
 
 **context:** *http, server, location*
 
-Specifies a file path with trusted CA certificates in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+Specifies a file path with trusted CA certificates in the PEM format used to verify the certificate of the SSL/TLS server in the [tcpsock:tlshandshake](#tcpsocktlshandshake) method.
 
 This directive was first introduced in the `v0.9.11` release.
 
@@ -3433,6 +3432,7 @@ Nginx API for Lua
 * [ngx.socket.stream](#ngxsocketstream)
 * [ngx.socket.tcp](#ngxsockettcp)
 * [tcpsock:connect](#tcpsockconnect)
+* [tcpsock:tlshandshake](#tcpsocktlshandshake)
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
 * [tcpsock:receive](#tcpsockreceive)
@@ -7395,6 +7395,7 @@ ngx.socket.tcp
 Creates and returns a TCP or stream-oriented unix domain socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object:
 
 * [connect](#tcpsockconnect)
+* [tlshandshake](#tcpsocktlshandshake)
 * [sslhandshake](#tcpsocksslhandshake)
 * [send](#tcpsocksend)
 * [receive](#tcpsockreceive)
@@ -7554,49 +7555,76 @@ This method was first introduced in the `v0.5.0rc1` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
-tcpsock:sslhandshake
+tcpsock:tlshandshake
 --------------------
 
-**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?)*
+**syntax:** *session, err = tcpsock:tlshandshake(options)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
 
 Does SSL/TLS handshake on the currently established connection.
 
-The optional `reused_session` argument can take a former SSL
-session userdata returned by a previous `sslhandshake`
-call for exactly the same target. For short-lived connections, reusing SSL
+An optional Lua table containing the following keys can be specified to this method as handshake options:
+
+* `reused_session` take a former TLS
+session cdata returned by a previous `tlshandshake`
+call for exactly the same target. For short-lived connections, reusing TLS
 sessions can usually speed up the handshake by one order by magnitude but it
 is not so useful if the connection pool is enabled. This argument defaults to
-`nil`. If this argument takes the boolean `false` value, no SSL session
-userdata would return by this call and only a Lua boolean will be returned as
-the first return value; otherwise the current SSL session will
+`nil`. If this argument takes the boolean `false` value, no TLS session
+cdata would return by this call and only a Lua boolean will be returned as
+the first return value; otherwise the current TLS session will
 always be returned as the first argument in case of successes.
-
-The optional `server_name` argument is used to specify the server
+* `server_name` is used to specify the server
 name for the new TLS extension Server Name Indication (SNI). Use of SNI can
 make different servers share the same IP address on the server side. Also,
-when SSL verification is enabled, this `server_name` argument is
+when TLS verification is enabled (`options.verify` is `true`), this `server_name` argument is
 also used to validate the server name specified in the server certificate sent from
 the remote.
-
-The optional `ssl_verify` argument takes a Lua boolean value to
-control whether to perform SSL verification. When set to `true`, the server
+* `verify` takes a Lua boolean value to
+control whether to perform TLS handshake verification. When set to `true`, the server
 certificate will be verified according to the CA certificates specified by
 the [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate) directive.
 You may also need to adjust the [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 directive to control how deep we should follow along the certificate chain.
-Also, when the `ssl_verify` argument is true and the
+Also, when the `verify` argument is true and the
 `server_name` argument is also specified, the latter will be used
 to validate the server name in the server certificate.
-
-The optional `send_status_req` argument takes a boolean that controls whether to send
+* `ocsp_status_req` takes a Lua boolean value that controls whether to send
 the OCSP status request in the SSL handshake request (which is for requesting OCSP stapling).
+* `client_cert` specify a client certificate chain cdata object that will be used while handshaking with
+remote server. These objects can be created using [ngx.ssl.parse\_pem\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_cert)
+function provided by lua-resty-core. Note that specifying the `client_cert` option requires
+corresponding `client_priv_key` be provided too. See below.
+* `client_priv_key` specify a private key corresponds to the `client_cert` option above.
+These objects can be created using [ngx.ssl.parse\_pem\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_priv_key)
+function provided by lua-resty-core.
+
+For code that does frequent calls to `tlshandshake`, the `options` table
+can be safely shared across requests as a module level variable (even if the call yields).
 
 For connections that have already done SSL/TLS handshake, this method returns
 immediately.
 
-This method was first introduced in the `v0.9.11` release.
+This method was first introduced in the `v0.10.16` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:sslhandshake
+--------------------
+
+**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, verify?, ocsp_status_req?)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;*
+
+Does SSL/TLS handshake on the currently established connection.
+
+**Note:** This function is **deprecated** and is just a helper that calls the newly added [tlshandshake](#tcpsocktlshandshake) function.
+Newer code should use [tlshandshake](#tcpsocktlshandshake) directly instead.
+
+For usage info and meaning of the arguments, refer to the options description in [tlshandshake](#tcpsocktlshandshake).
+
+This method was first introduced in the `v0.9.11` release and is marked as deprecated in the `v0.10.16` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
