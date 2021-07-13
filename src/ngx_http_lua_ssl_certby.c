@@ -36,6 +36,8 @@ static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
+static int ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
+    void *userdata);
 
 
 ngx_int_t
@@ -550,6 +552,37 @@ ngx_http_lua_ffi_ssl_get_tls1_version(ngx_http_request_t *r, char **err)
     dd("tls1 ver: %d", SSL_version(ssl_conn));
 
     return SSL_version(ssl_conn);
+}
+
+
+static int
+ngx_http_lua_ssl_password_callback(char *buf, int size, int rwflag,
+    void *userdata)
+{
+    ngx_str_t *pwd = userdata;
+
+    if (rwflag) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "ngx_http_lua_ssl_password_callback() "
+                      "is called for encryption");
+        return 0;
+    }
+
+    if (pwd->len == 0) {
+        return 0;
+    }
+
+    if (pwd->len > (size_t) size) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                      "password is truncated to %d bytes", size);
+
+    } else {
+        size = pwd->len;
+    }
+
+    ngx_memcpy(buf, pwd->data, size);
+
+    return size;
 }
 
 
@@ -1079,6 +1112,51 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
 }
 
 
+int
+ngx_http_lua_ffi_priv_key_pem_to_der_with_password(const u_char *pem,
+    size_t pem_len, const u_char *pwd, size_t pwd_len, u_char *der, char **err)
+{
+    int          len;
+    BIO         *in;
+    EVP_PKEY    *pkey;
+    ngx_str_t    password;
+
+    password.data = (u_char *) pwd;
+    password.len = pwd_len;
+
+    in = BIO_new_mem_buf((char *) pem, (int) pem_len);
+    if (in == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        ERR_clear_error();
+        return NGX_ERROR;
+    }
+
+    pkey = PEM_read_bio_PrivateKey(in, NULL,
+                                   ngx_http_lua_ssl_password_callback,
+                                   (void *) &password);
+    if (pkey == NULL) {
+        BIO_free(in);
+        *err = "PEM_read_bio_PrivateKey() failed";
+        ERR_clear_error();
+        return NGX_ERROR;
+    }
+
+    BIO_free(in);
+
+    len = i2d_PrivateKey(pkey, &der);
+    if (len < 0) {
+        EVP_PKEY_free(pkey);
+        *err = "i2d_PrivateKey() failed";
+        ERR_clear_error();
+        return NGX_ERROR;
+    }
+
+    EVP_PKEY_free(pkey);
+
+    return len;
+}
+
+
 void *
 ngx_http_lua_ffi_parse_pem_cert(const u_char *pem, size_t pem_len,
     char **err)
@@ -1186,6 +1264,40 @@ ngx_http_lua_ffi_parse_pem_priv_key(const u_char *pem, size_t pem_len,
     }
 
     pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, NULL);
+    if (pkey == NULL) {
+        *err = "PEM_read_bio_PrivateKey() failed";
+        BIO_free(in);
+        ERR_clear_error();
+        return NULL;
+    }
+
+    BIO_free(in);
+
+    return pkey;
+}
+
+
+void *
+ngx_http_lua_ffi_parse_pem_priv_key_with_password(const u_char *pem,
+    size_t pem_len, const u_char *pwd, size_t pwd_len, char **err)
+{
+    BIO         *in;
+    EVP_PKEY    *pkey;
+    ngx_str_t    password;
+
+    password.data = (u_char *) pwd;
+    password.len = pwd_len;
+
+    in = BIO_new_mem_buf((char *) pem, (int) pem_len);
+    if (in == NULL) {
+        *err = "BIO_new_mem_buf() failed";
+        ERR_clear_error();
+        return NULL;
+    }
+
+    pkey = PEM_read_bio_PrivateKey(in, NULL,
+                                   ngx_http_lua_ssl_password_callback,
+                                   (void *) &password);
     if (pkey == NULL) {
         *err = "PEM_read_bio_PrivateKey() failed";
         BIO_free(in);
