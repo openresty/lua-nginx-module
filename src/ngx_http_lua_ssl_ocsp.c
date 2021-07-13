@@ -431,6 +431,182 @@ error:
 }
 
 
+static time_t
+ngx_http_lua_ssl_stapling_time(ASN1_GENERALIZEDTIME *asn1time)
+{
+    u_char  *value;
+    size_t   len;
+    time_t   time;
+    BIO     *bio;
+
+    /*
+     * OpenSSL doesn't provide a way to convert ASN1_GENERALIZEDTIME
+     * into time_t.  To do this, we use ASN1_GENERALIZEDTIME_print(),
+     * which uses the "MMM DD HH:MM:SS YYYY [GMT]" format (e.g.,
+     * "Feb  3 00:55:52 2015 GMT"), and parse the result.
+     */
+
+    bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        return NGX_ERROR;
+    }
+
+    /* fake weekday prepended to match C asctime() format */
+
+    BIO_write(bio, "Tue ", sizeof("Tue ") - 1);
+    ASN1_GENERALIZEDTIME_print(bio, asn1time);
+    len = BIO_get_mem_data(bio, &value);
+
+    time = ngx_parse_http_time(value, len);
+
+    BIO_free(bio);
+
+    return time;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_ocsp_get_nextupdate(const u_char *resp, size_t resp_len,
+    const char *chain_data, size_t chain_len, time_t* nextupdate,
+    u_char *errbuf, size_t *errbuf_size)
+{
+#ifndef NGX_HTTP_LUA_USE_OCSP
+
+    *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                "no OCSP support") - errbuf;
+    return NGX_ERROR;
+
+#else
+
+    BIO                   *bio = NULL;
+    X509                  *cert = NULL, *issuer = NULL;
+    OCSP_CERTID           *id = NULL;
+    OCSP_RESPONSE         *ocsp = NULL;
+    OCSP_BASICRESP        *basic = NULL;
+    ASN1_GENERALIZEDTIME  *nupdate_ans1;
+
+    ocsp = d2i_OCSP_RESPONSE(NULL, &resp, resp_len);
+    if (ocsp == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_OCSP_RESPONSE() failed") - errbuf;
+        goto error;
+    }
+
+    basic = OCSP_response_get1_basic(ocsp);
+    if (basic == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_response_get1_basic() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    /* get issuer certificate from chain */
+
+    bio = BIO_new_mem_buf((char *) chain_data, chain_len);
+    if (bio == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "BIO_new_mem_buf() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    cert = d2i_X509_bio(bio, NULL);
+    if (cert == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_X509_bio() failed")
+                       - errbuf;
+        goto error;
+    }
+
+    if (BIO_eof(bio)) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "no issuer certificate in chain")
+                       - errbuf;
+        goto error;
+    }
+
+    issuer = d2i_X509_bio(bio, NULL);
+    if (issuer == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "d2i_X509_bio() failed") - errbuf;
+        goto error;
+    }
+
+    id = OCSP_cert_to_id(NULL, cert, issuer);
+    if (id == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "OCSP_cert_to_id() failed") - errbuf;
+        goto error;
+    }
+
+    if (OCSP_resp_find_status(basic, id, NULL, NULL, NULL, NULL, &nupdate_ans1)
+        != 1)
+    {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "certificate status not found in the "
+                                    "OCSP response") - errbuf;
+        goto error;
+    }
+
+    if (nupdate_ans1 == NULL)
+    {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "nextUpdate not found in the "
+                                    "OCSP response") - errbuf;
+        goto error;
+    }
+
+    *nextupdate = ngx_http_lua_ssl_stapling_time(nupdate_ans1);
+    if (*nextupdate == (time_t) NGX_ERROR) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "invalid nextUpdate time in "
+                                    "OCSP response") - errbuf;
+        goto error;
+    }
+
+    X509_free(cert);
+    X509_free(issuer);
+    BIO_free(bio);
+    OCSP_CERTID_free(id);
+    OCSP_BASICRESP_free(basic);
+    OCSP_RESPONSE_free(ocsp);
+
+    return NGX_OK;
+
+error:
+
+    if (id) {
+        OCSP_CERTID_free(id);
+    }
+
+    if (basic) {
+        OCSP_BASICRESP_free(basic);
+    }
+
+    if (ocsp) {
+        OCSP_RESPONSE_free(ocsp);
+    }
+
+    if (cert) {
+        X509_free(cert);
+    }
+
+    if (issuer) {
+        X509_free(issuer);
+    }
+
+    if (bio) {
+        BIO_free(bio);
+    }
+
+    ERR_clear_error();
+
+    return NGX_ERROR;
+
+#endif  /* NGX_HTTP_LUA_USE_OCSP */
+}
+
+
 #ifdef NGX_HTTP_LUA_USE_OCSP
 static int
 ngx_http_lua_ssl_empty_status_callback(ngx_ssl_conn_t *ssl_conn, void *data)
