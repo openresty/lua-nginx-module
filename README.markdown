@@ -908,6 +908,8 @@ As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives
  # evaluates to "1234"
 ```
 
+**NOTE** You are recommended to use `by_lua_file` when the Lua code is very long.
+
 [Back to TOC](#table-of-contents)
 
 Mixing with SSI Not Supported
