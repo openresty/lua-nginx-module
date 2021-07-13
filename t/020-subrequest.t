@@ -2805,9 +2805,122 @@ image header filter
 --- no_error_log
 [error]
 
+=== TEST 75: methods as strings, besides TRACE
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request eval
+["GET /lua", 
+"PUT /lua",
+"POST /lua",
+"HEAD /lua",
+"DELETE /lua",
+"OPTIONS /lua",
+"COPY /lua",
+"MOVE /lua",
+"LOCK /lua",
+"MKCOL /lua",
+"PROPFIND /lua",
+"PROPPATCH /lua",
+"UNLOCK /lua",
+"PATCH /lua"]
+--- response_body eval
+["GET\n", 
+"PUT\n",
+"POST\n",
+"",    # HEAD will always return only headers, no body
+"DELETE\n",
+"OPTIONS\n",
+"COPY\n",
+"MOVE\n",
+"LOCK\n",
+"MKCOL\n",
+"PROPFIND\n",
+"PROPPATCH\n",
+"UNLOCK\n",
+"PATCH\n"]
+--- no_error_log
+[error]
+
+=== TEST 76: methods as strings, besides TRACE
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request eval
+["GET /lua", 
+"PUT /lua",
+"POST /lua",
+"HEAD /lua",
+"DELETE /lua",
+"OPTIONS /lua",
+"COPY /lua",
+"MOVE /lua",
+"LOCK /lua",
+"MKCOL /lua",
+"PROPFIND /lua",
+"PROPPATCH /lua",
+"UNLOCK /lua",
+"PATCH /lua"]
+--- response_body eval
+["GET\n", 
+"PUT\n",
+"POST\n",
+"",    # HEAD will always return only headers, no body
+"DELETE\n",
+"OPTIONS\n",
+"COPY\n",
+"MOVE\n",
+"LOCK\n",
+"MKCOL\n",
+"PROPFIND\n",
+"PROPPATCH\n",
+"UNLOCK\n",
+"PATCH\n"]
+--- no_error_log
+[error]
+
+=== TEST 77: TRACE method as string
+--- config
+    location /other {
+        echo $echo_request_method;
+    }
+
+    location /lua {
+        content_by_lua '
+            res = ngx.location.capture("/other",
+                { method = ngx.req.get_method() });
+
+            ngx.print(res.body)
+        ';
+    }
+--- request
+TRACE /lua
+--- error_code: 405
+--- no_error_log
+[error]
 
 
-=== TEST 75: WebDAV + MOVE
+=== TEST 78: WebDAV + MOVE
 --- config
     location = /t {
         content_by_lua_block {
@@ -2845,7 +2958,7 @@ MOVE /file1.txt -> /file2.txt, response status: 204
 
 
 
-=== TEST 76: WebDAV + DELETE
+=== TEST 79: WebDAV + DELETE
 --- config
     location = /t {
         content_by_lua_block {
