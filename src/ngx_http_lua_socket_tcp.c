@@ -87,6 +87,7 @@ static int ngx_http_lua_socket_read_error_retval_handler(ngx_http_request_t *r,
 static int ngx_http_lua_socket_write_error_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_read_all(void *data, ssize_t bytes);
+static ngx_int_t ngx_http_lua_socket_read_bsd(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_until(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_chunk(void *data, ssize_t bytes);
 static ngx_int_t ngx_http_lua_socket_read_any(void *data, ssize_t bytes);
@@ -2311,6 +2312,10 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
                 u->input_filter = ngx_http_lua_socket_read_all;
                 break;
 
+            case 'b':
+                u->input_filter = ngx_http_lua_socket_read_bsd;
+                break;
+
             default:
                 return luaL_argerror(L, 2, "bad pattern argument");
                 break;
@@ -2384,6 +2389,38 @@ ngx_http_lua_socket_read_all(void *data, ssize_t bytes)
                    "lua tcp socket read all");
     return ngx_http_lua_read_all(&u->buffer, u->buf_in, bytes,
                                  u->request->connection->log);
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_read_bsd(void *data, ssize_t bytes)
+{
+    ngx_http_lua_socket_tcp_upstream_t      *u = data;
+
+    ngx_buf_t                   *b;
+
+#if (NGX_DEBUG)
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, u->request->connection->log, 0,
+                   "lua tcp socket read bsd");
+#endif
+
+    if (bytes == 0) {
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_CLOSED;
+        return NGX_ERROR;
+    }
+
+    b = &u->buffer;
+
+    dd("already read: %p: %.*s", u->buf_in,
+       (int) (u->buf_in->buf->last - u->buf_in->buf->pos),
+       u->buf_in->buf->pos);
+
+    dd("data read: %.*s", (int) bytes, b->pos);
+
+    u->buf_in->buf->last = ngx_cpymem(u->buf_in->buf->last, b->pos, bytes);
+    b->pos += bytes;
+
+    return NGX_OK;
 }
 
 

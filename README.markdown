@@ -7651,6 +7651,7 @@ If a number-like argument is specified (including strings that look like numbers
 If a non-number-like string argument is specified, then it is interpreted as a "pattern". The following patterns are supported:
 
 * `'*a'`: reads from the socket until the connection is closed. No end-of-line translation is performed;
+* `'*b'`: the BSD style receive, return anything once socket receives;
 * `'*l'`: reads a line of text from the socket. The line is terminated by a `Line Feed` (LF) character (ASCII 10), optionally preceded by a `Carriage Return` (CR) character (ASCII 13). The CR and LF characters are not included in the returned line. In fact, all CR characters are ignored by the pattern.
 
 If no argument is specified, then it is assumed to be the pattern `'*l'`, that is, the line reading pattern.
