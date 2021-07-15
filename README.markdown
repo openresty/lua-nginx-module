@@ -3475,6 +3475,7 @@ Nginx API for Lua
 * [coroutine.wrap](#coroutinewrap)
 * [coroutine.running](#coroutinerunning)
 * [coroutine.status](#coroutinestatus)
+* [ngx.run_worker_thread](#ngxrun_worker_thread)
 
 
 [Back to TOC](#table-of-contents)
@@ -8952,6 +8953,137 @@ Identical to the standard Lua [coroutine.status](https://www.lua.org/manual/5.1/
 This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.run_worker_thread
+---------------------
+
+**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module, arg, ...)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
+
+**This feature is still experimental and the API may change in the future without notice.**
+
+**This API is available only for Linux.**
+
+Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would block until the function returns.
+
+Note that the `module` function can not use any ngx_lua api, because the function is invoked in separate thread.
+
+The first argument `threadpool`, specifies the nginx thread pool name.
+
+For example:
+
+```nginx
+
+ thread_pool testpool threads=100;
+```
+
+The second argument `module`, specifies the lua module name to execute in the worker thread, which would returns a lua function when loaded. The module must be inside the package path, e.g.
+
+```nginx
+
+ lua_package_path '/opt/openresty/?.lua;;';
+```
+
+The type of arg must be one of type below:
+
+* boolean
+* number
+* string
+* nil
+* table (the table may be recursive, and contains member of types above.)
+
+The `ok` is in boolean type, which indicate the C land error (failed to get thread from thread pool, pcall the module function failed, .etc). If `ok` is `false`, the `res1` is the error string.
+
+The return values (res1, ...) are returned by invocation of the module function. Normally, the `res1` should be in boolean type, so that the caller could inspect the error.
+
+This API is useful when you need to execute below types of tasks:
+
+* CPU bound task, e.g. md5 calculation
+* File I/O task
+* Call `os.execute()` or blocking C API via `ffi`
+* Call external Lua library not based on cosocket or nginx
+
+Example1: do md5 caculation.
+
+```nginx
+
+ location /calc_md5 {
+     default_type 'text/plain';
+
+     content_by_lua_block {
+         local ok, ret, md5_or_err = ngx.run_worker_thread("testpool", "calc_md5", ngx.var.arg_str)
+         if not ok then
+             ngx.say(ret)
+             return
+         end
+         if not ret then
+             ngx.say(md5_or_err)
+             return
+         end
+         ngx.say(md5_or_err)
+     }
+ }
+```
+
+`calc_md5.lua`
+
+```lua
+
+ local resty_md5 = require "resty.md5"
+ local resty_str = require "resty.string"
+
+ return function(str)
+     local md5 = resty_md5:new()
+     if not md5 then
+         return false, "md5 new error"
+     end
+
+     local ok = md5:update(str)
+     if not ok then
+         return false, "md5 update error"
+     end
+
+     local digest = md5:final()
+     return true, resty_str.to_hex(digest)
+ end
+```
+
+Example2: write logs into log file.
+
+```nginx
+
+ location /write_log_file {
+     default_type 'text/plain';
+
+     content_by_lua_block {
+         local ok, err = ngx.run_worker_thread("testpool", "write_log_file", ngx.var.arg_str)
+         if not ok then
+             ngx.say(ok, " : ", err)
+             return
+         end
+         ngx.say(ok)
+     }
+ }
+```
+
+`write_log_file.lua`
+
+```lua
+
+ return function(str)
+     local file, err = io.open("/tmp/tmp.log", "a")
+     if not file then
+         return false, err
+     end
+     file:write(str)
+     file:flush()
+     file:close()
+     return true
+ end
+```
 
 [Back to TOC](#nginx-api-for-lua)
 
