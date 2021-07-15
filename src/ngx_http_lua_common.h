@@ -288,6 +288,8 @@ struct ngx_http_lua_main_conf_s {
     ngx_queue_t          free_lua_threads;  /* of ngx_http_lua_thread_ref_t */
     ngx_queue_t          cached_lua_threads;  /* of ngx_http_lua_thread_ref_t */
 
+    ngx_uint_t           worker_thread_vm_pool_size;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
