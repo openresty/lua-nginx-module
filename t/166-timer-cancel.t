@@ -233,8 +233,8 @@ cancel timer
 
 === TEST 5: next_ref test
 --- http_config
-    lua_max_running_timers 20000;
-    lua_max_pending_timers 20000;
+    lua_max_running_timers 2000;
+    lua_max_pending_timers 2000;
 --- config
     location /t {
         content_by_lua_block {
@@ -242,7 +242,7 @@ cancel timer
                 -- do nothing
             end
 
-            for i = 1, 10000 do
+            for i = 1, 1000 do
                 local ref, err = ngx.timer.every(100, f, i)
                 if not ref then
                     ngx.say("failed to set timer: ", err)
@@ -255,7 +255,7 @@ cancel timer
             end
             ngx.say("registered timer")
             for i = 1, 100 do
-                local ref =  math.random(0, 9999)
+                local ref =  math.random(0, 999)
                 local ok, err = ngx.timer.cancel(ref)
                 if not ok then
                     ngx.say("failed to cancel timer ", err)
@@ -271,18 +271,18 @@ cancel timer
                     return
                 end
             end
-            for i = 1, 10000 do
+            for i = 1, 1000 do
                 local next_ref_second, err = ngx.timer.every(100, f)
                 if not next_ref_second then
                     ngx.say("failed to set timer: ", err)
                     return
                 end
-                if next_ref_second ~= 9999+i then
-                    ngx.say("next_ref_second should be ", 9999+i, " but got ", next_ref_second)
+                if next_ref_second ~= 999+i then
+                    ngx.say("next_ref_second should be ", 999+i, " but got ", next_ref_second)
                     return
                 end
             end
-            for i = 1, 20000 do
+            for i = 1, 2000 do
                 local ok, err = ngx.timer.cancel(i-1)
                 if not ok then
                     ngx.say("failed to cancel timer: ", refs, " reason ", err)
