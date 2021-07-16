@@ -12,7 +12,7 @@
 #include "ngx_http_lua_common.h"
 
 
-void ngx_http_lua_inject_timer_api(lua_State *L);
+void ngx_http_lua_inject_timer_api(ngx_log_t *log, lua_State *L);
 
 
 #endif /* _NGX_HTTP_LUA_TIMER_H_INCLUDED_ */

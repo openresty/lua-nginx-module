@@ -8425,6 +8425,8 @@ expiration or not, and `user_arg1`, `user_arg2`, and etc, are
 those (extra) user arguments specified when calling `ngx.timer.at`
 as the remaining arguments.
 
+Returns the handler of the timer (first argument) and error (second argument).
+
 Premature timer expiration happens when the Nginx worker process is
 trying to shut down, as in an Nginx configuration reload triggered by
 the `HUP` signal or in an Nginx server shutdown. When the Nginx worker
@@ -8453,13 +8455,13 @@ Here is a simple example:
              -- (one may want to buffer the data in Lua a bit to
              -- save I/O operations)
          end
-         local ok, err = ngx.timer.at(0, push_data,
+         local ref, err = ngx.timer.at(0, push_data,
                                       ngx.var.uri, ngx.var.args, ngx.header.status)
-         if not ok then
+         if not ref then
              ngx.log(ngx.ERR, "failed to create timer: ", err)
              return
          end
-
+         -- we can use the ref to cancel the timer via ngx.timer.cancel
          -- other job in log_by_lua_block
      }
  }
@@ -8476,8 +8478,8 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
      if premature then
          return
      end
-     local ok, err = ngx.timer.at(delay, handler)
-     if not ok then
+     local ref, err = ngx.timer.at(delay, handler)
+     if not ref then
          ngx.log(ngx.ERR, "failed to create the timer: ", err)
          return
      end
@@ -8485,8 +8487,8 @@ One can also create infinite re-occurring timers, for instance, a timer getting 
      -- do something in timer
  end
 
- local ok, err = ngx.timer.at(delay, handler)
- if not ok then
+ local ref, err = ngx.timer.at(delay, handler)
+ if not ref then
      ngx.log(ngx.ERR, "failed to create the timer: ", err)
      return
  end
@@ -8563,6 +8565,37 @@ When success, returns a "conditional true" value (but not a `true`). Otherwise, 
 This API also respect the [lua_max_pending_timers](#lua_max_pending_timers) and [lua_max_running_timers](#lua_max_running_timers).
 
 This API was first introduced in the `v0.10.9` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.timer.cancel
+---------------
+
+**syntax:** *hdl, err = ngx.timer.cancel(ref)*
+
+**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;*
+
+The argument `ref`, specifies the handler for the timer (given by [ngx.timer.at](#ngxtimerat) or [ngx.timer.every](#ngxtimerevery))
+
+Here is an example:
+```lua
+ local function f()
+ -- do nothing
+ end
+
+ local ref, err = ngx.timer.at(10, f) -- ngx.timer.every(10, f)
+ if not ref then
+     ngx.log(ngx.ERR, "failed to create the timer: ", err)
+     return
+ end
+
+ local ok, err = ngx.timer.cancel(ref)
+ if not ok then
+     ngx.log(ngx.ERR, "failed to cancel the timer: ", ref, " reason: ", err)
+     return
+ end
+```
+**Notice:** You should be careful with the handler (ref) you pass on, cause the handler will be retake when the timer finished (ngx.timer.cancel or the timer executed) -- just like the linux file handler. So, be clear about the timer you want to cancel.
 
 [Back to TOC](#nginx-api-for-lua)
 

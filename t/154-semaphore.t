@@ -64,7 +64,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-time: 1
+time: 0
 --- grep_error_log eval: qr/hello, world|semaphore gc wait queue is not empty/
 --- grep_error_log_out
 hello, world
@@ -110,7 +110,7 @@ FIXME: this test case leaks memory.
 --- request
 GET /test
 --- response_body
-time: 1
+time: 0
 --- grep_error_log eval: qr/hello, world|semaphore gc wait queue is not empty/
 --- grep_error_log_out
 hello, world

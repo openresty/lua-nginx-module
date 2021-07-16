@@ -94,7 +94,7 @@ API disabled in the context of init_worker_by_lua*
 my_counter = 1
 --- grep_error_log eval: qr/warn\(\): [^,]*/
 --- grep_error_log_out
-warn(): created timer: 1
+warn(): created timer: 0
 warn(): timer expired (premature: false; counter: 0)
 
 --- no_error_log
@@ -172,7 +172,7 @@ warn(): timer expired (premature: false; counter: 0)
 ok
 --- grep_error_log eval: qr/warn\(\): [^,]*/
 --- grep_error_log_out
-warn(): created timer: 1
+warn(): created timer: 0
 warn(): timer expired (premature: false)
 warn(): request sent: 11
 warn(): received: OK
@@ -283,7 +283,7 @@ warn("created timer: ", ok)
 ok
 --- grep_error_log eval: qr/warn\(\): [^,]*/
 --- grep_error_log_out
-warn(): created timer: 1
+warn(): created timer: 0
 warn(): timer expired (premature: false)
 warn(): request sent: 11
 warn(): received: OK

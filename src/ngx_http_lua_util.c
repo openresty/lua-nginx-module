@@ -840,7 +840,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_socket_tcp_api(log, L);
     ngx_http_lua_inject_socket_udp_api(log, L);
     ngx_http_lua_inject_uthread_api(log, L);
-    ngx_http_lua_inject_timer_api(L);
+    ngx_http_lua_inject_timer_api(log, L);
     ngx_http_lua_inject_config_api(L);
 
     lua_getglobal(L, "package"); /* ngx package */
