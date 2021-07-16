@@ -583,7 +583,8 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     if (ref == ~0UL) { /* double check */
         ngx_log_debug2(NGX_LOG_ERR, ngx_cycle->log, 0,
                    "expand reftable error, next_ref:%ud, max_refs:%ud", 
-                   reftable ? reftable->next_ref : 0, reftable ? reftable->max_refs : 0);
+                   reftable ? reftable->next_ref : 0, 
+                   reftable ? reftable->max_refs : 0);
 
         if (tctx && tctx->pool) {
             ngx_destroy_pool(tctx->pool);
