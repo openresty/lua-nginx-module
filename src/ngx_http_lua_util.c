@@ -46,6 +46,9 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl.h"
 #include "ngx_http_lua_log_ringbuf.h"
+#if (NGX_THREADS)
+#include "ngx_http_lua_worker_thread.h"
+#endif
 
 
 #if 1
@@ -842,6 +845,9 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_uthread_api(log, L);
     ngx_http_lua_inject_timer_api(L);
     ngx_http_lua_inject_config_api(L);
+#if (NGX_THREADS)
+    ngx_http_lua_inject_worker_thread_api(log, L);
+#endif
 
     lua_getglobal(L, "package"); /* ngx package */
     lua_getfield(L, -1, "loaded"); /* ngx package loaded */
