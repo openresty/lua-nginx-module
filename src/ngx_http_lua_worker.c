@@ -96,7 +96,7 @@ ngx_http_lua_ffi_get_process_type(void)
     return ngx_process;
 }
 
-#if nginx_version >= 1019003
+#if defined(nginx_version) && nginx_version >= 1019003
 int
 ngx_http_lua_ffi_enable_privileged_agent(char **err, unsigned int connections)
 #else
@@ -111,7 +111,7 @@ ngx_http_lua_ffi_enable_privileged_agent(char **err)
                                            ngx_core_module);
 
     ccf->privileged_agent = 1;
-#if nginx_version >= 1019003
+#if defined(nginx_version) && nginx_version >= 1019003
     ccf->privileged_agent_connections = connections;
 #endif
 
