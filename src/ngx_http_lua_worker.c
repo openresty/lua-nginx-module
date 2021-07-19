@@ -96,9 +96,13 @@ ngx_http_lua_ffi_get_process_type(void)
     return ngx_process;
 }
 
-
+#if nginx_version >= 1019003
 int
 ngx_http_lua_ffi_enable_privileged_agent(char **err, unsigned int connections)
+#else
+int
+ngx_http_lua_ffi_enable_privileged_agent(char **err)
+#endif
 {
 #ifdef HAVE_PRIVILEGED_PROCESS_PATCH
     ngx_core_conf_t   *ccf;
@@ -107,7 +111,9 @@ ngx_http_lua_ffi_enable_privileged_agent(char **err, unsigned int connections)
                                            ngx_core_module);
 
     ccf->privileged_agent = 1;
+#if nginx_version >= 1019003
     ccf->privileged_agent_connections = connections;
+#endif
 
     return NGX_OK;
 
