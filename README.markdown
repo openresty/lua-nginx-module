@@ -1162,6 +1162,7 @@ Directives
 * [lua_max_pending_timers](#lua_max_pending_timers)
 * [lua_max_running_timers](#lua_max_running_timers)
 * [lua_sa_restart](#lua_sa_restart)
+* [lua_worker_thread_vm_pool_size](#lua_worker_thread_vm_pool_size)
 
 
 The basic building blocks of scripting Nginx with Lua are directives. Directives are used to specify when the user Lua code is run and
@@ -3320,6 +3321,20 @@ When enabled, this module will set the `SA_RESTART` flag on Nginx workers signal
 This allows Lua I/O primitives to not be interrupted by Nginx's handling of various signals.
 
 This directive was first introduced in the `v0.10.14` release.
+
+[Back to TOC](#directives)
+
+lua_worker_thread_vm_pool_size
+------------------------------
+
+**syntax:** *lua_worker_thread_vm_pool_size &lt;size&gt;*
+
+**default:** *lua_worker_thread_vm_pool_size 100*
+
+**context:** *http*
+
+Specifies the size limit of the Lua VM pool (default 100) that will be used in the [ngx.run_worker_thread](#ngxrun_worker_thread) API.
+Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
 
 [Back to TOC](#directives)
 
@@ -8959,7 +8974,7 @@ This API was first enabled in the `v0.6.0` release.
 ngx.run_worker_thread
 ---------------------
 
-**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module, arg, ...)*
+**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg, ...)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
@@ -8969,9 +8984,9 @@ ngx.run_worker_thread
 
 Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would block until the function returns.
 
-Note that the `module` function can not use any ngx_lua api, because the function is invoked in separate thread.
+Note that no ngx_lua API can be used in the `function_name` function of the `module` module since it is invoked in a separate thread.
 
-The first argument `threadpool`, specifies the nginx thread pool name.
+The first argument `threadpool` specifies the Nginx thread pool name defined by `thread_pool`.
 
 For example:
 
@@ -8980,14 +8995,16 @@ For example:
  thread_pool testpool threads=100;
 ```
 
-The second argument `module`, specifies the lua module name to execute in the worker thread, which would returns a lua function when loaded. The module must be inside the package path, e.g.
+The second argument `module_name` specifies the lua module name to execute in the worker thread, which would returns a lua table. The module must be inside the package path, e.g.
 
 ```nginx
 
  lua_package_path '/opt/openresty/?.lua;;';
 ```
 
-The type of arg must be one of type below:
+The third argument `func_name` specifies the function field in the module table as the second argument.
+
+The type of `arg`s must be one of type below:
 
 * boolean
 * number
@@ -9014,7 +9031,7 @@ Example1: do md5 caculation.
      default_type 'text/plain';
 
      content_by_lua_block {
-         local ok, ret, md5_or_err = ngx.run_worker_thread("testpool", "calc_md5", ngx.var.arg_str)
+         local ok, ret, md5_or_err = ngx.run_worker_thread("testpool", "calc_md5", "md5", ngx.var.arg_str)
          if not ok then
              ngx.say(ret)
              return
@@ -9035,7 +9052,7 @@ Example1: do md5 caculation.
  local resty_md5 = require "resty.md5"
  local resty_str = require "resty.string"
 
- return function(str)
+ local function md5(str)
      local md5 = resty_md5:new()
      if not md5 then
          return false, "md5 new error"
@@ -9049,6 +9066,7 @@ Example1: do md5 caculation.
      local digest = md5:final()
      return true, resty_str.to_hex(digest)
  end
+ return {md5=md5}
 ```
 
 Example2: write logs into log file.
@@ -9059,7 +9077,7 @@ Example2: write logs into log file.
      default_type 'text/plain';
 
      content_by_lua_block {
-         local ok, err = ngx.run_worker_thread("testpool", "write_log_file", ngx.var.arg_str)
+         local ok, err = ngx.run_worker_thread("testpool", "write_log_file", "log", ngx.var.arg_str)
          if not ok then
              ngx.say(ok, " : ", err)
              return
@@ -9073,7 +9091,7 @@ Example2: write logs into log file.
 
 ```lua
 
- return function(str)
+ local function log(str)
      local file, err = io.open("/tmp/tmp.log", "a")
      if not file then
          return false, err
@@ -9083,6 +9101,7 @@ Example2: write logs into log file.
      file:close()
      return true
  end
+ return {log=log}
 ```
 
 [Back to TOC](#nginx-api-for-lua)
