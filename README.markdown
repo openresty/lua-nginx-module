@@ -3334,7 +3334,12 @@ lua_worker_thread_vm_pool_size
 **context:** *http*
 
 Specifies the size limit of the Lua VM pool (default 100) that will be used in the [ngx.run_worker_thread](#ngxrun_worker_thread) API.
+
 Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
+
+The lua vm in the vm pool is used to execute lua code in seperate thread.
+
+The pool is global and to avoid recreate and destroy lua vm for each request.
 
 [Back to TOC](#directives)
 
@@ -8974,7 +8979,7 @@ This API was first enabled in the `v0.6.0` release.
 ngx.run_worker_thread
 ---------------------
 
-**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg, ...)*
+**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg1, arg2, ...)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
@@ -8982,18 +8987,11 @@ ngx.run_worker_thread
 
 **This API is available only for Linux.**
 
-Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would block until the function returns.
+Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would yield until the function returns.
 
 Note that no ngx_lua API can be used in the `function_name` function of the `module` module since it is invoked in a separate thread.
 
-The first argument `threadpool` specifies the Nginx thread pool name defined by `thread_pool`.
-
-For example:
-
-```nginx
-
- thread_pool testpool threads=100;
-```
+The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
 
 The second argument `module_name` specifies the lua module name to execute in the worker thread, which would returns a lua table. The module must be inside the package path, e.g.
 

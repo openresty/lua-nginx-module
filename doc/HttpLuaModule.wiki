@@ -2830,9 +2830,9 @@ This directive was first introduced in the <code>v0.10.14</code> release.
 
 '''context:''' ''http''
 
-Specifies the size limit of lua worker thread vm pool.
+Specifies the size limit of the Lua VM pool (default 100) that will be used in the [ngx.run_worker_thread](#ngxrun_worker_thread) API.
 
-Default to 100 lua vm.
+Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
 
 The lua vm in the vm pool is used to execute lua code in seperate thread.
 
@@ -7687,7 +7687,7 @@ This API was first enabled in the <code>v0.6.0</code> release.
 
 == ngx.run_worker_thread ==
 
-'''syntax:''' ''ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg, ...)''
+'''syntax:''' ''ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg1, arg2, ...)''
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
@@ -7695,17 +7695,11 @@ This API was first enabled in the <code>v0.6.0</code> release.
 
 '''This API is available only for Linux.'''
 
-Wrap the [http://nginx.org/en/docs/dev/development_guide.html#threads nginx worker thread] to execute lua function. The caller coroutine would block until the function returns.
+Wrap the [http://nginx.org/en/docs/dev/development_guide.html#threads nginx worker thread] to execute lua function. The caller coroutine would yield until the function returns.
 
-Note that the <code>module</code> function can not use any ngx_lua api, because the function is invoked in separate thread.
+Note that no ngx_lua API can be used in the `function_name` function of the `module` module since it is invoked in a separate thread.
 
-The first argument <code>threadpool</code> specifies the Nginx thread pool name defined by `thread_pool`.
-
-For example:
-
-<geshi lang="nginx">
-thread_pool testpool threads=100;
-</geshi>
+The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
 
 The second argument <code>module_name</code> specifies the lua module name to execute in the worker thread, which would returns a lua table. The module must be inside the package path, e.g.
 
