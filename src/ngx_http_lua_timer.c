@@ -174,6 +174,15 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+    /*
+     * Since nginx has been confirmed that all timers have been cleaned up when
+     * exit worker is executed, all timers will no longer be executed in exit
+     * worker phase.
+     * Reference https://github.com/nginx/nginx/blob/f02e2a734ef472f0dcf83ab2
+     * e8ce96d1acead8a5/src/os/unix/ngx_process_cycle.c#L715
+     */
+    ngx_http_lua_check_context(L, ctx, ~NGX_HTTP_LUA_CONTEXT_EXIT_WORKER);
+
     if (ngx_exiting && delay > 0) {
         lua_pushnil(L);
         lua_pushliteral(L, "process exiting");
