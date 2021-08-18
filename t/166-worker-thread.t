@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 - 1);
+plan tests => repeat_each() * (blocks() * 2);
 
 our $HtmlDir = html_dir;
 
@@ -218,7 +218,8 @@ end
 return {hello=hello}
 --- request
 GET /hello
---- error_code: 500
+--- response_body
+false : unsupported argument type
 
 
 
@@ -480,3 +481,65 @@ return {hello=hello}
 GET /hello
 --- response_body
 --- timeout: 20
+
+
+
+=== TEST 14: unsupported argument type in nested table
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local function dummy() end
+        local ok, err = ngx.run_worker_thread("testpool", "hello", "hello",
+                    {["hello"]="world", [1]={["embed"]=1, ["dummy"]=dummy}})
+        ngx.say(ok, " : ", err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return "hello"
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false : unsupported argument type
+
+
+
+=== TEST 15: return table with unsupported type
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok, ret = ngx.run_worker_thread("testpool", "hello", "hello")
+        if ok == false then
+            ngx.say("false", " , ", ret)
+        end
+        if ret.hello == "world" and ret[1].embed == 1 then
+            ngx.say(ok, " , ", true)
+        end
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    local function dummy() end
+    return {["hello"]="world", [1]={["embed"]=1, ["dummy"]=dummy}}
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false , unsupported return value

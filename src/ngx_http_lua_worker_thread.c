@@ -86,13 +86,13 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (worker_thread_vm_count >= lmcf->worker_thread_vm_pool_size) {
-        return NULL;
-    }
-
-    worker_thread_vm_count++;
-
     if (ctxpool->next == NULL) {
+        if (worker_thread_vm_count >= lmcf->worker_thread_vm_pool_size) {
+            return NULL;
+        }
+
+        worker_thread_vm_count++;
+
         ctx = calloc(sizeof(ngx_http_lua_task_ctx_t), 1);
         vm = luaL_newstate();
         ctx->vm = vm;
@@ -134,8 +134,6 @@ ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
     ctxpool->next = ctx;
     /*  clean Lua stack */
     lua_settop(ctx->vm, 0);
-
-    worker_thread_vm_count--;
 }
 
 
@@ -146,6 +144,7 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
     size_t           len = 0;
     const char      *str;
     int              typ;
+    int              top_from, top_to;
 
     typ = lua_type(from, idx);
     switch (typ) {
@@ -167,7 +166,11 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         return LUA_TSTRING;
 
     case LUA_TTABLE:
+        top_from = lua_gettop(from);
+        top_to = lua_gettop(to);
+
         lua_newtable(to);
+
         /* to positive number */
         if (idx < 0) {
             idx = lua_gettop(from) + idx + 1;
@@ -181,12 +184,20 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
                     lua_rawset(to, -3);
 
                 } else {
-                    lua_pop(to, 1);
+                    lua_settop(from, top_from);
+                    lua_settop(to, top_to);
+                    return LUA_TNONE;
                 }
+
+            } else {
+                lua_settop(from, top_from);
+                lua_settop(to, top_to);
+                return LUA_TNONE;
             }
 
             lua_pop(from, 1);
         }
+
         return LUA_TTABLE;
 
     case LUA_TNIL:
@@ -204,7 +215,7 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
      * LUA_TTHREAD
      */
     default:
-        return luaL_error(from, "unsupported type to copy, type=%d", typ);
+        return LUA_TNONE;
     }
 }
 
@@ -235,6 +246,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     int                               rc;
     ngx_http_lua_ctx_t               *ctx;
     lua_State                        *vm;
+    int                               saved_top;
 
     worker_thread_ctx = ev->data;
 
@@ -274,12 +286,19 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
 
     } else {
         /* copying return values */
+        saved_top = lua_gettop(L);
         lua_pushboolean(L, 1);
         nresults = lua_gettop(vm);
-        for (i = 1; i <= nresults; i++) {
-            ngx_http_lua_xcopy(vm, L, i, 1);
-        }
         nresults += 1;
+        for (i = 1; i < nresults; i++) {
+            if (ngx_http_lua_xcopy(vm, L, i, 1) == LUA_TNONE) {
+                lua_settop(L, saved_top);
+                lua_pushboolean(L, 0);
+                lua_pushstring(L, "unsupported return value");
+                nresults = 2;
+                break;
+            }
+        }
     }
 
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
