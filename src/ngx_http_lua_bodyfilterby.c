@@ -235,18 +235,15 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     uint16_t                     old_context;
     ngx_http_cleanup_t          *cln;
     ngx_chain_t                 *out;
+    ngx_chain_t                 *cl, *ln;
     ngx_http_lua_main_conf_t    *lmcf;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua body filter for user lua code, uri \"%V\"", &r->uri);
 
-    if (in == NULL) {
-        return ngx_http_next_body_filter(r, in);
-    }
-
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    if (llcf->body_filter_handler == NULL) {
+    if (llcf->body_filter_handler == NULL || r->header_only) {
         dd("no body filter handler found");
         return ngx_http_next_body_filter(r, in);
     }
@@ -269,7 +266,50 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             in->buf->file_pos = in->buf->file_last;
         }
 
-        return NGX_OK;
+        in = NULL;
+
+        /* continue to call ngx_http_next_body_filter to process cached data */
+    }
+
+    if (in != NULL) {
+        if (ngx_chain_add_copy(r->pool, &ctx->filter_in_bufs, in) != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    if (ctx->filter_busy_bufs != NULL
+        && (r->connection->buffered
+            & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED)))
+    {
+        /* Socket write buffer was full on last write.
+         * Try to write the remain data, if still can not write
+         * do not execute body_filter_by_lua otherwise the `in` chain will be
+         * replaced by new content from lua and buf of `in` mark as consumed.
+         * And then ngx_output_chain will call the filter chain again which
+         * make all the data cached in the memory and long ngx_chain_t link
+         * cause CPU 100%.
+         */
+        rc = ngx_http_next_body_filter(r, NULL);
+
+        if (rc == NGX_ERROR) {
+            return rc;
+        }
+
+        out = NULL;
+        ngx_chain_update_chains(r->pool,
+                                &ctx->free_bufs, &ctx->filter_busy_bufs, &out,
+                                (ngx_buf_tag_t) &ngx_http_lua_module);
+        if (rc != NGX_OK) {
+            if (ctx->filter_busy_bufs != NULL
+                && (r->connection->buffered
+                    & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED))) {
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                               "waiting body filter busy buffer to be sent");
+                return NGX_AGAIN;
+            }
+        }
+
+        /* continue to process bufs in ctx->filter_in_bufs */
     }
 
     if (ctx->cleanup == NULL) {
@@ -286,38 +326,57 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     old_context = ctx->context;
     ctx->context = NGX_HTTP_LUA_CONTEXT_BODY_FILTER;
 
-    dd("calling body filter handler");
-    rc = llcf->body_filter_handler(r, in);
+    in = ctx->filter_in_bufs;
+    ctx->filter_in_bufs = NULL;
 
-    dd("calling body filter handler returned %d", (int) rc);
+    if (in != NULL) {
+        dd("calling body filter handler");
+        rc = llcf->body_filter_handler(r, in);
 
-    ctx->context = old_context;
+        dd("calling body filter handler returned %d", (int) rc);
 
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
+        ctx->context = old_context;
+
+        if (rc != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+        lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+
+        /* lmcf->body_filter_chain is the new buffer chain if
+         * body_filter_by_lua set new body content via ngx.arg[1] = new_content
+         * otherwise it is the original `in` buffer chain.
+         */
+        out = lmcf->body_filter_chain;
+
+        if (in != out) {
+            /* content of body was replaced in
+             * ngx_http_lua_body_filter_param_set and the buffers was marked
+             * as consumed.
+             */
+            for (cl = in; cl != NULL; cl = ln) {
+                ln = cl->next;
+                ngx_free_chain(r->pool, cl);
+            }
+
+            if (out == NULL) {
+                /* do not forward NULL to the next filters because the input is
+                 * not NULL */
+                return NGX_OK;
+            }
+        }
+
+    } else {
+        out = NULL;
     }
 
-    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
-    out = lmcf->body_filter_chain;
-
-    if (in == out) {
-        return ngx_http_next_body_filter(r, in);
-    }
-
-    if (out == NULL) {
-        /* do not forward NULL to the next filters because the input is
-         * not NULL */
-        return NGX_OK;
-    }
-
-    /* in != out */
     rc = ngx_http_next_body_filter(r, out);
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
 
     ngx_chain_update_chains(r->pool,
-                            &ctx->free_bufs, &ctx->busy_bufs, &out,
+                            &ctx->free_bufs, &ctx->filter_busy_bufs, &out,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
 
     return rc;

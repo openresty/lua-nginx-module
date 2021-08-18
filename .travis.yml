@@ -1,5 +1,9 @@
 dist: xenial
 
+branches:
+  only:
+    - "master"
+
 os: linux
 
 language: c
