@@ -1362,6 +1362,8 @@ For example,
     }
 </geshi>
 
+It's not allowed to create a timer (even a 0-delay timer) here since it runs after all timers have been processed.
+
 This directive was first introduced in the <code>v0.10.18</code> release.
 
 == exit_worker_by_lua_file ==
@@ -7196,7 +7198,7 @@ See also [[#lua_check_client_abort|lua_check_client_abort]].
 
 '''syntax:''' ''hdl, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)''
 
-'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, exit_worker_by_lua*''
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 Creates an Nginx timer with a user callback function as well as optional user arguments.
 
@@ -7334,7 +7336,7 @@ This API was first introduced in the <code>v0.8.0</code> release.
 
 '''syntax:''' ''hdl, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)''
 
-'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, exit_worker_by_lua*''
+'''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*''
 
 Similar to the [[#ngx.timer.at|ngx.timer.at]] API function, but
 

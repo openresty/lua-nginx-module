@@ -5,7 +5,7 @@ use Test::Nginx::Socket::Lua;
 master_on();
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2) + 12;
+plan tests => repeat_each() * (blocks() * 2 + 2) + 11;
 
 #log_level("warn");
 no_long_string();
@@ -79,7 +79,7 @@ hello, world
 
 
 
-=== TEST 4: exit_worker_by_lua single process ngx.timer not work
+=== TEST 4: ngx.timer is not allow
 --- http_config
     exit_worker_by_lua_block {
         local function bar()
@@ -101,8 +101,8 @@ hello, world
 GET /t
 --- response_body
 ok
---- no_error_log
-[error]
+--- shutdown_error_log
+API disabled in the context of exit_worker_by_lua*
 
 
 
