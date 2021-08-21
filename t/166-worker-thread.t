@@ -448,7 +448,7 @@ return {foobar=foobar}
 GET /t
 --- response_body eval
 "killed\ntrue : hello\n"
---- timeout: 20
+--- timeout: 10
 
 
 
@@ -480,7 +480,7 @@ return {hello=hello}
 --- request
 GET /hello
 --- response_body
---- timeout: 20
+--- timeout: 10
 
 
 

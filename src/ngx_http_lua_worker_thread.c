@@ -34,7 +34,7 @@ typedef struct {
     ngx_http_lua_co_ctx_t   *wait_co_ctx;
     int                      n_args;
     int                      rc;
-    int                      is_abort;
+    int                      is_abort:1;
 } ngx_http_lua_worker_thread_ctx_t;
 
 
@@ -52,7 +52,7 @@ ngx_http_lua_thread_task_alloc(size_t size)
 {
     ngx_thread_task_t  *task;
 
-    task = calloc(sizeof(ngx_thread_task_t) + size, 1);
+    task = ngx_calloc(sizeof(ngx_thread_task_t) + size, ngx_cycle->log);
     if (task == NULL) {
         return NULL;
     }
@@ -67,7 +67,7 @@ static void
 ngx_http_lua_thread_task_free(void *ctx)
 {
     ngx_thread_task_t *task = ctx;
-    free(task - 1);
+    ngx_free(task - 1);
 }
 
 
@@ -93,10 +93,17 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 
         worker_thread_vm_count++;
 
-        ctx = calloc(sizeof(ngx_http_lua_task_ctx_t), 1);
+        ctx = ngx_calloc(sizeof(ngx_http_lua_task_ctx_t), ngx_cycle->log);
+        if (ctx == NULL) {
+            return NULL;
+        }
         vm = luaL_newstate();
+        if (vm == NULL) {
+            ngx_free(ctx);
+            return NULL;
+        }
         ctx->vm = vm;
-        luaL_openlibs(ctx->vm);
+        luaL_openlibs(vm);
 
         /* copy package.path and package.cpath */
         lua_getglobal(L, "package");
@@ -251,9 +258,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     worker_thread_ctx = ev->data;
 
     if (worker_thread_ctx->is_abort) {
-        ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
-        ngx_http_lua_thread_task_free(worker_thread_ctx);
-        return;
+        goto failed_return;
     }
 
     L = worker_thread_ctx->wait_co_ctx->co;
@@ -261,9 +266,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     r = ngx_http_lua_get_req(L);
 
     if (r == NULL) {
-        ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
-        ngx_http_lua_thread_task_free(worker_thread_ctx);
-        return;
+        goto failed_return;
     }
 
     c = r->connection;
@@ -271,9 +274,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (ctx == NULL) {
-        ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
-        ngx_http_lua_thread_task_free(worker_thread_ctx);
-        return;
+        goto failed_return;
     }
 
     vm = worker_thread_ctx->ctx->vm;
@@ -288,8 +289,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         /* copying return values */
         saved_top = lua_gettop(L);
         lua_pushboolean(L, 1);
-        nresults = lua_gettop(vm);
-        nresults += 1;
+        nresults = lua_gettop(vm) + 1;
         for (i = 1; i < nresults; i++) {
             if (ngx_http_lua_xcopy(vm, L, i, 1) == LUA_TNONE) {
                 lua_settop(L, saved_top);
@@ -331,6 +331,13 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         ngx_http_lua_finalize_request(r, rc);
         return;
     }
+
+    return;
+
+failed_return:
+    ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
+    ngx_http_lua_thread_task_free(worker_thread_ctx);
+    return;
 }
 
 
@@ -387,6 +394,9 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     thread_pool_name.data = (u_char*) lua_tolstring(L, 1,
                                                     &thread_pool_name.len);
+    if (thread_pool_name.data == NULL) {
+        return luaL_error(L, "lua_tolstring failed");
+    }
     thread_pool = ngx_thread_pool_get((ngx_cycle_t *) ngx_cycle,
                                       &thread_pool_name);
     if (thread_pool == NULL) {
@@ -406,7 +416,17 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     /* push function from module require */
     mod_name = lua_tolstring(L, 2, &len);
+    if (mod_name == NULL) {
+        ngx_http_lua_free_task_ctx(tctx);
+        return luaL_error(L, "lua_tolstring failed");
+    }
+
     func_name = lua_tolstring(L, 3, NULL);
+    if (func_name == NULL) {
+        ngx_http_lua_free_task_ctx(tctx);
+        return luaL_error(L, "lua_tolstring failed");
+    }
+
     lua_getfield(vm, LUA_GLOBALSINDEX, "require");
     lua_pushlstring(vm, mod_name, len);
     rc = lua_pcall(vm, 1, 1, 0);
@@ -449,12 +469,12 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     /* post task */
     task = ngx_http_lua_thread_task_alloc(
-        sizeof(ngx_http_lua_worker_thread_ctx_t));
+                sizeof(ngx_http_lua_worker_thread_ctx_t));
 
     if (task == NULL) {
         ngx_http_lua_free_task_ctx(tctx);
         lua_pushboolean(L, 0);
-        lua_pushstring(L, "ngx_thread_task_alloc failed");
+        lua_pushstring(L, "no memory");
         return 2;
     }
 
@@ -476,6 +496,7 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     if (ngx_thread_task_post(thread_pool, task) != NGX_OK) {
         ngx_http_lua_free_task_ctx(tctx);
+        ngx_http_lua_thread_task_free(task);
         lua_pushboolean(L, 0);
         lua_pushstring(L, "ngx_thread_task_post failed");
         return 2;
