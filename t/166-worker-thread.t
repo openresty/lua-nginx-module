@@ -435,7 +435,7 @@ location /t {
 --- user_files
 >>> hello.lua
 local function hello()
-    os.execute("sleep 3")
+    os.execute("sleep 1")
     return "hello"
 end
 return {hello=hello}
@@ -543,3 +543,87 @@ return {hello=hello}
 GET /hello
 --- response_body
 false , unsupported return value
+
+
+
+=== TEST 16: the type of module name is not string
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local function dummy() end
+        local ok, err = ngx.run_worker_thread("testpool", dummy, "hello")
+        ngx.say(ok, " : ", err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return "hello"
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false : module name should be a string
+
+
+
+=== TEST 17: the type of function name is not string
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local function dummy() end
+        local ok, err = ngx.run_worker_thread("testpool", "hello", dummy)
+        ngx.say(ok, " : ", err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return "hello"
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false : function name should be a string
+
+
+
+=== TEST 18: the type of thread pool name is not string
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local function dummy() end
+        local ok, err = ngx.run_worker_thread(dummy, "hello", "hello")
+        ngx.say(ok, " : ", err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return "hello"
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false : threadpool should be a string

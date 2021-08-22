@@ -234,6 +234,7 @@ ngx_http_lua_worker_thread_handler(void *data, ngx_log_t *log)
     ngx_http_lua_worker_thread_ctx_t     *ctx = data;
     lua_State                            *vm = ctx->ctx->vm;
 
+    ngx_http_lua_assert(lua_gettop(vm) == 0);
     ctx->rc = lua_pcall(vm, ctx->n_args, LUA_MULTRET, 0);
 }
 
@@ -395,13 +396,29 @@ ngx_http_lua_run_worker_thread(lua_State *L)
     thread_pool_name.data = (u_char*) lua_tolstring(L, 1,
                                                     &thread_pool_name.len);
     if (thread_pool_name.data == NULL) {
-        return luaL_error(L, "lua_tolstring failed");
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "threadpool should be a string");
+        return 2;
     }
     thread_pool = ngx_thread_pool_get((ngx_cycle_t *) ngx_cycle,
                                       &thread_pool_name);
     if (thread_pool == NULL) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "thread_pool not found");
+        return 2;
+    }
+
+    mod_name = lua_tolstring(L, 2, &len);
+    if (mod_name == NULL) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "module name should be a string");
+        return 2;
+    }
+
+    func_name = lua_tolstring(L, 3, NULL);
+    if (func_name == NULL) {
+        lua_pushboolean(L, 0);
+        lua_pushstring(L, "function name should be a string");
         return 2;
     }
 
@@ -413,20 +430,9 @@ ngx_http_lua_run_worker_thread(lua_State *L)
         return 2;
     }
     vm = tctx->vm;
+    ngx_http_lua_assert(lua_gettop(vm) == 0);
 
     /* push function from module require */
-    mod_name = lua_tolstring(L, 2, &len);
-    if (mod_name == NULL) {
-        ngx_http_lua_free_task_ctx(tctx);
-        return luaL_error(L, "lua_tolstring failed");
-    }
-
-    func_name = lua_tolstring(L, 3, NULL);
-    if (func_name == NULL) {
-        ngx_http_lua_free_task_ctx(tctx);
-        return luaL_error(L, "lua_tolstring failed");
-    }
-
     lua_getfield(vm, LUA_GLOBALSINDEX, "require");
     lua_pushlstring(vm, mod_name, len);
     rc = lua_pcall(vm, 1, 1, 0);
