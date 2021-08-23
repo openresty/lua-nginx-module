@@ -9024,7 +9024,7 @@ This API is useful when you need to execute the below types of tasks:
 * Call `os.execute()` or blocking C API via `ffi`
 * Call external Lua library not based on cosocket or nginx
 
-Example1: do md5 caculation.
+Example1: do md5 calculation.
 
 ```nginx
 
