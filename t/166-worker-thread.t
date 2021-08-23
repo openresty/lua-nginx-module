@@ -72,7 +72,7 @@ return {hello=hello}
 --- request
 GET /hello
 --- response_body
-false : thread_pool not found
+false : thread pool testpool not found
 
 
 
