@@ -3155,9 +3155,10 @@ The directive is supported when using OpenSSL 1.0.2 or higher and nginx 1.19.4 o
 
 Several `lua_ssl_conf_command` directives can be specified on the same level:
 
-```
-lua_ssl_conf_command Options PrioritizeChaCha;
-lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
+```nginx
+
+ lua_ssl_conf_command Options PrioritizeChaCha;
+ lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
 ```
 
 Configuration commands are applied after OpenResty own configuration for SSL, so they can be used to override anything set by OpenResty.
@@ -3165,6 +3166,8 @@ Configuration commands are applied after OpenResty own configuration for SSL, so
 Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might result in a behaviour OpenResty does not expect, and should be done with care.
 
 This directive was first introduced in the `v0.10.21` release.
+
+
 
 [Back to TOC](#directives)
 
@@ -8993,7 +8996,7 @@ Note that no ngx_lua API can be used in the `function_name` function of the `mod
 
 The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
 
-The second argument `module_name` specifies the lua module name to execute in the worker thread, which would returns a lua table. The module must be inside the package path, e.g.
+The second argument `module_name` specifies the lua module name to execute in the worker thread, which would return a lua table. The module must be inside the package path, e.g.
 
 ```nginx
 
@@ -9008,15 +9011,15 @@ The type of `arg`s must be one of type below:
 * number
 * string
 * nil
-* table (the table may be recursive, and contains member of types above.)
+* table (the table may be recursive, and contains members of types above.)
 
 The `ok` is in boolean type, which indicate the C land error (failed to get thread from thread pool, pcall the module function failed, .etc). If `ok` is `false`, the `res1` is the error string.
 
 The return values (res1, ...) are returned by invocation of the module function. Normally, the `res1` should be in boolean type, so that the caller could inspect the error.
 
-This API is useful when you need to execute below types of tasks:
+This API is useful when you need to execute the below types of tasks:
 
-* CPU bound task, e.g. md5 calculation
+* CPU bound task, e.g. do md5 calculation
 * File I/O task
 * Call `os.execute()` or blocking C API via `ffi`
 * Call external Lua library not based on cosocket or nginx
@@ -9067,7 +9070,7 @@ Example1: do md5 caculation.
  return {md5=md5}
 ```
 
-Example2: write logs into log file.
+Example2: write logs into the log file.
 
 ```nginx
 

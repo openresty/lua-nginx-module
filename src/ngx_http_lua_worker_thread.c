@@ -104,6 +104,7 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
             ngx_free(ctx);
             return NULL;
         }
+
         ctx->vm = vm;
 
         luaL_openlibs(vm);
@@ -305,12 +306,14 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         }
     }
 
+    ctx->cur_co_ctx = worker_thread_ctx->wait_co_ctx;
+    ctx->cur_co_ctx->cleanup = NULL;
+
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
     ngx_http_lua_thread_task_free(worker_thread_ctx);
 
     /* resume the caller coroutine */
 
-    ctx->cur_co_ctx = worker_thread_ctx->wait_co_ctx;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, nresults);
@@ -397,8 +400,9 @@ ngx_http_lua_run_worker_thread(lua_State *L)
         return 2;
     }
 
-    thread_pool_name.data = (u_char *) lua_tolstring(L, 1,
-                                                    &thread_pool_name.len);
+    thread_pool_name.data = (u_char *)
+                            lua_tolstring(L, 1, &thread_pool_name.len);
+
     if (thread_pool_name.data == NULL) {
         lua_pushboolean(L, 0);
         lua_pushstring(L, "threadpool should be a string");
