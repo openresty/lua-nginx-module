@@ -7,6 +7,9 @@ use Test::Nginx::Socket::Lua;
 #workers(2);
 #log_level('warn');
 
+#connect 0.0.0.1 on newer kernel won't return EINVAL
+#so add an route with cmd: sudo ip route add prohibit 0.0.0.1/32
+
 repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 4 + 9);

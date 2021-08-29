@@ -41,8 +41,8 @@ Hello, world
 --- request
 GET /t/中文
 --- error_code: 301
---- response_headers
-Location: http://localhost:1984/t/%E4%B8%AD%E6%96%87/
+--- response_headers_like
+Location: http:\/\/localhost:\d+\/t\/%E4%B8%AD%E6%96%87\/
 --- response_body_like
 .*301 Moved Permanently.*
 
@@ -57,8 +57,8 @@ Hello, world
 --- request
 GET /t/中文?q=name
 --- error_code: 301
---- response_headers
-Location: http://localhost:1984/t/%E4%B8%AD%E6%96%87/?q=name
+--- response_headers_like
+Location: http:\/\/localhost:\d+\/t\/%E4%B8%AD%E6%96%87\/\?q=name
 --- response_body_like
 .*301 Moved Permanently.*
 
@@ -73,8 +73,8 @@ Hello, world
 --- request
 GET /t/%E4%B8%AD%E6%96%87
 --- error_code: 301
---- response_headers
-Location: http://localhost:1984/t/%E4%B8%AD%E6%96%87/
+--- response_headers_like
+Location: http:\/\/localhost:\d+\/t\/%E4%B8%AD%E6%96%87\/
 --- response_body_like
 .*301 Moved Permanently.*
 
@@ -89,7 +89,7 @@ Hello, world
 --- request
 GET /t/%E4%B8%AD%E6%96%87?q=name
 --- error_code: 301
---- response_headers
-Location: http://localhost:1984/t/%E4%B8%AD%E6%96%87/?q=name
+--- response_headers_like
+Location: http://localhost:\d+\/t\/%E4%B8%AD%E6%96%87\/\?q=name
 --- response_body_like
 .*301 Moved Permanently.*
