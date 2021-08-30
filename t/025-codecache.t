@@ -1096,7 +1096,7 @@ function go(port)
         ngx.say("failed to receive a line: ", err, " [", part, "]")
     end
 
-    local ok, err = sock:setkeepalive(1)
+    local ok, err = sock:setkeepalive(10)
     if not ok then
         ngx.say("failed to set reusable: ", err)
     end
