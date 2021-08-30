@@ -3,7 +3,7 @@
 BEGIN {
     $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
     $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
-    $ENV{MOCKEAGAIN}='world'
+    $ENV{MOCKEAGAIN}='w'
 }
 
 use Test::Nginx::Socket::Lua;
