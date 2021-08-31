@@ -19,7 +19,7 @@ typedef struct {
 } ngx_http_lua_event_actions_t;
 
 
-ngx_http_lua_event_actions_t   ngx_http_lua_event_actions;
+extern ngx_http_lua_event_actions_t  ngx_http_lua_event_actions;
 
 extern ngx_http_lua_event_actions_t  ngx_http_lua_epoll;
 extern ngx_http_lua_event_actions_t  ngx_http_lua_poll;
