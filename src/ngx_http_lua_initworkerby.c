@@ -16,6 +16,8 @@
 #include "ngx_http_lua_event.h"
 
 
+ngx_http_lua_event_actions_t  ngx_http_lua_event_actions;
+
 static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
     u_char *buf, size_t len);
 
