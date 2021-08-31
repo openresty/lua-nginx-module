@@ -51,6 +51,7 @@ ngx_http_lua_init_event(ngx_cycle_t *cycle)
 
     if (ngx_strcmp(ecf->name, "epoll") == 0) {
         ngx_http_lua_event_actions = ngx_http_lua_epoll;
+
     } else
 
 #endif
@@ -59,6 +60,7 @@ ngx_http_lua_init_event(ngx_cycle_t *cycle)
 
     if (ngx_strcmp(ecf->name, "poll") == 0) {
         ngx_http_lua_event_actions = ngx_http_lua_poll;
+
     } else
 
 #endif
@@ -67,6 +69,7 @@ ngx_http_lua_init_event(ngx_cycle_t *cycle)
 
     if (ngx_strcmp(ecf->name, "kqueue") == 0) {
         ngx_http_lua_event_actions = ngx_http_lua_kqueue;
+
     } else
 
 #endif
