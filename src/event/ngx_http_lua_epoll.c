@@ -18,7 +18,6 @@ static ngx_int_t ngx_http_lua_epoll_process_event(ngx_http_request_t *r,
     ngx_msec_t timer);
 
 static int                  ep = -1;
-static struct epoll_event   eev;
 
 ngx_http_lua_event_actions_t  ngx_http_lua_epoll = {
     ngx_http_lua_epoll_init_event,
@@ -149,8 +148,9 @@ ngx_http_lua_epoll_process_event(ngx_http_request_t *r, ngx_msec_t timer)
     ngx_err_t          err;
     ngx_event_t       *rev, *wev;
     ngx_connection_t  *c;
+    struct epoll_event ee;
 
-    events = epoll_wait(ep, &eev, 1, timer);
+    events = epoll_wait(ep, &ee, 1, timer);
 
     err = (events == -1) ? ngx_errno : 0;
 
@@ -168,8 +168,8 @@ ngx_http_lua_epoll_process_event(ngx_http_request_t *r, ngx_msec_t timer)
         return NGX_ERROR;
     }
 
-    c = eev.data.ptr;
-    revents = eev.events;
+    c = ee.data.ptr;
+    revents = ee.events;
 
     if (revents & (EPOLLERR|EPOLLHUP)) {
         ngx_log_debug2(NGX_LOG_DEBUG_EVENT, r->connection->log, 0,

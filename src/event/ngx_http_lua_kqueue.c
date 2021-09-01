@@ -20,7 +20,6 @@ static ngx_int_t ngx_http_lua_kqueue_process_event(ngx_http_request_t *r,
 
 int                    kq = -1;
 static struct kevent   kch[2];
-static struct kevent   kev;
 static ngx_uint_t      nchanges;
 
 ngx_http_lua_event_actions_t  ngx_http_lua_kqueue = {
@@ -100,6 +99,7 @@ ngx_http_lua_kqueue_process_event(ngx_http_request_t *r, ngx_msec_t timer)
     struct timespec   ts;
     ngx_event_t      *ev;
     ngx_err_t         err;
+    struct kevent     kev;
 
     ts.tv_sec = timer / 1000;
     ts.tv_nsec = (timer % 1000) * 1000000;
