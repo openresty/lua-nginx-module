@@ -548,6 +548,9 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_chain_t             *busy_bufs;
     ngx_chain_t             *free_recv_bufs;
 
+    ngx_chain_t             *filter_in_bufs;  /* for the body filter */
+    ngx_chain_t             *filter_busy_bufs;  /* for the body filter */
+
     ngx_http_cleanup_pt     *cleanup;
 
     ngx_http_cleanup_t      *free_cleanup; /* free list of cleanup records */
