@@ -247,7 +247,7 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "%s has %sbusy bufs",
                    newline ? "lua say response" : "lua print response",
-                   ctx->busy_bufs != NULL ? "" : "not ");
+                   ctx->busy_bufs != NULL ? "" : "no ");
 
     dd("downstream write: %d, buf len: %d", (int) rc,
        (int) (b->last - b->pos));

@@ -271,10 +271,9 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         /* continue to call ngx_http_next_body_filter to process cached data */
     }
 
-    if (in != NULL) {
-        if (ngx_chain_add_copy(r->pool, &ctx->filter_in_bufs, in) != NGX_OK) {
-            return NGX_ERROR;
-        }
+    if (in != NULL
+        && ngx_chain_add_copy(r->pool, &ctx->filter_in_bufs, in) != NGX_OK) {
+        return NGX_ERROR;
     }
 
     if (ctx->filter_busy_bufs != NULL
@@ -299,14 +298,13 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_chain_update_chains(r->pool,
                                 &ctx->free_bufs, &ctx->filter_busy_bufs, &out,
                                 (ngx_buf_tag_t) &ngx_http_lua_module);
-        if (rc != NGX_OK) {
-            if (ctx->filter_busy_bufs != NULL
-                && (r->connection->buffered
-                    & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED))) {
-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                               "waiting body filter busy buffer to be sent");
-                return NGX_AGAIN;
-            }
+        if (rc != NGX_OK
+            && ctx->filter_busy_bufs != NULL
+            && (r->connection->buffered
+                & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED))) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                           "waiting body filter busy buffer to be sent");
+            return NGX_AGAIN;
         }
 
         /* continue to process bufs in ctx->filter_in_bufs */
