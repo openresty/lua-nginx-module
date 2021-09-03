@@ -16,6 +16,8 @@
 #include "ngx_http_lua_event.h"
 
 
+int ngx_http_lua_event_inited = 0;
+
 ngx_http_lua_event_actions_t  ngx_http_lua_event_actions;
 
 static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
@@ -49,8 +51,8 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
-    if (ngx_http_lua_init_event(cycle) == NGX_ERROR) {
-        return NGX_ERROR;
+    if (ngx_http_lua_init_event(cycle) == NGX_OK) {
+        ngx_http_lua_event_inited = 1;
     }
 
     /* lmcf != NULL && lmcf->lua != NULL */

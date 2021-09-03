@@ -25,6 +25,7 @@ extern ngx_http_lua_event_actions_t  ngx_http_lua_epoll;
 extern ngx_http_lua_event_actions_t  ngx_http_lua_poll;
 extern ngx_http_lua_event_actions_t  ngx_http_lua_kqueue;
 
+extern int ngx_http_lua_event_inited;
 
 #define ngx_http_lua_set_event         ngx_http_lua_event_actions.set_event
 #define ngx_http_lua_clear_event       ngx_http_lua_event_actions.clear_event
@@ -39,9 +40,6 @@ ngx_http_lua_init_event(ngx_cycle_t *cycle)
 
     ccf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);
     if (ccf == NULL) {
-        ngx_log_error(NGX_LOG_EMERG, cycle->log, 0,
-                      "no \"events\" section in configuration");
-
         return NGX_ERROR;
     }
 
@@ -75,9 +73,6 @@ ngx_http_lua_init_event(ngx_cycle_t *cycle)
 #endif
 
     {
-        ngx_log_error(NGX_LOG_EMERG, cycle->log, 0,
-                      "invalid event type \"%V\"", ecf->name);
-
         return NGX_ERROR;
     }
 

@@ -459,7 +459,19 @@ ngx_http_lua_socket_tcp(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_COSOCKET);
+    /* only a few events is suppported in init_worker_by_* */
+    if (ngx_http_lua_event_inited) {
+        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_COSOCKET);
+
+    } else if (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET) {
+        return luaL_error(L, "API disabled in the context of %s except when " \
+                          "using the event handling methods of poll, epoll "  \
+                          "or kqueue",
+                          ngx_http_lua_context_name((ctx)->context));
+
+    } else {
+        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
+    }
 
     lua_createtable(L, 5 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
@@ -904,7 +916,19 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_COSOCKET);
+    /* only a few events is suppported in init_worker_by_* */
+    if (ngx_http_lua_event_inited) {
+        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_COSOCKET);
+
+    } else if (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET) {
+        return luaL_error(L, "API disabled in the context of %s except when " \
+                          "using the event handling methods of poll, epoll "  \
+                          "or kqueue",
+                          ngx_http_lua_context_name((ctx)->context));
+
+    } else {
+        ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
+    }
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -1796,7 +1820,7 @@ new_ssl_name:
 
     rc = ngx_ssl_handshake(c);
 
-    dd("ngx_ssl_handshake returned %d", (int) rc); 
+    dd("ngx_ssl_handshake returned %d", (int) rc);
 
     if (rc == NGX_AGAIN) {
         if (ctx->context & NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET) {
