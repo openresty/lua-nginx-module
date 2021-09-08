@@ -17,7 +17,7 @@ static ngx_int_t ngx_http_lua_epoll_clear_event(ngx_event_t *ev,
 static ngx_int_t ngx_http_lua_epoll_process_event(ngx_http_request_t *r,
     ngx_msec_t timer);
 
-static int                  ep = -1;
+static int epoll_created = -1;
 
 ngx_http_lua_event_actions_t  ngx_http_lua_epoll = {
     ngx_http_lua_epoll_init_event,
@@ -30,9 +30,9 @@ ngx_http_lua_event_actions_t  ngx_http_lua_epoll = {
 static ngx_int_t
 ngx_http_lua_epoll_init_event(ngx_cycle_t *cycle)
 {
-    ep = epoll_create(1);
+    epoll_created = epoll_create(1);
 
-    if (ep == -1) {
+    if (epoll_created == -1) {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "lua epoll_create() failed");
 
@@ -82,7 +82,7 @@ ngx_http_lua_epoll_set_event(ngx_event_t *ev, ngx_int_t event)
     ee.events = events;
     ee.data.ptr = c;
 
-    if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
+    if (epoll_ctl(epoll_created, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "lua epoll_ctl(EPOLL_CTL_ADD, %d) failed, add event: %d",
                       c->fd, events);
@@ -127,7 +127,7 @@ ngx_http_lua_epoll_clear_event(ngx_event_t *ev, ngx_int_t event)
         ee.data.ptr = NULL;
     }
 
-    if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
+    if (epoll_ctl(epoll_created, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "lua epoll_ctl(EPOLL_CTL_DEL, %d) failed", c->fd);
 
@@ -150,7 +150,7 @@ ngx_http_lua_epoll_process_event(ngx_http_request_t *r, ngx_msec_t timer)
     ngx_connection_t  *c;
     struct epoll_event ee;
 
-    events = epoll_wait(ep, &ee, 1, timer);
+    events = epoll_wait(epoll_created, &ee, 1, timer);
 
     err = (events == -1) ? ngx_errno : 0;
 
