@@ -661,6 +661,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       NULL },
 
+    { ngx_string("lua_worker_thread_vm_pool_size"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, worker_thread_vm_pool_size),
+      NULL },
+
     ngx_null_command
 };
 
@@ -990,6 +997,8 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
+    lmcf->worker_thread_vm_pool_size = NGX_CONF_UNSET;
+
     dd("nginx Lua module main config structure initialized!");
 
     return lmcf;
@@ -1072,6 +1081,10 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         }
     }
 #endif
+
+    if (lmcf->worker_thread_vm_pool_size == NGX_CONF_UNSET_UINT) {
+        lmcf->worker_thread_vm_pool_size = 100;
+    }
 
     return NGX_CONF_OK;
 }

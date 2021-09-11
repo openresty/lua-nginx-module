@@ -547,12 +547,13 @@ ngx_http_lua_pipe_fd_write(ngx_connection_t *c, u_char *buf, size_t size)
 
 #if !(NGX_HTTP_LUA_HAVE_EXECVPE)
 static int
-ngx_http_lua_execvpe(const char *program, char **argv, char **envp)
+ngx_http_lua_execvpe(const char *program, char * const argv[],
+    char * const envp[])
 {
     char **saved = environ;
     int rc;
 
-    environ = envp;
+    environ = (char **) envp;
     rc = execvp(program, argv);
     environ = saved;
     return rc;

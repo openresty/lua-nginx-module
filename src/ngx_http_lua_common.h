@@ -289,6 +289,8 @@ struct ngx_http_lua_main_conf_s {
     ngx_queue_t          free_lua_threads;  /* of ngx_http_lua_thread_ref_t */
     ngx_queue_t          cached_lua_threads;  /* of ngx_http_lua_thread_ref_t */
 
+    ngx_uint_t           worker_thread_vm_pool_size;
+
     unsigned             requires_header_filter:1;
     unsigned             requires_body_filter:1;
     unsigned             requires_capture_filter:1;
@@ -551,6 +553,9 @@ typedef struct ngx_http_lua_ctx_s {
     ngx_chain_t             *free_bufs;
     ngx_chain_t             *busy_bufs;
     ngx_chain_t             *free_recv_bufs;
+
+    ngx_chain_t             *filter_in_bufs;  /* for the body filter */
+    ngx_chain_t             *filter_busy_bufs;  /* for the body filter */
 
     ngx_http_cleanup_pt     *cleanup;
 

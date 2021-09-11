@@ -1164,6 +1164,7 @@ Directives
 * [lua_max_pending_timers](#lua_max_pending_timers)
 * [lua_max_running_timers](#lua_max_running_timers)
 * [lua_sa_restart](#lua_sa_restart)
+* [lua_worker_thread_vm_pool_size](#lua_worker_thread_vm_pool_size)
 
 
 The basic building blocks of scripting Nginx with Lua are directives. Directives are used to specify when the user Lua code is run and
@@ -1673,6 +1674,8 @@ For example,
      print("log from exit_worker_by_lua_block")
  }
 ```
+
+It's not allowed to create a timer (even a 0-delay timer) here since it runs after all timers have been processed.
 
 This directive was first introduced in the `v0.10.18` release.
 
@@ -3281,9 +3284,10 @@ The directive is supported when using OpenSSL 1.0.2 or higher and nginx 1.19.4 o
 
 Several `lua_ssl_conf_command` directives can be specified on the same level:
 
-```
-lua_ssl_conf_command Options PrioritizeChaCha;
-lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
+```nginx
+
+ lua_ssl_conf_command Options PrioritizeChaCha;
+ lua_ssl_conf_command Ciphersuites TLS_CHACHA20_POLY1305_SHA256;
 ```
 
 Configuration commands are applied after OpenResty own configuration for SSL, so they can be used to override anything set by OpenResty.
@@ -3291,6 +3295,8 @@ Configuration commands are applied after OpenResty own configuration for SSL, so
 Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might result in a behaviour OpenResty does not expect, and should be done with care.
 
 This directive was first introduced in the `v0.10.21` release.
+
+
 
 [Back to TOC](#directives)
 
@@ -3450,6 +3456,25 @@ This directive was first introduced in the `v0.10.14` release.
 
 [Back to TOC](#directives)
 
+lua_worker_thread_vm_pool_size
+------------------------------
+
+**syntax:** *lua_worker_thread_vm_pool_size &lt;size&gt;*
+
+**default:** *lua_worker_thread_vm_pool_size 100*
+
+**context:** *http*
+
+Specifies the size limit of the Lua VM pool (default 100) that will be used in the [ngx.run_worker_thread](#ngxrun_worker_thread) API.
+
+Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
+
+The Lua VM in the VM pool is used to execute Lua code in seperate thread.
+
+The pool is global at Nginx worker level. And it is used to reuse Lua VMs between requests.
+
+[Back to TOC](#directives)
+
 Nginx API for Lua
 =================
 
@@ -3602,6 +3627,7 @@ Nginx API for Lua
 * [coroutine.wrap](#coroutinewrap)
 * [coroutine.running](#coroutinerunning)
 * [coroutine.status](#coroutinestatus)
+* [ngx.run_worker_thread](#ngxrun_worker_thread)
 
 
 [Back to TOC](#table-of-contents)
@@ -8534,7 +8560,7 @@ ngx.timer.at
 
 **syntax:** *hdl, err = ngx.timer.at(delay, callback, user_arg1, user_arg2, ...)*
 
-**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
 Creates an Nginx timer with a user callback function as well as optional user arguments.
 
@@ -8677,7 +8703,7 @@ ngx.timer.every
 
 **syntax:** *hdl, err = ngx.timer.every(delay, callback, user_arg1, user_arg2, ...)*
 
-**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
 Similar to the [ngx.timer.at](#ngxtimerat) API function, but
 
@@ -9081,6 +9107,134 @@ Identical to the standard Lua [coroutine.status](https://www.lua.org/manual/5.1/
 This API was first usable in the context of [init_by_lua*](#init_by_lua) since the `0.9.2`.
 
 This API was first enabled in the `v0.6.0` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.run_worker_thread
+---------------------
+
+**syntax:** *ok, res1, res2, ... = ngx.run_worker_thread(threadpool, module_name, func_name, arg1, arg2, ...)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
+
+**This API is still experimental and may change in the future without notice.**
+
+**This API is available only for Linux.**
+
+Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would yield until the function returns.
+
+Note that no ngx_lua API can be used in the `function_name` function of the `module` module since it is invoked in a separate thread.
+
+The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
+
+The second argument `module_name` specifies the lua module name to execute in the worker thread, which would return a lua table. The module must be inside the package path, e.g.
+
+```nginx
+
+ lua_package_path '/opt/openresty/?.lua;;';
+```
+
+The third argument `func_name` specifies the function field in the module table as the second argument.
+
+The type of `arg`s must be one of type below:
+
+* boolean
+* number
+* string
+* nil
+* table (the table may be recursive, and contains members of types above.)
+
+The `ok` is in boolean type, which indicate the C land error (failed to get thread from thread pool, pcall the module function failed, .etc). If `ok` is `false`, the `res1` is the error string.
+
+The return values (res1, ...) are returned by invocation of the module function. Normally, the `res1` should be in boolean type, so that the caller could inspect the error.
+
+This API is useful when you need to execute the below types of tasks:
+
+* CPU bound task, e.g. do md5 calculation
+* File I/O task
+* Call `os.execute()` or blocking C API via `ffi`
+* Call external Lua library not based on cosocket or nginx
+
+Example1: do md5 calculation.
+
+```nginx
+
+ location /calc_md5 {
+     default_type 'text/plain';
+
+     content_by_lua_block {
+         local ok, ret, md5_or_err = ngx.run_worker_thread("testpool", "calc_md5", "md5", ngx.var.arg_str)
+         if not ok then
+             ngx.say(ret)
+             return
+         end
+         if not ret then
+             ngx.say(md5_or_err)
+             return
+         end
+         ngx.say(md5_or_err)
+     }
+ }
+```
+
+`calc_md5.lua`
+
+```lua
+
+ local resty_md5 = require "resty.md5"
+ local resty_str = require "resty.string"
+
+ local function md5(str)
+     local md5 = resty_md5:new()
+     if not md5 then
+         return false, "md5 new error"
+     end
+
+     local ok = md5:update(str)
+     if not ok then
+         return false, "md5 update error"
+     end
+
+     local digest = md5:final()
+     return true, resty_str.to_hex(digest)
+ end
+ return {md5=md5}
+```
+
+Example2: write logs into the log file.
+
+```nginx
+
+ location /write_log_file {
+     default_type 'text/plain';
+
+     content_by_lua_block {
+         local ok, err = ngx.run_worker_thread("testpool", "write_log_file", "log", ngx.var.arg_str)
+         if not ok then
+             ngx.say(ok, " : ", err)
+             return
+         end
+         ngx.say(ok)
+     }
+ }
+```
+
+`write_log_file.lua`
+
+```lua
+
+ local function log(str)
+     local file, err = io.open("/tmp/tmp.log", "a")
+     if not file then
+         return false, err
+     end
+     file:write(str)
+     file:flush()
+     file:close()
+     return true
+ end
+ return {log=log}
+```
 
 [Back to TOC](#nginx-api-for-lua)
 

@@ -1,12 +1,15 @@
 dist: xenial
 
+branches:
+  only:
+    - "master"
+
 os: linux
 
 language: c
 
 compiler:
   - gcc
-  - clang
 
 addons:
   apt:
@@ -47,10 +50,8 @@ env:
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
   jobs:
-    - NGINX_VERSION=1.17.8 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
-    - NGINX_VERSION=1.19.9 OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
     - NGINX_VERSION=1.19.9 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
-    - NGINX_VERSION=1.19.9 OPENSSL_VER=1.1.1k OPENSSL_PATCH_VER=1.1.1f
+    - NGINX_VERSION=1.19.9 OPENSSL_VER=1.1.1l OPENSSL_PATCH_VER=1.1.1f
 
 services:
  - memcached
@@ -98,6 +99,7 @@ script:
   - sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
   - sudo iptables -I OUTPUT -p tcp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo iptables -I OUTPUT -p udp --dst 127.0.0.2 --dport 12345 -j DROP
+  - sudo ip route add prohibit 0.0.0.1/32
   - cd luajit2/
   - make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2' > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
