@@ -550,8 +550,8 @@ static int
 ngx_http_lua_execvpe(const char *program, char * const argv[],
     char * const envp[])
 {
+    int    rc;
     char **saved = environ;
-    int rc;
 
     environ = (char **) envp;
     rc = execvp(program, argv);
