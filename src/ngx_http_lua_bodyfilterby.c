@@ -272,7 +272,8 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     if (in != NULL
-        && ngx_chain_add_copy(r->pool, &ctx->filter_in_bufs, in) != NGX_OK) {
+        && ngx_chain_add_copy(r->pool, &ctx->filter_in_bufs, in) != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
@@ -301,7 +302,8 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         if (rc != NGX_OK
             && ctx->filter_busy_bufs != NULL
             && (r->connection->buffered
-                & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED))) {
+                & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED)))
+        {
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                            "waiting body filter busy buffer to be sent");
             return NGX_AGAIN;
