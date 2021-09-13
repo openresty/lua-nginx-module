@@ -369,6 +369,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
+                                       | NGX_HTTP_LUA_CONTEXT_BODY_FILTER
                                        | NGX_HTTP_LUA_CONTEXT_BALANCER
                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
@@ -377,6 +378,19 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
         != NGX_OK)
     {
         return NGX_ERROR;
+    }
+
+    if (ctx->context & NGX_HTTP_LUA_CONTEXT_BODY_FILTER) {
+
+        if (status != NGX_ERROR && status != NGX_HTTP_CLOSE) {
+            *errlen = ngx_snprintf(err, *errlen, "attempt to exit with the "
+                                   "code not 444 or ngx.ERROR")
+                      - err;
+            return NGX_ERROR;
+        }
+
+        ctx->body_filter_aborted = 1;
+        return NGX_DONE;
     }
 
     if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
