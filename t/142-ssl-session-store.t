@@ -6,7 +6,7 @@ use File::Basename;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6 - 1);
+plan tests => repeat_each() * (blocks() * 5 + 11);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -95,11 +95,11 @@ ssl_session_store_by_lua_block:1: ssl session store by lua is running!,
 
 
 
-=== TEST 2: sleep is not allowed
+=== TEST 2: sleep is allowed
 --- http_config
     ssl_session_store_by_lua_block {
         local begin = ngx.now()
-        ngx.sleep(0.1)
+        ngx.sleep(0.001)
         print("elapsed in ssl store session by lua: ", ngx.now() - begin)
     }
     server {
@@ -157,7 +157,6 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-API disabled in the context of ssl_session_store_by_lua*
 
 --- no_error_log
 [alert]
