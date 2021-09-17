@@ -376,8 +376,10 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
                 if (!lua_isnil(L, -1) && !lua_isnil(L, -2)) {
                     n++;
                 }
+
                 lua_pop(L, 1);
             }
+
             lua_pop(L, 1);
 
             ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -2199,6 +2201,7 @@ ngx_http_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
     return (uintptr_t) dst;
 }
 
+
 static int
 ngx_http_lua_util_hex2int(char xdigit)
 {
@@ -2214,14 +2217,15 @@ ngx_http_lua_util_hex2int(char xdigit)
     return -1;
 }
 
+
 /* XXX we also decode '+' to ' ' */
 void
 ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
     ngx_uint_t type)
 {
-    u_char *d = *dst, *s = *src, *de = (*dst+size);
-    int isuri = type & NGX_UNESCAPE_URI;
-    int isredirect = type & NGX_UNESCAPE_REDIRECT;
+    u_char *d = *dst, *s = *src, *de = (*dst + size);
+    int     isuri = type & NGX_UNESCAPE_URI;
+    int     isredirect = type & NGX_UNESCAPE_REDIRECT;
 
     while (size--) {
         u_char curr = *s++;
@@ -2245,10 +2249,12 @@ ngx_http_lua_unescape_uri(u_char **dst, u_char **src, size_t size,
             if ((isuri || isredirect) && ch == '?') {
                 *d++ = ch;
                 break;
+
             } else if (isredirect && (ch <= '%' || ch >= 0x7f)) {
                 *d++ = '%';
                 continue;
             }
+
             *d++ = ch;
             s += 2;
             size -= 2;

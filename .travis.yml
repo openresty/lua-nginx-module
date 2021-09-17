@@ -96,6 +96,9 @@ before_script:
   - mysql -uroot -e 'create database ngx_test; grant all on ngx_test.* to "ngx_test"@"%" identified by "ngx_test"; flush privileges;'
 
 script:
+  - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
+  - ngx-releng > check.txt || true
+  - lines=`wc -l check.txt | awk '{print $1}'`; if [ $lines -gt 13 ]; then cat check.txt; exit 1; fi
   - sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
   - sudo iptables -I OUTPUT -p tcp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo iptables -I OUTPUT -p udp --dst 127.0.0.2 --dport 12345 -j DROP
@@ -123,7 +126,6 @@ script:
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
-  - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
   - export NGX_BUILD_CC=$CC
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V

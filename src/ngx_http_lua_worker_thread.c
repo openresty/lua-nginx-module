@@ -153,7 +153,7 @@ ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
 
 static int
 ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
-                   const int allow_nil)
+    const int allow_nil)
 {
     size_t           len = 0;
     const char      *str;

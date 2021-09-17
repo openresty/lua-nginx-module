@@ -1518,7 +1518,8 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 
 #if (nginx_version >= 1019004)
     if (ngx_ssl_conf_commands(cf, llcf->ssl, llcf->ssl_conf_commands)
-        != NGX_OK) {
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 #endif
