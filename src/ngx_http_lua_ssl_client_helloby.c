@@ -629,7 +629,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     }
 
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
-    if (0 == SSL_client_hello_get0_ext(ssl_conn, type, out, outlen)) {
+    if (SSL_client_hello_get0_ext(ssl_conn, type, out, outlen) == 0) {
         return NGX_DECLINED;
     }
 
