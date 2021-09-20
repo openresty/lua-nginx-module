@@ -490,7 +490,6 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
     ngx_http_lua_set_header_t        *lsh;
     ngx_hash_t                        hash;
 
-
     dd("set header value: %.*s", (int) value.len, value.data);
 
     if (ngx_http_lua_copy_escaped_header(r, &key, 1) != NGX_OK) {
@@ -501,7 +500,6 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_ERROR;
     }
 
-    ngx_strlow(key.data, key.data, key.len);
     hv.hash = ngx_hash_key_lc(key.data, key.len);
     hv.key = key;
 
@@ -511,7 +509,7 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     hash = lmcf->builtin_headers_out;
-    lsh = ngx_hash_find(&hash, hv.hash, hv.key.data, hv.key.len);
+    lsh = ngx_http_lua_hash_find_lc(&hash, hv.hash, hv.key.data, hv.key.len);
     if (lsh) {
         dd("Matched handler: %s %s", lsh->name.data, hv.key.data);
         hv.offset = lsh->offset;
