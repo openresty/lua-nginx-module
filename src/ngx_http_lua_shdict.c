@@ -1573,7 +1573,7 @@ int
 ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     size_t key_len, int *value_type, u_char **str_value_buf,
     size_t *str_value_len, double *num_value, int *user_flags,
-    int get_stale, int *is_stale, char **err)
+    int *user_flags_neq, int get_stale, int *is_stale, char **err)
 {
     ngx_str_t                    name;
     uint32_t                     hash;
@@ -1608,6 +1608,14 @@ ngx_http_lua_ffi_shdict_get(ngx_shm_zone_t *zone, u_char *key,
     dd("shdict lookup returns %d", (int) rc);
 
     if (rc == NGX_DECLINED || (rc == NGX_DONE && !get_stale)) {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        *value_type = LUA_TNIL;
+        return NGX_OK;
+    }
+
+    if (*user_flags_neq && *user_flags == (int) sd->user_flags) {
+        *is_stale = (rc == NGX_DONE);
+        *user_flags_neq = 0;
         ngx_shmtx_unlock(&ctx->shpool->mutex);
         *value_type = LUA_TNIL;
         return NGX_OK;

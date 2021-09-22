@@ -6827,11 +6827,14 @@ This feature was first introduced in the `v0.3.1rc22` release.
 ngx.shared.DICT.get
 -------------------
 
-**syntax:** *value, flags = ngx.shared.DICT:get(key)*
+**syntax:** *value, flags, flags_match = ngx.shared.DICT:get(key, flags?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
 Retrieving the value in the dictionary [ngx.shared.DICT](#ngxshareddict) for the key `key`. If the key does not exist or has expired, then `nil` will be returned.
+
+If flags is not `nil`, value will only be returned if flags do not match with shm.
+A 3rd return argument will indicate if flags matched.
 
 In case of errors, `nil` and a string describing the error will be returned.
 
@@ -6866,7 +6869,7 @@ See also [ngx.shared.DICT](#ngxshareddict).
 ngx.shared.DICT.get_stale
 -------------------------
 
-**syntax:** *value, flags, stale = ngx.shared.DICT:get_stale(key)*
+**syntax:** *value, flags, stale, flags_match = ngx.shared.DICT:get_stale(key, flags?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
