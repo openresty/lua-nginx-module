@@ -311,7 +311,10 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
 
 #endif /* LUA_HAVE_PCRE_JIT */
 
-    if (sd && lmcf && lmcf->regex_match_limit > 0) {
+    if (sd
+        && lmcf && lmcf->regex_match_limit > 0
+        && !(flags & NGX_LUA_RE_MODE_DFA))
+    {
         sd->flags |= PCRE_EXTRA_MATCH_LIMIT;
         sd->match_limit = lmcf->regex_match_limit;
     }
