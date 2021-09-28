@@ -781,10 +781,13 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
-    /* create the registry entry for the Lua request ctx data table */
-    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
-    lua_createtable(L, 0, 32 /* nrec */);
-    lua_rawset(L, LUA_REGISTRYINDEX);
+    /*
+     * the the Lua request ctx data table will create in resty.core.ctx,
+     * just equivalent to the following code:
+     *    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
+     *    lua_createtable(L, 0, 0);
+     *    lua_rawset(L, LUA_REGISTRYINDEX);
+     */
 
     /* create the registry entry for the Lua socket connection pool table */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
