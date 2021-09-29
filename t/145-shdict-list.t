@@ -751,30 +751,30 @@ done
     location = /test {
         content_by_lua_block {
             local dogs = ngx.shared.dogs
-	    local len, err = dogs:lpush("cc", "1") --add another list to avoid key"aa" be cleaned (run ‘ngx_http_lua_shdict_expire(ctx, 1)’ may clean key ,ensure key'aa' not clean ,just expired))
+            local len, err = dogs:lpush("cc", "1") --add another list to avoid key"aa" be cleaned (run ‘ngx_http_lua_shdict_expire(ctx, 1)’ may clean key ,ensure key'aa' not clean ,just expired))
             if not len then
                 ngx.say("push cc  err: ", err)
             end
-	    local len, err = dogs:lpush("aa", "1")
+            local len, err = dogs:lpush("aa", "1")
             if not len then
                 ngx.say("push1 err: ", err)
             end
-	    local succ, err = dogs:expire("aa", 0.2)
-	    if not succ then
-	        ngx.say("expire err: ",err)
-	    end
-	    ngx.sleep(0.3) -- list aa expired
-	    local len, err = dogs:lpush("aa", "2") --push to an expired list may set as a new list
+            local succ, err = dogs:expire("aa", 0.2)
+            if not succ then
+                ngx.say("expire err: ",err)
+            end
+            ngx.sleep(0.3) -- list aa expired
+            local len, err = dogs:lpush("aa", "2") --push to an expired list may set as a new list
             if not len then
                 ngx.say("push2 err: ", err)
             end
-	    local len, err = dogs:llen("aa") -- new list len is 1
+            local len, err = dogs:llen("aa") -- new list len is 1
             if not len then
                 ngx.say("llen err: ", err)
-	    else
-	        ngx.say("aa:len :", dogs:llen("aa"))
+            else
+            ngx.say("aa:len :", dogs:llen("aa"))
             end
-	}
+        }
     }
 
 --- request
@@ -793,32 +793,32 @@ aa:len :1
     location = /test {
         content_by_lua_block {
             local dogs = ngx.shared.dogs
-	    local len, err = dogs:lpush("cc", "1") --add another list to avoid key"aa" be cleaned (run ‘ngx_http_lua_shdict_expire(ctx, 1)’ may clean key ,ensure key'aa' not clean ,just expired))
+            local len, err = dogs:lpush("cc", "1") --add another list to avoid key"aa" be cleaned (run ‘ngx_http_lua_shdict_expire(ctx, 1)’ may clean key ,ensure key'aa' not clean ,just expired))
             if not len then
                 ngx.say("push cc  err: ", err)
             end
-	    local len, err = dogs:lpush("aa", "1")
+            local len, err = dogs:lpush("aa", "1")
             if not len then
                 ngx.say("push1 err: ", err)
             end
-	    local succ, err = dogs:expire("aa", 0.2)
-	    if not succ then
-	        ngx.say("expire err: ",err)
-	    end
-	    ngx.sleep(0.3) -- list aa expired
-	    local len, err = dogs:lpush("aa", "2") --push to an expired list may set as a new list
+            local succ, err = dogs:expire("aa", 0.2)
+            if not succ then
+            ngx.say("expire err: ",err)
+            end
+            ngx.sleep(0.3) -- list aa expired
+            local len, err = dogs:lpush("aa", "2") --push to an expired list may set as a new list
             if not len then
                 ngx.say("push2 err: ", err)
             end
-	    local val, err = dogs:lpop("aa") 
+            local val, err = dogs:lpop("aa") 
             if not val then
                 ngx.say("llen err: ", err)
             end
-	    local val, err = dogs:lpop("aa")  -- val == nil
+            local val, err = dogs:lpop("aa")  -- val == nil
             ngx.say("aa list value: ", val)
            
 
-	}
+        }
     }
 
 --- request
