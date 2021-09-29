@@ -9127,31 +9127,31 @@ Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.ht
 Only the following ngx_lua APIs could be used in `function_name` function of the `module` module:
 
 * `ngx.encode_base64`
-* `nngx.decode_base64`
+* `ngx.decode_base64`
 
-* `nngx.hmac_sha1`
-* `nngx.encode_args`
-* `nngx.decode_args`
-* `nngx.quote_sql_str`
+* `ngx.hmac_sha1`
+* `ngx.encode_args`
+* `ngx.decode_args`
+* `ngx.quote_sql_str`
 
-* `nngx.re.match`
-* `nngx.re.find`
-* `nngx.re.gmatch`
-* `nngx.re.sub`
-* `nngx.re.gsub`
+* `ngx.re.match`
+* `ngx.re.find`
+* `ngx.re.gmatch`
+* `ngx.re.sub`
+* `ngx.re.gsub`
 
-* `nngx.crc32_short`
-* `nngx.crc32_long`
-* `nngx.hmac_sha1`
-* `nngx.md5_bin`
-* `nngx.md5`
+* `ngx.crc32_short`
+* `ngx.crc32_long`
+* `ngx.hmac_sha1`
+* `ngx.md5_bin`
+* `ngx.md5`
 
-* `nngx.config.subsystem`
-* `nngx.config.debug`
-* `nngx.config.prefix`
-* `nngx.config.nginx_version`
-* `nngx.config.nginx_configure`
-* `nngx.config.ngx_lua_version`
+* `ngx.config.subsystem`
+* `ngx.config.debug`
+* `ngx.config.prefix`
+* `ngx.config.nginx_version`
+* `ngx.config.nginx_configure`
+* `ngx.config.ngx_lua_version`
 
 
 The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
