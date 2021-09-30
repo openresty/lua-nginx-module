@@ -744,6 +744,8 @@ done
 --- no_error_log
 [error]
 
+
+
 === TEST 20: push to an expired list
 --- http_config
     lua_shared_dict dogs 1m;
@@ -786,6 +788,9 @@ aa:len :1
 
 
  
+
+
+
 === TEST 21: push to an expired list then pop many time (more then list len )
 --- http_config
     lua_shared_dict dogs 1m;
@@ -827,5 +832,3 @@ GET /test
 aa list value: nil
 --- no_error_log
 [error]
-
-
