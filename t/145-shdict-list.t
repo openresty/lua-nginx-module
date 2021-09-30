@@ -787,9 +787,6 @@ aa:len :1
 [error]
 
 
- 
-
-
 
 === TEST 21: push to an expired list then pop many time (more then list len )
 --- http_config
@@ -821,8 +818,6 @@ aa:len :1
             end
             local val, err = dogs:lpop("aa")  -- val == nil
             ngx.say("aa list value: ", val)
-           
-
         }
     }
 
