@@ -432,6 +432,12 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     unsigned                             waiting;
 
     u = ctx->data;
+
+    if (u == NULL) {
+        ngx_resolve_name_done(ctx);
+        return;
+    }
+
     r = u->request;
     c = r->connection;
     ur = u->resolved;
@@ -1584,7 +1590,8 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
         return;
     }
 
-    ngx_resolve_name_done(rctx);
+    rctx->data = NULL;
+    u->resolved->ctx = NULL;
 }
 
 
