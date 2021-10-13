@@ -1569,13 +1569,6 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
 
 
 static void
-ngx_http_lua_resolve_ctx_cleanup_handler(ngx_resolver_ctx_t *ctx)
-{
-    ngx_resolve_name_done(ctx);
-}
-
-
-static void
 ngx_http_lua_udp_resolve_cleanup(void *data)
 {
     ngx_resolver_ctx_t                      *rctx;
@@ -1592,7 +1585,7 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
         return;
     }
 
-    rctx->handler = ngx_http_lua_resolve_ctx_cleanup_handler;
+    rctx->handler = ngx_resolve_name_done;
 }
 
 
