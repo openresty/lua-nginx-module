@@ -433,11 +433,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     u = ctx->data;
 
-    if (u == NULL) {
-        ngx_resolve_name_done(ctx);
-        return;
-    }
-
     r = u->request;
     c = r->connection;
     ur = u->resolved;
@@ -1574,6 +1569,12 @@ ngx_http_lua_socket_udp_resume(ngx_http_request_t *r)
 
 
 static void
+ngx_http_lua_resolve_ctx_cleanup_handler(ngx_resolver_ctx_t *ctx)
+{
+   ngx_resolve_name_done(ctx);
+}
+
+static void
 ngx_http_lua_udp_resolve_cleanup(void *data)
 {
     ngx_resolver_ctx_t                      *rctx;
@@ -1590,8 +1591,7 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
         return;
     }
 
-    rctx->data = NULL;
-    u->resolved->ctx = NULL;
+    rctx->handler = ngx_http_lua_resolve_ctx_cleanup_handler;
 }
 
 

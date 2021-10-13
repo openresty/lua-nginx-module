@@ -8,7 +8,7 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 30);
+plan tests => repeat_each() * (blocks() * 2 + 32);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
