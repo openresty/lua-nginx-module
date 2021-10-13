@@ -432,7 +432,6 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
     unsigned                             waiting;
 
     u = ctx->data;
-
     r = u->request;
     c = r->connection;
     ur = u->resolved;
