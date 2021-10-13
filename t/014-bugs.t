@@ -1028,7 +1028,7 @@ https://github.com/openresty/lua-nginx-module/issues/1915
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location = /t {
         content_by_lua_block {
-            local function udp(host, port)
+            local function tcp(host, port)
                 local sock = ngx.socket.tcp()
                 local ok,err = sock:connect(host, port)
                 if not ok then
@@ -1046,7 +1046,7 @@ https://github.com/openresty/lua-nginx-module/issues/1915
 
             local threads = {}
             for i = 1, 3 do
-                threads[i] = ngx.thread.spawn(udp, host, port)
+                threads[i] = ngx.thread.spawn(tcp, host, port)
             end
 
             local ok, res = ngx.thread.wait(threads[1],threads[2],threads[3])
@@ -1072,15 +1072,63 @@ www.notexistdomain.com could not be resolved
 
 
 
-=== TEST 43: udp: nginx crash when resolve an not exist domain in ngx.thread.spawn
+=== TEST 43: domain exists with tcp socket
+https://github.com/openresty/lua-nginx-module/issues/1915
+--- config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    location = /t {
+        content_by_lua_block {
+            local function tcp(host, port)
+                local sock = ngx.socket.tcp()
+                local ok,err = sock:connect(host, port)
+                if not ok then
+                    ngx.log(ngx.WARN, "failed: ", err)
+                    sock:close()
+                    return false
+                end
+
+                sock:close()
+                return true
+            end
+
+            local host = "www.openresty.org"
+            local port = 80
+
+            local threads = {}
+            for i = 1, 3 do
+                threads[i] = ngx.thread.spawn(tcp, host, port)
+            end
+
+            local ok, res = ngx.thread.wait(threads[1],threads[2],threads[3])
+            if not ok then
+                ngx.say("failed to wait thread")
+                return
+            end
+
+            ngx.say("res: ", res)
+
+            for i = 1, 3 do
+                ngx.thread.kill(threads[i])
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+res: true
+
+
+
+=== TEST 44: domain exists with udp socket
 https://github.com/openresty/lua-nginx-module/issues/1915
 --- config
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location = /t {
         content_by_lua_block {
             local function udp(host, port)
-                local sock = ngx.socket.tcp()
-                local ok,err = sock:connect(host, port)
+                local sock = ngx.socket.udp()
+                local ok,err = sock:setpeername(host, port)
                 if not ok then
                     ngx.log(ngx.WARN, "failed: ", err)
                     sock:close()
@@ -1119,3 +1167,51 @@ GET /t
 res: false
 --- error_log
 www.notexistdomain.com could not be resolved
+
+
+
+=== TEST 45: udp: nginx crash when resolve an not exist domain in ngx.thread.spawn
+https://github.com/openresty/lua-nginx-module/issues/1915
+--- config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    location = /t {
+        content_by_lua_block {
+            local function udp(host, port)
+                local sock = ngx.socket.udp()
+                local ok,err = sock:setpeername(host, port)
+                if not ok then
+                    ngx.log(ngx.WARN, "failed: ", err)
+                    sock:close()
+                    return false
+                end
+
+                sock:close()
+                return true
+            end
+
+            local host = "www.openresty.org"
+            local port = 80
+
+            local threads = {}
+            for i = 1, 3 do
+                threads[i] = ngx.thread.spawn(udp, host, port)
+            end
+
+            local ok, res = ngx.thread.wait(threads[1],threads[2],threads[3])
+            if not ok then
+                ngx.say("failed to wait thread")
+                return
+            end
+
+            ngx.say("res: ", res)
+
+            for i = 1, 3 do
+                ngx.thread.kill(threads[i])
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+res: true
