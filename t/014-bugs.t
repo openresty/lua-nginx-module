@@ -1022,83 +1022,100 @@ write timer set: 1
 
 
 
-=== TEST 42: nginx crash when resolve an not exist domain in ngx.thread.spawn
+=== TEST 42: tcp: nginx crash when resolve an not exist domain in ngx.thread.spawn
 https://github.com/openresty/lua-nginx-module/issues/1915
 --- config
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location = /t {
         content_by_lua_block {
-
-            local function http2udp(peer_host,peer_port,http_data,tid)
-                local sock = ngx.socket.udp()
-                local ok,err = sock:setpeername(peer_host,peer_port)
+            local function udp(host, port)
+                local sock = ngx.socket.tcp()
+                local ok,err = sock:connect(host, port)
                 if not ok then
+                    ngx.log(ngx.WARN, "failed: ", err)
                     sock:close()
-                    return {Result = -1,Msg = err,Tid = tid}
-                end
-
-                local ok,err = sock:send(http_data)
-                if not ok then
-                    sock:close()
-                    return {Result = -2,Msg = err,Tid = tid}
-                end
-
-                sock:settimeout(15000)
-                local data,err = sock:receive()
-                if not data then
-                    sock:close()
-                    return {Result = -3,Msg = err,Tid = tid}
+                    return false
                 end
 
                 sock:close()
-                return {Result = 0,Msg = data,Tid = tid}
+                return true
             end
 
-            local headers = ngx.req.get_headers()
-            local peer_host = "www.notexistdomain.com"
-            local peer_port = 80
-            ngx.req.read_body()
-            local http_data = ngx.req.raw_header() .. (ngx.req.get_body_data() or "")
+            local host = "www.notexistdomain.com"
+            local port = 80
 
-            local threads = {
-                ngx.thread.spawn(http2udp,peer_host,peer_port,http_data,1),
-                ngx.thread.spawn(http2udp,peer_host,peer_port,http_data,2),
-                ngx.thread.spawn(http2udp,peer_host,peer_port,http_data,3),
-            }
+            local threads = {}
+            for i = 1, 3 do
+                threads[i] = ngx.thread.spawn(udp, host, port)
+            end
 
             local ok, res = ngx.thread.wait(threads[1],threads[2],threads[3])
             if not ok then
-                ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-                local msg = "failed to wait"
-                ngx.header["Content-Length"] = #msg
-                ngx.print(msg)
-                return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+                ngx.say("failed to wait thread")
+                return
             end
 
-            if res.Result ~= 0 then
-                ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
-                ngx.header["Content-Length"] = #res.Msg
-                ngx.print(res.Msg)
-                return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-            end
+            ngx.say("res: ", res)
 
-            local tcpsock,err = ngx.req.socket(true)
-            if not tcpsock then
-                ngx.print(res.Msg)
-            else
-                tcpsock:send(res.Msg)
-            end
-
-            for i=1,#threads do
-                if i ~= res.Tid then
-                    local kill_ok, kill_err = ngx.thread.kill(threads[i])
-                end
+            for i = 1, 3 do
+                ngx.thread.kill(threads[i])
             end
         }
     }
 
 --- request
 GET /t
---- error_code: 500
---- response_body chomp
-www.notexistdomain.com could not be resolved (3: Host not found)
+--- response_body
+res: false
+--- error_log
+www.notexistdomain.com could not be resolved
+
+
+
+=== TEST 43: udp: nginx crash when resolve an not exist domain in ngx.thread.spawn
+https://github.com/openresty/lua-nginx-module/issues/1915
+--- config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    location = /t {
+        content_by_lua_block {
+            local function udp(host, port)
+                local sock = ngx.socket.tcp()
+                local ok,err = sock:connect(host, port)
+                if not ok then
+                    ngx.log(ngx.WARN, "failed: ", err)
+                    sock:close()
+                    return false
+                end
+
+                sock:close()
+                return true
+            end
+
+            local host = "www.notexistdomain.com"
+            local port = 80
+
+            local threads = {}
+            for i = 1, 3 do
+                threads[i] = ngx.thread.spawn(udp, host, port)
+            end
+
+            local ok, res = ngx.thread.wait(threads[1],threads[2],threads[3])
+            if not ok then
+                ngx.say("failed to wait thread")
+                return
+            end
+
+            ngx.say("res: ", res)
+
+            for i = 1, 3 do
+                ngx.thread.kill(threads[i])
+            end
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+res: false
+--- error_log
+www.notexistdomain.com could not be resolved
