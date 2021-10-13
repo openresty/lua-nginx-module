@@ -1584,6 +1584,7 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
         return;
     }
 
+    /* postpone free the rctx in the handler */
     rctx->handler = ngx_resolve_name_done;
 }
 
