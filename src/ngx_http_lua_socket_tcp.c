@@ -1154,7 +1154,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 static void
 ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
-    /* do nothing */
+    ngx_resolve_name_done(ctx);
 }
 
 
@@ -6086,8 +6086,6 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
 
     /* just to be safer */
     rctx->handler = ngx_http_lua_socket_empty_resolve_handler;
-
-    ngx_resolve_name_done(rctx);
 }
 
 
