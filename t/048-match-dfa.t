@@ -207,3 +207,21 @@ exec opts: 0
 你
 --- no_error_log
 [error]
+
+=== TEST 9: capability to match more complex regular expression
+--- config
+    location /re {
+        content_by_lua '
+            local m = ngx.re.match("GET / HTTP/1.1\n", "^(?i:(?:[a-z]{3,10}\s+(?:\w{3,7}?://[\w\-\./]*(?::\d+)?)?/[^?#]*(?:\?[^#\s]*)?(?:#[\S]*)?|connect (?:\d{1,3}\.){3}\d{1,3}\.?(?::\d+)?|options \*)\s+[\w\./]+|get /[^?#]*(?:\?[^#\s]*)?(?:#[\S]*)?)$
+", "do")
+            if m then
+                ngx.say("matched!")
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+matched!
