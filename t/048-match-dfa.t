@@ -208,6 +208,8 @@ exec opts: 0
 --- no_error_log
 [error]
 
+
+
 === TEST 9: capability to match more complex regular expression
 --- config
     location /re {
