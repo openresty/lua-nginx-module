@@ -459,7 +459,7 @@ ngx_http_lua_socket_tcp(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    /* only a few events is suppported in init_worker_by_* */
+    /* only a few events is suppported in init_by_* */
     if (ngx_http_lua_event_inited) {
         ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_COSOCKET);
 

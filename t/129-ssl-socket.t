@@ -2832,9 +2832,9 @@ SSL reused session
 
 
 
-=== TEST 35: www.google.com in init_worker_by_lua
+=== TEST 35: access www.google.com in init_by_lua
 --- http_config
-    init_worker_by_lua_block {
+    init_by_lua_block {
         local sock = ngx.socket.tcp()
         sock:settimeout(2000)
         local ok, err = sock:connect("www.google.com", 443)
@@ -2892,3 +2892,4 @@ close: 1 nil
 \z
 [error]
 --- timeout: 5
+--- ONLY

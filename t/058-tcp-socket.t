@@ -4372,7 +4372,7 @@ finish
 
 === TEST 73: run in init_worker_by_lua
 --- http_config
-    init_worker_by_lua_block {
+    init_by_lua_block {
         local sock = ngx.socket.tcp()
         local port = 80
         local ok, err = sock:connect("agentzh.org", port)
@@ -4428,3 +4428,4 @@ second line received: (?:Date|Server): .*?
 --- no_error_log
 [error]
 --- timeout: 10
+--- ONLY
