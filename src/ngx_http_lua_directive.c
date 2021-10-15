@@ -1632,7 +1632,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             }
 
             if (len) {
-                ngx_memcpy(b->start, b->pos, len);
+                ngx_memmove(b->start, b->pos, len);
             }
 
             size = (ssize_t) (file_size - cf->conf_file->file.offset);
@@ -1749,7 +1749,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     }
 
     len = b->pos - start;
-    ngx_memcpy(word->data, start, len);
+    ngx_memmove(word->data, start, len);
     word->len = len;
 
     return rc;
