@@ -1,4 +1,4 @@
-dist: xenial
+dist: bionic
 
 branches:
   only:
@@ -59,6 +59,8 @@ services:
  - mysql
 
 before_install:
+  - sudo apt update
+  - sudo apt install --only-upgrade ca-certificates
   - '! grep -n -P ''(?<=.{80}).+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Found C source lines exceeding 80 columns." > /dev/stderr; exit 1)'
   - '! grep -n -P ''\t+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Cannot use tabs." > /dev/stderr; exit 1)'
   - sudo cpanm --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
@@ -136,4 +138,4 @@ script:
   - dig +short myip.opendns.com @resolver1.opendns.com || exit 0
   - dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0
   - dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
-  - prove -Itest-nginx/lib -r t
+  - prove -I. -Itest-nginx/lib -r t
