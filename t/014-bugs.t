@@ -1215,3 +1215,79 @@ https://github.com/openresty/lua-nginx-module/issues/1915
 GET /t
 --- response_body
 res: true
+
+
+
+=== TEST 46: nginx crash when parsing a word or a single configuration item that is too long
+https://github.com/openresty/lua-nginx-module/issues/1938
+--- config
+    location = /t {
+        content_by_lua_block {
+            err_big_str = 'A NA<document><ghjnxnpnaryyhzyfehuyjxzoilebgazuifhn foo=bar>'
+                          '<other_tag foo=bar><ahziqttu foo=bar><a foo=bar><other_tag'
+                          'foo=bar><other_tag foo=bar><other_tag foo=bar>'
+                          '<nzzpftierhdtdeippzlyjrmkbtljunmkxhohxmbdmgeeazpb foo=bar>'
+                          '</nzzpftierhdtdeippzlyjrmkbtljunmkxhohxmbdmgeeazpb><qai foo=bar>'
+                          '</qai></other_tag></other_tag><other_tag foo=bar></other_tag>'
+                          '<other_tag foo=bar></other_tag></other_tag><some_tag foo=bar>'
+                          '</some_tag><some_tag foo=bar><mdbrjkon foo=bar><other_tag foo=bar>'
+                          '</other_tag></mdbrjkon><mttiqvw foo=bar></mttiqvw></some_tag><some_tag foo=bar>'
+                          '</some_tag></a><lae foo=bar></lae><ds foo=bar></ds><some_tag foo=bar>'
+                          '<other_tag foo=bar></other_tag></some_tag><other_tag foo=bar></other_tag>'
+                          '</ahziqttu></other_tag><a foo=bar><some_tag foo=bar></some_tag><some_tag foo=bar>'
+                          '<other_tag foo=bar></other_tag></some_tag></a><other_tag foo=bar><cxfpg foo=bar></cxfpg>'
+                          '<some_tag foo=bar></some_tag></other_tag></ghjnxnpnaryyhzyfehuyjxzoilebgazuifhn>'
+                          '<some_tag foo=bar><other_tag foo=bar><other_tag foo=bar><some_tag foo=bar>'
+                          '<some_tag foo=bar></some_tag><other_tag foo=bar></other_tag></some_tag>'
+                          '<some_tag foo=bar></some_tag><some_tag foo=bar><a foo=bar></a></some_tag>'
+                          '<a foo=bar></a></other_tag><a foo=bar></a></other_tag><a foo=bar><wblh foo=bar>'
+                          '<jyfzglfbaxfjvhtaiysmsexwusvrvzu foo=bar><other_tag foo=bar></other_tag>'
+                          '</jyfzglfbaxfjvrtaiysmsexwusvrvzu><a foo=bar><other_tag foo=bar></other_tag>'
+                          '</a></wblh><ycnivdryxanudpgzmgugzyjrnacandijqitfosjrxjuosiwhxxgwgqpwzjcyelstg'
+                          'zveugtmjilnkydyktoqywjyydtcgtabowmbxnjpttkxqjpazdsgzeutjfzgvafnovu@zgccxvypzb'
+                          'kbbsizllwitznecdbyiynopkzsyazlhyslqlwkqqnzuvvdlavwvspwzpivmmreycogbinpvhvfscjm'
+                          'wwwllppjholetfvcbezdwrfczqbdrogr foo=bar></ycnivdryxanudpgzmgugzyjrnacandijqitf'
+                          'osjrxjuosiwhxxgwgqpwzjcyelstgzveugtmjilnkydyktoqywjyydtcgtabowmbxnjpttkxqjpazdsg'
+                          'zeutjfzgvafnovumzgccxvypzbkbbsizllwitznecdbyiynopkzsyazlhyslqlwkqqnzuvvdlavwvspwz'
+                          'pivmmreycogbinpvhvfscjmwwwllppjholetfvcbezdwrfczqbdrogr></a><s foo=bar></s><some_tag'
+                          'foo=bar></some_tag><some_tag foo=bar></some_tag></some_tag><oin foo=bar><other_tag'
+                          'foo=bar><other_tag foo=bar></other_tag></other_tag><other_tag foo=bar></other_tag>'
+                          '<other_tag foo=bar></other_tag></oin><other_tag foo=bar><other_tag foo=bar>'
+                          '<some_tag foo=bar><other_tag foo=bar></other_tag></some_tag><other_tag foo=bar>'
+                          '<some_tag foo=bar><some_tag foo=bar><some_tag foo=bar><other_tag foo=bar>'
+                          '</other_tag></some_tag><xg foo=bar></xg></some_tag><ibsolavsdhkcovsbqddq foo=bar>'
+                          '<bjodqvqtcgizzbefemdqiljssgxibmprzhxifaciftbl foo=bar></bjodqvqtcgizzbefemdqiljssgxibmprzhxifaciftbl>'
+                          '</ibsolavsdhkcovsbqddq><s foo=bar><j foo=bar><other_tag foo=bar></other_tag></j></s><other_tag foo=bar>'
+                          '<zte foo=bar></zte><other_tag foo=bar><a foo=bar></a></other_tag></other_tag></some_tag>'
+                          '<some_tag foo=bar><other_tag foo=bar></other_tag></some_tag></other_tag><other_tag foo=bar>'
+                          '<some_tag foo=bar><other_tag foo=bar></other_tag><other_tag foo=bar><other_tag foo=bar>'
+                          <some_tag foo=bar></some_tag></other_tag></other_tag><some_tag foo=bar></some_tag>'
+                          '</some_tag><other_tag foo=bar></other_tag></other_tag><some_tag foo=bar></some_tag>'
+                          '</other_tag><ynorkudnfqlyozuf foo=bar><some_tag foo=bar><some_tag foo=bar></some_tag>'
+                          '</some_tag><some_tag foo=bar><a foo=bar></a></some_tag><some_tag foo=bar><some_tag foo=bar>'
+                          '</some_tag></some_tag><other_tag foo=bar><some_tag foo=bar><gywpe foo=bar></gywpe></some_tag>'
+                          '<some_tag foo=bar></some_tag><some_tag foo=bar></some_tag></other_tag><some_tag foo=bar>'
+                          '<ycbfctvudqzhnasdtgwsylenjzo foo=bar></ycbfctvudqzhnasdtgwsylenjzo></some_tag></ynorkudnfqlyozuf>'
+                          '<some_tag foo=bar></some_tag><other_tag foo=bar></other_tag><bpxlcvo foo=bar></bpxlcvo></other_tag>'
+                          '<other_tag foo=bar><some_tag foo=bar><some_tag foo=bar><bsgabtkeonafnvroqlmlprxxhlkayhlmxmanhomgrwe'
+                          'qevvqowuvnrvfazckbpxihviccqvfeciafjuxpiukkyfmirugowshqyxuvkzxjwfyl foo=bar><bujx foo=bar><other_tag'
+                          'foo=bar></other_tag></bujx></bsgabtkeonafnvroqlmlprxxhlkayhlmxmanhomgrweqevvqowuvnrvfazckbpxihviccqvf'
+                          'eciafjuxpiukkyfmirugowshqyxuvkzxjwfyl></some_tag><some_tag foo=bar></some_tag><other_tag foo=bar>'
+                          '<other_tag foo=bar></other_tag></other_tag></some_tag><other_tag foo=bar></other_tag><yn foo=bar>'
+                          '</yn><some_tag foo=bar></some_tag></other_tag><some_tag foo=bar><some_tag foo=bar><yjfgivoaqys'
+                          'foo=bar><some_tag foo=bar></some_tag></yjfgivoaqys><some_tag foo=bar></some_tag></some_tag'
+                          '><some_tag foo=bar><some_tag foo=bar></some_tag></some_tag><other_tag foo=bar><some_tag foo=bar>'
+                          '<other_tag foo=bar></other_tag></some_tag></other_tag><some_tag foo=bar><other_tag foo=bar><'
+                          q foo=bar></q></other_tag><some_tag foo=bar><some_tag foo=bar><some_tag foo=bar><fimlcfqpgrfgmqlvy'
+                          'foo=bar><some_tag foo=bar><other_tag foo=bar><other_tag foo=bar><other_tag foo=bar></other_tag'
+                          ''></other_tag><ozbxovtd foo=bar></ozbxovtd></other_tag><a foo=bar><vhilkxdosukumkwuryepsspwraoqce'
+                          'tjpnmplka foo=bar></vhilkxdosukumkwuryepsspwraoqcetjpnmplka><other_tag foo=bar></other_tag></a>'
+                          '<other_tag foo=bar><a foo=bar></a></other_tag><some_tag foo=bar></some_tag></some_tag><other_tag'
+                          'foo=bar><other_tag foo=bar></other_tag></other_tag></fimlcfqpgrfgmqlvy></some_tag><some_tag foo=bar>'
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+res: true
