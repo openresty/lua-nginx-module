@@ -9124,7 +9124,35 @@ ngx.run_worker_thread
 
 Wrap the [nginx worker thread](http://nginx.org/en/docs/dev/development_guide.html#threads) to execute lua function. The caller coroutine would yield until the function returns.
 
-Note that no ngx_lua API can be used in the `function_name` function of the `module` module since it is invoked in a separate thread.
+Only the following ngx_lua APIs could be used in `function_name` function of the `module` module:
+
+* `ngx.encode_base64`
+* `ngx.decode_base64`
+
+* `ngx.hmac_sha1`
+* `ngx.encode_args`
+* `ngx.decode_args`
+* `ngx.quote_sql_str`
+
+* `ngx.re.match`
+* `ngx.re.find`
+* `ngx.re.gmatch`
+* `ngx.re.sub`
+* `ngx.re.gsub`
+
+* `ngx.crc32_short`
+* `ngx.crc32_long`
+* `ngx.hmac_sha1`
+* `ngx.md5_bin`
+* `ngx.md5`
+
+* `ngx.config.subsystem`
+* `ngx.config.debug`
+* `ngx.config.prefix`
+* `ngx.config.nginx_version`
+* `ngx.config.nginx_configure`
+* `ngx.config.ngx_lua_version`
+
 
 The first argument `threadpool` specifies the Nginx thread pool name defined by [thread_pool](https://nginx.org/en/docs/ngx_core_module.html#thread_pool).
 
