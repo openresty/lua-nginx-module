@@ -1749,7 +1749,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     }
 
     len = b->pos - start;
-    ngx_memmove(word->data, start, len);
+    ngx_memcpy(word->data, start, len);
     word->len = len;
 
     return rc;
