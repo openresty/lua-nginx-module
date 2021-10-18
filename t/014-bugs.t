@@ -1220,74 +1220,85 @@ res: true
 
 === TEST 46: nginx crash when parsing a word or a single configuration item that is too long
 https://github.com/openresty/lua-nginx-module/issues/1938
+# When remove types-{, the type content is too long, the parsing fails, and the program automatically exits
 --- config
-    location = /t {
-        content_by_lua_block {
-            err_big_str = 'A NA<document><ghjnxnpnaryyhzyfehuyjxzoilebgazuifhn foo=bar>'
-                          '<other_tag foo=bar><ahziqttu foo=bar><a foo=bar><other_tag'
-                          'foo=bar><other_tag foo=bar><other_tag foo=bar>'
-                          '<nzzpftierhdtdeippzlyjrmkbtljunmkxhohxmbdmgeeazpb foo=bar>'
-                          '</nzzpftierhdtdeippzlyjrmkbtljunmkxhohxmbdmgeeazpb><qai foo=bar>'
-                          '</qai></other_tag></other_tag><other_tag foo=bar></other_tag>'
-                          '<other_tag foo=bar></other_tag></other_tag><some_tag foo=bar>'
-                          '</some_tag><some_tag foo=bar><mdbrjkon foo=bar><other_tag foo=bar>'
-                          '</other_tag></mdbrjkon><mttiqvw foo=bar></mttiqvw></some_tag><some_tag foo=bar>'
-                          '</some_tag></a><lae foo=bar></lae><ds foo=bar></ds><some_tag foo=bar>'
-                          '<other_tag foo=bar></other_tag></some_tag><other_tag foo=bar></other_tag>'
-                          '</ahziqttu></other_tag><a foo=bar><some_tag foo=bar></some_tag><some_tag foo=bar>'
-                          '<other_tag foo=bar></other_tag></some_tag></a><other_tag foo=bar><cxfpg foo=bar></cxfpg>'
-                          '<some_tag foo=bar></some_tag></other_tag></ghjnxnpnaryyhzyfehuyjxzoilebgazuifhn>'
-                          '<some_tag foo=bar><other_tag foo=bar><other_tag foo=bar><some_tag foo=bar>'
-                          '<some_tag foo=bar></some_tag><other_tag foo=bar></other_tag></some_tag>'
-                          '<some_tag foo=bar></some_tag><some_tag foo=bar><a foo=bar></a></some_tag>'
-                          '<a foo=bar></a></other_tag><a foo=bar></a></other_tag><a foo=bar><wblh foo=bar>'
-                          '<jyfzglfbaxfjvhtaiysmsexwusvrvzu foo=bar><other_tag foo=bar></other_tag>'
-                          '</jyfzglfbaxfjvrtaiysmsexwusvrvzu><a foo=bar><other_tag foo=bar></other_tag>'
-                          '</a></wblh><ycnivdryxanudpgzmgugzyjrnacandijqitfosjrxjuosiwhxxgwgqpwzjcyelstg'
-                          'zveugtmjilnkydyktoqywjyydtcgtabowmbxnjpttkxqjpazdsgzeutjfzgvafnovu@zgccxvypzb'
-                          'kbbsizllwitznecdbyiynopkzsyazlhyslqlwkqqnzuvvdlavwvspwzpivmmreycogbinpvhvfscjm'
-                          'wwwllppjholetfvcbezdwrfczqbdrogr foo=bar></ycnivdryxanudpgzmgugzyjrnacandijqitf'
-                          'osjrxjuosiwhxxgwgqpwzjcyelstgzveugtmjilnkydyktoqywjyydtcgtabowmbxnjpttkxqjpazdsg'
-                          'zeutjfzgvafnovumzgccxvypzbkbbsizllwitznecdbyiynopkzsyazlhyslqlwkqqnzuvvdlavwvspwz'
-                          'pivmmreycogbinpvhvfscjmwwwllppjholetfvcbezdwrfczqbdrogr></a><s foo=bar></s><some_tag'
-                          'foo=bar></some_tag><some_tag foo=bar></some_tag></some_tag><oin foo=bar><other_tag'
-                          'foo=bar><other_tag foo=bar></other_tag></other_tag><other_tag foo=bar></other_tag>'
-                          '<other_tag foo=bar></other_tag></oin><other_tag foo=bar><other_tag foo=bar>'
-                          '<some_tag foo=bar><other_tag foo=bar></other_tag></some_tag><other_tag foo=bar>'
-                          '<some_tag foo=bar><some_tag foo=bar><some_tag foo=bar><other_tag foo=bar>'
-                          '</other_tag></some_tag><xg foo=bar></xg></some_tag><ibsolavsdhkcovsbqddq foo=bar>'
-                          '<bjodqvqtcgizzbefemdqiljssgxibmprzhxifaciftbl foo=bar></bjodqvqtcgizzbefemdqiljssgxibmprzhxifaciftbl>'
-                          '</ibsolavsdhkcovsbqddq><s foo=bar><j foo=bar><other_tag foo=bar></other_tag></j></s><other_tag foo=bar>'
-                          '<zte foo=bar></zte><other_tag foo=bar><a foo=bar></a></other_tag></other_tag></some_tag>'
-                          '<some_tag foo=bar><other_tag foo=bar></other_tag></some_tag></other_tag><other_tag foo=bar>'
-                          '<some_tag foo=bar><other_tag foo=bar></other_tag><other_tag foo=bar><other_tag foo=bar>'
-                          <some_tag foo=bar></some_tag></other_tag></other_tag><some_tag foo=bar></some_tag>'
-                          '</some_tag><other_tag foo=bar></other_tag></other_tag><some_tag foo=bar></some_tag>'
-                          '</other_tag><ynorkudnfqlyozuf foo=bar><some_tag foo=bar><some_tag foo=bar></some_tag>'
-                          '</some_tag><some_tag foo=bar><a foo=bar></a></some_tag><some_tag foo=bar><some_tag foo=bar>'
-                          '</some_tag></some_tag><other_tag foo=bar><some_tag foo=bar><gywpe foo=bar></gywpe></some_tag>'
-                          '<some_tag foo=bar></some_tag><some_tag foo=bar></some_tag></other_tag><some_tag foo=bar>'
-                          '<ycbfctvudqzhnasdtgwsylenjzo foo=bar></ycbfctvudqzhnasdtgwsylenjzo></some_tag></ynorkudnfqlyozuf>'
-                          '<some_tag foo=bar></some_tag><other_tag foo=bar></other_tag><bpxlcvo foo=bar></bpxlcvo></other_tag>'
-                          '<other_tag foo=bar><some_tag foo=bar><some_tag foo=bar><bsgabtkeonafnvroqlmlprxxhlkayhlmxmanhomgrwe'
-                          'qevvqowuvnrvfazckbpxihviccqvfeciafjuxpiukkyfmirugowshqyxuvkzxjwfyl foo=bar><bujx foo=bar><other_tag'
-                          'foo=bar></other_tag></bujx></bsgabtkeonafnvroqlmlprxxhlkayhlmxmanhomgrweqevvqowuvnrvfazckbpxihviccqvf'
-                          'eciafjuxpiukkyfmirugowshqyxuvkzxjwfyl></some_tag><some_tag foo=bar></some_tag><other_tag foo=bar>'
-                          '<other_tag foo=bar></other_tag></other_tag></some_tag><other_tag foo=bar></other_tag><yn foo=bar>'
-                          '</yn><some_tag foo=bar></some_tag></other_tag><some_tag foo=bar><some_tag foo=bar><yjfgivoaqys'
-                          'foo=bar><some_tag foo=bar></some_tag></yjfgivoaqys><some_tag foo=bar></some_tag></some_tag'
-                          '><some_tag foo=bar><some_tag foo=bar></some_tag></some_tag><other_tag foo=bar><some_tag foo=bar>'
-                          '<other_tag foo=bar></other_tag></some_tag></other_tag><some_tag foo=bar><other_tag foo=bar><'
-                          q foo=bar></q></other_tag><some_tag foo=bar><some_tag foo=bar><some_tag foo=bar><fimlcfqpgrfgmqlvy'
-                          'foo=bar><some_tag foo=bar><other_tag foo=bar><other_tag foo=bar><other_tag foo=bar></other_tag'
-                          ''></other_tag><ozbxovtd foo=bar></ozbxovtd></other_tag><a foo=bar><vhilkxdosukumkwuryepsspwraoqce'
-                          'tjpnmplka foo=bar></vhilkxdosukumkwuryepsspwraoqcetjpnmplka><other_tag foo=bar></other_tag></a>'
-                          '<other_tag foo=bar><a foo=bar></a></other_tag><some_tag foo=bar></some_tag></some_tag><other_tag'
-                          'foo=bar><other_tag foo=bar></other_tag></other_tag></fimlcfqpgrfgmqlvy></some_tag><some_tag foo=bar>'
-        }
+    location /lua {
+        content_by_lua '
+            local res = ngx.location.capture("/test.lua")
+            ngx.say(res.status)
+            ngx.print(res.body)
+        ';
     }
+        types {
+        text/html                                        html htm shtml;
+        text/css                                         css;
+        text/xml                                         xml;
+        image/gif                                        gif;
+        image/jpeg                                       jpeg jpg;
+        application/javascript                           js;
+        application/atom+xml                             atom;
+        application/rss+xml                              rss;
 
+        text/mathml                                      mml;
+        text/plain                                       txt;
+        text/vnd.sun.j2me.app-descriptor                 jad;
+        text/vnd.wap.wml                                 wml;
+        text/x-component                                 htc;
+
+        image/png                                        png;
+        image/svg+xml                                    svg svgz;
+        image/tiff                                       tif tiff;
+        image/vnd.wap.wbmp                               wbmp;
+        image/webp                                       webp;
+        image/x-icon                                     ico;
+        image/x-jng                                      jng;
+
+        font/woff                                        woff;
+        font/woff2                                       woff2;
+
+        application/java-archive                         jar war ear;
+        application/json                                 json;
+        application/mac-binhex40                         hqx;
+        application/msword                               doc;
+        application/pdf                                  pdf;
+        application/postscript                           ps eps ai;
+        application/rtf                                  rtf;
+        application/vnd.apple.mpegurl                    m3u8;
+        application/vnd.google-earth.kml+xml             kml;
+        application/vnd.google-earth.kmz                 kmz;
+        application/vnd.ms-excel                         xls;
+        application/vnd.ms-fontobject                    eot;
+        application/vnd.ms-powerpoint                    ppt;
+        application/vnd.oasis.opendocument.graphics      odg;
+        application/vnd.oasis.opendocument.presentation  odp;
+        application/vnd.oasis.opendocument.spreadsheet   ods;
+        application/vnd.oasis.opendocument.text          odt;
+        application/vnd.openxmlformats-officedocument.presentationml.presentation
+                                                         pptx;
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                                                         xlsx;
+        application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                                                         docx;
+        application/vnd.wap.wmlc                         wmlc;
+        application/x-7z-compressed                      7z;
+        application/x-cocoa                              cco;
+        application/x-java-archive-diff                  jardiff;
+        application/x-java-jnlp-file                     jnlp;
+        application/x-makeself                           run;
+        application/x-perl                               pl pm;
+        application/x-pilot                              prc pdb;
+        application/x-rar-compressed                     rar;
+        application/x-redhat-package-manager             rpm;
+        application/x-sea                                sea;
+        application/x-shockwave-flash                    swf;
+        application/x-stuffit                            sit;
+        application/x-tcl                                tcl tk;
+    }
+--- user_files
+>>> test.lua
+print("Hello, world")
 --- request
-GET /t
+    GET /lua
 --- response_body
-res: true
+200
+print("Hello, world")
