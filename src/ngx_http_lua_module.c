@@ -1485,6 +1485,7 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
+        ngx_ssl_cleanup_ctx(llcf->ssl);
         return NGX_ERROR;
     }
 
