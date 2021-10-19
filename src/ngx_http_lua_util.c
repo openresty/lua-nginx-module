@@ -388,10 +388,9 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         }
 #endif
 
-    } else {
-#else
-    {
+    } else
 #endif
+    {
         base = lua_gettop(L);
 
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(

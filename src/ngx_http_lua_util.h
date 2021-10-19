@@ -648,10 +648,9 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_rawgeti(L, -1, co_ref);
 
-    } else {
-#else
-    {
+    } else
 #endif
+    {
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(L, LUA_REGISTRYINDEX);

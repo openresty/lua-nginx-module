@@ -271,7 +271,7 @@ false : module 'hello' not found.*
 
 
 
-=== TEST 10 the number of Lua VM exceeds the pool size
+=== TEST 10: the number of Lua VM exceeds the pool size
 --- main_config
     thread_pool testpool threads=100;
 --- http_config eval: $::HttpConfig
@@ -348,7 +348,7 @@ GET /t
 
 
 
-=== TEST 11 kill uthread before worker thread callback
+=== TEST 11: kill uthread before worker thread callback
 --- main_config
     thread_pool testpool threads=100;
 --- http_config eval: $::HttpConfig
