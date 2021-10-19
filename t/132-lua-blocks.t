@@ -312,7 +312,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]" in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
 
 
 
@@ -331,7 +331,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]==]" in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]==]", the inlined Lua code may be too long in .*?\bnginx.conf:41/
 
 
 
@@ -350,7 +350,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]" in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
 
 
 
@@ -369,7 +369,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]=]" in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]=]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
 
 
 

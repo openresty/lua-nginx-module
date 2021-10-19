@@ -755,6 +755,8 @@ As noted earlier, PCRE sequences presented within <code>*_by_lua_block {}</code>
     # evaluates to "1234"
 </geshi>
 
+'''NOTE''' You are recommended to use `by_lua_file` when the Lua code is very long.
+
 == Mixing with SSI Not Supported ==
 
 Mixing SSI with ngx_lua in the same Nginx request is not supported at all. Just use ngx_lua exclusively. Everything you can do with SSI can be done atop ngx_lua anyway and it can be more efficient when using ngx_lua.
