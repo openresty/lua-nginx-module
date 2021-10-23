@@ -734,7 +734,7 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
 
         default:
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "unsupported HTTP method: %u", (unsigned) method);
+                          "unsupported HTTP method: %ui", method);
 
             return NGX_ERROR;
     }
