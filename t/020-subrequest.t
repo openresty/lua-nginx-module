@@ -3391,3 +3391,22 @@ method: POST, uri: /foo
 0
 --- no_error_log
 [error]
+
+
+
+=== TEST 81: bad HTTP method
+--- config
+    location /other { }
+
+    location /lua {
+        content_by_lua_block {
+            local res = ngx.location.capture("/other",
+                { method = 10240 });
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+unsupported HTTP method: 10240
