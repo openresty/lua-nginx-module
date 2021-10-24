@@ -7752,7 +7752,7 @@ This API was first introduced in the <code>v0.6.0</code> release.
 
 '''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, init_by_lua*, ngx.timer.*, header_filter_by_lua*, body_filter_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, ssl_client_hello_by_lua*''
 
-Resumes the executation of a user Lua coroutine object previously yielded or just created.
+Resumes the execution of a user Lua coroutine object previously yielded or just created.
 
 Similar to the standard Lua [https://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume coroutine.resume] API, but works in the context of the Lua coroutines created by ngx_lua.
 

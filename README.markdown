@@ -9041,7 +9041,7 @@ coroutine.resume
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, init_by_lua&#42;, ngx.timer.&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Resumes the executation of a user Lua coroutine object previously yielded or just created.
+Resumes the execution of a user Lua coroutine object previously yielded or just created.
 
 Similar to the standard Lua [coroutine.resume](https://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume) API, but works in the context of the Lua coroutines created by ngx_lua.
 
