@@ -3363,7 +3363,7 @@ lua_transform_underscores_in_response_headers
 
 **context:** *http, server, location, location-if*
 
-Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](#ngxheaderheader) API to hypens (`-`).
+Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](#ngxheaderheader) API to hyphens (`-`).
 
 This directive was first introduced in the `v0.5.0rc32` release.
 

@@ -2864,7 +2864,7 @@ This directive was first introduced in the <code>v0.9.20</code> release.
 
 '''context:''' ''http, server, location, location-if''
 
-Controls whether to transform underscores (<code>_</code>) in the response header names specified in the [[#ngx.header.HEADER|ngx.header.HEADER]] API to hypens (<code>-</code>).
+Controls whether to transform underscores (<code>_</code>) in the response header names specified in the [[#ngx.header.HEADER|ngx.header.HEADER]] API to hyphens (<code>-</code>).
 
 This directive was first introduced in the <code>v0.5.0rc32</code> release.
 
