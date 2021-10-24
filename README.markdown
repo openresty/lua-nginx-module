@@ -379,7 +379,7 @@ Build the source with this module:
  # current nginx build.
  # You can get usually those options using command nginx -V
 
- # you can change the parallism number 2 below to fit the number of spare CPU cores in your
+ # you can change the parallelism number 2 below to fit the number of spare CPU cores in your
  # machine.
  make -j2
  make install
@@ -2654,7 +2654,7 @@ The [ngx.ssl.clienthello](https://github.com/openresty/lua-resty-core/blob/maste
 provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
 library are particularly useful in this context.
 
-Note that this handler runs in extremelly early stage of SSL handshake, before the SSL client hello extensions are parsed.
+Note that this handler runs in extremely early stage of SSL handshake, before the SSL client hello extensions are parsed.
 So you can not use some Lua API like `ssl.server_name()` which is dependent on the later stage's processing.
 
 Also note that only the directive in default server is valid for several virtual servers with the same IP address and port.
@@ -3363,7 +3363,7 @@ lua_transform_underscores_in_response_headers
 
 **context:** *http, server, location, location-if*
 
-Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](#ngxheaderheader) API to hypens (`-`).
+Controls whether to transform underscores (`_`) in the response header names specified in the [ngx.header.HEADER](#ngxheaderheader) API to hyphens (`-`).
 
 This directive was first introduced in the `v0.5.0rc32` release.
 
@@ -3472,7 +3472,7 @@ Specifies the size limit of the Lua VM pool (default 100) that will be used in t
 
 Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
 
-The Lua VM in the VM pool is used to execute Lua code in seperate thread.
+The Lua VM in the VM pool is used to execute Lua code in separate thread.
 
 The pool is global at Nginx worker level. And it is used to reuse Lua VMs between requests.
 
@@ -5414,7 +5414,7 @@ ngx.req.init_body
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;*
 
-Creates a new blank request body for the current request and inializes the buffer for later request body data writing via the [ngx.req.append_body](#ngxreqappend_body) and [ngx.req.finish_body](#ngxreqfinish_body) APIs.
+Creates a new blank request body for the current request and initializes the buffer for later request body data writing via the [ngx.req.append_body](#ngxreqappend_body) and [ngx.req.finish_body](#ngxreqfinish_body) APIs.
 
 If the `buffer_size` argument is specified, then its value will be used for the size of the memory buffer for body writing with [ngx.req.append_body](#ngxreqappend_body). If the argument is omitted, then the value specified by the standard [client_body_buffer_size](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_buffer_size) directive will be used instead.
 
@@ -9041,7 +9041,7 @@ coroutine.resume
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, init_by_lua&#42;, ngx.timer.&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Resumes the executation of a user Lua coroutine object previously yielded or just created.
+Resumes the execution of a user Lua coroutine object previously yielded or just created.
 
 Similar to the standard Lua [coroutine.resume](https://www.lua.org/manual/5.1/manual.html#pdf-coroutine.resume) API, but works in the context of the Lua coroutines created by ngx_lua.
 

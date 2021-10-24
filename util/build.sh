@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # this script is for developers only.
-# dependent on the ngx-build script from the nginx-devel-utils repostory:
+# dependent on the ngx-build script from the nginx-devel-utils repository:
 #   https://github.com/openresty/nginx-devel-utils/blob/master/ngx-build
 # the resulting nginx is located at ./work/nginx/sbin/nginx
 
