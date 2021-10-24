@@ -4549,7 +4549,7 @@ See also [[#ngx.req.set_body_data|ngx.req.set_body_data]].
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*''
 
-Creates a new blank request body for the current request and inializes the buffer for later request body data writing via the [[#ngx.req.append_body|ngx.req.append_body]] and [[#ngx.req.finish_body|ngx.req.finish_body]] APIs.
+Creates a new blank request body for the current request and initializes the buffer for later request body data writing via the [[#ngx.req.append_body|ngx.req.append_body]] and [[#ngx.req.finish_body|ngx.req.finish_body]] APIs.
 
 If the <code>buffer_size</code> argument is specified, then its value will be used for the size of the memory buffer for body writing with [[#ngx.req.append_body|ngx.req.append_body]]. If the argument is omitted, then the value specified by the standard [[HttpCoreModule#client_body_buffer_size|client_body_buffer_size]] directive will be used instead.
 
