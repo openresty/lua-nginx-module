@@ -931,7 +931,7 @@ Hello
           local results = {}
           results.something = "hello"
           results.content_type = "anything"
-          results.somehing_else = "hi"
+          results.something_else = "hi"
 
           local arr = {}
           for k in pairs(results) do table.insert(arr, k) end
@@ -948,7 +948,7 @@ Content-Type: text/my-plain
 
 --- response_body
 content_type: anything
-somehing_else: hi
+something_else: hi
 something: hello
 --- no_error_log
 [error]
