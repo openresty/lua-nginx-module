@@ -2957,7 +2957,7 @@ Specifies the size limit of the Lua VM pool (default 100) that will be used in t
 
 Also, it is not allowed to create Lua VMs that exceeds the pool size limit.
 
-The Lua VM in the VM pool is used to execute Lua code in seperate thread.
+The Lua VM in the VM pool is used to execute Lua code in separate thread.
 
 The pool is global at Nginx worker level. And it is used to reuse Lua VMs between requests.
 
