@@ -948,8 +948,8 @@ Content-Type: text/my-plain
 
 --- response_body
 content_type: anything
-something_else: hi
 something: hello
+something_else: hi
 --- no_error_log
 [error]
 
