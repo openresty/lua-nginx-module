@@ -136,7 +136,7 @@
  * |  .varname]        |                                    |
  * ---------------------                                    |
  * | Int               |  instruction counter               |
- * | [locvars[i]]      |  where lcoal var i start to be     |-> repeat for i in
+ * | [locvars[i]]      |  where local var i start to be     |-> repeat for i in
  * |  .startpc]        |  referenced                        |  [0..sizelocvars]
  * ---------------------                                    |
  * | Int               |  instruction counter, where local  |
