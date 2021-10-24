@@ -3112,7 +3112,7 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket settimout: expecting 2 arguments "
+        return luaL_error(L, "ngx.socket settimeout: expecting 2 arguments "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
@@ -3159,7 +3159,7 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 4) {
-        return luaL_error(L, "ngx.socket settimout: expecting 4 arguments "
+        return luaL_error(L, "ngx.socket settimeout: expecting 4 arguments "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
