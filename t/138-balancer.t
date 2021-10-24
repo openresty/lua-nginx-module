@@ -435,7 +435,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 
 
 
-=== TEST 15: test if execeed proxy_next_upstream_limit
+=== TEST 15: test if exceed proxy_next_upstream_limit
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
