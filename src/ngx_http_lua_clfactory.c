@@ -126,7 +126,7 @@
  * | at [p[i]]         |
  * ---------------------
  * | Vector            | Debug lineinfo vector
- * | [lineinfo]        | Empty vector here if dubug info is stripped
+ * | [lineinfo]        | Empty vector here if debug info is stripped
  * ---------------------
  * | Int               | Number of local variable in this function
  * | [sizelocvars]     | 0 if debug info is stripped
