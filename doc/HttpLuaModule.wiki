@@ -309,7 +309,7 @@ Build the source with this module:
     # current nginx build.
     # You can get usually those options using command nginx -V
 
-    # you can change the parallism number 2 below to fit the number of spare CPU cores in your
+    # you can change the parallelism number 2 below to fit the number of spare CPU cores in your
     # machine.
     make -j2
     make install
