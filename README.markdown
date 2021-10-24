@@ -2654,7 +2654,7 @@ The [ngx.ssl.clienthello](https://github.com/openresty/lua-resty-core/blob/maste
 provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
 library are particularly useful in this context.
 
-Note that this handler runs in extremelly early stage of SSL handshake, before the SSL client hello extensions are parsed.
+Note that this handler runs in extremely early stage of SSL handshake, before the SSL client hello extensions are parsed.
 So you can not use some Lua API like `ssl.server_name()` which is dependent on the later stage's processing.
 
 Also note that only the directive in default server is valid for several virtual servers with the same IP address and port.
