@@ -887,7 +887,7 @@ received response of 119 bytes
 
 
 
-=== TEST 13: github issue #108: ngx.locaiton.capture + redis.set_keepalive
+=== TEST 13: github issue #108: ngx.location.capture + redis.set_keepalive
 --- http_config eval
     qq{
         lua_package_path "$::HtmlDir/?.lua;;";

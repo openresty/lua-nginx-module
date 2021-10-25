@@ -273,7 +273,7 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_sema_mm_t         *sema_mm;
 
     ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
-                                                of reqeusts */
+                                                of requests */
     ngx_uint_t           malloc_trim_req_count;
 
 #if (nginx_version >= 1011011)

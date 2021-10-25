@@ -165,7 +165,7 @@ void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
 void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 
-void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
+void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible);
 
 void ngx_http_lua_request_cleanup_handler(void *data);
 

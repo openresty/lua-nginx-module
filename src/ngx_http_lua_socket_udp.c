@@ -1044,7 +1044,7 @@ ngx_http_lua_socket_udp_settimeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket settimout: expecting at least 2 "
+        return luaL_error(L, "ngx.socket settimeout: expecting at least 2 "
                           "arguments (including the object) but seen %d",
                           lua_gettop(L));
     }

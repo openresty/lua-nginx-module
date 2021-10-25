@@ -126,7 +126,7 @@
  * | at [p[i]]         |
  * ---------------------
  * | Vector            | Debug lineinfo vector
- * | [lineinfo]        | Empty vector here if dubug info is stripped
+ * | [lineinfo]        | Empty vector here if debug info is stripped
  * ---------------------
  * | Int               | Number of local variable in this function
  * | [sizelocvars]     | 0 if debug info is stripped
@@ -136,7 +136,7 @@
  * |  .varname]        |                                    |
  * ---------------------                                    |
  * | Int               |  instruction counter               |
- * | [locvars[i]]      |  where lcoal var i start to be     |-> repeat for i in
+ * | [locvars[i]]      |  where local var i start to be     |-> repeat for i in
  * |  .startpc]        |  referenced                        |  [0..sizelocvars]
  * ---------------------                                    |
  * | Int               |  instruction counter, where local  |

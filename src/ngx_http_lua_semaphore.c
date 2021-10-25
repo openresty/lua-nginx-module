@@ -343,7 +343,7 @@ ngx_http_lua_ffi_sema_post(ngx_http_lua_sema_t *sem, int n)
     sem->resource_count += n;
 
     if (!ngx_queue_empty(&sem->wait_queue)) {
-        /* we need the extra paranthese around the first argument of
+        /* we need the extra parentheses around the first argument of
          * ngx_post_event() just to work around macro issues in nginx
          * cores older than nginx 1.7.12 (exclusive).
          */

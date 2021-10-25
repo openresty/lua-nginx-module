@@ -4405,7 +4405,7 @@ ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
     escape = ngx_http_lua_escape_uri(NULL, data, len, type);
     if (escape > 0) {
         /*
-         * we allocate space for the trailling '\0' char here because nginx
+         * we allocate space for the trailing '\0' char here because nginx
          * header values must be null-terminated
          */
         dst->data = ngx_palloc(r->pool, len + 2 * escape + 1);

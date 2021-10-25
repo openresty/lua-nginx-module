@@ -677,7 +677,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
                 p = (u_char *) luaL_checklstring(L, -1, &len);
 
                 /*
-                 * we also copy the trailling '\0' char here because nginx
+                 * we also copy the trailing '\0' char here because nginx
                  * header values must be null-terminated
                  * */
 
@@ -705,7 +705,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     } else {
 
         /*
-         * we also copy the trailling '\0' char here because nginx
+         * we also copy the trailing '\0' char here because nginx
          * header values must be null-terminated
          * */
 

@@ -539,7 +539,7 @@ lua exceeding request header limit
 
 
 
-=== TEST 21: execeeding custom max 102 header limit
+=== TEST 21: exceeding custom max 102 header limit
 --- config
     location /lua {
         content_by_lua '
@@ -591,7 +591,7 @@ lua exceeding request header limit 103 > 102
 
 
 
-=== TEST 22: NOT execeeding custom max 102 header limit
+=== TEST 22: NOT exceeding custom max 102 header limit
 --- config
     location /lua {
         content_by_lua '
@@ -1863,7 +1863,7 @@ ok
 
 
 
-=== TEST 57: execeeding custom 3 header limit
+=== TEST 57: exceeding custom 3 header limit
 --- config
     location /lua {
         content_by_lua '
@@ -1901,7 +1901,7 @@ lua exceeding request header limit 4 > 3
 
 
 
-=== TEST 58: NOT execeeding custom 3 header limit
+=== TEST 58: NOT exceeding custom 3 header limit
 --- config
     location /lua {
         content_by_lua '
@@ -1937,7 +1937,7 @@ lua exceeding request header limit
 
 
 
-=== TEST 59: execeeding custom 3 header limit (raw)
+=== TEST 59: exceeding custom 3 header limit (raw)
 --- config
     location /lua {
         content_by_lua '
@@ -1975,7 +1975,7 @@ lua exceeding request header limit 4 > 3
 
 
 
-=== TEST 60: NOT execeeding custom 3 header limit (raw)
+=== TEST 60: NOT exceeding custom 3 header limit (raw)
 --- config
     location /lua {
         content_by_lua '

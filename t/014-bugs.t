@@ -1041,7 +1041,7 @@ https://github.com/openresty/lua-nginx-module/issues/1915
                 return true
             end
 
-            local host = "www.notexistdomain.com"
+            local host = "nonexistent.openresty.org"
             local port = 80
 
             local threads = {}
@@ -1068,7 +1068,7 @@ GET /t
 --- response_body
 res: false
 --- error_log
-www.notexistdomain.com could not be resolved
+nonexistent.openresty.org could not be resolved
 
 
 
@@ -1139,7 +1139,7 @@ https://github.com/openresty/lua-nginx-module/issues/1915
                 return true
             end
 
-            local host = "www.notexistdomain.com"
+            local host = "nonexistent.openresty.org"
             local port = 80
 
             local threads = {}
@@ -1166,7 +1166,7 @@ GET /t
 --- response_body
 res: false
 --- error_log
-www.notexistdomain.com could not be resolved
+nonexistent.openresty.org could not be resolved
 
 
 
