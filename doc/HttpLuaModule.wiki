@@ -5712,10 +5712,12 @@ The resulting object <code>dict</code> has the following methods:
 
 * [[#ngx.shared.DICT.get|get]]
 * [[#ngx.shared.DICT.get_stale|get_stale]]
+* [[#ngx.shared.DICT.cog|cog]]
 * [[#ngx.shared.DICT.set|set]]
 * [[#ngx.shared.DICT.safe_set|safe_set]]
 * [[#ngx.shared.DICT.add|add]]
 * [[#ngx.shared.DICT.safe_add|safe_add]]
+* [[#ngx.shared.DICT.cas|cas]]
 * [[#ngx.shared.DICT.replace|replace]]
 * [[#ngx.shared.DICT.delete|delete]]
 * [[#ngx.shared.DICT.incr|incr]]
@@ -5828,6 +5830,20 @@ This method was first introduced in the <code>0.8.6</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 
+== ngx.shared.DICT.cog ==
+'''syntax:''' ''value, flags = ngx.shared.DICT:cog(key, old_value?, old_flags?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, ssl_client_hello_by_lua*''
+
+Similar to the [[#ngx.shared.DICT.get|get]] method but only returns if
+<code>old_value</code> and/or <code>old_flags</code> does not match shm.
+
+if <code>old_value</code> or <code>old_flags</code> is <code>nil</code> it will be ignored when comparing.
+
+This method was first introduced in the <code>0.XX.X</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
 == ngx.shared.DICT.set ==
 
 '''syntax:''' ''success, err, forcible = ngx.shared.DICT:set(key, value, exptime?, flags?)''
@@ -5911,6 +5927,22 @@ See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 Similar to the [[#ngx.shared.DICT.add|add]] method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return <code>nil</code> and the string "no memory".
 
 This feature was first introduced in the <code>v0.7.18</code> release.
+
+See also [[#ngx.shared.DICT|ngx.shared.DICT]].
+
+== ngx.shared.DICT.cas ==
+'''syntax:''' ''success, err, forcible = ngx.shared.DICT:cas(key, value, exptime?, flags?, old_value?, old_flags?)''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, ssl_client_hello_by_lua*''
+
+If <code>old_value</code> is not <code>nil</code> value will only be set if <code>old_value</code> is equal to the
+value in shm.
+
+If <code>old_flags</code> is not <code>nil</code> value will only be set if <code>old_flags</code> is equal to the
+flags in shm.
+
+
+This method was first introduced in the <code>0.XX.X</code> release.
 
 See also [[#ngx.shared.DICT|ngx.shared.DICT]].
 

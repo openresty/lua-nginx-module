@@ -3560,10 +3560,12 @@ Nginx API for Lua
 * [ngx.shared.DICT](#ngxshareddict)
 * [ngx.shared.DICT.get](#ngxshareddictget)
 * [ngx.shared.DICT.get_stale](#ngxshareddictget_stale)
+* [ngx.shared.DICT.cog](#ngxshareddictcog)
 * [ngx.shared.DICT.set](#ngxshareddictset)
 * [ngx.shared.DICT.safe_set](#ngxshareddictsafe_set)
 * [ngx.shared.DICT.add](#ngxshareddictadd)
 * [ngx.shared.DICT.safe_add](#ngxshareddictsafe_add)
+* [ngx.shared.DICT.cas](#ngxshareddictcas)
 * [ngx.shared.DICT.replace](#ngxshareddictreplace)
 * [ngx.shared.DICT.delete](#ngxshareddictdelete)
 * [ngx.shared.DICT.incr](#ngxshareddictincr)
@@ -6756,10 +6758,12 @@ The resulting object `dict` has the following methods:
 
 * [get](#ngxshareddictget)
 * [get_stale](#ngxshareddictget_stale)
+* [cog](#ngxshareddictcog)
 * [set](#ngxshareddictset)
 * [safe_set](#ngxshareddictsafe_set)
 * [add](#ngxshareddictadd)
 * [safe_add](#ngxshareddictsafe_add)
+* [cas](#ngxshareddictcas)
 * [replace](#ngxshareddictreplace)
 * [delete](#ngxshareddictdelete)
 * [incr](#ngxshareddictincr)
@@ -6884,6 +6888,23 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.shared.DICT.cog
+-------------------
+**syntax:** *value, flags = ngx.shared.DICT:cog(key, old_value?, old_flags?)*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Similar to the [get](#ngxshareddictget) method but only returns if
+`old_value` and/or `old_flags` does not match shm.
+
+if `old_value` or `old_flags` is `nil` it will be ignored when comparing.
+
+This method was first introduced in the `0.XX.X` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
 ngx.shared.DICT.set
 -------------------
 
@@ -6979,6 +7000,25 @@ ngx.shared.DICT.safe_add
 Similar to the [add](#ngxshareddictadd) method, but never overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone. In this case, it will immediately return `nil` and the string "no memory".
 
 This feature was first introduced in the `v0.7.18` release.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.cas
+-------------------
+**syntax:** *success, err, forcible = ngx.shared.DICT:cas(key, value, exptime?, flags?, old_value?, old_flags?)*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+If `old_value` is not `nil` value will only be set if `old_value` is equal to the
+value in shm.
+
+If `old_flags` is not `nil` value will only be set if `old_flags` is equal to the
+flags in shm.
+
+
+This method was first introduced in the `0.XX.X` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
