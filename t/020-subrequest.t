@@ -1161,7 +1161,7 @@ r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fj
 GET /main
 --- response_body
 status: 500
-body:
+body: 
 
 
 
@@ -1182,7 +1182,7 @@ body:
 GET /main
 --- response_body
 status: 500
-body:
+body: 
 
 
 
@@ -1487,7 +1487,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body:
+body: 
 truncated: true
 
 --- error_log
@@ -1609,7 +1609,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body:
+body: 
 truncated: true
 
 --- error_log
@@ -2082,7 +2082,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body:
+body: 
 truncated: true
 
 --- error_log
