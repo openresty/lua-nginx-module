@@ -1161,7 +1161,7 @@ r%5B%5D=http%3A%2F%2Fajax.googleapis.com%3A80%2Fajax%2Flibs%2Fjquery%2F1.7.2%2Fj
 GET /main
 --- response_body
 status: 500
-body: 
+body:
 
 
 
@@ -1182,7 +1182,7 @@ body:
 GET /main
 --- response_body
 status: 500
-body: 
+body:
 
 
 
@@ -1487,7 +1487,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body: 
+body:
 truncated: true
 
 --- error_log
@@ -1609,7 +1609,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body: 
+body:
 truncated: true
 
 --- error_log
@@ -2082,7 +2082,7 @@ post subreq: rc=0, status=200
 
 --- response_body
 status: 200
-body: 
+body:
 truncated: true
 
 --- error_log
@@ -3000,6 +3000,8 @@ method: GET, uri: /foo, X: GET /bar HTTP/1.0
 0
 --- no_error_log
 [error]
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -3128,6 +3130,8 @@ method: POST, uri: /foo
 0
 --- no_error_log
 [error]
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -3259,6 +3263,8 @@ method: POST, uri: /foo
 0
 --- no_error_log
 [error]
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -3391,6 +3397,8 @@ method: POST, uri: /foo
 0
 --- no_error_log
 [error]
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -3410,3 +3418,107 @@ GET /lua
 --- error_code: 500
 --- error_log
 unsupported HTTP method: 10240
+
+
+
+=== TEST 82: bad requests with both Content-Length and Transfer-Encoding (nginx >= 1.21.1)
+--- http_config
+    upstream backend {
+        server unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        keepalive 32;
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+
+        location / {
+            content_by_lua_block {
+                ngx.say("method: ", ngx.var.request_method,
+                        ", uri: ", ngx.var.uri,
+                        ", X: ", ngx.var.http_x)
+            }
+        }
+    }
+--- config
+    location /proxy {
+        proxy_http_version 1.1;
+        proxy_set_header   Connection "";
+        proxy_pass         http://backend/foo;
+    }
+
+    location /capture {
+        server_tokens off;
+        more_clear_headers Date;
+
+        content_by_lua_block {
+            local res = ngx.location.capture("/proxy")
+            ngx.print(res.body)
+        }
+    }
+
+    location /t {
+        content_by_lua_block {
+            local req = [[
+GET /capture HTTP/1.1
+Host: test.com
+Content-Length: 37
+Transfer-Encoding: chunked
+
+0
+
+GET /capture HTTP/1.1
+Host: test.com
+X: GET /bar HTTP/1.0
+
+]]
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(1000)
+
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send req: ", err)
+                return
+            end
+
+            ngx.say("req bytes: ", bytes)
+
+            local n_resp = 0
+
+            local reader = sock:receiveuntil("\r\n")
+            while true do
+                local line, err = reader()
+                if line then
+                    ngx.say(line)
+                    if line == "0" then
+                        n_resp = n_resp + 1
+                    end
+
+                    if n_resp >= 2 then
+                        break
+                    end
+
+                else
+                    ngx.say("err: ", err)
+                    break
+                end
+            end
+
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+req bytes: 146
+HTTP/1.1 400 Bad Request
+--- no_error_log
+[error]
+--- skip_nginx
+3: < 1.21.1
