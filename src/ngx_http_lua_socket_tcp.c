@@ -2825,7 +2825,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     switch (type) {
         case LUA_TNUMBER:
-            b->last  = ngx_http_lua_write_num(L, 2, b->last);
+            b->last = ngx_http_lua_write_num(L, 2, b->last);
             break;
 
         case LUA_TSTRING:
