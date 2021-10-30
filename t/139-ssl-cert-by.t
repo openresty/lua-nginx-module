@@ -2327,7 +2327,7 @@ uthread: failed to kill: already waited or killed
 === TEST 27: get ciphers
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;;";
-    lua_ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    lua_ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
 
     server {
         listen 127.0.0.1:12345 ssl;
@@ -2416,7 +2416,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-ciphers: ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+ciphers: ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
 
 --- no_error_log
 [error]
