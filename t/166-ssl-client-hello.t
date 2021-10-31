@@ -2140,7 +2140,6 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
             local ip = string.format("%d.%d.%d.%d", byte(addr, 1), byte(addr, 2),
                        byte(addr, 3), byte(addr, 4))
             print("client ip: ", ip)
-
         }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
