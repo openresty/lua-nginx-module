@@ -1016,6 +1016,7 @@ ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, char **pciphers,
 
     *pciphers = ngx_pnalloc(pool, len);
     if (*pciphers == NULL) {
+        *err = "no memory";
         return NGX_ERROR;
     }
 
@@ -1053,6 +1054,7 @@ ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, char **pciphers,
     *cipherslen = ngx_strlen(buf);
     *pciphers = ngx_pnalloc(pool, *cipherslen);
     if (*pciphers == NULL) {
+        *err = "no memory";
         return NGX_ERROR;
     }
 
