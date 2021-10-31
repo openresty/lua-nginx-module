@@ -965,102 +965,24 @@ int
 ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, char **pciphers,
     size_t *cipherslen, char **err)
 {
-    ngx_pool_t          *pool;
-    ngx_ssl_conn_t      *ssl_conn;
+    ngx_int_t            rc;
+    ngx_str_t            ciphers;
     ngx_connection_t    *c;
 
-    if (r->connection == NULL || r->connection->ssl == NULL) {
+    c = r->connection;
+    if (c == NULL || c->ssl == NULL) {
         *err = "bad request";
         return NGX_ERROR;
     }
 
-    ssl_conn = r->connection->ssl->connection;
-    if (ssl_conn == NULL) {
-        *err = "bad ssl conn";
-        return NGX_ERROR;
-    }
-
-    pool = r->pool;
-    c = ngx_ssl_get_connection(ssl_conn);
-
-#ifdef SSL_CTRL_GET_RAW_CIPHERLIST
-
-    int                n, i, bytes;
-    size_t             len;
-    u_char            *ciphers, *p;
-    const SSL_CIPHER  *cipher;
-
-    bytes = SSL_get0_raw_cipherlist(c->ssl->connection, NULL);
-    n = SSL_get0_raw_cipherlist(c->ssl->connection, &ciphers);
-
-    if (n <= 0) {
-        *cipherslen = 0;
-        return NGX_OK;
-    }
-
-    len = 0;
-    n /= bytes;
-
-    for (i = 0; i < n; i++) {
-        cipher = SSL_CIPHER_find(c->ssl->connection, ciphers + i * bytes);
-
-        if (cipher) {
-            len += ngx_strlen(SSL_CIPHER_get_name(cipher));
-
-        } else {
-            len += sizeof("0x") - 1 + bytes * (sizeof("00") - 1);
-        }
-
-        len += sizeof(":") - 1;
-    }
-
-    *pciphers = ngx_pnalloc(pool, len);
-    if (*pciphers == NULL) {
+    rc = ngx_ssl_get_ciphers(c, r->pool, &ciphers);
+    if (rc != NGX_OK) {
         *err = "no memory";
         return NGX_ERROR;
     }
 
-    p = (u_char *) *pciphers;
-
-    for (i = 0; i < n; i++) {
-        cipher = SSL_CIPHER_find(c->ssl->connection, ciphers + i * bytes);
-
-        if (cipher) {
-            p = ngx_sprintf(p, "%s", SSL_CIPHER_get_name(cipher));
-
-        } else {
-            p = ngx_sprintf(p, "0x");
-            p = ngx_hex_dump(p, ciphers + i * bytes, bytes);
-        }
-
-        *p++ = ':';
-    }
-
-    p--;
-
-    *cipherslen = p - (u_char *) *pciphers;
-
-#else
-
-    u_char  buf[4096];
-
-    if (SSL_get_shared_ciphers(c->ssl->connection, (char *) buf, 4096)
-        == NULL)
-    {
-        *cipherslen = 0;
-        return NGX_OK;
-    }
-
-    *cipherslen = ngx_strlen(buf);
-    *pciphers = ngx_pnalloc(pool, *cipherslen);
-    if (*pciphers == NULL) {
-        *err = "no memory";
-        return NGX_ERROR;
-    }
-
-    ngx_memcpy(*pciphers, buf, *cipherslen);
-
-#endif
+    *pciphers = (char *) ciphers.data;
+    *cipherslen = ciphers.len;
 
     return NGX_OK;
 }
