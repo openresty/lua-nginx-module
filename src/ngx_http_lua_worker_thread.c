@@ -266,7 +266,8 @@ ngx_http_lua_worker_thread_handler(void *data, ngx_log_t *log)
     ngx_http_lua_worker_thread_ctx_t     *ctx = data;
     lua_State                            *vm = ctx->ctx->vm;
 
-    ngx_http_lua_assert(lua_gettop(vm) == ctx->n_args);
+    /* function + args in the lua stack */
+    ngx_http_lua_assert(lua_gettop(vm) == ctx->n_args + 1);
 
     ctx->rc = lua_pcall(vm, ctx->n_args, LUA_MULTRET, 0);
 }
