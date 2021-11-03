@@ -824,6 +824,55 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
 
 
 int
+ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, uint16_t *ciphers,
+    uint16_t *nciphers, char **err)
+{
+    ngx_ssl_conn_t         *ssl_conn;
+    STACK_OF(SSL_CIPHER)   *sk, *ck;
+    int                     sn, cn, i, n;
+    uint16_t                tp;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    sk = SSL_get1_supported_ciphers(ssl_conn);
+    ck = SSL_get_client_ciphers(ssl_conn);
+    sn = sk_SSL_CIPHER_num(sk);
+    cn = sk_SSL_CIPHER_num(ck);
+
+    if (sn > *nciphers) {
+        *err = "buffer too small";
+        *nciphers = 0;
+        sk_SSL_CIPHER_free(sk);
+
+        return NGX_ERROR;
+    }
+
+    for (*nciphers = 0, i = 0; i < sn; i++) {
+        tp = SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(sk, i));
+        for (n = 0; n < cn; n++) {
+            if (SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(ck, n)) == tp) {
+                ciphers[(*nciphers)++] = tp;
+                break;
+            }
+        }
+    }
+
+    sk_SSL_CIPHER_free(sk);
+
+    return NGX_OK;
+}
+
+
+int
 ngx_http_lua_ffi_ssl_server_name(ngx_http_request_t *r, char **name,
     size_t *namelen, char **err)
 {
