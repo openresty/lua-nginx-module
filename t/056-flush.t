@@ -491,6 +491,7 @@ GET /test
 
 
 === TEST 17: limit_rate
+--- quic_max_idle_timeout: 2
 --- config
     location /test {
         limit_rate 150;

@@ -456,7 +456,7 @@ received memc reply: OK
 === TEST 5: ngx.exit(0) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.exit(0)
@@ -484,7 +484,7 @@ received memc reply: OK
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -523,7 +523,7 @@ should never reached here
 === TEST 6: ngx.exit(ngx.ERROR) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.exit(ngx.ERROR)
@@ -551,7 +551,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -593,7 +593,7 @@ should never reached here
 === TEST 7: ngx.exit(0) -  yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -623,7 +623,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -662,7 +662,7 @@ should never reached here
 === TEST 8: ngx.exit(ngx.ERROR) - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -692,7 +692,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -805,7 +805,7 @@ should never reached here
 === TEST 10: lua exception - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -834,7 +834,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1741,6 +1741,7 @@ close: 1 nil
 ssl client hello by lua is running!
 [error]
 [alert]
+--- skip_eval: 5:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -2130,7 +2131,7 @@ ssl client hello by lua is running!
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:12345 ssl;
+        listen 127.0.0.1:12346 ssl;
         server_name   test.com;
 
         ssl_client_hello_by_lua_block {
@@ -2162,7 +2163,7 @@ ssl client hello by lua is running!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", 12345)
+                local ok, err = sock:connect("127.0.0.1", 12346)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2565,3 +2566,72 @@ ssl handshake: cdata
 uthread: hello from f()
 uthread: killed
 uthread: failed to kill: already waited or killed
+
+
+
+=== TEST 30: ngx.exit(ngx.OK) - no yield
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_client_hello_by_lua_block {
+            ngx.exit(ngx.OK)
+            ngx.log(ngx.ERR, "should never reached here...")
+        }
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {ngx.status = 201 ngx.say("foo") ngx.exit(201)}
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log eval
+[
+'lua_client_hello_by_lua: handler return value: 0, client hello cb exit code: 1',
+qr/\[debug\] .*? SSL_do_handshake: 1/,
+'lua exit with code 0',
+]
+--- no_error_log
+should never reached here
+[alert]
+[emerg]

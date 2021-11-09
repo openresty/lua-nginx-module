@@ -423,3 +423,5 @@ attempt to abort with pending subrequests
 --- no_error_log
 [alert]
 [warn]
+--- curl_error
+curl: (52) Empty reply from server

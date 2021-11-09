@@ -1,4 +1,4 @@
-dist: bionic
+dist: focal
 
 branches:
   only:
@@ -24,6 +24,14 @@ addons:
       - libtest-longstring-perl
       - liblist-moreutils-perl
       - libgd-dev
+      - time
+      - cmake
+      - curl
+      - libunwind-dev
+      - libpsl0
+      - wget
+      - libldap-2.4-2
+      - libbrotli1
 
 cache:
   directories:
@@ -60,6 +68,7 @@ env:
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1s OPENSSL_PATCH_VER=1.1.1f
     - NGINX_VERSION=1.25.1 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
     - NGINX_VERSION=1.25.1 OPENSSL_VER=1.1.1s OPENSSL_PATCH_VER=1.1.1f USE_PCRE2=Y
+    - NGINX_VERSION=1.25.1 BORINGSSL=1 TEST_NGINX_USE_HTTP3=1 USE_PCRE2=Y
 
 services:
   - memcached
@@ -67,8 +76,6 @@ services:
   - mysql
 
 before_install:
-  - sudo apt update
-  - sudo apt install --only-upgrade ca-certificates
   - '! grep -n -P ''(?<=.{80}).+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Found C source lines exceeding 80 columns." > /dev/stderr; exit 1)'
   - '! grep -n -P ''\t+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Cannot use tabs." > /dev/stderr; exit 1)'
   - /usr/bin/env perl $(command -v cpanm) --sudo --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
@@ -145,6 +152,8 @@ script:
   - ldd `which nginx`|grep -E 'luajit|ssl|pcre'
   - export LD_PRELOAD=$PWD/mockeagain/mockeagain.so
   - export LD_LIBRARY_PATH=$PWD/mockeagain:$LD_LIBRARY_PATH
+  - export TEST_NGINX_HTTP3_CRT=$PWD/t/cert/http3/http3.crt
+  - export TEST_NGINX_HTTP3_KEY=$PWD/t/cert/http3/http3.key
   - export TEST_NGINX_RESOLVER=8.8.4.4
   - dig +short myip.opendns.com @resolver1.opendns.com || exit 0
   - dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0

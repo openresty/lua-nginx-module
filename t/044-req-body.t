@@ -351,9 +351,18 @@ hello, world
 --- user_files
 >>> a.txt
 Will you change this world?
---- raw_response_headers_like
-X-Old: \S+/client_body_temp/\d+\r
-.*?X-New: \S+/html/a\.txt\r
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+    $headers = qr#x-old: \S+/client_body_temp/\d+\r
+.*?x-new: \S+/html/a\.txt\r#;
+} else {
+    $headers = qr#X-Old: \S+/client_body_temp/\d+\r
+.*?X-New: \S+/html/a\.txt\r#;
+}
+
+$headers;
 --- response_body
 Will you change this world?
 --- no_error_log
@@ -390,9 +399,18 @@ hello, world!
 --- user_files
 >>> a.txt
 Will you change this world?
---- raw_response_headers_like
-X-Old: \S+/client_body_temp/\d+\r
-.*?X-New: \S+/html/a\.txt\r
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+    $headers = qr#x-old: \S+/client_body_temp/\d+\r
+.*?x-new: \S+/html/a\.txt\r#;
+} else {
+    $headers = qr#X-Old: \S+/client_body_temp/\d+\r
+.*?X-New: \S+/html/a\.txt\r#;
+}
+
+$headers;
 --- response_body
 Will you change this world?
 --- no_error_log
@@ -1243,6 +1261,7 @@ body: hello, my dear friend!
 [alert]
 --- no_error_log
 a client request body is buffered to a temporary file
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -1384,6 +1403,7 @@ failed to get req socket: request body already exists
 [alert]
 --- no_error_log
 a client request body is buffered to a temporary file
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -1480,8 +1500,16 @@ probe syscall.fcntl {
 --- stap_out_unlike
 fcntl\(O_DIRECT\)
 
---- raw_response_headers_like
-.*?X-New: \S+/html/a\.txt\r
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+    $headers = qr#.*?x-new: \S+/html/a\.txt\r#;
+} else {
+    $headers = qr#.*?X-New: \S+/html/a\.txt\r#;
+}
+
+$headers;
 --- response_body
 Will you change this world?
 --- no_error_log

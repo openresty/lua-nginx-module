@@ -966,6 +966,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 
 
 === TEST 27: GC issue with the on_abort thread object
+curl: (52) Empty reply from server
 --- config
     lua_code_cache off;
     location = /t {
@@ -991,6 +992,8 @@ decrementing the reference count for Lua VM: 3
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
 ]
+--- curl_error eval
+qr/curl: \(\d+\) Empty reply from server/
 
 
 

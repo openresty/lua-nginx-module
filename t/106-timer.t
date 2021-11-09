@@ -1332,6 +1332,7 @@ API disabled
 
 
 === TEST 19: exit in user thread (entry thread is still pending on ngx.sleep)
+--- quic_max_idle_timeout: 1.3
 --- config
     location /t {
         content_by_lua '

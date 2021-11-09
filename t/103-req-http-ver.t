@@ -26,8 +26,15 @@ __DATA__
     }
 --- request
 GET /t
---- response_body
-1.1
+--- response_body eval
+my $body;
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+    $body="3\n";
+} else {
+    $body="1.1\n";
+}
+
+$body;
 --- no_error_log
 [error]
 

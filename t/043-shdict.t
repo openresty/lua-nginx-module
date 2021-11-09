@@ -1184,6 +1184,7 @@ nil nil
 
 
 === TEST 45: flush_expires
+--- quic_max_idle_timeout: 1.6
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -1210,6 +1211,7 @@ GET /t
 
 
 === TEST 46: flush_expires with number
+--- quic_max_idle_timeout: 1.6
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -1337,6 +1339,7 @@ GET /t
 
 
 === TEST 51: list all keys in a shdict with expires
+--- quic_max_idle_timeout: 1.6
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -1426,6 +1429,7 @@ GET /t
 
 
 === TEST 55: list all keys in a shdict with all keys expired
+--- quic_max_idle_timeout: 1.6
 --- http_config
     lua_shared_dict dogs 1m;
 --- config

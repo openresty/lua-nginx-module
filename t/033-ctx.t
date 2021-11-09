@@ -278,6 +278,8 @@ GET /t
 [error]
 --- error_log
 ngx.ctx = 32
+--- curl_error
+curl: (52) Empty reply from server
 
 
 

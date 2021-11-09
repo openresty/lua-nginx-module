@@ -3,13 +3,11 @@
 our $SkipReason;
 
 BEGIN {
-    if ($ENV{TEST_NGINX_EVENT_TYPE} && $ENV{TEST_NGINX_EVENT_TYPE} ne 'poll') {
-        $SkipReason = "unavailable for the event type '$ENV{TEST_NGINX_EVENT_TYPE}'";
-
-    } else {
-        $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
-        $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
-        $ENV{MOCKEAGAIN}='w'
+    $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
+    $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+    $ENV{MOCKEAGAIN}='w';
+    if ($ENV{TEST_NGINX_USE_HTTP3}) {
+        $SkipReason = "http3 has bug about the hup reload";
     }
 }
 

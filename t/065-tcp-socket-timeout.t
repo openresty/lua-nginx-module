@@ -873,6 +873,7 @@ quitting request now
 --- no_error_log
 lua tcp socket write timed out
 [alert]
+--- skip_eval: 4: $ENV{TEST_NGINX_USE_HTTP3}
 
 
 

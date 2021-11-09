@@ -5099,6 +5099,12 @@ ngx_http_lua_req_socket(lua_State *L)
     }
 #endif
 
+#if (NGX_HTTP_V3)
+    if (r->http_version == NGX_HTTP_VERSION_30) {
+        return luaL_error(L, "http v3 not supported yet");
+    }
+#endif
+
     if (!raw && r->headers_in.chunked) {
         lua_pushnil(L);
         lua_pushliteral(L, "chunked request bodies not supported yet");

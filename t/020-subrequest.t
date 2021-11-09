@@ -1227,6 +1227,8 @@ F(ngx_http_finalize_request) {
 --- error_code
 --- no_error_log
 [error]
+--- curl_error
+curl: (52) Empty reply from server
 
 
 
@@ -2622,6 +2624,7 @@ pr: Host: localhost
 
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -2655,6 +2658,7 @@ pr: Host: localhost
 
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

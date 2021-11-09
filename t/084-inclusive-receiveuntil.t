@@ -511,6 +511,8 @@ bad "inclusive" option value type: string
 --- no_error_log
 [alert]
 [warn]
+--- curl_error
+curl: (52) Empty reply from server
 
 
 
@@ -578,6 +580,8 @@ bad "inclusive" option value type: string
 --- no_error_log
 [alert]
 [warn]
+--- curl_error
+curl: (52) Empty reply from server
 
 
 

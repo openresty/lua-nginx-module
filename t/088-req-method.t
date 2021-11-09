@@ -209,6 +209,7 @@ main: GET
 
 
 === TEST 10: set HEAD to GET
+XXX: does http3 do not support set HEAD to GET??
 --- config
     location /t {
         rewrite_by_lua '
@@ -223,10 +224,12 @@ main: GET
 method: GET
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
 === TEST 11: set GET to WebDAV methods
+XXX: does http3 do not support change HEAD method?
 --- config
     location /t {
         content_by_lua '
@@ -262,3 +265,4 @@ method: PATCH
 method: TRACE
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}

@@ -40,6 +40,8 @@ run_tests();
 __DATA__
 
 === TEST 1: www.google.com
+access the public network is unstable, need a bigger timeout value.
+--- quic_max_idle_timeout: 3
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -293,6 +295,8 @@ SSL reused session
 
 
 === TEST 4: ssl session reuse
+access the public network is unstable, need a bigger timeout value.
+--- quic_max_idle_timeout: 3
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -1564,6 +1568,7 @@ attempt to call method 'sslhandshake' (a nil value)
 --- no_error_log
 [alert]
 --- timeout: 3
+--- skip_eval: 5:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -2563,6 +2568,8 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 --- no_error_log
 [alert]
 --- timeout: 10
+--- curl_error
+curl: (52) Empty reply from server
 
 
 
