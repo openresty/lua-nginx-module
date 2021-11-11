@@ -5755,7 +5755,8 @@ ngx.log
 
 **context:** *init_by_lua&#42;, init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Log arguments concatenated to error.log with the out path and given logging level in nginx.conf, The second parameter indicates the output path, and the third parameter indicates the output level, like below: 
+Log arguments concatenated to error.log with the out path and given logging level in nginx.conf, The second parameter indicates the output path, and the third parameter indicates the output level, like below:
+
 error_log /openresty/out/logs/error.log warn;
 
 Lua `nil` arguments are accepted and result in literal `"nil"` string while Lua booleans result in literal `"true"` or `"false"` string outputs. And the `ngx.null` constant will yield the `"null"` string output.
