@@ -48,14 +48,14 @@ static  ngx_uint_t                worker_thread_vm_count;
 void
 ngx_http_lua_thread_exit_process(void)
 {
-   ngx_http_lua_task_ctx_t  *ctx;
+    ngx_http_lua_task_ctx_t  *ctx;
 
-   while (ctxpool->next != NULL) {
-       ctx = ctxpool->next;
-       ctxpool->next = ctx->next;
-       lua_close(ctx->vm);
-       ngx_free(ctx);
-   }
+    while (ctxpool->next != NULL) {
+        ctx = ctxpool->next;
+        ctxpool->next = ctx->next;
+        lua_close(ctx->vm);
+        ngx_free(ctx);
+    }
 }
 
 
