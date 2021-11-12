@@ -45,6 +45,20 @@ static  ngx_http_lua_task_ctx_t  *ctxpool = &dummy_ctx;
 static  ngx_uint_t                worker_thread_vm_count;
 
 
+void
+ngx_http_lua_thread_exit_process(void)
+{
+    ngx_http_lua_task_ctx_t  *ctx;
+
+    while (ctxpool->next != NULL) {
+        ctx = ctxpool->next;
+        ctxpool->next = ctx->next;
+        lua_close(ctx->vm);
+        ngx_free(ctx);
+    }
+}
+
+
 /*
  * Re-implement ngx_thread_task_alloc to avoid alloc from request pool
  * since the request may exit before worker thread finish.
