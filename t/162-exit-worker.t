@@ -5,7 +5,8 @@ use Test::Nginx::Socket::Lua;
 master_on();
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 2) + 11;
+# NB: the shutdown_error_log block is independent from repeat times
+plan tests => repeat_each() * (blocks() * 2 + 1) + 13;
 
 #log_level("warn");
 no_long_string();
