@@ -719,6 +719,10 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+    if (ctx == NULL) {
+        return rc;
+    }
+
     ngx_chain_update_chains(r->pool,
                             &ctx->free_bufs, &ctx->busy_bufs, &in,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
@@ -1027,9 +1031,13 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    ctx->read_body_done = 1;
-
     r->main->count--;
+
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->read_body_done = 1;
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
