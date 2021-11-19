@@ -14,19 +14,19 @@ compiler:
 addons:
   apt:
     packages:
-    - axel
-    - cpanminus
-    - libtest-base-perl
-    - libtext-diff-perl
-    - liburi-perl
-    - libwww-perl
-    - libtest-longstring-perl
-    - liblist-moreutils-perl
-    - libgd-dev
+      - axel
+      - cpanminus
+      - libtest-base-perl
+      - libtext-diff-perl
+      - liburi-perl
+      - libwww-perl
+      - libtest-longstring-perl
+      - liblist-moreutils-perl
+      - libgd-dev
 
 cache:
   directories:
-  - download-cache
+    - download-cache
 
 env:
   global:
@@ -54,9 +54,9 @@ env:
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1l OPENSSL_PATCH_VER=1.1.1f
 
 services:
- - memcached
- - redis
- - mysql
+  - memcached
+  - redis
+  - mysql
 
 before_install:
   - sudo apt update
