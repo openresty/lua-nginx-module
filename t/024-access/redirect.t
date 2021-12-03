@@ -122,7 +122,7 @@ GET /read
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = "location: /foo\r\n"
 } else {
     $headers = "Location: /foo\r\n"

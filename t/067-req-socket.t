@@ -5,6 +5,8 @@ our $SkipReason;
 BEGIN {
     if ($ENV{TEST_NGINX_USE_HTTP3}) {
         $SkipReason = "http3 does not support ngx.req.socket";
+    } elsif ($ENV{TEST_NGINX_USE_HTTP2}) {
+        $SkipReason = "http2 does not support ngx.req.socket";
     }
 }
 

@@ -164,6 +164,7 @@ PUT
 
 
 === TEST 8: set GET to HEAD
+--- no_http2
 --- config
     location /t {
         rewrite_by_lua '
@@ -210,6 +211,7 @@ main: GET
 
 === TEST 10: set HEAD to GET
 XXX: does http3 do not support set HEAD to GET??
+--- no_http2
 --- config
     location /t {
         rewrite_by_lua '
@@ -230,6 +232,7 @@ method: GET
 
 === TEST 11: set GET to WebDAV methods
 XXX: does http3 do not support change HEAD method?
+--- no_http2
 --- config
     location /t {
         content_by_lua '

@@ -731,6 +731,7 @@ Content-Type: application/json; charset=utf-8
 
 
 === TEST 32: hang on upstream_next (from kindy)
+--- no_http2
 --- no_check_leak
 --- http_config
     upstream xx {
@@ -807,6 +808,8 @@ so need to skip for http3
 [alert]
 --- error_log eval
 qr/(?:send|recv)\(\) failed \(\d+: Connection refused\) while resolving/
+--- curl_error eval
+qr/curl: \(28\) Operation timed out after \d+ milliseconds with 0 bytes received/
 
 
 

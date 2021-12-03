@@ -21,6 +21,8 @@ repeat_each(2);
 
 if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
     plan(skip_all => "HTTP3 does not support on_abort");
+} elsif (defined $ENV{TEST_NGINX_USE_HTTP2}) {
+    plan(skip_all => "HTTP2 does not support on_abort");
 } else {
     plan tests => repeat_each() * (blocks() * 4 + 15);
 }

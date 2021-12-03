@@ -59,7 +59,7 @@ lua exceeding request header limit
             for k, v in pairs(headers) do
                 h[k] = v
             end
-            if (ngx.req.http_version() == 3) then 
+            if (ngx.req.http_version() == 3 or ngx.req.http_version() == 2) then
                 ngx.say("Foo: ", h["foo"] or "nil")
                 ngx.say("Bar: ", h["bar"] or "nil")
             else
@@ -133,6 +133,7 @@ Foo:
 "a" x 2048
 --- timeout: 15
 --- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -152,6 +153,7 @@ Foo:
 "a" x 2048
 --- timeout: 15
 --- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -493,6 +495,7 @@ for my $k (@k) {
 --- error_log
 lua exceeding request header limit 101 > 100
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -532,7 +535,7 @@ $s
 --- response_body eval
 my @k;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "host: localhost\n";
 }
 my $i = 1;
@@ -542,7 +545,7 @@ while ($i <= 98) {
 }
 
 my $found_headers = "found 99 headers\n";
-if (!defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (!defined($ENV{TEST_NGINX_USE_HTTP3}) && !defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "connection: close\n";
     push @k, "host: localhost\n";
     $found_headers = "found 100 headers\n";
@@ -615,6 +618,7 @@ for my $k (@k) {
 --- error_log
 lua exceeding request header limit 103 > 102
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -650,7 +654,7 @@ while ($i <= 100) {
 $s
 --- response_body eval
 my @k;
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "host: localhost\n";
 }
 my $i = 1;
@@ -659,7 +663,7 @@ while ($i <= 100) {
     $i++;
 }
 
-if (!defined($ENV{TEST_NGINX_USE_HTTP3})) {
+if (!defined($ENV{TEST_NGINX_USE_HTTP3}) && !defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "connection: close\n";
     push @k, "host: localhost\n";
 }
@@ -710,7 +714,7 @@ while ($i <= 105) {
 $s
 --- response_body eval
 my @k;
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "host: localhost\n";
 }
 my $i = 1;
@@ -718,7 +722,7 @@ while ($i <= 105) {
     push @k, "x-$i";
     $i++;
 }
-if (!defined($ENV{TEST_NGINX_USE_HTTP3})) {
+if (!defined($ENV{TEST_NGINX_USE_HTTP3}) && !defined($ENV{TEST_NGINX_USE_HTTP2})) {
     push @k, "connection: close\n";
     push @k, "host: localhost\n";
 }
@@ -1015,7 +1019,7 @@ My-Foo: bar
 Bar: baz
 --- response_body eval
 my $body;
-if ($ENV{TEST_NGINX_USE_HTTP3}) {
+if ($ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_HTTP2}) {
     $body = "bar: baz
 host: localhost
 my-foo: bar
@@ -1101,7 +1105,7 @@ my $s = "GET /back HTTP/1.0\r
 Host: foo\r
 Connection: close\r\n";
 
-if (defined ($ENV{TEST_NGINX_USE_HTTP3})) {
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
     $s .= "user-agent: curl\r\n";
     for my $i ('a' .. 'q') {
         $s .= $i . ": " . "$i\r\n"
@@ -1269,7 +1273,7 @@ $s
 --- response_body eval
 my $body;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if ($ENV{TEST_NGINX_USE_HTTP3}) {
     $body = "GET /back HTTP/1.0\r
 Host: foo\r
 Connection: close\r
@@ -1480,7 +1484,7 @@ Bar: baz
 --- response_body eval
 my $body;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3})|| defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $body="bar: baz
 host: localhost
 my-foo: bar
@@ -2129,6 +2133,7 @@ lua exceeding request header limit 4 > 3
 --- no_error_log
 [error]
 --- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -2166,6 +2171,7 @@ found 3 headers.
 lua exceeding request header limit
 [error]
 --- skip_eval: 4: $ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -2205,6 +2211,7 @@ lua exceeding request header limit 4 > 3
 --- no_error_log
 [error]
 --- skip_eval: 4: $ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 
 
 
@@ -2235,8 +2242,17 @@ while ($i <= 1) {
     $i++;
 }
 $s
---- response_body
-found 3 headers.
+--- response_body eval
+my $body;
+if (!defined $ENV{TEST_NGINX_USE_HTTP2}) {
+    $body = "found 3 headers.
+";
+} else {
+    $body = "found 2 headers.
+";
+}
+
+$body;
 --- timeout: 4
 --- no_error_log
 lua exceeding request header limit

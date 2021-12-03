@@ -71,6 +71,7 @@ close: 1 nil
 
 
 === TEST 2: http read lines
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -140,6 +141,7 @@ close: 1 nil
 
 
 === TEST 3: http read all the headers in a single run
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -208,6 +210,7 @@ close: 1 nil
 
 
 === TEST 4: ambiguous boundary patterns (abcabd)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -279,6 +282,7 @@ close: 1 nil
 
 
 === TEST 5: ambiguous boundary patterns (aa)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -350,6 +354,7 @@ close: 1 nil
 
 
 === TEST 6: ambiguous boundary patterns (aaa)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -421,6 +426,7 @@ close: 1 nil
 
 
 === TEST 7: ambiguous boundary patterns (aaaaad)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -492,6 +498,7 @@ close: 1 nil
 
 
 === TEST 8: ambiguous boundary patterns (aaaaad), small buffer, 2 bytes
+--- no_http2
 --- config
     server_tokens off;
     lua_socket_buffer_size 2;
@@ -564,6 +571,7 @@ close: 1 nil
 
 
 === TEST 9: ambiguous boundary patterns (aaaaad), small buffer, 1 byte
+--- no_http2
 --- config
     server_tokens off;
     lua_socket_buffer_size 1;
@@ -636,6 +644,7 @@ close: 1 nil
 
 
 === TEST 10: ambiguous boundary patterns (abcabdabcabe)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -707,6 +716,7 @@ close: 1 nil
 
 
 === TEST 11: ambiguous boundary patterns (abcabdabcabe 2)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -778,6 +788,7 @@ close: 1 nil
 
 
 === TEST 12: ambiguous boundary patterns (abcabdabcabe 3)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -849,6 +860,7 @@ close: 1 nil
 
 
 === TEST 13: ambiguous boundary patterns (abcabdabcabe 4)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -920,6 +932,7 @@ close: 1 nil
 
 
 === TEST 14: ambiguous boundary patterns (--abc)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -991,6 +1004,7 @@ close: 1 nil
 
 
 === TEST 15: ambiguous boundary patterns (--abc)
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -1066,6 +1080,7 @@ close: 1 nil
 
 
 === TEST 16: ambiguous boundary patterns (--abc), small buffer
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -1142,6 +1157,7 @@ close: 1 nil
 
 
 === TEST 17: ambiguous boundary patterns (--abc), small buffer, mixed by other reading calls
+--- no_http2
 --- config
     server_tokens off;
     location /t {
@@ -1230,6 +1246,7 @@ close: 1 nil
 
 
 === TEST 18: ambiguous boundary patterns (abcabd), small buffer
+--- no_http2
 --- config
     server_tokens off;
     lua_socket_buffer_size 3;

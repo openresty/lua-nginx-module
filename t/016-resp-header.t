@@ -65,7 +65,7 @@ GET /read
 Content-Length: 3
 --- response_body chop
 Hel
---- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+--- skip_eval: 3:defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2}) 
 
 
 
@@ -117,7 +117,7 @@ GET /read
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = qr/x-foo: a\r\n.*?x-foo: bc\r\n/
 } else {
     $headers = qr/X-Foo: a\r\n.*?X-Foo: bc\r\n/
@@ -196,7 +196,7 @@ GET /read
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = "x-foo: a\r\n.*?x-foo: abc\r\n"
 } else {
     $headers = "X-Foo: a\r\n.*?X-Foo: abc\r\n"
@@ -222,7 +222,7 @@ Hello
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = ".*foo: a\r
 foo: b.*";
 } else {
@@ -250,7 +250,7 @@ $headers;
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = ".*foo: a\r
 foo: b.*";
 } else {
@@ -1197,7 +1197,7 @@ Foo: /t/
 --- raw_response_headers_like eval
 my $headers;
 
-if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
     $headers = "cache-control: private"
 } else {
     $headers = "cache-Control: private"
@@ -1552,7 +1552,7 @@ hi
 --- error_log
 my Transfer-Encoding: chunked
 my transfer-encoding: chunked
---- skip_eval: 6:$ENV{TEST_NGINX_USE_HTTP3}
+--- skip_eval: 6:defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2}) 
 
 
 

@@ -278,8 +278,8 @@ GET /t
 [error]
 --- error_log
 ngx.ctx = 32
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
 
 
 
