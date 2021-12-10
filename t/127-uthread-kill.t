@@ -139,6 +139,7 @@ lua clean up the timer for pending ngx.sleep
 === TEST 3: kill pending resolver
 --- config
     resolver 127.0.0.2:12345;
+    resolver_timeout 5ms;
     location /lua {
         content_by_lua '
             local function f()
