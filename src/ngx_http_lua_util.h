@@ -564,7 +564,7 @@ ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
 {
 #ifdef HAVE_LUA_RESETTHREAD
     ngx_queue_t                 *q;
-    ngx_http_lua_thread_ref_t   *tref ;
+    ngx_http_lua_thread_ref_t   *tref;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
