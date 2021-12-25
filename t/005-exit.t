@@ -724,3 +724,19 @@ GET /t
 --- response_body
 --- no_error_log
 [error]
+
+
+
+=== TEST 25: 501 Method Not Implemented
+--- config
+    location /lua {
+        content_by_lua '
+            ngx.exit(ngx.HTTP_NOT_IMPLEMENTED)
+        ';
+    }
+--- request
+GET /lua
+--- error_code: 501
+--- response_body_like: 501 (?:Method )?Not Implemented
+--- no_error_log
+[error]
