@@ -4387,6 +4387,8 @@ For security considerations, this method will automatically escape " ", """, "("
 
 By default, all the subrequests subsequently initiated by [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] will inherit the new header.
 
+It is not a Lua's equivalent of nginx `proxy_set_header` directive (same is true about [ngx.req.clear_header](#ngxreqclear_header)). `proxy_set_header` only affects the upstream request while `ngx.req.set_header` change the incoming request. Record the http headers in the access log file will show the difference. But you still can use it as an alternative of nginx `proxy_set_header` directive as long as you know the difference.
+
 Here is an example of setting the <code>Content-Type</code> header:
 
 <geshi lang="lua">
