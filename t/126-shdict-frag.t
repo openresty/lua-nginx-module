@@ -1240,8 +1240,8 @@ failed to safe set baz: no memory
                 local key = "mylittlekey" .. rand(maxkeyidx)
                 local ok, err = dogs:get(key)
                 if not ok or rand() > 0.6 then
-                    sz = rand(maxsz)
-                    val = rep("a", sz)
+                    local sz = rand(maxsz)
+                    local val = rep("a", sz)
                     local ok, err, forcible = dogs:set(key, val)
                     if err then
                         ngx.log(ngx.ERR, "failed to set key: ", err)

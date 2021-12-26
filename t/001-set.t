@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 4);
+plan tests => repeat_each() * (blocks() * 3 + 5);
 
 #log_level("warn");
 no_long_string();
@@ -46,7 +46,7 @@ helloworld
 === TEST 3: internal only
 --- config
     location /lua {
-        set_by_lua $res "function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(10)";
+        set_by_lua $res "local function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(10)";
         echo $res;
     }
 --- request
@@ -76,7 +76,7 @@ GET /lua?a=1&b=2
 === TEST 5: fib by arg
 --- config
     location /fib {
-        set_by_lua $res "function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(tonumber(ngx.arg[1]))" $arg_n;
+        set_by_lua $res "local function fib(n) if n > 2 then return fib(n-1)+fib(n-2) else return 1 end end return fib(tonumber(ngx.arg[1]))" $arg_n;
         echo $res;
     }
 --- request
@@ -592,25 +592,30 @@ failed to run set_by_lua*: unknown reason
 
 
 
-=== TEST 37: globals get cleared for every single request
+=== TEST 37: globals are shared in all requests.
 --- config
     location /lua {
-        set_by_lua $res '
+        set_by_lua_block $res {
             if not foo then
                 foo = 1
             else
+                ngx.log(ngx.INFO, "old foo: ", foo)
                 foo = foo + 1
             end
             return foo
-        ';
+        }
         echo $res;
     }
 --- request
 GET /lua
---- response_body
-1
+--- response_body_like chomp
+\A[12]
+\z
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/(old foo: \d+|writing a global Lua variable \('\w+'\))/
+--- grep_error_log_out eval
+["writing a global Lua variable \('foo'\)\n", "old foo: 1\n"]
 
 
 
@@ -755,6 +760,8 @@ GET /lua?name=jim
 --- config
     location /t {
         set_by_lua $a '
+            local bar
+            local foo
             function foo()
                 bar()
             end

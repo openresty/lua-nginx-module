@@ -21,10 +21,10 @@ __DATA__
 --- config
     location /lua {
         content_by_lua
-        '   function bar()
+        '   local function bar()
                 return lua_concat(3)
             end
-            function foo()
+            local function foo()
                 bar()
             end
             foo()
@@ -37,7 +37,7 @@ GET /lua
 attempt to call global 'lua_concat'
 : in function 'bar'
 :5: in function 'foo'
-:7: in function
+:7: in main chunk
 
 
 
@@ -45,10 +45,10 @@ attempt to call global 'lua_concat'
 --- config
     location /lua {
         content_by_lua
-        '   function bar()
+        '   local function bar()
                 error(nil)
             end
-            function foo()
+            local function foo()
                 bar()
             end
             foo()
@@ -64,7 +64,7 @@ GET /lua
 " in function 'error'",
 ": in function 'bar'",
 ":5: in function 'foo'",
-qr/:7: in function <content_by_lua\(nginx\.conf:\d+\):1>/,
+qr/:7: in main chunk/,
 ]
 
 
@@ -125,7 +125,7 @@ probe process("$LIBLUA_PATH").function("lua_concat") {
 :63: in function 'func16'
 :67: in function 'func17'
 :71: in function 'func18'
-:74: in function
+:74: in main chunk
 
 
 

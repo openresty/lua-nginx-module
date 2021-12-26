@@ -331,6 +331,8 @@ Foo: bar baz\r
 }
 --- no_error_log
 [error]
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -362,6 +364,8 @@ Connection: close\r
 --- no_error_log
 [error]
 --- timeout: 5
+--- skip_nginx
+3: >= 1.21.1
 
 
 
@@ -988,3 +992,28 @@ Connection: close
 --- no_error_log
 [error]
 --- timeout: 5
+
+
+
+=== TEST 34: multi-line header is invalid (nginx >= 1.21.1)
+--- config
+    location /t {
+        content_by_lua '
+            ngx.print(ngx.req.raw_header())
+        ';
+    }
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Host: localhost\r
+Connection: close\r
+Foo: bar baz\r
+  blah\r
+\r
+"
+--- error_code: 400
+--- error_log
+client sent invalid header line: "\x20..." while reading client request headers
+--- no_error_log
+[error]
+--- skip_nginx
+3: < 1.21.1

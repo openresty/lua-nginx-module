@@ -119,11 +119,16 @@ lua ssl server name: "test.com"
 [alert]
 --- grep_error_log eval: qr/ssl_certificate_by_lua:.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
-qr/reusable connection: 1
+# Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
+# before call ssl callback function
+$Test::Nginx::Util::NginxVersion >= 1.017009 ?
+qr/reusable connection: 0
+ssl cert: connection reusable: 0
+ssl_certificate_by_lua:1: ssl cert by lua is running!,/
+: qr /reusable connection: 1
 ssl cert: connection reusable: 1
 reusable connection: 0
-ssl_certificate_by_lua:1: ssl cert by lua is running!,
-/
+ssl_certificate_by_lua:1: ssl cert by lua is running!,/
 
 
 
@@ -218,7 +223,7 @@ close: 1 nil
 --- error_log eval
 [
 'lua ssl server name: "test.com"',
-qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
+qr/elapsed in ssl cert by lua: 0.(?:09|1\d)\d+,/,
 ]
 
 --- no_error_log
@@ -574,7 +579,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua_certificate_by_lua: handler return value: -1, cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 'lua exit with code -1',
 ]
 
@@ -715,7 +720,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua_certificate_by_lua: cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 'lua exit with code -1',
 ]
 
@@ -786,7 +791,7 @@ failed to do SSL handshake: handshake failed
 [
 'runtime error: ssl_certificate_by_lua:2: bad bad bad',
 'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
 ]
 
@@ -858,7 +863,7 @@ failed to do SSL handshake: handshake failed
 [
 'runtime error: ssl_certificate_by_lua:3: bad bad bad',
 'lua_certificate_by_lua: cert cb exit code: 0',
-qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 ]
 
 --- no_error_log
@@ -1046,7 +1051,7 @@ failed to do SSL handshake: handshake failed
 [
 'lua ssl server name: "test.com"',
 'ssl_certificate_by_lua:1: API disabled in the context of ssl_certificate_by_lua*',
-qr/\[crit\] .*?cert cb error/,
+qr/\[info\] .*?cert cb error/,
 ]
 
 --- no_error_log
@@ -1278,7 +1283,7 @@ lua ssl server name: "test.com"
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
         ssl_certificate_by_lua_block {
-            function f()
+            local function f()
                 ngx.sleep(0.01)
                 print("uthread: hello in thread")
                 return "done"
@@ -1775,7 +1780,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 qr/\[alert\] .*? no ssl_certificate_by_lua\* defined in server test2\.com\b/,
-qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 ]
 
 
@@ -1870,7 +1875,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 qr/\[alert\] .*? no ssl_certificate_by_lua\* defined in server ~test2\\\.com\b/,
-qr/\[crit\] .*? SSL_do_handshake\(\) failed\b/,
+qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 ]
 
 
@@ -2075,3 +2080,244 @@ client socket file:
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 24: ssl_certificate_by_lua* can yield when reading early data
+--- skip_openssl: 6: < 1.1.1
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_early_data on;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local begin = ngx.now()
+            ngx.sleep(0.1)
+            print("elapsed in ssl_certificate_by_lua*: ", ngx.now() - begin)
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+--- grep_error_log eval
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+--- grep_error_log_out eval
+[
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
+]
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 25: cosocket (UDP)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local sock = ngx.socket.udp()
+
+            sock:settimeout(1000)
+
+            local ok, err = sock:setpeername("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+                return
+            end
+
+            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local ok, err = sock:send(req)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+                return
+            end
+
+            local res, err = sock:receive()
+            if not res then
+                ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+                return
+            end
+
+            ngx.log(ngx.INFO, "received memc reply of ", #res, " bytes")
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+--- no_error_log
+[error]
+[alert]
+[emerg]
+--- grep_error_log eval: qr/received memc reply of \d+ bytes/
+--- grep_error_log_out eval
+[
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+'received memc reply of 12 bytes
+',
+]
+
+
+
+=== TEST 26: uthread (kill)
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        server_tokens off;
+
+        ssl_certificate_by_lua_block {
+            local function f()
+                ngx.log(ngx.INFO, "uthread: hello from f()")
+                ngx.sleep(1)
+            end
+
+            local t, err = ngx.thread.spawn(f)
+            if not t then
+                ngx.log(ngx.ERR, "failed to spawn thread: ", err)
+                return ngx.exit(ngx.ERROR)
+            end
+
+            local ok, res = ngx.thread.kill(t)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to kill thread: ", res)
+                return
+            end
+
+            ngx.log(ngx.INFO, "uthread: killed")
+
+            local ok, err = ngx.thread.kill(t)
+            if not ok then
+                ngx.log(ngx.INFO, "uthread: failed to kill: ", err)
+            end
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: userdata
+--- no_error_log
+[error]
+[alert]
+[emerg]
+--- grep_error_log eval: qr/uthread: [^.,]+/
+--- grep_error_log_out
+uthread: hello from f()
+uthread: killed
+uthread: failed to kill: already waited or killed

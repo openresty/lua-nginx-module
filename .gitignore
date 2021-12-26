@@ -26,6 +26,7 @@ test/blib
 test.sh
 t.sh
 t/t.sh
+t/servroot*
 test/t/servroot/
 releng
 reset
@@ -170,3 +171,10 @@ tthread
 addr2line
 hup
 theaders
+src/ngx_http_lua_autoconf.h
+src/autoconf.h
+src/filters.c
+src/filters.h
+src/ringbuf.c
+src/ringbuf.h
+src/pipe.[ch]

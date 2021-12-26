@@ -123,7 +123,7 @@ nil
 --- config
     location /re {
         content_by_lua '
-            it = ngx.re.gmatch("hello, 1234", "([0-9]+)", "a")
+            local it = ngx.re.gmatch("hello, 1234", "([0-9]+)", "a")
             ngx.say(it())
         ';
     }
@@ -418,7 +418,7 @@ hello
         content_by_lua '
             local a = {}
             for i = 1, 3 do
-                it = ngx.re.gmatch("hello, world", "[a-z]+")
+                local it = ngx.re.gmatch("hello, world", "[a-z]+")
                 it()
                 collectgarbage()
                 table.insert(a, {"hello", "world"})
@@ -482,9 +482,9 @@ end
     GET /main
 --- response_body
 matched
-sr failed: 500
---- error_log
-attempt to use ngx.re.gmatch iterator in a request that did not create it
+matched
+--- no_error_log
+[error]
 
 
 
@@ -518,7 +518,7 @@ matched: []
     location /re {
         content_by_lua '
             local it = ngx.re.gmatch("1234, 1234", "(?<first>[0-9]+)")
-            m = it()
+            local m = it()
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -555,7 +555,7 @@ matched: []
         content_by_lua '
             local it = ngx.re.gmatch("1234, abcd, 1234", "(?<first>[0-9]+)|(?<second>[a-z]+)")
 
-            m = it()
+            local m = it()
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -599,7 +599,7 @@ abcd
     location /re {
         content_by_lua '
             local it = ngx.re.gmatch("hello, 1234", "(?<first>[a-z]+), (?<first>[0-9]+)", "D")
-            m = it()
+            local m = it()
             if m then
                 ngx.say(m[0])
                 ngx.say(m[1])
@@ -825,7 +825,7 @@ exec opts: 0
 >>> a.lua
 local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
 
-s = string.rep([[ABCDEFG]], 10)
+local s = string.rep([[ABCDEFG]], 10)
 
 local start = ngx.now()
 
@@ -871,7 +871,7 @@ error: pcre_exec() failed: -8
 >>> a.lua
 local re = [==[(?i:([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:=|<=>|r?like|sounds\s+like|regexp)([\s'\"`´’‘\(\)]*)?\2|([\s'\"`´’‘\(\)]*)?([\d\w]+)([\s'\"`´’‘\(\)]*)?(?:!=|<=|>=|<>|<|>|\^|is\s+not|not\s+like|not\s+regexp)([\s'\"`´’‘\(\)]*)?(?!\6)([\d\w]+))]==]
 
-s = string.rep([[ABCDEFG]], 10)
+local s = string.rep([[ABCDEFG]], 10)
 
 local start = ngx.now()
 
@@ -881,7 +881,7 @@ if not it then
     return
 end
 
-res, err = it()
+local res, err = it()
 
 --[[
 ngx.update_time()

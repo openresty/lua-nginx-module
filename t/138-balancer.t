@@ -7,6 +7,9 @@ use Test::Nginx::Socket::Lua;
 #workers(2);
 #log_level('warn');
 
+#connect 0.0.0.1 on newer kernel won't return EINVAL
+#so add an route with cmd: sudo ip route add prohibit 0.0.0.1/32
+
 repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 4 + 9);
@@ -362,8 +365,6 @@ me: 101
 
 === TEST 13: lua subrequests
 --- http_config
-    lua_package_path "t/servroot/html/?.lua;;";
-
     lua_code_cache off;
 
     upstream backend {
@@ -434,7 +435,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 
 
 
-=== TEST 15: test if execeed proxy_next_upstream_limit
+=== TEST 15: test if exceed proxy_next_upstream_limit
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
@@ -525,4 +526,44 @@ http next upstream, 2
 http next upstream, 2
 --- no_error_log
 failed to set more tries: reduced tries due to limit
+[alert]
+
+
+
+=== TEST 17: recreate_request buffer bugfix
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.1:8888;
+
+        location / {
+            return 200 "it works";
+        }
+    }
+
+    upstream foo {
+        server 127.0.0.1:8888 max_fails=0;
+        server 127.0.0.1:8889 max_fails=0 weight=9999;
+
+        balancer_by_lua_block {
+            local bal = require "ngx.balancer"
+
+            assert(bal.recreate_request())
+        }
+    }
+
+--- config
+    location = /t {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://foo;
+    }
+--- request
+GET /t
+--- error_code: 200
+--- error_log
+connect() failed (111: Connection refused) while connecting to upstream
+--- no_error_log
+upstream sent more data than specified in "Content-Length" header while reading upstream
 [alert]

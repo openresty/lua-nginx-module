@@ -24,7 +24,7 @@ __DATA__
 
 === TEST 1: sanity
 --- http_config eval
-    "lua_package_path '$::HtmlDir/?.lua;./?.lua';"
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
     location /main {
         echo_location /load;
@@ -85,7 +85,7 @@ hello, foo
 --- request
 GET /main
 --- user_files
---- response_body_like: ^[^;]+/servroot/html/\?.so$
+--- response_body_like: ^[^;]+/servroot(_\d+)?/html/\?\.so$
 
 
 
@@ -100,7 +100,7 @@ GET /main
     }
 --- request
 GET /main
---- response_body_like: ^[^;]+/servroot/html/\?.lua;.+\.lua;$
+--- response_body_like: ^[^;]+/servroot(_\d+)?/html/\?\.lua;(.+\.lua)?;*$
 
 
 
@@ -115,7 +115,7 @@ GET /main
     }
 --- request
 GET /main
---- response_body_like: ^[^;]+/servroot/html/\?.so;.+\.so;$
+--- response_body_like: ^[^;]+/servroot(_\d+)?/html/\?\.so;(.+\.so)?;*$
 
 
 
@@ -130,7 +130,7 @@ GET /main
     }
 --- request
 GET /main
---- response_body_like: ^.+\.lua;[^;]+/servroot/html/\?.lua$
+--- response_body_like: ^(.+\.lua)?;*?[^;]+/servroot(_\d+)?/html/\?\.lua$
 
 
 
@@ -145,7 +145,7 @@ GET /main
     }
 --- request
 GET /main
---- response_body_like: ^.+\.so;[^;]+/servroot/html/\?.so$
+--- response_body_like: ^(.+\.so)?;*?[^;]+/servroot(_\d+)?/html/\?\.so$
 
 
 

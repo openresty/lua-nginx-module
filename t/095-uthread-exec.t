@@ -23,7 +23,7 @@ __DATA__
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.exec("/foo")
             end
 
@@ -58,7 +58,7 @@ i am foo
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exec("/foo")
             end
@@ -93,7 +93,7 @@ i am foo
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exec("/foo")
             end
@@ -175,12 +175,12 @@ hello foo
 --- config
     location /lua {
         content_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exec("/foo")
             end
 
-            function g()
+            local function g()
                 ngx.sleep(1)
             end
 
@@ -267,7 +267,7 @@ hello foo
     location /lua {
         client_body_timeout 12000ms;
         content_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.exec("/foo")
             end
@@ -348,7 +348,7 @@ attempt to abort with pending subrequests
     location /lua {
         client_body_timeout 12000ms;
         content_by_lua '
-            function f()
+            local function f()
                 ngx.location.capture("/sleep")
                 ngx.say("end")
             end

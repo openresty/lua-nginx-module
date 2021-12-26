@@ -25,7 +25,7 @@ __DATA__
     location /lua {
         client_body_timeout 12000ms;
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.redirect(301)
             end
@@ -113,7 +113,7 @@ attempt to abort with pending subrequests
 --- config
     location /lua {
         access_by_lua '
-            function f()
+            local function f()
                 ngx.sleep(0.1)
                 ngx.redirect(301)
             end

@@ -10,7 +10,7 @@ log_level('debug');
 
 repeat_each(2);
 
-plan tests => repeat_each() * 94;
+plan tests => repeat_each() * (blocks() * 2 + 13);
 
 #no_diff();
 #no_long_string();
@@ -416,7 +416,7 @@ lua release ngx.ctx
 
 
 
-=== TEST 20: global got cleared for each single request
+=== TEST 20: globals are shared by all requests
 --- config
     location /lua {
         set $foo '';
@@ -428,6 +428,7 @@ lua release ngx.ctx
             if not foo then
                 foo = 1
             else
+                ngx.log(ngx.INFO, "old foo: ", foo)
                 foo = foo + 1
             end
             ngx.var.foo = foo
@@ -435,10 +436,13 @@ lua release ngx.ctx
     }
 --- request
 GET /lua
---- response_body
-1
+--- response_body_like
+^[12]$
 --- no_error_log
 [error]
+--- grep_error_log eval: qr/old foo: \d+/
+--- grep_error_log_out eval
+["", "old foo: 1\n"]
 
 
 
@@ -730,7 +734,8 @@ hello world
 --- config
     location /t {
         header_filter_by_lua '
-            function foo()
+            local bar
+            local function foo()
                 bar()
             end
 

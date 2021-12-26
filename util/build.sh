@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # this script is for developers only.
-# dependent on the ngx-build script from the nginx-devel-utils repostory:
+# dependent on the ngx-build script from the nginx-devel-utils repository:
 #   https://github.com/openresty/nginx-devel-utils/blob/master/ngx-build
 # the resulting nginx is located at ./work/nginx/sbin/nginx
 
@@ -22,10 +22,13 @@ force=$2
             #--without-http_referer_module \
             #--with-http_spdy_module \
 
+add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
+
 time ngx-build $force $version \
+            --with-threads \
             --with-pcre-jit \
             --with-ipv6 \
-            --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" \
+            --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_v2_module \
             --with-http_realip_module \
             --with-http_ssl_module \
@@ -55,7 +58,7 @@ time ngx-build $force $version \
                 --add-module=$root/../redis2-nginx-module \
                 --add-module=$root/../stream-lua-nginx-module \
                 --add-module=$root/t/data/fake-module \
-                --add-module=$root/t/data/fake-shm-module \
+                $add_fake_shm_module \
                 --add-module=$root/t/data/fake-delayed-load-module \
                 --with-http_gunzip_module \
                 --with-http_dav_module \

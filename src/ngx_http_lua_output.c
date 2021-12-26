@@ -93,6 +93,9 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
 
         switch (type) {
             case LUA_TNUMBER:
+                size += ngx_http_lua_get_num_len(L, i);
+                break;
+
             case LUA_TSTRING:
 
                 lua_tolstring(L, i, &len);
@@ -173,6 +176,9 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         type = lua_type(L, i);
         switch (type) {
             case LUA_TNUMBER:
+                b->last = ngx_http_lua_write_num(L, i, b->last);
+                break;
+
             case LUA_TSTRING:
                 p = lua_tolstring(L, i, &len);
                 b->last = ngx_copy(b->last, (u_char *) p, len);
@@ -238,6 +244,11 @@ ngx_http_lua_ngx_echo(lua_State *L, unsigned newline)
         return 2;
     }
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "%s has %sbusy bufs",
+                   newline ? "lua say response" : "lua print response",
+                   ctx->busy_bufs != NULL ? "" : "no ");
+
     dd("downstream write: %d, buf len: %d", (int) rc,
        (int) (b->last - b->pos));
 
@@ -301,8 +312,10 @@ ngx_http_lua_calc_strlen_in_table(lua_State *L, int index, int arg_i,
 
         switch (type) {
             case LUA_TNUMBER:
-            case LUA_TSTRING:
+                size += ngx_http_lua_get_num_len(L, -1);
+                break;
 
+            case LUA_TSTRING:
                 lua_tolstring(L, -1, &len);
                 size += len;
                 break;
@@ -396,6 +409,9 @@ ngx_http_lua_copy_str_in_table(lua_State *L, int index, u_char *dst)
         type = lua_type(L, -1);
         switch (type) {
             case LUA_TNUMBER:
+                dst = ngx_http_lua_write_num(L, -1, dst);
+                break;
+
             case LUA_TSTRING:
                 p = (u_char *) lua_tolstring(L, -1, &len);
                 dst = ngx_copy(dst, p, len);
@@ -548,7 +564,8 @@ ngx_http_lua_ngx_flush(lua_State *L)
 
     wev = r->connection->write;
 
-    if (wait && (r->connection->buffered & NGX_HTTP_LOWLEVEL_BUFFERED
+    if (wait && (r->connection->buffered
+                 & (NGX_HTTP_LOWLEVEL_BUFFERED | NGX_LOWLEVEL_BUFFERED)
                  || wev->delayed))
     {
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,

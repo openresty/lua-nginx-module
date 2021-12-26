@@ -62,7 +62,7 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
 #endif
 
         if (cur_ph < last_ph) {
-            dd("swaping the contents of cur_ph and last_ph...");
+            dd("swapping the contents of cur_ph and last_ph...");
 
             tmp      = *cur_ph;
 
@@ -149,11 +149,6 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
                                        ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
-#if (nginx_version < 1002006) ||                                             \
-        (nginx_version >= 1003000 && nginx_version < 1003009)
-            r->main->count--;
-#endif
-
             return rc;
         }
 
@@ -184,6 +179,7 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->rewrite_src.value.data,
                                        llcf->rewrite_src.value.len,
+                                       &llcf->rewrite_src_ref,
                                        llcf->rewrite_src_key,
                                        (const char *)
                                        llcf->rewrite_chunkname);
@@ -221,6 +217,7 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
+                                     &llcf->rewrite_src_ref,
                                      llcf->rewrite_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
@@ -261,9 +258,11 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     /*  move code closure to new coroutine */
     lua_xmove(L, co, 1);
 
+#ifndef OPENRESTY_LUAJIT
     /*  set closure's env table to new coroutine's globals table */
     ngx_http_lua_get_globals_table(co);
     lua_setfenv(co, -2);
+#endif
 
     /*  save nginx request in coroutine globals table */
     ngx_http_lua_set_req(co, r);
@@ -287,6 +286,8 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 #ifdef NGX_LUA_USE_ASSERT
     ctx->cur_co_ctx->co_top = 1;
 #endif
+
+    ngx_http_lua_attach_co_ctx_to_L(co, ctx->cur_co_ctx);
 
     /*  }}} */
 
