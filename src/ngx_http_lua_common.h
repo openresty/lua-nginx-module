@@ -497,6 +497,7 @@ struct ngx_http_lua_co_ctx_s {
     unsigned                 nresults_from_worker_thread;  /* number of results
                                                             * from worker
                                                             * thread callback */
+    unsigned                 nrets;     /* ngx_http_lua_run_thread nrets arg. */
 
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */
