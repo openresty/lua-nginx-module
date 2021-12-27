@@ -151,7 +151,7 @@ ngx_http_lua_sema_handler would use the freed memory.
 
     location /t {
         content_by_lua_block {
-            res= ngx.location.capture("/up")
+            local res = ngx.location.capture("/up")
             collectgarbage()
             ngx.print(res.body)
         }
