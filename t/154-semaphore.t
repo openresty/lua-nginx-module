@@ -125,7 +125,7 @@ semaphore gc wait queue is not empty
 If gc is called before the ngx_http_lua_sema_handler and free the sema memory
 ngx_http_lua_sema_handler would use the freed memory.
 --- config
-    location /t {
+    location /up {
         content_by_lua_block {
             local semaphore = require "ngx.semaphore"
             local sem = semaphore.new()
@@ -148,14 +148,23 @@ ngx_http_lua_sema_handler would use the freed memory.
             ngx.say("not reach here")
         }
     }
+
+    location /t {
+        content_by_lua_block {
+            res= ngx.location.capture("/up")
+            collectgarbage()
+            ngx.print(res.body)
+        }
+    }
+
 --- request
 GET /t
 --- response_body
 hello
---- grep_error_log eval: qr/(ngx.sem .*?,|http close request|semaphore handler: wait queue: empty, resource count: 1)/
+--- grep_error_log eval: qr/(ngx.sem .*?,|http close request|semaphore handler: wait queue: empty, resource count: 1|in lua gc, semaphore)/
 --- grep_error_log_out
 ngx.sem wait start,
 ngx.sem post start,
 ngx.sem post end,
+in lua gc, semaphore
 http close request
-semaphore handler: wait queue: empty, resource count: 1
