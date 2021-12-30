@@ -1148,6 +1148,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
             values[0].len = ngx_http_time(p, last_modified) - p;
             return 1;
         }
+
         break;
 
     default:
