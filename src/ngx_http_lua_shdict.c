@@ -943,7 +943,7 @@ push_node:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        lua_pushboolean(L, 0);
+        lua_pushnil(L);
         lua_pushliteral(L, "no memory");
         return 2;
     }

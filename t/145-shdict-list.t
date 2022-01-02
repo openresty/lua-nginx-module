@@ -827,3 +827,27 @@ GET /test
 aa list value: nil
 --- no_error_log
 [error]
+
+
+
+=== TEST 22: lpush return nil
+--- http_config
+    lua_shared_dict dogs 100k;
+--- config
+    location = /test {
+        content_by_lua_block {
+            local dogs = ngx.shared.dogs
+            for i = 1, 2920
+            do
+                local len, err = dogs:lpush("foo", "bar")
+            end
+            local len, err = dogs:lpush("foo", "bar")
+            ngx.say(len)
+        }
+    }
+--- request
+GET /test
+--- response_body
+nil
+--- no_error_log
+[error]

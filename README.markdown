@@ -352,6 +352,8 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags)
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags)
 1. Download the latest supported version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
+1. Download the latest version of the lua-resty-core [HERE](https://lua-resty-core)
+1. Download the latest version of the lua-resty-lrucache [HERE](https://github.com/openresty/lua-resty-lrucache)
 
 Build the source with this module:
 
@@ -383,6 +385,18 @@ Build the source with this module:
  # machine.
  make -j2
  make install
+
+ # Note that this version of lug-nginx-module not allow to set `lua_load_resty_core off;` any more.
+ # So, you have to install `lua-resty-core` and `lua-resty-lrucache` manually as below.
+
+ cd lua-resty-core
+ make install PREFIX=/opt/nginx
+ cd lua-resty-lrucache
+ make install PREFIX=/opt/nginx
+
+ # add necessary `lua_package_path` directive to `nginx.conf`, in the http context
+
+ lua_package_path "/opt/nginx/lib/lua/?.lua;;";
 ```
 
 [Back to TOC](#table-of-contents)
@@ -3861,7 +3875,8 @@ HTTP status constants
    value = ngx.HTTP_CLOSE (444) (first added in the v0.9.20 release)
    value = ngx.HTTP_ILLEGAL (451) (first added in the v0.9.20 release)
    value = ngx.HTTP_INTERNAL_SERVER_ERROR (500)
-   value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501)
+   value = ngx.HTTP_NOT_IMPLEMENTED (501)
+   value = ngx.HTTP_METHOD_NOT_IMPLEMENTED (501) (kept for compatibility)
    value = ngx.HTTP_BAD_GATEWAY (502) (first added in the v0.9.20 release)
    value = ngx.HTTP_SERVICE_UNAVAILABLE (503)
    value = ngx.HTTP_GATEWAY_TIMEOUT (504) (first added in the v0.3.1rc38 release)
@@ -5206,6 +5221,8 @@ For security considerations, this method will automatically escape " ", """, "("
 "0x00-0x08, 0x0A-0x0F, 0x7F in `header_value`.
 
 By default, all the subrequests subsequently initiated by [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) will inherit the new header.
+
+It is not a Lua's equivalent of nginx `proxy_set_header` directive (same is true about [ngx.req.clear_header](#ngxreqclear_header)). `proxy_set_header` only affects the upstream request while `ngx.req.set_header` change the incoming request. Record the http headers in the access log file will show the difference. But you still can use it as an alternative of nginx `proxy_set_header` directive as long as you know the difference.
 
 Here is an example of setting the `Content-Type` header:
 
