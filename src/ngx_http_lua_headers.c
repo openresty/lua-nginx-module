@@ -1137,7 +1137,6 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
 
     case 13:
         if (ngx_strncasecmp(key_buf, (u_char *) "Last-Modified", 13) == 0) {
-
             last_modified = r->headers_out.last_modified_time;
             if (last_modified >= 0) {
                 p = ngx_palloc(r->pool,
