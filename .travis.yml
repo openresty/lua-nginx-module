@@ -14,6 +14,7 @@ compiler:
 addons:
   apt:
     packages:
+      - ack
       - axel
       - cpanminus
       - libtest-base-perl
