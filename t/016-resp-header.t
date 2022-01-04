@@ -2141,3 +2141,88 @@ hi
 --- error_log
 my Content-Length: 8589934591
 upstream prematurely closed connection while sending to client
+
+
+
+=== TEST 95: Expose the 'Last-Modified' response header as ngx.header["Last-Modified"]
+--- config
+    location /a.txt {
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.ERR, "can not get lasted modified")
+                ngx.exit(500)
+                return
+            end
+
+            local last_mod = ngx.parse_http_time(last_modified)
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        }
+    }
+--- user_files
+>>> a.txt
+Foo
+--- request
+GET /a.txt
+--- raw_response_headers_like chomp
+Age: \d\r\n
+--- no_error_log
+[error]
+
+
+
+=== TEST 96: 'Last-Modified' from upstream
+--- config
+    location /test/ {
+        proxy_pass http://127.0.0.1:$server_port/;
+
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.ERR, "can not get lasted modified")
+                ngx.exit(500)
+                return
+            end
+
+            local last_mod = ngx.parse_http_time(last_modified)
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        }
+    }
+
+--- user_files
+>>> a.txt
+Foo
+--- request
+GET /test/a.txt
+--- raw_response_headers_like chomp
+Age: \d\r\n
+--- no_error_log
+[error]
+
+
+
+=== TEST 97: 'Last-Modified' does not exist
+--- config
+    location /test {
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.INFO, "Last-Modified is nil as expected")
+                return
+            end
+
+            ngx.log(ngx.ERR, "Last-Modified expected to be nil, but got ", last_modified)
+        }
+
+        content_by_lua_block {
+            ngx.say("Hello World")
+        }
+    }
+--- request
+GET /test
+--- response_body
+Hello World
+--- no_error_log
+[error]
