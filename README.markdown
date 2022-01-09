@@ -14,6 +14,8 @@ then you are essentially using OpenResty.
 *This module is not distributed with the Nginx source.* See
 [the installation instructions](#installation).
 
+This is a core component of OpenResty. If you are using this module, then you are essentially using OpenResty :)
+
 Table of Contents
 =================
 

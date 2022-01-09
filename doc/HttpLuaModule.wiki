@@ -8,6 +8,8 @@ then you are essentially using OpenResty.
 ''This module is not distributed with the Nginx source.'' See
 [[#Installation|the installation instructions]].
 
+This is a core component of OpenResty. If you are using this module, then you are essentially using OpenResty :)
+
 = Status =
 
 Production ready.
