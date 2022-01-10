@@ -773,6 +773,12 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
             }
         }
 
+        close(in[0]);
+        close(out[1]);
+        if (!merge_stderr) {
+            close(err[1]);
+        }
+
         if (environ != NULL) {
 #if (NGX_HTTP_LUA_HAVE_EXECVPE)
             if (execvpe(file, (char * const *) argv, (char * const *) environ)
