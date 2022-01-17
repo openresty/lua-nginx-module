@@ -1229,10 +1229,14 @@ lua ssl server name: "test.com"
             ffi.cdef[[
                 const char *SSL_get_servername(const void *, const int);
             ]]
-            local libssl = ffi.load "ssl"
             local TLSEXT_NAMETYPE_host_name = 0
-            local sni = ffi.string(libssl.SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
-            ngx.log(ngx.INFO, "SNI is ", sni)
+            local sni = ffi.C.SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name)
+            if sni == nil then
+                ngx.log(ngx.ERR, "failed to get sni")
+                return
+            end
+
+            ngx.log(ngx.INFO, "SNI is ", ffi.string(sni))
         }
 
         ssl_certificate ../../cert/test.crt;
