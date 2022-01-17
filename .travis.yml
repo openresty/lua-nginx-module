@@ -141,4 +141,4 @@ script:
   - dig +short myip.opendns.com @resolver1.opendns.com || exit 0
   - dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0
   - dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
-  - prove -I. -Itest-nginx/lib -r t/140-ssl-c-api.t || true; cat t/servroot/logs/error.log | grep -v malloc | grep -v free
+  - prove -I. -Itest-nginx/lib -r t/140-ssl-c-api.t
