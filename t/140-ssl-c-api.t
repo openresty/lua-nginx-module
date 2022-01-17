@@ -91,6 +91,7 @@ __DATA__
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
+        lua_package_cpath "/opt/ssl/lib/?.so;;";
 
         ssl_certificate_by_lua_block {
             collectgarbage()
