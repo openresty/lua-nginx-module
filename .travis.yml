@@ -24,6 +24,7 @@ addons:
       - libtest-longstring-perl
       - liblist-moreutils-perl
       - libgd-dev
+      - valgrind
 
 cache:
   directories:
@@ -50,6 +51,7 @@ env:
     - LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
     - DRIZZLE_VER=2011.07.21
     - TEST_NGINX_SLEEP=0.006
+    - TEST_NGINX_USE_VALGRIND=1
   jobs:
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1l OPENSSL_PATCH_VER=1.1.1f
