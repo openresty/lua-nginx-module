@@ -1,12 +1,19 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+our $SkipReason;
+
 BEGIN {
-    $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
-    $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
-    $ENV{MOCKEAGAIN}='w'
+    if ($ENV{TEST_NGINX_EVENT_TYPE} && $ENV{TEST_NGINX_EVENT_TYPE} ne 'poll') {
+        $SkipReason = "unavailable for the event type '$ENV{TEST_NGINX_EVENT_TYPE}'";
+
+    } else {
+        $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
+        $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+        $ENV{MOCKEAGAIN}='w'
+    }
 }
 
-use Test::Nginx::Socket::Lua;
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);
 #master_process_enabled(1);

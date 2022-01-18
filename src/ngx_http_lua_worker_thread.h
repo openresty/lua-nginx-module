@@ -13,6 +13,7 @@
 
 
 void ngx_http_lua_inject_worker_thread_api(ngx_log_t *log, lua_State *L);
+void ngx_http_lua_thread_exit_process(void);
 
 
 #endif /* _NGX_HTTP_LUA_WORKER_THREAD_H_INCLUDED_ */

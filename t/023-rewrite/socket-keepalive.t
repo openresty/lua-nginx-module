@@ -903,7 +903,7 @@ lua tcp socket get keepalive peer: using connection
 
 
 
-=== TEST 12: github issue #108: ngx.locaiton.capture + redis.set_keepalive
+=== TEST 12: github issue #108: ngx.location.capture + redis.set_keepalive
 --- http_config eval
     qq{
         lua_package_path "$::HtmlDir/?.lua;;";

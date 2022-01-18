@@ -1,6 +1,16 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+
+BEGIN {
+    if ($ENV{TEST_NGINX_EVENT_TYPE}
+        && $ENV{TEST_NGINX_EVENT_TYPE} !~ /^kqueue|epoll|eventport$/)
+    {
+        $SkipReason = "unavailable for the event type '$ENV{TEST_NGINX_EVENT_TYPE}'";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);
 #master_on();
@@ -271,7 +281,7 @@ false : module 'hello' not found.*
 
 
 
-=== TEST 10 the number of Lua VM exceeds the pool size
+=== TEST 10: the number of Lua VM exceeds the pool size
 --- main_config
     thread_pool testpool threads=100;
 --- http_config eval: $::HttpConfig
@@ -348,7 +358,7 @@ GET /t
 
 
 
-=== TEST 11 kill uthread before worker thread callback
+=== TEST 11: kill uthread before worker thread callback
 --- main_config
     thread_pool testpool threads=100;
 --- http_config eval: $::HttpConfig

@@ -388,10 +388,9 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
         }
 #endif
 
-    } else {
-#else
-    {
+    } else
 #endif
+    {
         base = lua_gettop(L);
 
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
@@ -720,6 +719,10 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+    if (ctx == NULL) {
+        return rc;
+    }
+
     ngx_chain_update_chains(r->pool,
                             &ctx->free_bufs, &ctx->busy_bufs, &in,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
@@ -781,10 +784,13 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
-    /* create the registry entry for the Lua request ctx data table */
-    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
-    lua_createtable(L, 0, 32 /* nrec */);
-    lua_rawset(L, LUA_REGISTRYINDEX);
+    /*
+     * the the Lua request ctx data table will create in resty.core.ctx,
+     * just equivalent to the following code:
+     *    lua_pushliteral(L, ngx_http_lua_ctx_tables_key);
+     *    lua_createtable(L, 0, 0);
+     *    lua_rawset(L, LUA_REGISTRYINDEX);
+     */
 
     /* create the registry entry for the Lua socket connection pool table */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
@@ -821,7 +827,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 113 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 115 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -1025,9 +1031,13 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    ctx->read_body_done = 1;
-
     r->main->count--;
+
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->read_body_done = 1;
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
@@ -4403,7 +4413,7 @@ ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
     escape = ngx_http_lua_escape_uri(NULL, data, len, type);
     if (escape > 0) {
         /*
-         * we allocate space for the trailling '\0' char here because nginx
+         * we allocate space for the trailing '\0' char here because nginx
          * header values must be null-terminated
          */
         dst->data = ngx_palloc(r->pool, len + 2 * escape + 1);

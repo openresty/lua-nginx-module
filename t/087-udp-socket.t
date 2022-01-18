@@ -1171,7 +1171,7 @@ send: fd:\d+ 15 of 15/
 
 
 
-=== TEST 22: send tables of string framents (with numbers too)
+=== TEST 22: send tables of string fragments (with numbers too)
 the maximum number of significant digits is 14 in lua
 --- config
     server_tokens off;

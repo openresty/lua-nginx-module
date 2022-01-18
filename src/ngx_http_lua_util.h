@@ -165,7 +165,7 @@ void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
 void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 
-void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
+void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible);
 
 void ngx_http_lua_request_cleanup_handler(void *data);
 
@@ -564,7 +564,7 @@ ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
 {
 #ifdef HAVE_LUA_RESETTHREAD
     ngx_queue_t                 *q;
-    ngx_http_lua_thread_ref_t   *tref ;
+    ngx_http_lua_thread_ref_t   *tref;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
@@ -648,10 +648,9 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_rawgeti(L, -1, co_ref);
 
-    } else {
-#else
-    {
+    } else
 #endif
+    {
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(L, LUA_REGISTRYINDEX);

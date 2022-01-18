@@ -13,6 +13,10 @@
 #include "ngx_http_lua_exitworkerby.h"
 #include "ngx_http_lua_util.h"
 
+#if (NGX_THREADS)
+#include "ngx_http_lua_worker_thread.h"
+#endif
+
 
 void
 ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
@@ -22,6 +26,10 @@ ngx_http_lua_exit_worker(ngx_cycle_t *cycle)
     ngx_http_request_t          *r = NULL;
     ngx_http_lua_ctx_t          *ctx;
     ngx_http_conf_ctx_t         *conf_ctx;
+
+#if (NGX_THREADS)
+    ngx_http_lua_thread_exit_process();
+#endif
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
     if (lmcf == NULL

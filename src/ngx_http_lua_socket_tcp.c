@@ -147,8 +147,6 @@ static void ngx_http_lua_socket_free_pool(ngx_log_t *log,
 static int ngx_http_lua_socket_shutdown_pool(lua_State *L);
 static void ngx_http_lua_socket_shutdown_pool_helper(
     ngx_http_lua_socket_pool_t *spool);
-static void
-    ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx);
 static int ngx_http_lua_socket_prepare_error_retvals(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L, ngx_uint_t ft_type);
 #if (NGX_HTTP_SSL)
@@ -1148,13 +1146,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
     return ngx_http_lua_socket_tcp_connect_helper(L, u, r, ctx, p,
                                                   len, port, 0);
-}
-
-
-static void
-ngx_http_lua_socket_empty_resolve_handler(ngx_resolver_ctx_t *ctx)
-{
-    /* do nothing */
 }
 
 
@@ -2834,7 +2825,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     switch (type) {
         case LUA_TNUMBER:
-            b->last  = ngx_http_lua_write_num(L, 2, b->last);
+            b->last = ngx_http_lua_write_num(L, 2, b->last);
             break;
 
         case LUA_TSTRING:
@@ -3121,7 +3112,7 @@ ngx_http_lua_socket_tcp_settimeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket settimout: expecting 2 arguments "
+        return luaL_error(L, "ngx.socket settimeout: expecting 2 arguments "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
@@ -3168,7 +3159,7 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 4) {
-        return luaL_error(L, "ngx.socket settimout: expecting 4 arguments "
+        return luaL_error(L, "ngx.socket settimeout: expecting 4 arguments "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
@@ -6084,10 +6075,8 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
         return;
     }
 
-    /* just to be safer */
-    rctx->handler = ngx_http_lua_socket_empty_resolve_handler;
-
-    ngx_resolve_name_done(rctx);
+    /* postpone free the rctx in the handler */
+    rctx->handler = ngx_resolve_name_done;
 }
 
 

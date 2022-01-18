@@ -19,7 +19,7 @@ typedef struct {
     ngx_http_request_t      *request;    /* fake request */
     ngx_pool_cleanup_pt     *cleanup;
 
-    ngx_ssl_session_t       *session;    /* retrurn value for openssl's
+    ngx_ssl_session_t       *session;    /* return value for openssl's
                                           * session_get_cb */
 
     ngx_str_t                session_id;
