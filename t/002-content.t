@@ -1,7 +1,5 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use strict;
-use warnings FATAL => 'all';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
