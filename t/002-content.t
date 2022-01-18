@@ -860,5 +860,5 @@ qr/failed to load inlined Lua code: /
     }
 --- request
 GET /lua
---- response_body_like: 403 Forbidden
---- error_code: 403
+--- response_body_like: 503 Service Unavailable
+--- error_code: 503
