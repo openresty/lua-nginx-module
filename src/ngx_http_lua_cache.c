@@ -307,7 +307,6 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
             break;
 
         case LUA_ERRFILE:
-            // see https://man7.org/linux/man-pages/man2/open.2.html
             if (errno == ENOENT)
                 errcode = NGX_HTTP_NOT_FOUND;
             else if (errno == EACCES)
