@@ -309,11 +309,16 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
         case LUA_ERRFILE:
             if (errno == ENOENT) {
                 errcode = NGX_HTTP_NOT_FOUND;
-            } else if (errno == EACCES) {
+            }
+
+            else if (errno == EACCES) {
                 errcode = NGX_HTTP_FORBIDDEN;
-            } else {
+            }
+
+            else {
                 errcode = NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
+
             /* fall through */
 
         default:
