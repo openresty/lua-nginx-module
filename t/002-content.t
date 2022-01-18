@@ -1,5 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+use strict;
+use warnings FATAL => 'all';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -850,3 +852,13 @@ GET /lua
 --- error_code: 500
 --- error_log eval
 qr/failed to load inlined Lua code: /
+
+=== TEST 43: Lua file permission denied
+--- config
+    location /lua {
+        content_by_lua_file /etc/shadow;
+    }
+--- request
+GET /lua
+--- response_body_like: 403 Forbidden
+--- error_code: 403
