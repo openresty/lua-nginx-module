@@ -853,6 +853,8 @@ GET /lua
 --- error_log eval
 qr/failed to load inlined Lua code: /
 
+
+
 === TEST 43: Lua file permission denied
 --- config
     location /lua {
