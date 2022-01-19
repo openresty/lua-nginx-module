@@ -1,5 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+use strict;
+use warnings FATAL => 'all';
 use Test::Nginx::Socket::Lua;
 
 #worker_connections(1014);
@@ -858,4 +860,5 @@ qr/failed to load inlined Lua code: /
     }
 --- request
 GET /lua
+--- response_body_like: 503 Service Temporarily Unavailable
 --- error_code: 503
