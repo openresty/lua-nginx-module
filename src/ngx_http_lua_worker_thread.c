@@ -139,12 +139,13 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
         lua_setfield(vm, -2, "path");
         lua_pushlstring(vm, cpath, cpath_len);
         lua_setfield(vm, -2, "cpath");
+        lua_pop(vm, 1);
 
         /* pop path, cpath and "package" table from L */
         lua_pop(L, 3);
 
         /* inject API from C */
-        lua_newtable(L);    /* ngx.* */
+        lua_newtable(vm);    /* ngx.* */
         ngx_http_lua_inject_string_api(vm);
         ngx_http_lua_inject_config_api(vm);
         lua_setglobal(vm, "ngx");
