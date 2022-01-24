@@ -648,9 +648,9 @@ ngx_http_lua_init_builtin_headers_out(ngx_conf_t *cf,
     ngx_http_lua_set_header_t    *handlers = ngx_http_lua_set_handlers;
     ngx_uint_t                    count;
 
-    count = sizeof(ngx_http_lua_set_handlers) 
+    count = sizeof(ngx_http_lua_set_handlers)
             / sizeof(ngx_http_lua_set_header_t);
-            
+
     if (ngx_array_init(&headers, cf->temp_pool, count, sizeof(ngx_hash_key_t))
         != NGX_OK)
     {
@@ -665,7 +665,7 @@ ngx_http_lua_init_builtin_headers_out(ngx_conf_t *cf,
 
         hk->key = handlers->name;
         hk->key_hash = ngx_hash_key_lc(handlers->name.data, handlers->name.len);
-        hk->value = (void *)handlers;
+        hk->value = (void *) handlers;
 
         handlers++;
     }
