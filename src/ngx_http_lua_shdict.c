@@ -815,7 +815,7 @@ ngx_http_lua_shdict_push_helper(lua_State *L, int flags)
                        "type matched, reusing it");
 
         sd->expires = 0;
-
+        sd->value_len = 0;
         /* free list nodes */
 
         queue = ngx_http_lua_shdict_get_list_head(sd, key.len);
@@ -943,7 +943,7 @@ push_node:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        lua_pushboolean(L, 0);
+        lua_pushnil(L);
         lua_pushliteral(L, "no memory");
         return 2;
     }
@@ -1426,8 +1426,6 @@ replace:
             ngx_queue_remove(&sd->queue);
             ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
-            sd->key_len = (u_short) key_len;
-
             if (exptime > 0) {
                 tp = ngx_timeofday();
                 sd->expires = (uint64_t) tp->sec * 1000 + tp->msec
@@ -1439,14 +1437,11 @@ replace:
 
             sd->user_flags = user_flags;
 
-            sd->value_len = (uint32_t) str_value_len;
-
             dd("setting value type to %d", value_type);
 
             sd->value_type = (uint8_t) value_type;
 
-            p = ngx_copy(sd->data, key, key_len);
-            ngx_memcpy(p, str_value_buf, str_value_len);
+            ngx_memcpy(sd->data + key_len, str_value_buf, str_value_len);
 
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 

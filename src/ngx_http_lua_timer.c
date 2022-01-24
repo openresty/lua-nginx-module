@@ -173,6 +173,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    ngx_http_lua_assert(ctx != NULL);
 
     /*
      * Since nginx has been confirmed that all timers have been cleaned up when
@@ -323,7 +324,7 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
         tctx->client_addr_text.data = NULL;
     }
 
-    if (ctx && ctx->vm_state) {
+    if (ctx->vm_state) {
         tctx->vm_state = ctx->vm_state;
         tctx->vm_state->count++;
 
@@ -874,7 +875,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
             next = cur->parent;
 
         } else {
-            /* not reacheable */
+            /* not reachable */
             next = NULL;
         }
 

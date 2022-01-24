@@ -358,6 +358,14 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 {
     ngx_http_lua_ctx_t       *ctx;
 
+    if (status == NGX_AGAIN || status == NGX_DONE) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "bad argument to 'ngx.exit': does not accept "
+                               "NGX_AGAIN or NGX_DONE")
+                  - err;
+        return NGX_ERROR;
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         *errlen = ngx_snprintf(err, *errlen, "no request ctx found") - err;
@@ -370,6 +378,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_TIMER
                                        | NGX_HTTP_LUA_CONTEXT_HEADER_FILTER
                                        | NGX_HTTP_LUA_CONTEXT_BALANCER
+                                       | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH,
@@ -380,6 +389,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     }
 
     if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                        | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH))
     {

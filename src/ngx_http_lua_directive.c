@@ -1537,7 +1537,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     for ( ;; ) {
 
         if (b->pos >= b->last
-            || (b->last - b->pos < (b->end - b->start) / 3
+            || (b->last - b->pos < (b->end - b->start) / 2
                 && cf->conf_file->file.offset < file_size))
         {
 
@@ -1632,7 +1632,7 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             }
 
             if (len) {
-                ngx_memcpy(b->start, b->pos, len);
+                ngx_memmove(b->start, b->pos, len);
             }
 
             size = (ssize_t) (file_size - cf->conf_file->file.offset);
@@ -1709,7 +1709,8 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             if (q == NULL) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "Lua code block missing the closing "
-                                   "long bracket \"%*s\"",
+                                   "long bracket \"%*s\", "
+                                   "the inlined Lua code may be too long",
                                    b->pos + ovec[1] - p, p);
                 return NGX_ERROR;
             }

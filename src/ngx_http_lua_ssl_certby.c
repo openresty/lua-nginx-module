@@ -1042,7 +1042,7 @@ ngx_http_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
 
 int
 ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
-    u_char *der, char **err)
+    const u_char *passphrase, u_char *der, char **err)
 {
     int          len;
     BIO         *in;
@@ -1055,7 +1055,7 @@ ngx_http_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
         return NGX_ERROR;
     }
 
-    pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, NULL);
+    pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, (void *) passphrase);
     if (pkey == NULL) {
         BIO_free(in);
         *err = "PEM_read_bio_PrivateKey() failed";
@@ -1476,6 +1476,17 @@ failed:
 
     return NGX_ERROR;
 #endif
+}
+
+
+ngx_ssl_conn_t *
+ngx_http_lua_ffi_get_req_ssl_pointer(ngx_http_request_t *r)
+{
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        return NULL;
+    }
+
+    return r->connection->ssl->connection;
 }
 
 

@@ -33,11 +33,12 @@
 #define NGX_HTTP_LUA_ESCAPE_HEADER_VALUE  8
 
 #define NGX_HTTP_LUA_CONTEXT_YIELDABLE (NGX_HTTP_LUA_CONTEXT_REWRITE         \
-                                        | NGX_HTTP_LUA_CONTEXT_ACCESS        \
-                                        | NGX_HTTP_LUA_CONTEXT_CONTENT       \
-                                        | NGX_HTTP_LUA_CONTEXT_TIMER         \
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT      \
-                                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
+                                | NGX_HTTP_LUA_CONTEXT_ACCESS                \
+                                | NGX_HTTP_LUA_CONTEXT_CONTENT               \
+                                | NGX_HTTP_LUA_CONTEXT_TIMER                 \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_CERT              \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
 
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
@@ -56,6 +57,8 @@
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_EXIT_WORKER ? "exit_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO ?                        \
+                                                 "ssl_client_hello_by_lua*"  \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"      \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE ?                          \
                                                  "ssl_session_store_by_lua*" \
@@ -162,7 +165,7 @@ void ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
 void ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r);
 
-void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int foricible);
+void ngx_http_lua_request_cleanup(ngx_http_lua_ctx_t *ctx, int forcible);
 
 void ngx_http_lua_request_cleanup_handler(void *data);
 
@@ -561,7 +564,7 @@ ngx_http_lua_free_thread(ngx_http_request_t *r, lua_State *L, int co_ref,
 {
 #ifdef HAVE_LUA_RESETTHREAD
     ngx_queue_t                 *q;
-    ngx_http_lua_thread_ref_t   *tref ;
+    ngx_http_lua_thread_ref_t   *tref;
     ngx_http_lua_ctx_t          *ctx;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP,
@@ -645,10 +648,9 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
         lua_rawget(L, LUA_REGISTRYINDEX);
         lua_rawgeti(L, -1, co_ref);
 
-    } else {
-#else
-    {
+    } else
 #endif
+    {
         lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                               coroutines_key));
         lua_rawget(L, LUA_REGISTRYINDEX);

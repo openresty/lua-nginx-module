@@ -125,20 +125,21 @@ typedef struct {
 
 
 /* must be within 16 bit */
-#define NGX_HTTP_LUA_CONTEXT_SET            0x0001
-#define NGX_HTTP_LUA_CONTEXT_REWRITE        0x0002
-#define NGX_HTTP_LUA_CONTEXT_ACCESS         0x0004
-#define NGX_HTTP_LUA_CONTEXT_CONTENT        0x0008
-#define NGX_HTTP_LUA_CONTEXT_LOG            0x0010
-#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER  0x0020
-#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER    0x0040
-#define NGX_HTTP_LUA_CONTEXT_TIMER          0x0080
-#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER    0x0100
-#define NGX_HTTP_LUA_CONTEXT_BALANCER       0x0200
-#define NGX_HTTP_LUA_CONTEXT_SSL_CERT       0x0400
-#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE 0x0800
-#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH 0x1000
-#define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER    0x2000
+#define NGX_HTTP_LUA_CONTEXT_SET                0x0001
+#define NGX_HTTP_LUA_CONTEXT_REWRITE            0x0002
+#define NGX_HTTP_LUA_CONTEXT_ACCESS             0x0004
+#define NGX_HTTP_LUA_CONTEXT_CONTENT            0x0008
+#define NGX_HTTP_LUA_CONTEXT_LOG                0x0010
+#define NGX_HTTP_LUA_CONTEXT_HEADER_FILTER      0x0020
+#define NGX_HTTP_LUA_CONTEXT_BODY_FILTER        0x0040
+#define NGX_HTTP_LUA_CONTEXT_TIMER              0x0080
+#define NGX_HTTP_LUA_CONTEXT_INIT_WORKER        0x0100
+#define NGX_HTTP_LUA_CONTEXT_BALANCER           0x0200
+#define NGX_HTTP_LUA_CONTEXT_SSL_CERT           0x0400
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE     0x0800
+#define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH     0x1000
+#define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER        0x2000
+#define NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO   0x4000
 
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -274,7 +275,7 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_sema_mm_t         *sema_mm;
 
     ngx_uint_t           malloc_trim_cycle;  /* a cycle is defined as the number
-                                                of reqeusts */
+                                                of requests */
     ngx_uint_t           malloc_trim_req_count;
 
 #if (nginx_version >= 1011011)
@@ -320,6 +321,11 @@ union ngx_http_lua_srv_conf_u {
         ngx_str_t                            ssl_sess_fetch_src;
         u_char                              *ssl_sess_fetch_src_key;
         int                                  ssl_sess_fetch_src_ref;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_client_hello_handler;
+        ngx_str_t                            ssl_client_hello_src;
+        u_char                              *ssl_client_hello_src_key;
+        int                                  ssl_client_hello_src_ref;
     } srv;
 #endif
 

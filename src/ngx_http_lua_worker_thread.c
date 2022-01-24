@@ -14,6 +14,8 @@
 
 #include "ngx_http_lua_worker_thread.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_string.h"
+#include "ngx_http_lua_config.h"
 
 
 #if (NGX_THREADS)
@@ -41,6 +43,20 @@ typedef struct {
 static  ngx_http_lua_task_ctx_t   dummy_ctx;
 static  ngx_http_lua_task_ctx_t  *ctxpool = &dummy_ctx;
 static  ngx_uint_t                worker_thread_vm_count;
+
+
+void
+ngx_http_lua_thread_exit_process(void)
+{
+    ngx_http_lua_task_ctx_t  *ctx;
+
+    while (ctxpool->next != NULL) {
+        ctx = ctxpool->next;
+        ctxpool->next = ctx->next;
+        lua_close(ctx->vm);
+        ngx_free(ctx);
+    }
+}
 
 
 /*
@@ -123,12 +139,41 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
         lua_setfield(vm, -2, "path");
         lua_pushlstring(vm, cpath, cpath_len);
         lua_setfield(vm, -2, "cpath");
+        lua_pop(vm, 1);
 
         /* pop path, cpath and "package" table from L */
         lua_pop(L, 3);
 
-        /* pop the "package" table */
-        lua_pop(vm, 1);
+        /* inject API from C */
+        lua_newtable(vm);    /* ngx.* */
+        ngx_http_lua_inject_string_api(vm);
+        ngx_http_lua_inject_config_api(vm);
+        lua_setglobal(vm, "ngx");
+
+        /* inject API via ffi */
+        lua_getglobal(vm, "require");
+        lua_pushstring(vm, "resty.core.regex");
+        if (lua_pcall(vm, 1, 0, 0) != 0) {
+            lua_close(vm);
+            ngx_free(ctx);
+            return NULL;
+        }
+
+        lua_getglobal(vm, "require");
+        lua_pushstring(vm, "resty.core.hash");
+        if (lua_pcall(vm, 1, 0, 0) != 0) {
+            lua_close(vm);
+            ngx_free(ctx);
+            return NULL;
+        }
+
+        lua_getglobal(vm, "require");
+        lua_pushstring(vm, "resty.core.base64");
+        if (lua_pcall(vm, 1, 0, 0) != 0) {
+            lua_close(vm);
+            ngx_free(ctx);
+            return NULL;
+        }
 
     } else {
         ctx = ctxpool->next;
@@ -236,7 +281,8 @@ ngx_http_lua_worker_thread_handler(void *data, ngx_log_t *log)
     ngx_http_lua_worker_thread_ctx_t     *ctx = data;
     lua_State                            *vm = ctx->ctx->vm;
 
-    ngx_http_lua_assert(lua_gettop(vm) == ctx->n_args);
+    /* function + args in the lua stack */
+    ngx_http_lua_assert(lua_gettop(vm) == ctx->n_args + 1);
 
     ctx->rc = lua_pcall(vm, ctx->n_args, LUA_MULTRET, 0);
 }

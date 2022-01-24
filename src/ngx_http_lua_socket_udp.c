@@ -1044,7 +1044,7 @@ ngx_http_lua_socket_udp_settimeout(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 2) {
-        return luaL_error(L, "ngx.socket settimout: expecting at least 2 "
+        return luaL_error(L, "ngx.socket settimeout: expecting at least 2 "
                           "arguments (including the object) but seen %d",
                           lua_gettop(L));
     }
@@ -1584,7 +1584,8 @@ ngx_http_lua_udp_resolve_cleanup(void *data)
         return;
     }
 
-    ngx_resolve_name_done(rctx);
+    /* postpone free the rctx in the handler */
+    rctx->handler = ngx_resolve_name_done;
 }
 
 
