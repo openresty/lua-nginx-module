@@ -500,13 +500,7 @@ ngx_http_lua_set_output_header(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
         return NGX_ERROR;
     }
 
-    if (value.len > 0) {
-        hv.hash = ngx_hash_key_lc(key.data, key.len);
-
-    } else {
-        hv.hash = 0;
-    }
-
+    hv.hash = ngx_hash_key_lc(key.data, key.len);
     hv.key = key;
 
     hv.offset = 0;
