@@ -684,7 +684,8 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
 
 
 static ngx_inline void *
-ngx_http_lua_hash_find_lc(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
+ngx_http_lua_hash_find_lc(ngx_hash_t *hash, ngx_uint_t key, u_char *name,
+    size_t len)
 {
     ngx_uint_t       i;
     ngx_hash_elt_t  *elt;
