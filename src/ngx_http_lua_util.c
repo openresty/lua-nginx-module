@@ -281,7 +281,6 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
 
         lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
         lua_getfield(L, -2, "cpath"); /* package default old */
-        old_cpath = lua_tolstring(L, -1, &old_cpath_len);
         lua_concat(L, 2); /* package new */
         lua_setfield(L, -2, "cpath"); /* package */
 #endif
