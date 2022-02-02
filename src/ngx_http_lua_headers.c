@@ -171,7 +171,7 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
         && mr->request_line.data[mr->request_line.len] == CR)
     {
         line_break_len = 2;
-        
+
     } else {
         line_break_len = 1;
     }
