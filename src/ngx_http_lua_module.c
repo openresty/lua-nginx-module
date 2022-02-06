@@ -14,6 +14,7 @@
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_server_rewriteby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_logby.h"
@@ -290,6 +291,22 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_filter_set_by_lua_file },
 #endif
+
+    /* server_rewrite_by_lua_block { <inline script> } */
+    { ngx_string("server_rewrite_by_lua_block"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+        ngx_http_lua_server_rewrite_by_lua_block,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        (void *) ngx_http_lua_server_rewrite_handler_inline },
+
+    /* server_rewrite_by_lua_file filename; */
+    { ngx_string("server_rewrite_by_lua_file"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+        ngx_http_lua_server_rewrite_by_lua,
+        NGX_HTTP_LOC_CONF_OFFSET,
+        0,
+        (void *) ngx_http_lua_server_rewrite_handler_file },
 
     /* rewrite_by_lua "<inline script>" */
     { ngx_string("rewrite_by_lua"),
@@ -752,6 +769,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+    if (lmcf->requires_server_rewrite) {
+        h = ngx_array_push(
+          &cmcf->phases[NGX_HTTP_SERVER_REWRITE_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_server_rewrite_handler;
+    }
 
     if (lmcf->requires_rewrite) {
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
@@ -1375,6 +1402,14 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
+
+    if (conf->server_rewrite_src.value.len == 0) {
+        conf->server_rewrite_src = prev->server_rewrite_src;
+        conf->server_rewrite_handler = prev->server_rewrite_handler;
+        conf->server_rewrite_src_ref = prev->server_rewrite_src_ref;
+        conf->server_rewrite_src_key = prev->server_rewrite_src_key;
+        conf->server_rewrite_chunkname = prev->server_rewrite_chunkname;
+    }
 
     if (conf->rewrite_src.value.len == 0) {
         conf->rewrite_src = prev->rewrite_src;

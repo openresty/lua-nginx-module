@@ -307,6 +307,7 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
     unsigned             requires_capture_log:1;
+    unsigned             requires_server_rewrite:1;
 };
 
 
@@ -370,6 +371,7 @@ typedef struct {
 
     ngx_flag_t              http10_buffering;
 
+    ngx_http_handler_pt     server_rewrite_handler;
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
@@ -377,6 +379,14 @@ typedef struct {
     ngx_http_handler_pt     header_filter_handler;
 
     ngx_http_output_body_filter_pt         body_filter_handler;
+
+    u_char *server_rewrite_chunkname;
+    ngx_http_complex_value_t server_rewrite_src; /*  server_rewrite_by_lua
+                                             inline script/script
+                                             file path */
+
+    u_char *server_rewrite_src_key; /* cached key for server_rewrite_src */
+    int server_rewrite_src_ref;
 
     u_char                  *rewrite_chunkname;
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
@@ -631,7 +641,7 @@ typedef struct ngx_http_lua_ctx_s {
                                        response headers */
     unsigned         mime_set:1;    /* whether the user has set Content-Type
                                        response header */
-
+    unsigned         entered_server_rewrite_phase:1;
     unsigned         entered_rewrite_phase:1;
     unsigned         entered_access_phase:1;
     unsigned         entered_content_phase:1;

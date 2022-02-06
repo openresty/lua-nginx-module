@@ -17,6 +17,7 @@
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_server_rewriteby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_headerfilterby.h"
@@ -584,6 +585,88 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
     lmcf->requires_rewrite = 1;
+    lmcf->requires_capture_filter = 1;
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_server_rewrite_by_lua_block(ngx_conf_t *cf,
+    ngx_command_t *cmd, void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+    save = *cf;
+    cf->handler = ngx_http_lua_server_rewrite_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
+ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    u_char                      *cache_key = NULL;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_loc_conf_t     *llcf = conf;
+
+    ngx_http_compile_complex_value_t         ccv;
+
+    dd("enter");
+
+    /*  must specify a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (llcf->server_rewrite_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    if (value[1].len == 0) {
+        /*  Oops...Invalid location conf */
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                           "invalid location config: no runnable Lua code");
+
+        return NGX_CONF_ERROR;
+    }
+
+    /* only for by_file */
+    ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+    ccv.cf = cf;
+    ccv.value = &value[1];
+    ccv.complex_value = &llcf->server_rewrite_src;
+
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (llcf->server_rewrite_src.lengths == NULL) {
+        /* no variable found */
+        cache_key = ngx_http_lua_gen_file_cache_key(cf, value[1].data,
+                                                    value[1].len);
+        if (cache_key == NULL) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+
+    llcf->server_rewrite_src_key = cache_key;
+    llcf->server_rewrite_handler = (ngx_http_handler_pt) cmd->post;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    lmcf->requires_server_rewrite = 1;
     lmcf->requires_capture_filter = 1;
 
     return NGX_CONF_OK;

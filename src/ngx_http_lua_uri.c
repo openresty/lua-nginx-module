@@ -92,7 +92,8 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
                 return luaL_error(L, "no ctx found");
             }
 
-            dd("rewrite: %d, access: %d, content: %d",
+            dd("server_rewrite: %d, rewrite: %d, access: %d, content: %d",
+               (int) ctx->entered_serverrewrite_phase,
                (int) ctx->entered_rewrite_phase,
                (int) ctx->entered_access_phase,
                (int) ctx->entered_content_phase);
