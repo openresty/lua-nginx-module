@@ -1302,6 +1302,9 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
 {
     u_char      *p, *out;
     size_t       len;
+    ngx_uint_t   start_line;
+
+    ngx_http_lua_main_conf_t    *lmcf;
 
     len = sizeof("=(:)") - 1 + tag_len + cf->conf_file->file.name.len
           + NGX_INT64_LEN + 1;
@@ -1328,10 +1331,13 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
 
 found:
 
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+    start_line = lmcf->directive_line ? : cf->conf_file->line;
+
     p = ngx_snprintf(out, len, "=%*s(%*s:%d)%Z",
                      tag_len, tag, cf->conf_file->file.name.data
                      + cf->conf_file->file.name.len - p,
-                     p, cf->conf_file->line);
+                     p, start_line);
 
     *chunkname_len = p - out - 1;  /* exclude the trailing '\0' byte */
 
@@ -1343,6 +1349,7 @@ found:
 char *
 ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 {
+    ngx_http_lua_main_conf_t           *lmcf;
     ngx_http_lua_block_parser_ctx_t     ctx;
 
     int               level = 1;
@@ -1375,6 +1382,9 @@ ngx_http_lua_conf_lua_block_parse(ngx_conf_t *cf, ngx_command_t *cmd)
 
     ctx.token_len = 0;
     start_line = cf->conf_file->line;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+    lmcf->directive_line = start_line;
 
     dd("init start line: %d", (int) start_line);
 
@@ -1493,6 +1503,8 @@ failed:
     rc = NGX_ERROR;
 
 done:
+
+    lmcf->directive_line = 0;
 
     if (rc == NGX_ERROR) {
         return NGX_CONF_ERROR;
