@@ -1332,7 +1332,8 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
 found:
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
-    start_line = lmcf->directive_line ? : cf->conf_file->line;
+    start_line = lmcf->directive_line > 0
+        ? lmcf->directive_line : cf->conf_file->line;
 
     p = ngx_snprintf(out, len, "=%*s(%*s:%d)%Z",
                      tag_len, tag, cf->conf_file->file.name.data
