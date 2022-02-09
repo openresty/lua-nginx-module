@@ -276,6 +276,8 @@ struct ngx_http_lua_main_conf_s {
                                                 of requests */
     ngx_uint_t           malloc_trim_req_count;
 
+    ngx_uint_t           directive_line;
+
 #if (nginx_version >= 1011011)
     /* the following 2 fields are only used by ngx.req.raw_headers() for now */
     ngx_buf_t          **busy_buf_ptrs;

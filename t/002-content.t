@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 24);
+plan tests => repeat_each() * (blocks() * 2 + 27);
 
 #no_diff();
 #no_long_string();
@@ -849,4 +849,71 @@ GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/failed to load inlined Lua code: /
+qr/failed to load inlined Lua code: content_by_lua\(nginx.conf:40\)/
+
+
+
+=== TEST 43: syntax error in content_by_lua_block
+--- config
+    location /lua {
+
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load inlined Lua code: content_by_lua\(nginx.conf:41\)/
+
+
+
+=== TEST 44: syntax error in second content_by_lua_block
+--- config
+    location /foo {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /lua {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load inlined Lua code: content_by_lua\(nginx.conf:46\)/
+
+
+
+=== TEST 45: syntax error in thrid content_by_lua_block
+--- config
+    location /foo {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /bar {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /lua {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr/failed to load inlined Lua code: content_by_lua\(nginx.conf:52\)/
