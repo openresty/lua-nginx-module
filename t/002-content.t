@@ -917,3 +917,96 @@ GET /lua
 --- error_code: 500
 --- error_log eval
 qr/failed to load inlined Lua code: content_by_lua\(nginx.conf:52\)/
+
+
+
+=== TEST 46: syntax error in included file
+--- config
+    location /foo {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /bar {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    include ../html/lua.conf;
+--- user_files
+>>> lua.conf
+    location /lua {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+failed to load inlined Lua code: content_by_lua(../html/lua.conf:2):2: unexpected symbol near ''for end''
+
+
+
+=== TEST 47: syntax error with very long filename
+--- config
+    location /foo {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /bar {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    include ../html/veryverylongfilename.conf;
+--- user_files
+>>> veryverylongfilename.conf
+    location /lua {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr|\Qfailed to load inlined Lua code: content_by_lua(../html/veryverylongfilename.conf:2)\E|
+
+
+
+=== TEST 48: syntax error in /tmp/lua.conf
+--- config
+    location /foo {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    location /bar {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+
+    include /tmp/lua.conf;
+--- user_files
+>>> /tmp/lua.conf
+    location /lua {
+        content_by_lua_block {
+            'for end';
+        }
+    }
+--- request
+GET /lua
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+qr|\Qfailed to load inlined Lua code: content_by_lua(/tmp/lua.conf:2)\E|

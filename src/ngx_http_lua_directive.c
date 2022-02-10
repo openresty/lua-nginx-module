@@ -912,7 +912,8 @@ char *
 ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-    u_char                      *cache_key = NULL;
+    size_t                       chunkname_len;
+    u_char                      *cache_key = NULL, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
@@ -947,8 +948,16 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "header_filter_by_lua",
+                                             sizeof("header_filter_by_lua") - 1,
+                                             &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
         /* Don't eval nginx variables for inline lua code */
         llcf->header_filter_src.value = value[1];
+        llcf->header_filter_chunkname = chunkname;
 
     } else {
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
@@ -1004,7 +1013,8 @@ char *
 ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-    u_char                      *cache_key = NULL;
+    size_t                       chunkname_len;
+    u_char                      *cache_key = NULL, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
@@ -1039,8 +1049,17 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "body_filter_by_lua",
+                                                sizeof("body_filter_by_lua") - 1,
+                                                &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+
         /* Don't eval nginx variables for inline lua code */
         llcf->body_filter_src.value = value[1];
+        llcf->body_filter_chunkname = chunkname;
 
     } else {
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
@@ -1100,6 +1119,8 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                      *name;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf = conf;
+    size_t                       chunkname_len;
+    u_char                      *chunkname;
 
     dd("enter");
 
@@ -1135,6 +1156,15 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     } else {
         lmcf->init_src = value[1];
+
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "init_by_lua",
+                                                sizeof("init_by_lua") - 1,
+                                                &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->init_chunkname = chunkname;
     }
 
     return NGX_CONF_OK;
@@ -1167,6 +1197,8 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                      *name;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf = conf;
+    size_t                       chunkname_len;
+    u_char                      *chunkname;
 
     dd("enter");
 
@@ -1195,6 +1227,15 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     } else {
         lmcf->init_worker_src = value[1];
+
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "init_worker_by_lua",
+                                               sizeof("init_worker_by_lua") - 1,
+                                                &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->init_worker_chunkname = chunkname;
     }
 
     return NGX_CONF_OK;
@@ -1227,6 +1268,8 @@ ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                      *name;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf = conf;
+    size_t                       chunkname_len;
+    u_char                      *chunkname;
 
     /*  must specify a content handler */
     if (cmd->post == NULL) {
@@ -1253,6 +1296,15 @@ ngx_http_lua_exit_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
     } else {
         lmcf->exit_worker_src = value[1];
+
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "exit_worker_by_lua",
+                                                sizeof("exit_worker_by_lua")- 1,
+                                                &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lmcf->exit_worker_chunkname = chunkname;
     }
 
     return NGX_CONF_OK;
@@ -1303,6 +1355,8 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
     u_char      *p, *out;
     size_t       len;
     ngx_uint_t   start_line;
+    ngx_str_t   *conf_prefix;
+    ngx_str_t   *filename;
 
     ngx_http_lua_main_conf_t    *lmcf;
 
@@ -1314,20 +1368,29 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
         return NULL;
     }
 
-    if (cf->conf_file->file.name.len) {
-        p = cf->conf_file->file.name.data + cf->conf_file->file.name.len;
-        while (--p >= cf->conf_file->file.name.data) {
-            if (*p == '/' || *p == '\\') {
+    filename = &cf->conf_file->file.name;
+    if (filename->len > 0) {
+        if (filename->len >= 11) {
+            p = filename->data + filename->len - 11;
+            if ((*p == '/' || *p == '\\')
+                && ngx_memcmp(p, "/nginx.conf", 11) == 0)
+            {
                 p++;
                 goto found;
             }
         }
 
-        p++;
-
-    } else {
-        p = cf->conf_file->file.name.data;
+        conf_prefix = &cf->cycle->conf_prefix;
+        p = filename->data + conf_prefix->len;
+        if ((conf_prefix->len < filename->len)
+            && ngx_memcmp(conf_prefix->data,
+                          filename->data, conf_prefix->len) == 0)
+        {
+            goto found;
+        }
     }
+
+    p = filename->data;
 
 found:
 

@@ -233,12 +233,15 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_main_conf_handler_pt    init_handler;
     ngx_str_t                            init_src;
+    u_char                              *init_chunkname;
 
     ngx_http_lua_main_conf_handler_pt    init_worker_handler;
     ngx_str_t                            init_worker_src;
+    u_char                              *init_worker_chunkname;
 
     ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
     ngx_str_t                            exit_worker_src;
+    u_char                              *exit_worker_chunkname;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
                     /* neither yielding nor recursion is possible in
@@ -403,6 +406,7 @@ typedef struct {
                                                      inline script/script
                                                      file path */
 
+    u_char                 *header_filter_chunkname;
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
     int                     header_filter_src_ref;
@@ -410,6 +414,7 @@ typedef struct {
 
     ngx_http_complex_value_t         body_filter_src;
     u_char                          *body_filter_src_key;
+    u_char                          *body_filter_chunkname;
     int                              body_filter_src_ref;
 
     ngx_msec_t                       keepalive_timeout;

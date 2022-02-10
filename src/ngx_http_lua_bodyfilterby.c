@@ -161,7 +161,7 @@ ngx_http_lua_body_filter_inline(ngx_http_request_t *r, ngx_chain_t *in)
                                        llcf->body_filter_src.value.len,
                                        &llcf->body_filter_src_ref,
                                        llcf->body_filter_src_key,
-                                       "=body_filter_by_lua");
+                                    (const char *) llcf->body_filter_chunkname);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }

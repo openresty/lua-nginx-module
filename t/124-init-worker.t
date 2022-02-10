@@ -975,3 +975,53 @@ qr/lua close the global Lua VM ([0-9A-F]+)$/,
 --- no_error_log
 [error]
 start privileged agent process
+
+
+
+=== TEST 25: syntax error in init_worker_by_lua_block
+--- http_config
+    init_worker_by_lua_block {
+        ngx.log(ngx.debug, "pass")
+        error("failed to init"
+        ngx.log(ngx.debug, "unreachable")
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+hello world
+--- error_log
+=init_worker_by_lua(nginx.conf:25) error: init_worker_by_lua:4: ')' expected (to close '(' at line 3) near 'ngx'
+--- no_error_log
+no_such_error_log
+
+
+
+=== TEST 26: syntax error in init_worker_by_lua_file
+--- http_config
+    init_worker_by_lua_file html/init.lua;
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- user_files
+>>> init.lua
+    ngx.log(ngx.debug, "pass")
+    error("failed to init"
+    ngx.log(ngx.debug, "unreachable")
+
+--- request
+    GET /t
+--- response_body
+hello world
+--- error_log
+init_worker_by_lua_file error: ...code/openresty/lua-nginx-module/t/servroot/html/init.lua:3: ')' expected (to close '(' at line 2) near 'ngx'
+--- no_error_log
+no_such_error_log
