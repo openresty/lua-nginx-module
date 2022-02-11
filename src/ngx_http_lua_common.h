@@ -337,6 +337,7 @@ union ngx_http_lua_srv_conf_u {
         ngx_str_t                            src;
         u_char                              *src_key;
         int                                  src_ref;
+        u_char                              *chunkname;
     } balancer;
 };
 

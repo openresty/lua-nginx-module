@@ -90,7 +90,7 @@ ngx_http_lua_balancer_handler_inline(ngx_http_request_t *r,
                                        lscf->balancer.src.len,
                                        &lscf->balancer.src_ref,
                                        lscf->balancer.src_key,
-                                       "=balancer_by_lua");
+                              (const char *) lscf->balancer.chunkname);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -125,6 +125,8 @@ char *
 ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
+    size_t                       chunkname_len;
+    u_char                      *chunkname;
     u_char                      *cache_key = NULL;
     u_char                      *name;
     ngx_str_t                   *value;
@@ -172,8 +174,17 @@ ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
+
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "balancer_by_lua",
+                                                sizeof("balancer_by_lua") - 1,
+                                                &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
         /* Don't eval nginx variables for inline lua code */
         lscf->balancer.src = value[1];
+        lscf->balancer.chunkname = chunkname;
     }
 
     lscf->balancer.src_key = cache_key;

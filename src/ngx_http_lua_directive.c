@@ -43,8 +43,6 @@ typedef struct ngx_http_lua_block_parser_ctx_s
 static ngx_int_t ngx_http_lua_set_by_lua_init(ngx_http_request_t *r);
 #endif
 
-static u_char *ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
-    size_t tag_len, size_t *chunkname_len);
 static ngx_int_t ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
     ngx_http_lua_block_parser_ctx_t *ctx);
 static u_char *ngx_http_lua_strlstrn(u_char *s1, u_char *last, u_char *s2,
@@ -1348,7 +1346,7 @@ ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
 #endif
 
 
-static u_char *
+u_char *
 ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
     size_t *chunkname_len)
 {
