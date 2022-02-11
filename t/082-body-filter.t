@@ -858,7 +858,8 @@ GET /lua
 --- error_log
 failed to load inlined Lua code: body_filter_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
 --- no_error_log
-no_such_error
+no_such_error1
+no_such_error2
 
 
 
@@ -887,4 +888,5 @@ GET /lua
 --- error_log
 failed to load inlined Lua code: body_filter_by_lua(nginx.conf:49):2: unexpected symbol near ''for end''
 --- no_error_log
-no_such_error
+no_such_error1
+no_such_error2

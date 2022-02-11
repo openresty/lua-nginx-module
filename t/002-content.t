@@ -10,7 +10,7 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 #repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 2 + 27);
+plan tests => repeat_each() * (blocks() * 2 + 30);
 
 #no_diff();
 #no_long_string();
@@ -977,8 +977,8 @@ failed to load inlined Lua code: content_by_lua(../html/lua.conf:2):2: unexpecte
 GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log eval
-qr|\Qfailed to load inlined Lua code: content_by_lua(../html/veryverylongfilename.conf:2)\E|
+--- error_log
+failed to load inlined Lua code: content_by_lua(../html/veryverylongfilename.conf:2)
 
 
 
@@ -1008,5 +1008,5 @@ qr|\Qfailed to load inlined Lua code: content_by_lua(../html/veryverylongfilenam
 GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log eval
-qr|\Qfailed to load inlined Lua code: content_by_lua(/tmp/lua.conf:2)\E|
+--- error_log
+failed to load inlined Lua code: content_by_lua(/tmp/lua.conf:2)

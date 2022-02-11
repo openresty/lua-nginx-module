@@ -1870,9 +1870,9 @@ qr/set_by_lua:\d+: hello/,
 qr/rewrite_by_lua\(nginx\.conf:\d+\):\d+: hello/,
 qr/access_by_lua\(nginx\.conf:\d+\):\d+: hello/,
 qr/content_by_lua\(nginx\.conf:\d+\):\d+: hello/,
-qr/header_filter_by_lua:\d+: hello/,
-qr/body_filter_by_lua:\d+: hello/,
-qr/log_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/header_filter_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/body_filter_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/log_by_lua\(nginx.conf:\d+\):\d+: hello/,
 ]
 --- log_level: debug
 --- no_error_log
