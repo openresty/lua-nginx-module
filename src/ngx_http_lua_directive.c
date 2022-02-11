@@ -278,6 +278,8 @@ ngx_http_lua_set_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
 char *
 ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
+    size_t               chunkname_len;
+    u_char              *chunkname;
     u_char              *cache_key;
     ngx_str_t           *value;
     ngx_str_t            target;
@@ -310,7 +312,15 @@ ngx_http_lua_set_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    chunkname = ngx_http_lua_gen_chunk_name(cf, "set_by_lua",
+                                            sizeof("set_by_lua") - 1,
+                                            &chunkname_len);
+    if (chunkname == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
     filter_data->key = cache_key;
+    filter_data->chunkname = chunkname;
     filter_data->ref = LUA_REFNIL;
     filter_data->script = value[2];
     filter_data->size = filter.size;
@@ -373,6 +383,7 @@ ngx_http_lua_set_by_lua_file(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     filter_data->key = cache_key;
     filter_data->ref = LUA_REFNIL;
     filter_data->size = filter.size;
+    filter_data->chunkname = NULL;
 
     ngx_str_null(&filter_data->script);
 
@@ -402,7 +413,8 @@ ngx_http_lua_filter_set_by_lua_inline(ngx_http_request_t *r, ngx_str_t *val,
                                        filter_data->script.data,
                                        filter_data->script.len,
                                        &filter_data->ref,
-                                       filter_data->key, "=set_by_lua");
+                                       filter_data->key,
+                                       (const char *) filter_data->chunkname);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -1048,8 +1060,8 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "body_filter_by_lua",
-                                                sizeof("body_filter_by_lua") - 1,
-                                                &chunkname_len);
+                                               sizeof("body_filter_by_lua") - 1,
+                                               &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }

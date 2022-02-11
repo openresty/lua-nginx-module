@@ -31,6 +31,7 @@ typedef struct {
     size_t       size;
     int          ref;
     u_char      *key;
+    u_char      *chunkname;
     ngx_str_t    script;
 } ngx_http_lua_set_var_data_t;
 #endif

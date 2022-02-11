@@ -243,7 +243,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: HELLO,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua\(nginx.conf:43\):2: HELLO,/
 
 
 
@@ -261,7 +261,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: truefalsenil,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua\(nginx.conf:43\):2: truefalsenil,/
 
 
 
