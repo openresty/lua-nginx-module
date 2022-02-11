@@ -313,21 +313,25 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
         ngx_str_t                            ssl_cert_src;
         u_char                              *ssl_cert_src_key;
+        u_char                              *ssl_cert_chunkname;
         int                                  ssl_cert_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_sess_store_handler;
         ngx_str_t                            ssl_sess_store_src;
         u_char                              *ssl_sess_store_src_key;
+        u_char                              *ssl_sess_store_chunkname;
         int                                  ssl_sess_store_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_sess_fetch_handler;
         ngx_str_t                            ssl_sess_fetch_src;
         u_char                              *ssl_sess_fetch_src_key;
+        u_char                              *ssl_sess_fetch_chunkname;
         int                                  ssl_sess_fetch_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_client_hello_handler;
         ngx_str_t                            ssl_client_hello_src;
         u_char                              *ssl_client_hello_src_key;
+        u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
     } srv;
 #endif
@@ -336,8 +340,8 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt     handler;
         ngx_str_t                            src;
         u_char                              *src_key;
-        int                                  src_ref;
         u_char                              *chunkname;
+        int                                  src_ref;
     } balancer;
 };
 

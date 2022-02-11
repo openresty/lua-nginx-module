@@ -90,7 +90,7 @@ ngx_http_lua_balancer_handler_inline(ngx_http_request_t *r,
                                        lscf->balancer.src.len,
                                        &lscf->balancer.src_ref,
                                        lscf->balancer.src_key,
-                              (const char *) lscf->balancer.chunkname);
+                                       (const char *) lscf->balancer.chunkname);
     if (rc != NGX_OK) {
         return rc;
     }
