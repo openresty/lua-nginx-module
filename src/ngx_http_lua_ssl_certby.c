@@ -70,7 +70,8 @@ ngx_http_lua_ssl_cert_handler_inline(ngx_http_request_t *r,
                                        lscf->srv.ssl_cert_src.len,
                                        &lscf->srv.ssl_cert_src_ref,
                                        lscf->srv.ssl_cert_src_key,
-                                   (const char *) lscf->srv.ssl_cert_chunkname);
+                                       (const char *)
+                                       lscf->srv.ssl_cert_chunkname);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -166,8 +167,7 @@ ngx_http_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "ssl_certificate_by_lua",
-                                           sizeof("ssl_certificate_by_lua") - 1,
-                                           &chunkname_len);
+                          sizeof("ssl_certificate_by_lua") - 1, &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }

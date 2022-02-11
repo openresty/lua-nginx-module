@@ -959,8 +959,7 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "header_filter_by_lua",
-                                             sizeof("header_filter_by_lua") - 1,
-                                             &chunkname_len);
+                            sizeof("header_filter_by_lua") - 1, &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -1060,8 +1059,7 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "body_filter_by_lua",
-                                               sizeof("body_filter_by_lua") - 1,
-                                               &chunkname_len);
+                              sizeof("body_filter_by_lua") - 1, &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -1239,8 +1237,7 @@ ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         lmcf->init_worker_src = value[1];
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "init_worker_by_lua",
-                                               sizeof("init_worker_by_lua") - 1,
-                                                &chunkname_len);
+                              sizeof("init_worker_by_lua") - 1, &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -1385,7 +1382,7 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
             if ((*p == '/' || *p == '\\')
                 && ngx_memcmp(p, "/nginx.conf", 11) == 0)
             {
-                p++;
+                p++; /* now p is nginx.conf */
                 goto found;
             }
         }
@@ -1396,6 +1393,7 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len,
             && ngx_memcmp(conf_prefix->data,
                           filename->data, conf_prefix->len) == 0)
         {
+            /* files in conf_prefix directory, use the relative path */
             goto found;
         }
     }

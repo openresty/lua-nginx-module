@@ -156,8 +156,7 @@ ngx_http_lua_ssl_sess_fetch_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "ssl_session_fetch_by_lua",
-                                         sizeof("ssl_session_fetch_by_lua") - 1,
-                                         &chunkname_len);
+                        sizeof("ssl_session_fetch_by_lua") - 1, &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }

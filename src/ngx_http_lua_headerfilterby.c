@@ -171,7 +171,8 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
                                        llcf->header_filter_src.value.len,
                                        &llcf->header_filter_src_ref,
                                        llcf->header_filter_src_key,
-                                  (const char *) llcf->header_filter_chunkname);
+                                       (const char *)
+                                       llcf->header_filter_chunkname);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
