@@ -238,5 +238,5 @@ hello world
     GET /t
 --- response_body
 hello world
---- shutdown_error_log
-exit_worker_by_lua_file error: ...code/openresty/lua-nginx-module/t/servroot/html/exit.lua:3: ')' expected (to close '(' at line 2) near 'ngx'
+--- shutdown_error_log eval
+qr|exit_worker_by_lua_file error: .*lua-nginx-module/t/servroot/html/exit.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|

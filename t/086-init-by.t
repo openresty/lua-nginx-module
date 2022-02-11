@@ -361,7 +361,7 @@ no_such_error_log
     ngx.log(ngx.debug, "unreachable")
 
 --- must_die
---- error_log
-init_by_lua_file error: ...code/openresty/lua-nginx-module/t/servroot/html/init.lua:3: ')' expected (to close '(' at line 2) near 'ngx'
+--- error_log eval
+qr|init_by_lua_file error: .*lua-nginx-module/t/servroot/html/init.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|
 --- no_error_log
 no_such_error_log
