@@ -174,7 +174,6 @@ ngx_http_lua_balancer_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
-
         chunkname = ngx_http_lua_gen_chunk_name(cf, "balancer_by_lua",
                                                 sizeof("balancer_by_lua") - 1,
                                                 &chunkname_len);
