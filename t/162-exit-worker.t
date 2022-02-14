@@ -6,7 +6,7 @@ master_on();
 repeat_each(2);
 
 # NB: the shutdown_error_log block is independent from repeat times
-plan tests => repeat_each() * (blocks() * 2 + 1) + 13;
+plan tests => repeat_each() * (blocks() * 2 + 1) + 15;
 
 #log_level("warn");
 no_long_string();
@@ -194,3 +194,49 @@ qr/cache loader process \d+ exited/,
 qr/cache manager process \d+ exited/,
 qr/hello from exit worker by lua, process type: worker/,
 ]
+
+
+
+=== TEST 8: syntax error in exit_worker_by_lua_block
+--- http_config
+    exit_worker_by_lua_block {
+        ngx.log(ngx.debug, "pass")
+        error("failed to init"
+        ngx.log(ngx.debug, "unreachable")
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+hello world
+--- shutdown_error_log
+=exit_worker_by_lua(nginx.conf:25) error: exit_worker_by_lua:4: ')' expected (to close '(' at line 3) near 'ngx'
+
+
+
+=== TEST 9: syntax error in exit_worker_by_lua_file
+--- http_config
+    exit_worker_by_lua_file html/exit.lua;
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- user_files
+>>> exit.lua
+    ngx.log(ngx.debug, "pass")
+    error("failed to init"
+    ngx.log(ngx.debug, "unreachable")
+
+--- request
+    GET /t
+--- response_body
+hello world
+--- shutdown_error_log eval
+qr|exit_worker_by_lua_file error: .*lua-nginx-module/t/servroot/html/exit.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|

@@ -83,7 +83,7 @@ connected: 1
 ssl handshake: userdata
 close: 1 nil
 
---- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua\(nginx\.conf:\d+\):.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
@@ -93,11 +93,11 @@ $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 ]
 :
@@ -106,12 +106,12 @@ qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 ]
 --- no_error_log
@@ -694,14 +694,14 @@ ssl handshake: userdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:2: bad bad bad/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):2: bad bad bad/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:2: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):2: bad bad bad
 ',
-'ssl_session_fetch_by_lua_block:2: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):2: bad bad bad
 ',
 
 ]
@@ -777,15 +777,15 @@ ssl handshake: userdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:3: bad bad bad|ssl_session_fetch_by_lua\*: sess get cb exit code: 0/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):3: bad bad bad|ssl_session_fetch_by_lua\*: sess get cb exit code: 0/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:3: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):3: bad bad bad
 ssl_session_fetch_by_lua*: sess get cb exit code: 0
 ',
-'ssl_session_fetch_by_lua_block:3: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):3: bad bad bad
 ssl_session_fetch_by_lua*: sess get cb exit code: 0
 ',
 
@@ -1113,14 +1113,14 @@ ssl handshake: userdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):1: ssl fetch sess by lua is running!/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
+'ssl_session_fetch_by_lua(nginx.conf:25):1: ssl fetch sess by lua is running!
 ',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
+'ssl_session_fetch_by_lua(nginx.conf:25):1: ssl fetch sess by lua is running!
 ',
 ]
 
@@ -1348,7 +1348,7 @@ GET /t
 connected: 1
 ssl handshake: userdata
 close: 1 nil
---- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua\(nginx\.conf:\d+\):.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
 # before call ssl callback function
@@ -1357,11 +1357,11 @@ $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 ]
 :
@@ -1370,12 +1370,12 @@ qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 ]
 --- no_error_log

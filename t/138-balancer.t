@@ -38,7 +38,7 @@ __DATA__
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 --- no_error_log
@@ -64,7 +64,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- response_body_like: 403 Forbidden
 --- error_code: 403
 --- error_log
-[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,
+[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
 [
 '[warn]',
@@ -92,7 +92,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 --- no_error_log
@@ -257,7 +257,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua\(nginx\.conf:27\):2: API disabled in the context of balancer_by_lua\*/
 
 
 
@@ -278,7 +278,7 @@ qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disable
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua\(nginx\.conf:27\):2: API disabled in the context of balancer_by_lua\*/
 
 
 
@@ -427,7 +427,7 @@ ctx counter: nil
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 --- no_error_log
@@ -567,3 +567,26 @@ connect() failed (111: Connection refused) while connecting to upstream
 --- no_error_log
 upstream sent more data than specified in "Content-Length" header while reading upstream
 [alert]
+
+
+
+=== TEST 18: error in balancer_by_llua_block
+--- http_config
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            ngx.say("hello"
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+ "failed to load inlined Lua code: balancer_by_lua(nginx.conf:27):3: ')' expected (to close '(' at line 2) near '<eof>'",
+--- no_error_log
+[warn]

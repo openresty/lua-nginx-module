@@ -95,12 +95,20 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 {
     int         status;
+    const char *chunkname;
 
     status = luaL_loadbuffer(L, (char *) lmcf->exit_worker_src.data,
                              lmcf->exit_worker_src.len, "=exit_worker_by_lua")
              || ngx_http_lua_do_call(log, L);
 
-    return ngx_http_lua_report(log, L, status, "exit_worker_by_lua");
+    if (lmcf->exit_worker_chunkname == NULL) {
+        chunkname = "exit_worker_by_lua";
+
+    } else {
+        chunkname = (const char *) lmcf->exit_worker_chunkname;
+    }
+
+    return ngx_http_lua_report(log, L, status, chunkname);
 }
 
 
