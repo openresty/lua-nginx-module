@@ -339,7 +339,7 @@ failed to init
     }
 --- must_die
 --- error_log
-=init_by_lua(nginx.conf:25) error: init_by_lua:4: ')' expected (to close '(' at line 3) near 'ngx'
+init_by_lua error: init_by_lua(nginx.conf:25):4: ')' expected (to close '(' at line 3) near 'ngx'
 --- no_error_log
 no_such_error_log
 

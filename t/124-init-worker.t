@@ -996,7 +996,7 @@ start privileged agent process
 --- response_body
 hello world
 --- error_log
-=init_worker_by_lua(nginx.conf:25) error: init_worker_by_lua:4: ')' expected (to close '(' at line 3) near 'ngx'
+init_worker_by_lua error: init_worker_by_lua(nginx.conf:25):4: ')' expected (to close '(' at line 3) near 'ngx'
 --- no_error_log
 no_such_error_log
 
