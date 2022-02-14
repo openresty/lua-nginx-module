@@ -108,7 +108,6 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
                              lmcf->exit_worker_src.len, chunkname)
              || ngx_http_lua_do_call(log, L);
 
-
     return ngx_http_lua_report(log, L, status, "exit_worker_by_lua");
 }
 

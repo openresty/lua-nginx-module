@@ -330,8 +330,6 @@ ngx_http_lua_init_worker_by_inline(ngx_log_t *log,
                              lmcf->init_worker_src.len, chunkname)
              || ngx_http_lua_do_call(log, L);
 
-
-
     return ngx_http_lua_report(log, L, status, "init_worker_by_lua");
 }
 
