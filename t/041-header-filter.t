@@ -849,3 +849,27 @@ GET /lua
 failed to load inlined Lua code: header_filter_by_lua(nginx.conf:49):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
+
+
+
+=== TEST 44: syntax error in /tmp/12345678901234567890123456789012345.conf
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("Hello world")
+        }
+
+        include /tmp/12345678901234567890123456789012345.conf;
+    }
+--- user_files
+>>> /tmp/12345678901234567890123456789012345.conf
+    header_filter_by_lua_block {
+        'for end';
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to load inlined Lua code: header_filter_by_lua(...901234567890123456789012345.conf:1):2: unexpected symbol near ''for end''
+--- no_error_log
+[alert]
