@@ -32,7 +32,7 @@
 #include "ngx_http_lua_log.h"
 
 
-/* the max length is 60, after deducting the fixed three characters "=(:)"
+/* the max length is 60, after deducting the fixed four characters "=(:)"
  * only 56 left.
  */
 #define LJ_CHUNKNAME_MAX_LEN 56
