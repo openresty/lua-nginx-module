@@ -1713,9 +1713,9 @@ GET /t
 --- config
 
 --- must_die
---- grep_error_log eval: qr/init_by_lua\(nginx.conf:25\) error: .*? something went wrong/
+--- grep_error_log eval: qr/init_by_lua\(nginx.conf:25\).*? something went wrong/
 --- grep_error_log_out
-init_by_lua(nginx.conf:25) error: init_by_lua:7: init_by_lua:4: something went wrong
+init_by_lua(nginx.conf:25):7: init_by_lua(nginx.conf:25):4: something went wrong
 
 
 
