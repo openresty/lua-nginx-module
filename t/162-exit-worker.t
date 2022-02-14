@@ -215,7 +215,7 @@ qr/hello from exit worker by lua, process type: worker/,
 --- response_body
 hello world
 --- shutdown_error_log
-=exit_worker_by_lua(nginx.conf:25) error: exit_worker_by_lua:4: ')' expected (to close '(' at line 3) near 'ngx'
+exit_worker_by_lua error: exit_worker_by_lua(nginx.conf:25):4: ')' expected (to close '(' at line 3) near 'ngx'
 
 
 
