@@ -22,7 +22,7 @@ ngx_http_lua_init_by_inline(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
 
 
     if (lmcf->init_chunkname == NULL) {
-        chunkname = "init_by_lua";
+        chunkname = "=init_by_lua";
 
     } else {
         chunkname = (const char *) lmcf->init_chunkname;

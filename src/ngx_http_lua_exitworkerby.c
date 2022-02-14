@@ -98,7 +98,7 @@ ngx_http_lua_exit_worker_by_inline(ngx_log_t *log,
     const char *chunkname;
 
     if (lmcf->exit_worker_chunkname == NULL) {
-        chunkname = "exit_worker_by_lua";
+        chunkname = "=exit_worker_by_lua";
 
     } else {
         chunkname = (const char *) lmcf->exit_worker_chunkname;
