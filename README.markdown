@@ -354,7 +354,7 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags)
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags)
 1. Download the latest supported version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
-1. Download the latest version of the lua-resty-core [HERE](https://lua-resty-core)
+1. Download the latest version of the lua-resty-core [HERE](https://github.com/openresty/lua-resty-core)
 1. Download the latest version of the lua-resty-lrucache [HERE](https://github.com/openresty/lua-resty-lrucache)
 
 Build the source with this module:
