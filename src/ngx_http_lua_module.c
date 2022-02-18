@@ -32,6 +32,11 @@
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_pipe.h"
+#include "ngx_http_lua_event.h"
+
+int ngx_http_lua_event_inited = 0;
+
+ngx_http_lua_event_actions_t  ngx_http_lua_event_actions;
 
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
@@ -715,6 +720,22 @@ ngx_http_lua_init(ngx_conf_t *cf)
     ngx_http_lua_main_conf_t   *lmcf;
     ngx_pool_cleanup_t         *cln;
     ngx_str_t                   name = ngx_string("host");
+    ngx_connection_t           *c = NULL;
+    ngx_http_request_t         *r;
+    ngx_http_lua_ctx_t         *ctx;
+    ngx_conf_t                  conf;
+    ngx_open_file_t            *file, *ofile;
+    ngx_list_part_t            *part;
+    ngx_cycle_t                *fake_cycle, *cycle;
+    ngx_http_conf_ctx_t        *conf_ctx, http_ctx;
+    ngx_conf_file_t             cf_file;
+    char                       *rv;
+    void                       *cur, *prev;
+    ngx_uint_t                  i;
+    ngx_module_t              **modules;
+    ngx_http_module_t          *module;
+    ngx_http_lua_loc_conf_t    *top_llcf;
+    ngx_http_core_loc_conf_t   *top_clcf;
 
     if (ngx_process == NGX_PROCESS_SIGNALLER || ngx_test_config) {
         return NGX_OK;
@@ -890,15 +911,233 @@ ngx_http_lua_init(ngx_conf_t *cf)
         ngx_http_lua_assert(lmcf->lua != NULL);
 
         if (!lmcf->requires_shm && lmcf->init_handler) {
+            cycle = cf->cycle;
+
+            conf_ctx = (ngx_http_conf_ctx_t *)
+                cycle->conf_ctx[ngx_http_module.index];
+            http_ctx.main_conf = conf_ctx->main_conf;
+
+            top_clcf = conf_ctx->loc_conf[ngx_http_core_module.ctx_index];
+            top_llcf = conf_ctx->loc_conf[ngx_http_lua_module.ctx_index];
+
+            ngx_memzero(&conf, sizeof(ngx_conf_t));
+
+            conf.temp_pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, cycle->log);
+            if (conf.temp_pool == NULL) {
+                return NGX_ERROR;
+            }
+
+            conf.temp_pool->log = cf->cycle->log;
+
+            /* we fake a temporary ngx_cycle_t here because some
+             * modules' merge conf handler may produce side effects in
+             * cf->cycle (like ngx_proxy vs cf->cycle->paths).
+             * also, we cannot allocate our temp cycle on the stack
+             * because some modules like ngx_http_core_module reference
+             * addresses within cf->cycle (i.e., via "&cf->cycle->new_log")
+             */
+            fake_cycle = ngx_palloc(cycle->pool, sizeof(ngx_cycle_t));
+            if (fake_cycle == NULL) {
+                goto failed;
+            }
+
+            ngx_memcpy(fake_cycle, cycle, sizeof(ngx_cycle_t));
+
+            ngx_queue_init(&fake_cycle->reusable_connections_queue);
+
+            if (ngx_array_init(&fake_cycle->listening, cycle->pool,
+                               cycle->listening.nelts || 1,
+                               sizeof(ngx_listening_t))
+                != NGX_OK)
+            {
+                goto failed;
+            }
+
+            if (ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
+                               sizeof(ngx_path_t *))
+                != NGX_OK)
+            {
+                goto failed;
+            }
+
+            part = &cycle->open_files.part;
+            ofile = part->elts;
+
+            if (ngx_list_init(&fake_cycle->open_files, cycle->pool, part->nelts || 1,
+                              sizeof(ngx_open_file_t))
+                != NGX_OK)
+            {
+                goto failed;
+            }
+
+            for (i = 0; /* void */ ; i++) {
+
+                if (i >= part->nelts) {
+                    if (part->next == NULL) {
+                        break;
+                    }
+
+                    part = part->next;
+                    ofile = part->elts;
+                    i = 0;
+                }
+
+                file = ngx_list_push(&fake_cycle->open_files);
+                if (file == NULL) {
+                    goto failed;
+                }
+
+                ngx_memcpy(file, ofile, sizeof(ngx_open_file_t));
+            }
+
+            if (ngx_list_init(&fake_cycle->shared_memory, cycle->pool, 1,
+                              sizeof(ngx_shm_zone_t))
+                != NGX_OK)
+            {
+                goto failed;
+            }
+
             saved_cycle = ngx_cycle;
-            ngx_cycle = cf->cycle;
+            ngx_cycle = fake_cycle;
+
+            if (ngx_http_lua_init_event(fake_cycle) == NGX_OK) {
+                ngx_http_lua_event_inited = 1;
+            }
+
+            conf.ctx = &http_ctx;
+            conf.cycle = fake_cycle;
+            conf.pool = fake_cycle->pool;
+            conf.log = cycle->log;
+
+            http_ctx.loc_conf = ngx_pcalloc(conf.pool,
+                                            sizeof(void *) * ngx_http_max_module);
+            if (http_ctx.loc_conf == NULL) {
+                goto failed;
+            }
+
+            http_ctx.srv_conf = ngx_pcalloc(conf.pool,
+                                            sizeof(void *) * ngx_http_max_module);
+            if (http_ctx.srv_conf == NULL) {
+                goto failed;
+            }
+
+            ngx_memzero(&cf_file, sizeof(cf_file));
+            cf_file.file.name = cycle->conf_file;
+            conf.conf_file = &cf_file;
+
+#if (nginx_version >= 1009011)
+            modules = cf->cycle->modules;
+#else
+            modules = ngx_modules;
+#endif
+
+            for (i = 0; modules[i]; i++) {
+                if (modules[i]->type != NGX_HTTP_MODULE) {
+                    continue;
+                }
+
+                module = modules[i]->ctx;
+
+                if (module->create_srv_conf) {
+                    cur = module->create_srv_conf(&conf);
+                    if (cur == NULL) {
+                        goto failed;
+                    }
+
+                    http_ctx.srv_conf[modules[i]->ctx_index] = cur;
+
+                    if (module->merge_srv_conf) {
+                        prev = module->create_srv_conf(&conf);
+                        if (prev == NULL) {
+                            goto failed;
+                        }
+
+                        rv = module->merge_srv_conf(&conf, prev, cur);
+                        if (rv != NGX_CONF_OK) {
+                            goto failed;
+                        }
+                    }
+                }
+
+                if (module->create_loc_conf) {
+                    cur = module->create_loc_conf(&conf);
+                    if (cur == NULL) {
+                        goto failed;
+                    }
+
+                    http_ctx.loc_conf[modules[i]->ctx_index] = cur;
+
+                    if (module->merge_loc_conf) {
+                        if (modules[i] == &ngx_http_lua_module) {
+                            prev = top_llcf;
+
+                        } else if (modules[i] == &ngx_http_core_module) {
+                            prev = top_clcf;
+
+                        } else {
+                            prev = module->create_loc_conf(&conf);
+                            if (prev == NULL) {
+                                goto failed;
+                            }
+                        }
+
+                        rv = module->merge_loc_conf(&conf, prev, cur);
+                        if (rv != NGX_CONF_OK) {
+                            goto failed;
+                        }
+                    }
+                }
+            }
+
+            ngx_destroy_pool(conf.temp_pool);
+            conf.temp_pool = NULL;
+
+            c = ngx_http_lua_create_fake_connection(NULL);
+            if (c == NULL) {
+                goto failed;
+            }
+
+            c->log->handler = cf->log->handler;
+
+            r = ngx_http_lua_create_fake_request(c);
+            if (r == NULL) {
+                goto failed;
+            }
+
+            r->main_conf = http_ctx.main_conf;
+            r->srv_conf = http_ctx.srv_conf;
+            r->loc_conf = http_ctx.loc_conf;
+
+            /* create ctx */
+            ctx = ngx_http_lua_create_ctx(r);
+            if (ctx == NULL) {
+                goto failed;
+            }
+
+            ctx->context = NGX_HTTP_LUA_CONTEXT_INIT;
+
+            ngx_http_lua_set_req(lmcf->lua, r);
 
             rc = lmcf->init_handler(cf->log, lmcf, lmcf->lua);
+            if (rc != NGX_OK) {
+                /* an error happened */
+                goto failed;
+            }
 
             ngx_cycle = saved_cycle;
 
-            if (rc != NGX_OK) {
-                /* an error happened */
+            if (0) {
+
+        failed:
+
+                if (conf.temp_pool) {
+                    ngx_destroy_pool(conf.temp_pool);
+                }
+
+                if (c) {
+                    ngx_http_lua_close_fake_connection(c);
+                }
+
                 return NGX_ERROR;
             }
         }

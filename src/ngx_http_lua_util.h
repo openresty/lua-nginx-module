@@ -40,6 +40,14 @@
                                 | NGX_HTTP_LUA_CONTEXT_SSL_CERT              \
                                 | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
 
+#define NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET                                \
+                                        (NGX_HTTP_LUA_CONTEXT_INIT    \
+                                         | NGX_HTTP_LUA_CONTEXT_EXIT_WORKER)
+
+
+#define NGX_HTTP_LUA_CONTEXT_COSOCKET (NGX_HTTP_LUA_CONTEXT_YIELDABLE         \
+                                       | NGX_HTTP_LUA_CONTEXT_BLOCKED_COSOCKET)
+
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
@@ -64,6 +72,7 @@
                                                  "ssl_session_store_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH ?                          \
                                                  "ssl_session_fetch_by_lua*" \
+     : (c) == NGX_HTTP_LUA_CONTEXT_INIT ? "init_by_lua*"                     \
      : "(unknown)")
 
 

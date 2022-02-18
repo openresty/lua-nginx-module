@@ -2732,11 +2732,6 @@ received: HTTP/1.1 200 OK
 close: 1 nil
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
---- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl free session: ([0-9A-F]+)
-$/
 --- error_log eval
 ['lua ssl server name: "test.com"',
 qr/SSL: TLSv1.3, cipher: "TLS_AES_128_GCM_SHA256 TLSv1.3/]
@@ -2834,3 +2829,67 @@ SSL reused session
 [alert]
 [emerg]
 --- timeout: 10
+
+
+
+=== TEST 35: access www.google.com in init_by_lua
+--- http_config
+    init_by_lua_block {
+        local sock = ngx.socket.tcp()
+        sock:settimeout(2000)
+        local ok, err = sock:connect("www.google.com", 443)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "connected: ", ok)
+
+        local sess, err = sock:sslhandshake()
+        if not sess then
+            ngx.log(ngx.ERR, "failed to do SSL handshake: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "ssl handshake: ", type(sess))
+
+        local req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n"
+        local bytes, err = sock:send(req)
+        if not bytes then
+            ngx.log(ngx.ERR, "failed to send http request: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "sent http request: ", bytes, " bytes.")
+
+        local line, err = sock:receive()
+        if not line then
+            ngx.log(ngx.ERR, "failed to receive response status line: ", err)
+            return
+        end
+
+        ngx.log(ngx.INFO, "received: ", line)
+
+        local ok, err = sock:close()
+        ngx.log(ngx.INFO, "close: ", ok, " ", err)
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello")
+        }
+    }
+--- request
+GET /t
+--- response_body
+hello
+--- error_log_like chop
+\Aconnected: 1
+ssl handshake: userdata
+sent http request: 59 bytes.
+received: HTTP/1.1 (?:200 OK|302 Found)
+close: 1 nil
+\z
+[error]
+--- timeout: 5
+--- ONLY
