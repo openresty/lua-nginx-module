@@ -1862,17 +1862,17 @@ code cache hit (key='log_by_lua_nhli_8a9441d0a30531ba8bb34ab11c55cfc3', ref=12)
 "]
 --- error_log eval
 [
-qr/balancer_by_lua:\d+: hello/,
-qr/ssl_session_fetch_by_lua_block:\d+: hello/,
-qr/ssl_certificate_by_lua:\d+: hello/,
-qr/ssl_session_store_by_lua_block:\d+: hello/,
-qr/set_by_lua:\d+: hello/,
+qr/balancer_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/ssl_session_fetch_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/ssl_certificate_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/ssl_session_store_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/set_by_lua\(nginx\.conf:\d+\):\d+: hello/,
 qr/rewrite_by_lua\(nginx\.conf:\d+\):\d+: hello/,
 qr/access_by_lua\(nginx\.conf:\d+\):\d+: hello/,
 qr/content_by_lua\(nginx\.conf:\d+\):\d+: hello/,
-qr/header_filter_by_lua:\d+: hello/,
-qr/body_filter_by_lua:\d+: hello/,
-qr/log_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/header_filter_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/body_filter_by_lua\(nginx\.conf:\d+\):\d+: hello/,
+qr/log_by_lua\(nginx.conf:\d+\):\d+: hello/,
 ]
 --- log_level: debug
 --- no_error_log

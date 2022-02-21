@@ -31,6 +31,7 @@ typedef struct {
     size_t       size;
     int          ref;
     u_char      *key;
+    u_char      *chunkname;
     ngx_str_t    script;
 } ngx_http_lua_set_var_data_t;
 #endif
@@ -235,12 +236,15 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_http_lua_main_conf_handler_pt    init_handler;
     ngx_str_t                            init_src;
+    u_char                              *init_chunkname;
 
     ngx_http_lua_main_conf_handler_pt    init_worker_handler;
     ngx_str_t                            init_worker_src;
+    u_char                              *init_worker_chunkname;
 
     ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
     ngx_str_t                            exit_worker_src;
+    u_char                              *exit_worker_chunkname;
 
     ngx_http_lua_balancer_peer_data_t      *balancer_peer_data;
                     /* neither yielding nor recursion is possible in
@@ -278,6 +282,8 @@ struct ngx_http_lua_main_conf_s {
                                                 of requests */
     ngx_uint_t           malloc_trim_req_count;
 
+    ngx_uint_t           directive_line;
+
 #if (nginx_version >= 1011011)
     /* the following 2 fields are only used by ngx.req.raw_headers() for now */
     ngx_buf_t          **busy_buf_ptrs;
@@ -310,21 +316,25 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
         ngx_str_t                            ssl_cert_src;
         u_char                              *ssl_cert_src_key;
+        u_char                              *ssl_cert_chunkname;
         int                                  ssl_cert_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_sess_store_handler;
         ngx_str_t                            ssl_sess_store_src;
         u_char                              *ssl_sess_store_src_key;
+        u_char                              *ssl_sess_store_chunkname;
         int                                  ssl_sess_store_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_sess_fetch_handler;
         ngx_str_t                            ssl_sess_fetch_src;
         u_char                              *ssl_sess_fetch_src_key;
+        u_char                              *ssl_sess_fetch_chunkname;
         int                                  ssl_sess_fetch_src_ref;
 
         ngx_http_lua_srv_conf_handler_pt     ssl_client_hello_handler;
         ngx_str_t                            ssl_client_hello_src;
         u_char                              *ssl_client_hello_src_key;
+        u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
     } srv;
 #endif
@@ -333,6 +343,7 @@ union ngx_http_lua_srv_conf_u {
         ngx_http_lua_srv_conf_handler_pt     handler;
         ngx_str_t                            src;
         u_char                              *src_key;
+        u_char                              *chunkname;
         int                                  src_ref;
     } balancer;
 };
@@ -403,6 +414,7 @@ typedef struct {
                                                      inline script/script
                                                      file path */
 
+    u_char                 *header_filter_chunkname;
     u_char                 *header_filter_src_key;
                                     /* cached key for header_filter_src */
     int                     header_filter_src_ref;
@@ -410,6 +422,7 @@ typedef struct {
 
     ngx_http_complex_value_t         body_filter_src;
     u_char                          *body_filter_src_key;
+    u_char                          *body_filter_chunkname;
     int                              body_filter_src_ref;
 
     ngx_msec_t                       keepalive_timeout;

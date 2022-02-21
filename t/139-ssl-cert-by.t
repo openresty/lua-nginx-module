@@ -117,18 +117,18 @@ lua ssl server name: "test.com"
 --- no_error_log
 [error]
 [alert]
---- grep_error_log eval: qr/ssl_certificate_by_lua:.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_certificate_by_lua\(nginx.conf:\d+\):.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
 # before call ssl callback function
 $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/reusable connection: 0
 ssl cert: connection reusable: 0
-ssl_certificate_by_lua:1: ssl cert by lua is running!,/
+ssl_certificate_by_lua\(nginx.conf:28\):1: ssl cert by lua is running!,/
 : qr /reusable connection: 1
 ssl cert: connection reusable: 1
 reusable connection: 0
-ssl_certificate_by_lua:1: ssl cert by lua is running!,/
+ssl_certificate_by_lua\(nginx.conf:28\):1: ssl cert by lua is running!,/
 
 
 
@@ -789,7 +789,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_certificate_by_lua:2: bad bad bad',
+'runtime error: ssl_certificate_by_lua(nginx.conf:28):2: bad bad bad',
 'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
@@ -861,7 +861,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_certificate_by_lua:3: bad bad bad',
+'runtime error: ssl_certificate_by_lua(nginx.conf:28):3: bad bad bad',
 'lua_certificate_by_lua: cert cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
 ]
@@ -1050,7 +1050,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua ssl server name: "test.com"',
-'ssl_certificate_by_lua:1: API disabled in the context of ssl_certificate_by_lua*',
+'ssl_certificate_by_lua(nginx.conf:28):1: API disabled in the context of ssl_certificate_by_lua*',
 qr/\[info\] .*?cert cb error/,
 ]
 
@@ -1481,7 +1481,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_certificate_by_lua:1: ssl cert by lua is running!
+ssl_certificate_by_lua(nginx.conf:25):1: ssl cert by lua is running!
 
 --- no_error_log
 [error]
@@ -1681,7 +1681,7 @@ close: 1 nil
 
 --- error_log eval
 [
-'ssl_certificate_by_lua:1: ssl cert by lua is running!',
+'ssl_certificate_by_lua(nginx.conf:29):1: ssl cert by lua is running!',
 'lua ssl server name: "test.com"',
 ]
 --- no_error_log

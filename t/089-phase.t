@@ -198,6 +198,6 @@ GET /lua
 ok
 --- shutdown_error_log eval
 [
-qr/exit_worker_by_lua:\d+: exit_worker/,
+qr/exit_worker_by_lua\(nginx\.conf:\d+\):\d+: exit_worker/,
 qr/exiting now$/,
 ]

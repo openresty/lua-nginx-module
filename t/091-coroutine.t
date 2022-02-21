@@ -1691,7 +1691,7 @@ GET /t
 --- error_log eval
 [
     qr/\[notice\] .*? in wrapped coroutine/,
-    qr/\[error\] .*? failed to run header_filter_by_lua\*: header_filter_by_lua:\d+: header_filter_by_lua:\d+: something went wrong/,
+    qr/\[error\] .*? failed to run header_filter_by_lua\*: header_filter_by_lua\(nginx.conf:\d+\):\d+: header_filter_by_lua\(nginx.conf:\d+\):\d+: something went wrong/,
     "stack traceback:",
     "in function 'co'"
 ]
@@ -1713,9 +1713,9 @@ GET /t
 --- config
 
 --- must_die
---- grep_error_log eval: qr/init_by_lua error: .*? something went wrong/
+--- grep_error_log eval: qr/init_by_lua\(nginx.conf:25\).*? something went wrong/
 --- grep_error_log_out
-init_by_lua error: init_by_lua:7: init_by_lua:4: something went wrong
+init_by_lua(nginx.conf:25):7: init_by_lua(nginx.conf:25):4: something went wrong
 
 
 

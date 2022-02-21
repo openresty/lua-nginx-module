@@ -86,11 +86,11 @@ lua ssl server name: "test.com"
 --- no_error_log
 [error]
 [alert]
---- grep_error_log eval: qr/ssl_session_store_by_lua_block:.*?,|\bssl session store: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_session_store_by_lua\(nginx.conf:\d+\):.*?,|\bssl session store: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 qr/^reusable connection: 0
 ssl session store: connection reusable: 0
-ssl_session_store_by_lua_block:1: ssl session store by lua is running!,
+ssl_session_store_by_lua\(nginx\.conf:25\):1: ssl session store by lua is running!,
 /m,
 
 
@@ -536,7 +536,7 @@ ssl handshake: userdata
 close: 1 nil
 
 --- error_log
-failed to run session_store_by_lua*: ssl_session_store_by_lua_block:2: bad bad bad
+failed to run session_store_by_lua*: ssl_session_store_by_lua(nginx.conf:25):2: bad bad bad
 
 --- no_error_log
 should never reached here
@@ -678,7 +678,7 @@ close: 1 nil
 [
 'lua ssl server name: "test.com"',
 qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
-'ssl_session_store_by_lua_block:1: ssl store session by lua is running!',
+'ssl_session_store_by_lua(nginx.conf:25):1: ssl store session by lua is running!',
 ]
 
 --- no_error_log
@@ -896,7 +896,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_session_store_by_lua_block:1: ssl session store by lua is running!
+ssl_session_store_by_lua(nginx.conf:25):1: ssl session store by lua is running!
 
 --- no_error_log
 [error]

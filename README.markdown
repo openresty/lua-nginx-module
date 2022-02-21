@@ -354,7 +354,7 @@ Alternatively, ngx_lua can be manually compiled into Nginx:
 1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags)
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags)
 1. Download the latest supported version of Nginx [HERE](https://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
-1. Download the latest version of the lua-resty-core [HERE](https://lua-resty-core)
+1. Download the latest version of the lua-resty-core [HERE](https://github.com/openresty/lua-resty-core)
 1. Download the latest version of the lua-resty-lrucache [HERE](https://github.com/openresty/lua-resty-lrucache)
 
 Build the source with this module:
@@ -974,7 +974,6 @@ TODO
 * cosocket: add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
 * use `ngx_hash_t` to optimize the built-in header look-up process for [ngx.req.set_header](#ngxreqset_header), [ngx.header.HEADER](#ngxheaderheader), and etc.
-* add directives to run Lua codes when Nginx stops.
 * add `ignore_resp_headers`, `ignore_resp_body`, and `ignore_resp` options to [ngx.location.capture](#ngxlocationcapture) and [ngx.location.capture_multi](#ngxlocationcapture_multi) methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add `stat` mode similar to [mod_lua](https://httpd.apache.org/docs/trunk/mod/mod_lua.html).
@@ -2739,7 +2738,7 @@ This directive requires OpenSSL 1.1.1 or greater.
 
 If you are using the [official pre-built
 packages](https://openresty.org/en/linux-packages.html) for
-[OpenResty](https://openresty.org/) 1.19.9.2 or later, then everything should
+[OpenResty](https://openresty.org/) 1.21.4.1 or later, then everything should
 work out of the box.
 
 If you are not using one of the [OpenSSL
@@ -2750,7 +2749,7 @@ in order to use this directive:
 <https://openresty.org/en/openssl-patches.html>
 
 Similarly, if you are not using the Nginx core shipped with
-[OpenResty](https://openresty.org) 1.19.9.2 or later, you will need to apply
+[OpenResty](https://openresty.org) 1.21.4.1 or later, you will need to apply
 patches to the standard Nginx core:
 
 <https://openresty.org/en/nginx-ssl-patches.html>
