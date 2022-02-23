@@ -5188,7 +5188,9 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     pc = &u->peer;
     c = pc->connection;
 
-    if (c == NULL || u->read_closed || u->write_closed) {
+    if (c == NULL || u->read_closed || u->write_closed
+        || (c->read && c->read->pending_eof))
+    {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
