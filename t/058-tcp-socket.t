@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 231;
+plan tests => repeat_each() * (blocks() * 3 + 21);
 
 our $HtmlDir = html_dir;
 
@@ -4367,3 +4367,69 @@ connect failed: missing the port number
 finish
 --- no_error_log
 [error]
+
+
+
+=== TEST 73: reset the buffer pos when keepalive
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            for i = 1, 10
+            do
+                local sock = ngx.socket.tcp()
+                local port = ngx.var.port
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                local req = "GET /hi HTTP/1.1\r\nHost: localhost\r\n\r\n"
+
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send request: ", err)
+                    return
+                end
+
+                local line, err, part = sock:receive()
+                if not line then
+                    ngx.say("receive err: ", err)
+                    return
+                end
+
+                data, err = sock:receiveany(4096)
+                if not data then
+                    ngx.say("receiveany er: ", err)
+                    return
+                end
+
+                ok, err = sock:setkeepalive(10000, 32)
+                if not ok then
+                    ngx.say("reused times: ", i, ", setkeepalive err: ", err)
+                    return
+                end
+            end
+            ngx.say("END")
+        }
+    }
+
+    location /hi {
+        keepalive_requests 3;
+        content_by_lua_block {
+            ngx.say("Hello")
+        }
+
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body
+reused times: 3, setkeepalive err: closed
+--- no_error_log
+[error]
+--- skip_eval: 3: $ENV{TEST_NGINX_EVENT_TYPE} && $ENV{TEST_NGINX_EVENT_TYPE} ne 'epoll'
