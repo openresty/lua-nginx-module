@@ -329,4 +329,16 @@ ngx_http_lua_co_ctx_resume_helper(ngx_http_lua_co_ctx_t *coctx, int nrets)
     ngx_http_run_posted_requests(c);
 }
 
+
+int
+ngx_http_lua_get_lua_http10_buffering(ngx_http_request_t *r)
+{
+    ngx_http_lua_loc_conf_t      *llcf;
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    return llcf->http10_buffering;
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

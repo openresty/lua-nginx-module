@@ -68,6 +68,8 @@ lua_State *ngx_http_lua_get_co_ctx_vm(ngx_http_lua_co_ctx_t *coctx);
 
 void ngx_http_lua_co_ctx_resume_helper(ngx_http_lua_co_ctx_t *coctx, int nrets);
 
+int ngx_http_lua_get_lua_http10_buffering(ngx_http_request_t *r);
+
 
 #endif /* _NGX_HTTP_LUA_API_H_INCLUDED_ */
 
