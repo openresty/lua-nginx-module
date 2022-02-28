@@ -5188,7 +5188,12 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     pc = &u->peer;
     c = pc->connection;
 
-    if (c == NULL || u->read_closed || u->write_closed) {
+    /* When the server closes the connection,
+     * epoll will return EPOLLRDHUP event and nginx will set pending_eof.
+     */
+    if (c == NULL || u->read_closed || u->write_closed
+        || c->read->eof || c->read->pending_eof)
+    {
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
@@ -5218,8 +5223,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         return 2;
     }
 
-    if (c->read->eof
-        || c->read->error
+    if (c->read->error
         || c->read->timedout
         || c->write->error
         || c->write->timedout)
