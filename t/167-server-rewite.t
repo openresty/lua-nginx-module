@@ -33,7 +33,6 @@ server_rewrite_by_lua_block in http
 server_rewrite_by_lua_block in http
 --- no_error_log
 [error]
---- SKIP
 
 
 
@@ -170,8 +169,8 @@ GET /lua
 --- response_body
 OK
 --- error_log
-is_subrequest:true
 is_subrequest:false
+is_subrequest:true
 --- no_error_log
 [error]
 

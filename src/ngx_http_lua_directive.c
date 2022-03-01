@@ -660,7 +660,6 @@ ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
     }
 
-
     llcf->server_rewrite_src_key = cache_key;
     llcf->server_rewrite_handler = (ngx_http_handler_pt) cmd->post;
 
