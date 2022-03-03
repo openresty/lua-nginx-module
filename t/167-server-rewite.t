@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 - 4);
 
 #log_level("info");
 #no_long_string();
@@ -256,3 +256,67 @@ server_rewrite_by_lua_block in http
 rewrite_by_lua_block in location
 --- no_error_log
 [error]
+
+
+
+=== TEST 11: server_rewrite_by_lua_file
+--- http_config
+    server_rewrite_by_lua_file 'html/foo.lua';
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("OK")
+        }
+    }
+--- request
+GET /lua
+--- user_files
+>>> foo.lua
+ngx.log(ngx.INFO, "rewrite_by_lua_file in server")
+--- response_body
+OK
+--- error_log
+rewrite_by_lua_file in server
+--- no_error_log
+[error]
+
+
+
+=== TEST 12: syntax error server_rewrite_by_lua_block in http
+--- http_config
+    server_rewrite_by_lua_block {
+        'for end';
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say("OK")
+        }
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:27):2: unexpected symbol near ''for end''
+--- no_error_log
+no_such_error
+
+
+
+=== TEST 13: syntax error server_rewrite_by_lua_block in server
+--- config
+    server_rewrite_by_lua_block {
+        'for end';
+    }
+    location /lua {
+        content_by_lua_block {
+            ngx.say("Hello world")
+        }
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
+--- no_error_log
+no_such_error
