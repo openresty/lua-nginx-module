@@ -2741,14 +2741,7 @@ packages](https://openresty.org/en/linux-packages.html) for
 [OpenResty](https://openresty.org/) 1.21.4.1 or later, then everything should
 work out of the box.
 
-If you are not using one of the [OpenSSL
-packages](https://openresty.org/en/linux-packages.html) provided by
-[OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
-in order to use this directive:
-
-<https://openresty.org/en/openssl-patches.html>
-
-Similarly, if you are not using the Nginx core shipped with
+If you are not using the Nginx core shipped with
 [OpenResty](https://openresty.org) 1.21.4.1 or later, you will need to apply
 patches to the standard Nginx core:
 
@@ -2858,14 +2851,7 @@ packages](https://openresty.org/en/linux-packages.html) for
 [OpenResty](https://openresty.org/) 1.9.7.2 or later, then everything should
 work out of the box.
 
-If you are not using one of the [OpenSSL
-packages](https://openresty.org/en/linux-packages.html) provided by
-[OpenResty](https://openresty.org), you will need to apply patches to OpenSSL
-in order to use this directive:
-
-<https://openresty.org/en/openssl-patches.html>
-
-Similarly, if you are not using the Nginx core shipped with
+If you are not using the Nginx core shipped with
 [OpenResty](https://openresty.org) 1.9.7.2 or later, you will need to apply
 patches to the standard Nginx core:
 
