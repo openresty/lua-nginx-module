@@ -265,7 +265,7 @@ ngx_http_lua_server_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
     /*  }}} */
 
-    ctx->context = NGX_HTTP_LUA_CONTEXT_REWRITE;
+    ctx->context = NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
