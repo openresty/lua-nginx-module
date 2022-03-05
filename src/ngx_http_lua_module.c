@@ -31,6 +31,7 @@
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_headers_out.h"
 #include "ngx_http_lua_pipe.h"
 
 
@@ -1085,6 +1086,15 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
     if (lmcf->worker_thread_vm_pool_size == NGX_CONF_UNSET_UINT) {
         lmcf->worker_thread_vm_pool_size = 100;
     }
+
+    if (ngx_http_lua_init_builtin_headers_out(cf, lmcf) != NGX_OK) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "init header out error");
+
+        return NGX_CONF_ERROR;
+    }
+
+    dd("init built in headers out hash size: %ld",
+       lmcf->builtin_headers_out.size);
 
     return NGX_CONF_OK;
 }
