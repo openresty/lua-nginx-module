@@ -613,7 +613,8 @@ char *
 ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-    u_char                      *cache_key = NULL;
+    size_t                       chunkname_len;
+    u_char                      *cache_key = NULL, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
