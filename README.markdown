@@ -1131,6 +1131,8 @@ Directives
 * [content_by_lua](#content_by_lua)
 * [content_by_lua_block](#content_by_lua_block)
 * [content_by_lua_file](#content_by_lua_file)
+* [server_rewrite_by_lua_block](#server_rewrite_by_lua_block)
+* [server_rewrite_by_lua_file](#server_rewrite_by_lua_file)
 * [rewrite_by_lua](#rewrite_by_lua)
 * [rewrite_by_lua_block](#rewrite_by_lua_block)
 * [rewrite_by_lua_file](#rewrite_by_lua_file)
@@ -1906,6 +1908,97 @@ Nginx variables are supported in the file path for dynamic dispatch, for example
 ```
 
 But be very careful about malicious user inputs and always carefully validate or filter out the user-supplied path components.
+
+[Back to TOC](#directives)
+
+server_rewrite_by_lua_block
+---------------------------
+
+**syntax:** *server_rewrite_by_lua_block { lua-script }*
+
+**context:** *http, server*
+
+**phase:** *server rewrite*
+
+Acts as a server rewrite phase handler and executes Lua code string specified in `{ lua-script }` for every request.
+The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
+
+```nginx
+
+ server {
+     ...
+
+     server_rewrite_by_lua_block {
+         ngx.ctx.a = "server_rewrite_by_lua_block in http"
+     }
+
+     location /lua {
+         content_by_lua_block {
+             ngx.say(ngx.ctx.a)
+             ngx.log(ngx.INFO, ngx.ctx.a)
+        	}
+     }
+ }
+```
+
+Just as any other rewrite phase handlers, [server_rewrite_by_lua_block](#server_rewrite_by_lua_block) also runs in subrequests.
+
+```nginx
+
+ server {
+     server_rewrite_by_lua_block {
+         ngx.log(ngx.INFO, "is_subrequest:", ngx.is_subrequest)
+     }
+
+     location /lua {
+         content_by_lua_block {
+             local res = ngx.location.capture("/sub")
+             ngx.print(res.body)
+         }
+     }
+
+     location /sub {
+         content_by_lua_block {
+             ngx.say("OK")
+         }
+     }
+ }
+```
+
+Note that when calling `ngx.exit(ngx.OK)` within a [server_rewrite_by_lua_block](#server_rewrite_by_lua_block) handler, the Nginx request processing control flow will still continue to the content handler. To terminate the current request from within a [server_rewrite_by_lua_block](#server_rewrite_by_lua_block) handler, call [ngx.exit](#ngxexit) with status >= 200 (`ngx.HTTP_OK`) and status < 300 (`ngx.HTTP_SPECIAL_RESPONSE`) for successful quits and `ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)` (or its friends) for failures.
+
+
+```nginx
+
+ server_rewrite_by_lua_block {
+     ngx.exit(503)
+ }
+
+ location /bar {
+     ...
+     # never exec
+ }
+```
+
+
+[Back to TOC](#directives)
+
+server_rewrite_by_lua_file
+--------------------------
+
+**syntax:** *server_rewrite_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *http, server*
+
+**phase:** *server rewrite*
+
+Equivalent to [server_rewrite_by_lua_block](#server_rewrite_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.10.22` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
+
+Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached and the Nginx config must be reloaded each time the Lua source file is modified. The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
 [Back to TOC](#directives)
 

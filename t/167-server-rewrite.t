@@ -19,7 +19,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 - 10);
+plan tests => repeat_each() * (blocks() * 3 + 10);
 
 #log_level("info");
 #no_long_string();
@@ -463,7 +463,7 @@ rewrite_by_lua_file in server
 GET /lua
 --- ignore_response
 --- error_log
-failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:27):2: unexpected symbol near ''for end''
+failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:25):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
 
@@ -483,6 +483,6 @@ no_such_error
 GET /lua
 --- ignore_response
 --- error_log
-failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
+failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:39):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
