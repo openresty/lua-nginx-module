@@ -4917,11 +4917,12 @@ See also [ngx.req.set_uri](#ngxreqset_uri).
 ngx.req.get_uri_args
 --------------------
 
-**syntax:** *args, err = ngx.req.get_uri_args(max_args?)*
+**syntax:** *args, err = ngx.req.get_uri_args(max_args?, tab?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, balancer_by_lua&#42;*
 
-Returns a Lua table holding all the current request URL query arguments.
+Returns a Lua table holding all the current request URL query arguments. An optional `tab` argument
+can be used to reuse the table returned by this method.
 
 ```nginx
 
