@@ -4101,11 +4101,12 @@ See also [[#ngx.req.set_uri|ngx.req.set_uri]].
 
 == ngx.req.get_uri_args ==
 
-'''syntax:''' ''args, err = ngx.req.get_uri_args(max_args?)''
+'''syntax:''' ''args, err = ngx.req.get_uri_args(max_args?, tab?)''
 
 '''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, balancer_by_lua*''
 
-Returns a Lua table holding all the current request URL query arguments.
+Returns a Lua table holding all the current request URL query arguments. An optional <code>tab</code> argument
+can be used to reuse the table returned by this method.
 
 <geshi lang="nginx">
     location = /test {
