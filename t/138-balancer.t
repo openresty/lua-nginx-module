@@ -535,7 +535,7 @@ failed to set more tries: reduced tries due to limit
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:8888;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
 
         location / {
             return 200 "it works";
@@ -543,8 +543,8 @@ failed to set more tries: reduced tries due to limit
     }
 
     upstream foo {
-        server 127.0.0.1:8888 max_fails=0;
-        server 127.0.0.1:8889 max_fails=0 weight=9999;
+        server 127.0.0.1:$TEST_NGINX_RAND_PORT_1 max_fails=0;
+        server 127.0.0.1:$TEST_NGINX_RAND_PORT_2 max_fails=0 weight=9999;
 
         balancer_by_lua_block {
             local bal = require "ngx.balancer"

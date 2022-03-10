@@ -456,7 +456,7 @@ received memc reply: OK
 === TEST 5: ngx.exit(0) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             ngx.exit(0)
@@ -484,7 +484,7 @@ received memc reply: OK
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -523,7 +523,7 @@ should never reached here
 === TEST 6: ngx.exit(ngx.ERROR) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             ngx.exit(ngx.ERROR)
@@ -551,7 +551,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -593,7 +593,7 @@ should never reached here
 === TEST 7: ngx.exit(0) -  yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             ngx.sleep(0.001)
@@ -623,7 +623,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -662,7 +662,7 @@ should never reached here
 === TEST 8: ngx.exit(ngx.ERROR) - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             ngx.sleep(0.001)
@@ -692,7 +692,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -734,7 +734,7 @@ should never reached here
 === TEST 9: lua exception - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             error("bad bad bad")
@@ -762,7 +762,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -805,7 +805,7 @@ should never reached here
 === TEST 10: lua exception - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name test.com;
         ssl_certificate_by_lua_block {
             ngx.sleep(0.001)
@@ -834,7 +834,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
