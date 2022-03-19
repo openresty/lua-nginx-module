@@ -617,7 +617,7 @@ ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     u_char                      *cache_key = NULL, *chunkname;
     ngx_str_t                   *value;
     ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_loc_conf_t     *llcf = conf;
+    ngx_http_lua_srv_conf_t     *lscf = conf;
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -628,7 +628,7 @@ ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    if (llcf->server_rewrite_handler) {
+    if (lscf->srv.server_rewrite_handler) {
         return "is duplicate";
     }
 
@@ -660,20 +660,20 @@ ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         /* Don't eval nginx variables for inline lua code */
-        llcf->server_rewrite_src.value = value[1];
-        llcf->server_rewrite_chunkname = chunkname;
+        lscf->srv.server_rewrite_src.value = value[1];
+        lscf->srv.server_rewrite_chunkname = chunkname;
 
     } else {
         ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
         ccv.cf = cf;
         ccv.value = &value[1];
-        ccv.complex_value = &llcf->server_rewrite_src;
+        ccv.complex_value = &lscf->srv.server_rewrite_src;
 
         if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
             return NGX_CONF_ERROR;
         }
 
-        if (llcf->server_rewrite_src.lengths == NULL) {
+        if (lscf->srv.server_rewrite_src.lengths == NULL) {
             /* no variable found */
             cache_key = ngx_http_lua_gen_file_cache_key(cf, value[1].data,
                                                         value[1].len);
@@ -683,8 +683,9 @@ ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
     }
 
-    llcf->server_rewrite_src_key = cache_key;
-    llcf->server_rewrite_handler = (ngx_http_handler_pt) cmd->post;
+    lscf->srv.server_rewrite_src_key = cache_key;
+    lscf->srv.server_rewrite_handler =
+                                  (ngx_http_lua_srv_conf_handler_pt) cmd->post;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 

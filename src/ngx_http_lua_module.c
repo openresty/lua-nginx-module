@@ -296,7 +296,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("server_rewrite_by_lua_block"),
         NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
         ngx_http_lua_server_rewrite_by_lua_block,
-        NGX_HTTP_LOC_CONF_OFFSET,
+        NGX_HTTP_SRV_CONF_OFFSET,
         0,
         (void *) ngx_http_lua_server_rewrite_handler_inline },
 
@@ -304,7 +304,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
     { ngx_string("server_rewrite_by_lua_file"),
         NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
         ngx_http_lua_server_rewrite_by_lua,
-        NGX_HTTP_LOC_CONF_OFFSET,
+        NGX_HTTP_SRV_CONF_OFFSET,
         0,
         (void *) ngx_http_lua_server_rewrite_handler_file },
 
@@ -1318,6 +1318,16 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 #endif  /* NGX_HTTP_SSL */
+
+    if (conf->srv.server_rewrite_src.value.len == 0) {
+        conf->srv.server_rewrite_src = prev->srv.server_rewrite_src;
+        conf->srv.server_rewrite_src_ref = prev->srv.server_rewrite_src_ref;
+        conf->srv.server_rewrite_src_key = prev->srv.server_rewrite_src_key;
+        conf->srv.server_rewrite_handler = prev->srv.server_rewrite_handler;
+        conf->srv.server_rewrite_chunkname
+            = prev->srv.server_rewrite_chunkname;
+    }
+
     return NGX_CONF_OK;
 }
 
@@ -1402,14 +1412,6 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_http_lua_loc_conf_t *prev = parent;
     ngx_http_lua_loc_conf_t *conf = child;
-
-    if (conf->server_rewrite_src.value.len == 0) {
-        conf->server_rewrite_src = prev->server_rewrite_src;
-        conf->server_rewrite_handler = prev->server_rewrite_handler;
-        conf->server_rewrite_src_ref = prev->server_rewrite_src_ref;
-        conf->server_rewrite_src_key = prev->server_rewrite_src_key;
-        conf->server_rewrite_chunkname = prev->server_rewrite_chunkname;
-    }
 
     if (conf->rewrite_src.value.len == 0) {
         conf->rewrite_src = prev->rewrite_src;

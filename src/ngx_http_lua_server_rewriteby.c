@@ -22,9 +22,11 @@ static ngx_int_t ngx_http_lua_server_rewrite_by_chunk(lua_State *L,
 ngx_int_t
 ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
 {
+    ngx_int_t                    rc;
+    lua_State                   *L;
+    ngx_http_lua_srv_conf_t     *lscf;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_int_t                    rc;
 
     /* XXX we need to take into account ngx_rewrite's location dump */
     if (r->uri_changed) {
@@ -35,10 +37,11 @@ ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
                    "lua server rewrite handler, uri:\"%V\" c:%ud", &r->uri,
                     r->main->count);
 
-
+    lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    L = ngx_http_lua_get_lua_vm(r, NULL);
 
-    if (llcf->server_rewrite_handler == NULL) {
+    if (lscf->srv.server_rewrite_handler == NULL) {
         dd("no rewrite handler found");
         return NGX_DECLINED;
     }
@@ -99,13 +102,14 @@ ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
+    /* TODO: lscf do not have force_read_body */
     if (llcf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;
         r->request_body_in_clean_file = 1;
 
         rc = ngx_http_read_client_request_body(r,
-                                        ngx_http_lua_generic_phase_post_read);
+                                          ngx_http_lua_generic_phase_post_read);
 
         if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
@@ -118,30 +122,27 @@ ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
     }
 
     dd("calling server rewrite handler");
-    return llcf->server_rewrite_handler(r);
+    return lscf->srv.server_rewrite_handler(r, lscf, L);
 }
 
 
 ngx_int_t
-ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r)
+ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L)
 {
-    lua_State                   *L;
     ngx_int_t                    rc;
-    ngx_http_lua_loc_conf_t     *llcf;
 
     dd("server_rewrite by lua inline");
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
-                                       llcf->server_rewrite_src.value.data,
-                                       llcf->server_rewrite_src.value.len,
-                                       &llcf->server_rewrite_src_ref,
-                                       llcf->server_rewrite_src_key,
+                                       lscf->srv.server_rewrite_src.value.data,
+                                       lscf->srv.server_rewrite_src.value.len,
+                                       &lscf->srv.server_rewrite_src_ref,
+                                       lscf->srv.server_rewrite_src_key,
                                        (const char *)
-                                       llcf->server_rewrite_chunkname);
+                                       lscf->srv.server_rewrite_chunkname);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -151,17 +152,15 @@ ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r)
 
 
 ngx_int_t
-ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r)
+ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L)
 {
-    lua_State                       *L;
     ngx_int_t                        rc;
     u_char                          *script_path;
-    ngx_http_lua_loc_conf_t         *llcf;
     ngx_str_t                        eval_src;
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
-    if (ngx_http_complex_value(r, &llcf->server_rewrite_src,
+    if (ngx_http_complex_value(r, &lscf->srv.server_rewrite_src,
                                &eval_src) != NGX_OK)
     {
         return NGX_ERROR;
@@ -174,12 +173,10 @@ ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    L = ngx_http_lua_get_lua_vm(r, NULL);
-
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
-                                     &llcf->server_rewrite_src_ref,
-                                     llcf->server_rewrite_src_key);
+                                     &lscf->srv.server_rewrite_src_ref,
+                                     lscf->srv.server_rewrite_src_key);
     if (rc != NGX_OK) {
         if (rc < NGX_HTTP_SPECIAL_RESPONSE) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;

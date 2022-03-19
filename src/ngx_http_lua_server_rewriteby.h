@@ -10,8 +10,10 @@
 #include "ngx_http_lua_common.h"
 
 ngx_int_t ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r);
-ngx_int_t ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r);
+ngx_int_t ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r,
+   ngx_http_lua_srv_conf_t *lscf, lua_State *L);
+ngx_int_t ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r,
+    ngx_http_lua_srv_conf_t *lscf, lua_State *L);
 
 #endif /* _NGX_HTTP_LUA_SERVER_REWRITEBY_H_INCLUDED_ */
 

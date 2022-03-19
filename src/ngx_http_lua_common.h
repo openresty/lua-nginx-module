@@ -338,6 +338,12 @@ union ngx_http_lua_srv_conf_u {
         u_char                              *ssl_client_hello_src_key;
         u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
+
+        ngx_http_lua_srv_conf_handler_pt     server_rewrite_handler;
+        ngx_http_complex_value_t             server_rewrite_src;
+        u_char                              *server_rewrite_src_key;
+        u_char                              *server_rewrite_chunkname;
+        int                                  server_rewrite_src_ref;
     } srv;
 #endif
 
@@ -372,7 +378,6 @@ typedef struct {
 
     ngx_flag_t              http10_buffering;
 
-    ngx_http_handler_pt     server_rewrite_handler;
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
     ngx_http_handler_pt     content_handler;
@@ -381,13 +386,7 @@ typedef struct {
 
     ngx_http_output_body_filter_pt         body_filter_handler;
 
-    u_char *server_rewrite_chunkname;
-    ngx_http_complex_value_t server_rewrite_src; /*  server_rewrite_by_lua
-                                             inline script/script
-                                             file path */
 
-    u_char *server_rewrite_src_key; /* cached key for server_rewrite_src */
-    int server_rewrite_src_ref;
 
     u_char                  *rewrite_chunkname;
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
