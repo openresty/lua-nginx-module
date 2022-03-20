@@ -8,7 +8,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 1) + 2;
+plan tests => repeat_each() * (blocks() * 2 + 2) + 2;
 
 #no_diff();
 #no_long_string();
@@ -201,3 +201,23 @@ ok
 qr/exit_worker_by_lua\(nginx\.conf:\d+\):\d+: exit_worker/,
 qr/exiting now$/,
 ]
+
+
+
+=== TEST 12: server_rewrite_by_lua_block in http
+--- http_config
+    server_rewrite_by_lua_block {
+        ngx.ctx.phase = ngx.get_phase()
+    }
+--- config
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.ctx.phase)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+server_rewrite
+--- no_error_log
+[error]
