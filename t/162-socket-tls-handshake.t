@@ -371,6 +371,3 @@ failed to setclientcert: client certificate must be supplied with corresponding 
 [error]
 [crit]
 [emerg]
-
-
-

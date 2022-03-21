@@ -1003,6 +1003,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
 
+    ctx->entered_server_rewrite_phase = 0;
     ctx->entered_rewrite_phase = 0;
     ctx->entered_access_phase = 0;
     ctx->entered_content_phase = 0;

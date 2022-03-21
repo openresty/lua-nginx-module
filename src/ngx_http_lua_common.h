@@ -141,6 +141,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH     0x1000
 #define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER        0x2000
 #define NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO   0x4000
+#define NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE     0x8000
 
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -307,6 +308,7 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_log:1;
     unsigned             requires_shm:1;
     unsigned             requires_capture_log:1;
+    unsigned             requires_server_rewrite:1;
 };
 
 
@@ -336,6 +338,12 @@ union ngx_http_lua_srv_conf_u {
         u_char                              *ssl_client_hello_src_key;
         u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
+
+        ngx_http_lua_srv_conf_handler_pt     server_rewrite_handler;
+        ngx_http_complex_value_t             server_rewrite_src;
+        u_char                              *server_rewrite_src_key;
+        u_char                              *server_rewrite_chunkname;
+        int                                  server_rewrite_src_ref;
     } srv;
 #endif
 
@@ -377,6 +385,8 @@ typedef struct {
     ngx_http_handler_pt     header_filter_handler;
 
     ngx_http_output_body_filter_pt         body_filter_handler;
+
+
 
     u_char                  *rewrite_chunkname;
     ngx_http_complex_value_t rewrite_src;    /*  rewrite_by_lua
@@ -631,7 +641,7 @@ typedef struct ngx_http_lua_ctx_s {
                                        response headers */
     unsigned         mime_set:1;    /* whether the user has set Content-Type
                                        response header */
-
+    unsigned         entered_server_rewrite_phase:1;
     unsigned         entered_rewrite_phase:1;
     unsigned         entered_access_phase:1;
     unsigned         entered_content_phase:1;

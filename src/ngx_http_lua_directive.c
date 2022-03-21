@@ -17,6 +17,7 @@
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_accessby.h"
+#include "ngx_http_lua_server_rewriteby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_logby.h"
 #include "ngx_http_lua_headerfilterby.h"
@@ -584,6 +585,111 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
 
     lmcf->requires_rewrite = 1;
+    lmcf->requires_capture_filter = 1;
+
+    return NGX_CONF_OK;
+}
+
+
+char *
+ngx_http_lua_server_rewrite_by_lua_block(ngx_conf_t *cf,
+    ngx_command_t *cmd, void *conf)
+{
+    char        *rv;
+    ngx_conf_t   save;
+    save = *cf;
+    cf->handler = ngx_http_lua_server_rewrite_by_lua;
+    cf->handler_conf = conf;
+
+    rv = ngx_http_lua_conf_lua_block_parse(cf, cmd);
+
+    *cf = save;
+
+    return rv;
+}
+
+
+char *
+ngx_http_lua_server_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    size_t                       chunkname_len;
+    u_char                      *cache_key = NULL, *chunkname;
+    ngx_str_t                   *value;
+    ngx_http_lua_main_conf_t    *lmcf;
+    ngx_http_lua_srv_conf_t     *lscf = conf;
+
+    ngx_http_compile_complex_value_t         ccv;
+
+    dd("enter");
+
+    /*  must specify a content handler */
+    if (cmd->post == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (lscf->srv.server_rewrite_handler) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+
+    if (value[1].len == 0) {
+        /*  Oops...Invalid location conf */
+        ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
+                           "invalid location config: no runnable Lua code");
+
+        return NGX_CONF_ERROR;
+    }
+
+    if (cmd->post == ngx_http_lua_server_rewrite_handler_inline) {
+        chunkname =
+            ngx_http_lua_gen_chunk_name(cf, "server_rewrite_by_lua",
+                                        sizeof("server_rewrite_by_lua") - 1,
+                                        &chunkname_len);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        cache_key =
+            ngx_http_lua_gen_chunk_cache_key(cf, "server_rewrite_by_lua",
+                                             value[1].data,
+                                             value[1].len);
+        if (cache_key == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        /* Don't eval nginx variables for inline lua code */
+        lscf->srv.server_rewrite_src.value = value[1];
+        lscf->srv.server_rewrite_chunkname = chunkname;
+
+    } else {
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &lscf->srv.server_rewrite_src;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        if (lscf->srv.server_rewrite_src.lengths == NULL) {
+            /* no variable found */
+            cache_key = ngx_http_lua_gen_file_cache_key(cf, value[1].data,
+                                                        value[1].len);
+            if (cache_key == NULL) {
+                return NGX_CONF_ERROR;
+            }
+        }
+    }
+
+    lscf->srv.server_rewrite_src_key = cache_key;
+    lscf->srv.server_rewrite_handler =
+                                  (ngx_http_lua_srv_conf_handler_pt) cmd->post;
+
+    lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
+
+    lmcf->requires_server_rewrite = 1;
     lmcf->requires_capture_filter = 1;
 
     return NGX_CONF_OK;

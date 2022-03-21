@@ -261,6 +261,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_util.c \
             $ngx_addon_dir/src/ngx_http_lua_cache.c \
             $ngx_addon_dir/src/ngx_http_lua_contentby.c \
+            $ngx_addon_dir/src/ngx_http_lua_server_rewriteby.c \
             $ngx_addon_dir/src/ngx_http_lua_rewriteby.c \
             $ngx_addon_dir/src/ngx_http_lua_accessby.c \
             $ngx_addon_dir/src/ngx_http_lua_setby.c \
@@ -325,6 +326,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_util.h \
             $ngx_addon_dir/src/ngx_http_lua_cache.h \
             $ngx_addon_dir/src/ngx_http_lua_contentby.h \
+            $ngx_addon_dir/src/ngx_http_lua_server_rewriteby.c \
             $ngx_addon_dir/src/ngx_http_lua_rewriteby.h \
             $ngx_addon_dir/src/ngx_http_lua_accessby.h \
             $ngx_addon_dir/src/ngx_http_lua_setby.h \
