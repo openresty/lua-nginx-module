@@ -812,7 +812,6 @@ phases.
 * add <code>ignore_resp_headers</code>, <code>ignore_resp_body</code>, and <code>ignore_resp</code> options to [[#ngx.location.capture|ngx.location.capture]] and [[#ngx.location.capture_multi|ngx.location.capture_multi]] methods, to allow micro performance tuning on the user side.
 * add automatic Lua code time slicing support by yielding and resuming the Lua VM actively via Lua's debug hooks.
 * add <code>stat</code> mode similar to [https://httpd.apache.org/docs/trunk/mod/mod_lua.html mod_lua].
-* cosocket: add client SSL certificate support.
 
 = Changes =
 
@@ -6418,6 +6417,7 @@ This API function was first added to the <code>v0.10.1</code> release.
 Creates and returns a TCP or stream-oriented unix domain socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object:
 
 * [[#tcpsock:connect|connect]]
+* [[#tcpsock:setclientcert|setclientcert]]
 * [[#tcpsock:sslhandshake|sslhandshake]]
 * [[#tcpsock:send|send]]
 * [[#tcpsock:receive|receive]]
@@ -6567,6 +6567,28 @@ An optional Lua table can be specified as the last argument to this method to sp
 The support for the options table argument was first introduced in the <code>v0.5.7</code> release.
 
 This method was first introduced in the <code>v0.5.0rc1</code> release.
+
+== tcpsock:setclientcert ==
+
+'''syntax:''' ''ok, err = tcpsock:setclientcert(cert, pkey)''
+
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_client_hello_by_lua*''
+
+Set client certificate chain and corresponding private key to the TCP socket object.
+The certificate chain and private key provided will be used later by the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+* <code>cert</code> specify a client certificate chain cdata object that will be used while handshaking with
+remote server. These objects can be created using [ngx.ssl.parse\_pem\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_cert)
+function provided by lua-resty-core. Note that specifying the <code>cert</code> option requires
+corresponding <code>pkey</code> be provided too. See below.
+* <code>pkey</code> specify a private key corresponds to the <code>cert</code> option above.
+These objects can be created using [ngx.ssl.parse\_pem\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_priv_key)
+function provided by lua-resty-core.
+
+If both of <code>cert</code> and <code>pkey</code> are <code>nil</code>, this method will clear any existing client certificate and private key
+that was previously set on the cosocket object.
+
+This method was first introduced in the `v0.10.22` release.
 
 == tcpsock:sslhandshake ==
 

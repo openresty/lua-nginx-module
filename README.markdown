@@ -7726,7 +7726,7 @@ This method was first introduced in the `v0.5.0rc1` release.
 [Back to TOC](#nginx-api-for-lua)
 
 tcpsock:setclientcert
---------------------
+---------------------
 
 **syntax:** *ok, err = tcpsock:setclientcert(cert, pkey)*
 
