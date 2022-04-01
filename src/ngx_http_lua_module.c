@@ -1180,10 +1180,11 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+    ngx_http_lua_srv_conf_t *conf = child;
+    ngx_http_lua_srv_conf_t *prev = parent;
+
 #if (NGX_HTTP_SSL)
 
-    ngx_http_lua_srv_conf_t *prev = parent;
-    ngx_http_lua_srv_conf_t *conf = child;
     ngx_http_ssl_srv_conf_t *sscf;
 
     dd("merge srv conf");

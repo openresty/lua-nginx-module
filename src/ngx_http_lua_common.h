@@ -313,8 +313,8 @@ struct ngx_http_lua_main_conf_s {
 
 
 union ngx_http_lua_srv_conf_u {
-#if (NGX_HTTP_SSL)
     struct {
+#if (NGX_HTTP_SSL)
         ngx_http_lua_srv_conf_handler_pt     ssl_cert_handler;
         ngx_str_t                            ssl_cert_src;
         u_char                              *ssl_cert_src_key;
@@ -338,6 +338,7 @@ union ngx_http_lua_srv_conf_u {
         u_char                              *ssl_client_hello_src_key;
         u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
+#endif
 
         ngx_http_lua_srv_conf_handler_pt     server_rewrite_handler;
         ngx_http_complex_value_t             server_rewrite_src;
@@ -345,7 +346,6 @@ union ngx_http_lua_srv_conf_u {
         u_char                              *server_rewrite_chunkname;
         int                                  server_rewrite_src_ref;
     } srv;
-#endif
 
     struct {
         ngx_http_lua_srv_conf_handler_pt     handler;
