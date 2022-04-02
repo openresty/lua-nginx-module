@@ -130,6 +130,8 @@ script:
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - export NGX_BUILD_CC=$CC
+  - sh util/build-without-ssl.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
+  - rm -fr buildroot
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V
   - ldd `which nginx`|grep -E 'luajit|ssl|pcre'
