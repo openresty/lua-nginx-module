@@ -2092,4 +2092,32 @@ ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
 #endif
 
 
+#if (NGX_DARWIN)
+int
+ngx_http_lua_ffi_shdict_get_macos_arm64(ngx_http_lua_shdict_get_t *p)
+{
+    return ngx_http_lua_ffi_shdict_get(p->zone, p->key, p->key_len, p->value_type,
+        s->str_value_buf, p->str_value_len, p->num_value, p->user_flags, p->get_stale,
+        s->is_stale, p->errmsg);
+}
+
+
+int
+ngx_http_lua_ffi_shdict_store_macos_arm64(ngx_http_lua_shdict_store_t *p)
+{
+    return ngx_http_lua_ffi_shdict_store(p->zone, p->op, p->key, p->key_len, p->value_type,
+        s->str_value_buf, p->str_value_len, p->num_value, p->exptime, p->user_flags, p->errmsg,
+        s->forcible);
+}
+
+
+int
+ngx_http_lua_ffi_shdict_incr_macos_arm64(ngx_http_lua_shdict_incr_t *p)
+{
+    return ngx_http_lua_ffi_shdict_incr(p->zone, p->key, p->key_len, p->num_value,
+        s->errmsg, p->has_init, p->init, p->init_ttl, p->forcible);
+}
+#endif
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
