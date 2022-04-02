@@ -54,6 +54,7 @@ typedef struct {
     ngx_shm_zone_t               zone;
 } ngx_http_lua_shm_zone_ctx_t;
 
+
 #if (NGX_DARWIN)
 typedef struct {
     ngx_shm_zone_t      *zone;
