@@ -645,7 +645,7 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
     } /* end spool != NULL */
 
-    host.data = ngx_palloc(r->pool, host_len + 1);
+    host.data = ngx_palloc(u->pool, host_len + 1);
     if (host.data == NULL) {
         return luaL_error(L, "no memory");
     }
@@ -662,7 +662,7 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
     coctx = ctx->cur_co_ctx;
 
-    if (ngx_parse_url(r->pool, &url) != NGX_OK) {
+    if (ngx_parse_url(u->pool, &url) != NGX_OK) {
         lua_pushnil(L);
 
         if (url.err) {
@@ -680,7 +680,7 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket connect timeout: %M", u->connect_timeout);
 
-    u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
+    u->resolved = ngx_pcalloc(u->pool, sizeof(ngx_http_upstream_resolved_t));
     if (u->resolved == NULL) {
         if (resuming) {
             lua_pushnil(L);
@@ -1119,6 +1119,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         u->socket_pool = spool;
     }
 
+    if (!u->pool) {
+        u->pool = ngx_create_pool(128, r->connection->log);
+    }
+
     return ngx_http_lua_socket_tcp_connect_helper(L, u, r, ctx, p,
                                                   len, port, 0);
 }
@@ -1221,7 +1225,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     socklen = ur->addrs[i].socklen;
 
-    sockaddr = ngx_palloc(r->pool, socklen);
+    sockaddr = ngx_palloc(u->pool, socklen);
     if (sockaddr == NULL) {
         goto nomem;
     }
@@ -4178,6 +4182,11 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
 
     if (u->peer.free) {
         u->peer.free(&u->peer, u->peer.data, 0);
+    }
+
+    if (u->pool) {
+        ngx_destroy_pool(u->pool);
+        u->pool = NULL;
     }
 
 #if (NGX_HTTP_SSL)
