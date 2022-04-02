@@ -24,7 +24,7 @@ typedef struct {
     size_t               mvals_len;
     int                  override;
     char               **errmsg;
-} ngx_http_lua_set_resp_header_t;
+} ngx_http_lua_set_resp_header_params_t;
 #endif
 
 
