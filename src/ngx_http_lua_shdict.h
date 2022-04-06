@@ -57,46 +57,46 @@ typedef struct {
 
 #if (NGX_DARWIN)
 typedef struct {
-    void                *zone;
-    const unsigned char *key;
-    size_t               key_len;
-    int                 *value_type;
-    unsigned char      **str_value_buf;
-    size_t              *str_value_len;
-    double              *num_value;
-    int                 *user_flags;
-    int                  get_stale;
-    int                 *is_stale;
-    char               **errmsg;
+    void                  *zone;
+    const unsigned char   *key;
+    size_t                 key_len;
+    int                   *value_type;
+    unsigned char        **str_value_buf;
+    size_t                *str_value_len;
+    double                *num_value;
+    int                   *user_flags;
+    int                    get_stale;
+    int                   *is_stale;
+    char                 **errmsg;
 } ngx_http_lua_shdict_get_params_t;
 
 
 typedef struct {
-    void                *zone;
-    int                  op;
-    const unsigned char *key;
-    size_t               key_len;
-    int                  value_type;
-    const unsigned char *str_value_buf;
-    size_t               str_value_len;
-    double               num_value;
-    long                 exptime;
-    int                  user_flags;
-    char               **errmsg;
-    int                 *forcible;
+    void                  *zone;
+    int                    op;
+    const unsigned char   *key;
+    size_t                 key_len;
+    int                    value_type;
+    const unsigned char   *str_value_buf;
+    size_t                 str_value_len;
+    double                 num_value;
+    long                   exptime;
+    int                    user_flags;
+    char                 **errmsg;
+    int                   *forcible;
 } ngx_http_lua_shdict_store_params_t;
 
 
 typedef struct {
-    void                *zone;
-    const unsigned char *key;
-    size_t               key_len;
-    double              *num_value;
-    char               **errmsg;
-    int                  has_init;
-    double               init;
-    long                 init_ttl;
-    int                 *forcible;
+    void                  *zone;
+    const unsigned char   *key;
+    size_t                 key_len;
+    double                *num_value;
+    char                 **errmsg;
+    int                    has_init;
+    double                 init;
+    long                   init_ttl;
+    int                   *forcible;
 } ngx_http_lua_shdict_incr_params_t;
 #endif
 
