@@ -1240,4 +1240,16 @@ ngx_http_lua_ngx_raw_header_cleanup(void *data)
 #endif
 
 
+#if (NGX_DARWIN)
+int
+ngx_http_lua_ffi_set_resp_header_macos(ngx_http_lua_set_resp_header_params_t *p)
+{
+    return ngx_http_lua_ffi_set_resp_header(p->r, p->key_data, p->key_len,
+                                            p->is_nil, p->sval, p->sval_len,
+                                            p->mvals, p->mvals_len,
+                                            p->override, p->errmsg);
+}
+#endif
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
