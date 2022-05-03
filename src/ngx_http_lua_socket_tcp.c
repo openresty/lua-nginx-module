@@ -6114,6 +6114,11 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
     }
 
     rctx = u->resolved->ctx;
+    if (u->pool) {
+        ngx_destroy_pool(u->pool);
+        u->pool = NULL;
+    }
+
     if (rctx == NULL) {
         return;
     }
