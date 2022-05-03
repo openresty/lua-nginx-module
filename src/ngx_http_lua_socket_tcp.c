@@ -4175,9 +4175,13 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         return;
     }
 
-    if (u->resolved && u->resolved->ctx) {
-        ngx_resolve_name_done(u->resolved->ctx);
-        u->resolved->ctx = NULL;
+    if (u->resolved) {
+        if (u->resolved->ctx) {
+            ngx_resolve_name_done(u->resolved->ctx);
+            u->resolved->ctx = NULL;
+        }
+
+        u->resolved = NULL;
     }
 
     if (u->peer.free) {
