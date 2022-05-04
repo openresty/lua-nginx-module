@@ -6113,12 +6113,12 @@ ngx_http_lua_tcp_resolve_cleanup(void *data)
         ngx_http_lua_socket_tcp_resume_conn_op(u->socket_pool);
     }
 
-    rctx = u->resolved->ctx;
     if (u->pool) {
         ngx_destroy_pool(u->pool);
         u->pool = NULL;
     }
 
+    rctx = u->resolved->ctx;
     if (rctx == NULL) {
         return;
     }
