@@ -645,6 +645,10 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
     } /* end spool != NULL */
 
+    if (!u->pool) {
+        u->pool = ngx_create_pool(128, r->connection->log);
+    }
+
     host.data = ngx_palloc(u->pool, host_len + 1);
     if (host.data == NULL) {
         return luaL_error(L, "no memory");
@@ -1117,10 +1121,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         ngx_http_lua_socket_tcp_create_socket_pool(L, r, key, pool_size,
                                                    backlog, &spool);
         u->socket_pool = spool;
-    }
-
-    if (!u->pool) {
-        u->pool = ngx_create_pool(128, r->connection->log);
     }
 
     return ngx_http_lua_socket_tcp_connect_helper(L, u, r, ctx, p,
