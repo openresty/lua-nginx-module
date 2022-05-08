@@ -14,6 +14,7 @@
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_capturefilter.h"
 #include "ngx_http_lua_contentby.h"
+#include "ngx_http_lua_server_rewriteby.h"
 #include "ngx_http_lua_rewriteby.h"
 #include "ngx_http_lua_accessby.h"
 #include "ngx_http_lua_logby.h"
@@ -31,6 +32,7 @@
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
+#include "ngx_http_lua_headers_out.h"
 #include "ngx_http_lua_pipe.h"
 
 
@@ -289,6 +291,22 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_filter_set_by_lua_file },
 #endif
+
+    /* server_rewrite_by_lua_block { <inline script> } */
+    { ngx_string("server_rewrite_by_lua_block"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+        ngx_http_lua_server_rewrite_by_lua_block,
+        NGX_HTTP_SRV_CONF_OFFSET,
+        0,
+        (void *) ngx_http_lua_server_rewrite_handler_inline },
+
+    /* server_rewrite_by_lua_file filename; */
+    { ngx_string("server_rewrite_by_lua_file"),
+        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+        ngx_http_lua_server_rewrite_by_lua,
+        NGX_HTTP_SRV_CONF_OFFSET,
+        0,
+        (void *) ngx_http_lua_server_rewrite_handler_file },
 
     /* rewrite_by_lua "<inline script>" */
     { ngx_string("rewrite_by_lua"),
@@ -752,6 +770,16 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
+    if (lmcf->requires_server_rewrite) {
+        h = ngx_array_push(
+          &cmcf->phases[NGX_HTTP_SERVER_REWRITE_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_server_rewrite_handler;
+    }
+
     if (lmcf->requires_rewrite) {
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
         if (h == NULL) {
@@ -1086,6 +1114,15 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         lmcf->worker_thread_vm_pool_size = 100;
     }
 
+    if (ngx_http_lua_init_builtin_headers_out(cf, lmcf) != NGX_OK) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "init header out error");
+
+        return NGX_CONF_ERROR;
+    }
+
+    dd("init built in headers out hash size: %ld",
+       lmcf->builtin_headers_out.size);
+
     return NGX_CONF_OK;
 }
 
@@ -1103,22 +1140,27 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     /* set by ngx_pcalloc:
      *      lscf->srv.ssl_client_hello_handler = NULL;
      *      lscf->srv.ssl_client_hello_src = { 0, NULL };
+     *      lscf->srv.ssl_client_hello_chunkname = NULL;
      *      lscf->srv.ssl_client_hello_src_key = NULL;
      *
      *      lscf->srv.ssl_cert_handler = NULL;
      *      lscf->srv.ssl_cert_src = { 0, NULL };
+     *      lscf->srv.ssl_cert_chunkname = NULL;
      *      lscf->srv.ssl_cert_src_key = NULL;
      *
      *      lscf->srv.ssl_session_store_handler = NULL;
      *      lscf->srv.ssl_session_store_src = { 0, NULL };
+     *      lscf->srv.ssl_session_store_chunkname = NULL;
      *      lscf->srv.ssl_session_store_src_key = NULL;
      *
      *      lscf->srv.ssl_session_fetch_handler = NULL;
      *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
+     *      lscf->srv.ssl_session_fetch_chunkname = NULL;
      *      lscf->srv.ssl_session_fetch_src_key = NULL;
      *
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
+     *      lscf->balancer.chunkname = NULL;
      *      lscf->balancer.src_key = NULL;
      */
 
@@ -1138,10 +1180,11 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 static char *
 ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+    ngx_http_lua_srv_conf_t *conf = child;
+    ngx_http_lua_srv_conf_t *prev = parent;
+
 #if (NGX_HTTP_SSL)
 
-    ngx_http_lua_srv_conf_t *prev = parent;
-    ngx_http_lua_srv_conf_t *conf = child;
     ngx_http_ssl_srv_conf_t *sscf;
 
     dd("merge srv conf");
@@ -1151,6 +1194,8 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->srv.ssl_client_hello_src_ref = prev->srv.ssl_client_hello_src_ref;
         conf->srv.ssl_client_hello_src_key = prev->srv.ssl_client_hello_src_key;
         conf->srv.ssl_client_hello_handler = prev->srv.ssl_client_hello_handler;
+        conf->srv.ssl_client_hello_chunkname
+            = prev->srv.ssl_client_hello_chunkname;
     }
 
     if (conf->srv.ssl_client_hello_src.len) {
@@ -1190,6 +1235,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->srv.ssl_cert_src_ref = prev->srv.ssl_cert_src_ref;
         conf->srv.ssl_cert_src_key = prev->srv.ssl_cert_src_key;
         conf->srv.ssl_cert_handler = prev->srv.ssl_cert_handler;
+        conf->srv.ssl_cert_chunkname = prev->srv.ssl_cert_chunkname;
     }
 
     if (conf->srv.ssl_cert_src.len) {
@@ -1229,6 +1275,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->srv.ssl_sess_store_src_ref = prev->srv.ssl_sess_store_src_ref;
         conf->srv.ssl_sess_store_src_key = prev->srv.ssl_sess_store_src_key;
         conf->srv.ssl_sess_store_handler = prev->srv.ssl_sess_store_handler;
+        conf->srv.ssl_sess_store_chunkname = prev->srv.ssl_sess_store_chunkname;
     }
 
     if (conf->srv.ssl_sess_store_src.len) {
@@ -1252,6 +1299,7 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->srv.ssl_sess_fetch_src_ref = prev->srv.ssl_sess_fetch_src_ref;
         conf->srv.ssl_sess_fetch_src_key = prev->srv.ssl_sess_fetch_src_key;
         conf->srv.ssl_sess_fetch_handler = prev->srv.ssl_sess_fetch_handler;
+        conf->srv.ssl_sess_fetch_chunkname = prev->srv.ssl_sess_fetch_chunkname;
     }
 
     if (conf->srv.ssl_sess_fetch_src.len) {
@@ -1271,6 +1319,16 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
 #endif  /* NGX_HTTP_SSL */
+
+    if (conf->srv.server_rewrite_src.value.len == 0) {
+        conf->srv.server_rewrite_src = prev->srv.server_rewrite_src;
+        conf->srv.server_rewrite_src_ref = prev->srv.server_rewrite_src_ref;
+        conf->srv.server_rewrite_src_key = prev->srv.server_rewrite_src_key;
+        conf->srv.server_rewrite_handler = prev->srv.server_rewrite_handler;
+        conf->srv.server_rewrite_chunkname
+            = prev->srv.server_rewrite_chunkname;
+    }
+
     return NGX_CONF_OK;
 }
 
@@ -1393,6 +1451,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->header_filter_handler = prev->header_filter_handler;
         conf->header_filter_src_ref = prev->header_filter_src_ref;
         conf->header_filter_src_key = prev->header_filter_src_key;
+        conf->header_filter_chunkname = prev->header_filter_chunkname;
     }
 
     if (conf->body_filter_src.value.len == 0) {
@@ -1400,6 +1459,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->body_filter_handler = prev->body_filter_handler;
         conf->body_filter_src_ref = prev->body_filter_src_ref;
         conf->body_filter_src_key = prev->body_filter_src_key;
+        conf->body_filter_chunkname = prev->body_filter_chunkname;
     }
 
 #if (NGX_HTTP_SSL)

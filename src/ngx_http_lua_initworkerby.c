@@ -118,14 +118,15 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_queue_init(&fake_cycle->reusable_connections_queue);
 
     if (ngx_array_init(&fake_cycle->listening, cycle->pool,
-                       cycle->listening.nelts || 1,
+                       cycle->listening.nelts ? cycle->listening.nelts : 1,
                        sizeof(ngx_listening_t))
         != NGX_OK)
     {
         goto failed;
     }
 
-    if (ngx_array_init(&fake_cycle->paths, cycle->pool, cycle->paths.nelts || 1,
+    if (ngx_array_init(&fake_cycle->paths, cycle->pool,
+                       cycle->paths.nelts ? cycle->paths.nelts : 1,
                        sizeof(ngx_path_t *))
         != NGX_OK)
     {
@@ -135,7 +136,8 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     part = &cycle->open_files.part;
     ofile = part->elts;
 
-    if (ngx_list_init(&fake_cycle->open_files, cycle->pool, part->nelts || 1,
+    if (ngx_list_init(&fake_cycle->open_files, cycle->pool,
+                      part->nelts ? part->nelts : 1,
                       sizeof(ngx_open_file_t))
         != NGX_OK)
     {
@@ -317,9 +319,17 @@ ngx_http_lua_init_worker_by_inline(ngx_log_t *log,
     ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 {
     int         status;
+    const char *chunkname;
+
+    if (lmcf->init_worker_chunkname == NULL) {
+        chunkname = "=init_worker_by_lua";
+
+    } else {
+        chunkname = (const char *) lmcf->init_worker_chunkname;
+    }
 
     status = luaL_loadbuffer(L, (char *) lmcf->init_worker_src.data,
-                             lmcf->init_worker_src.len, "=init_worker_by_lua")
+                             lmcf->init_worker_src.len, chunkname)
              || ngx_http_lua_do_call(log, L);
 
     return ngx_http_lua_report(log, L, status, "init_worker_by_lua");

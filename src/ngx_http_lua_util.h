@@ -33,6 +33,7 @@
 #define NGX_HTTP_LUA_ESCAPE_HEADER_VALUE  8
 
 #define NGX_HTTP_LUA_CONTEXT_YIELDABLE (NGX_HTTP_LUA_CONTEXT_REWRITE         \
+                                | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE        \
                                 | NGX_HTTP_LUA_CONTEXT_ACCESS                \
                                 | NGX_HTTP_LUA_CONTEXT_CONTENT               \
                                 | NGX_HTTP_LUA_CONTEXT_TIMER                 \
@@ -48,6 +49,7 @@
 #define ngx_http_lua_context_name(c)                                         \
     ((c) == NGX_HTTP_LUA_CONTEXT_SET ? "set_by_lua*"                         \
      : (c) == NGX_HTTP_LUA_CONTEXT_REWRITE ? "rewrite_by_lua*"               \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE ? "server_rewrite_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_ACCESS ? "access_by_lua*"                 \
      : (c) == NGX_HTTP_LUA_CONTEXT_CONTENT ? "content_by_lua*"               \
      : (c) == NGX_HTTP_LUA_CONTEXT_LOG ? "log_by_lua*"                       \
@@ -682,6 +684,43 @@ ngx_http_lua_new_cached_thread(lua_State *L, lua_State **out_co,
     *out_co = co;
 
     return co_ref;
+}
+
+
+static ngx_inline void *
+ngx_http_lua_hash_find_lc(ngx_hash_t *hash, ngx_uint_t key, u_char *name,
+    size_t len)
+{
+    ngx_uint_t       i;
+    ngx_hash_elt_t  *elt;
+
+    elt = hash->buckets[key % hash->size];
+
+    if (elt == NULL) {
+        return NULL;
+    }
+
+    while (elt->value) {
+        if (len != (size_t) elt->len) {
+            goto next;
+        }
+
+        for (i = 0; i < len; i++) {
+            if (ngx_tolower(name[i]) != elt->name[i]) {
+                goto next;
+            }
+        }
+
+        return elt->value;
+
+    next:
+
+        elt = (ngx_hash_elt_t *) ngx_align_ptr(&elt->name[0] + elt->len,
+                                               sizeof(void *));
+        continue;
+    }
+
+    return NULL;
 }
 
 

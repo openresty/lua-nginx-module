@@ -80,10 +80,10 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
---- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua\(nginx\.conf:\d+\):.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
@@ -93,11 +93,11 @@ $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 ]
 :
@@ -106,12 +106,12 @@ qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 /m,
 ]
 --- no_error_log
@@ -180,7 +180,7 @@ ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -264,7 +264,7 @@ qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -365,7 +365,7 @@ qr/my timer run!/s
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -446,7 +446,7 @@ qr/received memc reply: OK/s
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -527,7 +527,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -609,7 +609,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -690,18 +690,18 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:2: bad bad bad/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):2: bad bad bad/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:2: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):2: bad bad bad
 ',
-'ssl_session_fetch_by_lua_block:2: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):2: bad bad bad
 ',
 
 ]
@@ -773,19 +773,19 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:3: bad bad bad|ssl_session_fetch_by_lua\*: sess get cb exit code: 0/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):3: bad bad bad|ssl_session_fetch_by_lua\*: sess get cb exit code: 0/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:3: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):3: bad bad bad
 ssl_session_fetch_by_lua*: sess get cb exit code: 0
 ',
-'ssl_session_fetch_by_lua_block:3: bad bad bad
+'ssl_session_fetch_by_lua(nginx.conf:25):3: bad bad bad
 ssl_session_fetch_by_lua*: sess get cb exit code: 0
 ',
 
@@ -853,7 +853,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -939,7 +939,7 @@ qr/get_phase: ssl_session_fetch/s
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -1025,7 +1025,7 @@ print("ssl fetch sess by lua is running!")
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
@@ -1109,18 +1109,18 @@ qr/\S+:\d+: ssl fetch sess by lua is running!/s
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 
 --- grep_error_log eval
-qr/ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!/s
+qr/ssl_session_fetch_by_lua\(nginx.conf:\d+\):1: ssl fetch sess by lua is running!/s
 
 --- grep_error_log_out eval
 [
 '',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
+'ssl_session_fetch_by_lua(nginx.conf:25):1: ssl fetch sess by lua is running!
 ',
-'ssl_session_fetch_by_lua_block:1: ssl fetch sess by lua is running!
+'ssl_session_fetch_by_lua(nginx.conf:25):1: ssl fetch sess by lua is running!
 ',
 ]
 
@@ -1285,7 +1285,7 @@ GET /t
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- no_error_log
 [warn]
@@ -1346,9 +1346,9 @@ close: 1 nil
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
---- grep_error_log eval: qr/ssl_session_fetch_by_lua_block:.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_session_fetch_by_lua\(nginx\.conf:\d+\):.*?,|\bssl session fetch: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
 # before call ssl callback function
@@ -1357,11 +1357,11 @@ $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 qr/^reusable connection: 0
 ssl session fetch: connection reusable: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 ]
 :
@@ -1370,12 +1370,12 @@ qr/\A(?:reusable connection: [01]\n)+\z/s,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 qr/^reusable connection: 1
 ssl session fetch: connection reusable: 1
 reusable connection: 0
-ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
+ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is running!,
 /m,
 ]
 --- no_error_log
@@ -1444,7 +1444,7 @@ ssl_session_fetch_by_lua_block:1: ssl_session_fetch_by_lua\* is running!,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- grep_error_log eval
 qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
@@ -1537,7 +1537,7 @@ qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- grep_error_log eval: qr/received memc reply of \d+ bytes/
 --- grep_error_log_out eval
@@ -1632,7 +1632,7 @@ close: 1 nil
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- grep_error_log eval: qr/uthread: [^.,]+/
 --- grep_error_log_out eval
@@ -1732,7 +1732,7 @@ uthread: failed to kill: already waited or killed
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 close: 1 nil
 --- grep_error_log eval: qr/uthread: [^.,]+/
 --- grep_error_log_out eval

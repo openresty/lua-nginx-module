@@ -37,7 +37,7 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - PCRE_VER=8.44
+    - PCRE_VER=8.45
     - PCRE_PREFIX=/opt/pcre
     - PCRE_LIB=$PCRE_PREFIX/lib
     - PCRE_INC=$PCRE_PREFIX/include
@@ -52,7 +52,7 @@ env:
     - TEST_NGINX_SLEEP=0.006
   jobs:
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
-    - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1l OPENSSL_PATCH_VER=1.1.1f
+    - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1n OPENSSL_PATCH_VER=1.1.1f
 
 services:
   - memcached
@@ -130,6 +130,8 @@ script:
   - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
   - export NGX_BUILD_CC=$CC
+  - sh util/build-without-ssl.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
+  - rm -fr buildroot
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V
   - ldd `which nginx`|grep -E 'luajit|ssl|pcre'

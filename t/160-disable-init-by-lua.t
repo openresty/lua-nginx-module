@@ -12,6 +12,9 @@ my $http_config = <<_EOC_;
         function set_up_ngx_tmp_conf(conf)
             if conf == nil then
                 conf = [[
+                    # to prevent the test process from overwriting the
+                    # original pid file
+                    pid logs/test_nginx.pid;
                     events {
                         worker_connections 64;
                     }
@@ -150,6 +153,7 @@ qr/\[error\] .*? init_by_lua:\d+: run init_by_lua/
     location = /t {
         content_by_lua_block {
             local conf = [[
+                pid logs/test_nginx.pid;
                 events {
                     worker_connections 64;
                 }

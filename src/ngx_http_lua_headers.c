@@ -167,6 +167,12 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
     size = 0;
     b = c->buffer;
 
+    if (mr->request_line.len == 0) {
+        /* return empty string on invalid request */
+        lua_pushlstring(L, "", 0);
+        return 1;
+    }
+
     if (mr->request_line.data[mr->request_line.len] == CR) {
         line_break_len = 2;
 
@@ -1230,6 +1236,18 @@ ngx_http_lua_ngx_raw_header_cleanup(void *data)
         ngx_free(lmcf->busy_buf_ptrs);
         lmcf->busy_buf_ptrs = NULL;
     }
+}
+#endif
+
+
+#if (NGX_DARWIN)
+int
+ngx_http_lua_ffi_set_resp_header_macos(ngx_http_lua_set_resp_header_params_t *p)
+{
+    return ngx_http_lua_ffi_set_resp_header(p->r, p->key_data, p->key_len,
+                                            p->is_nil, p->sval, p->sval_len,
+                                            p->mvals, p->mvals_len,
+                                            p->override, p->errmsg);
 }
 #endif
 
