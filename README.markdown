@@ -1886,6 +1886,8 @@ content_by_lua_file
 
 Equivalent to [content_by_lua_block](#content_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
 
+If the file is not found, a `404 Not Found` status code will be returned, and a `503 Service Temporarily Unavailable` status code will be returned in case of errors in reading other files.
+
 Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
 
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.

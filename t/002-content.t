@@ -1086,3 +1086,15 @@ GET /lua
 --- error_code: 500
 --- error_log
 failed to load inlined Lua code: content_by_lua(...45678901234567890123456789012345.conf:14)
+
+
+
+=== TEST 51: Lua file permission denied
+--- config
+    location /lua {
+        content_by_lua_file /etc/shadow;
+    }
+--- request
+GET /lua
+--- response_body_like: 503 Service Temporarily Unavailable
+--- error_code: 503

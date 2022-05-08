@@ -307,7 +307,13 @@ ngx_http_lua_cache_loadfile(ngx_log_t *log, lua_State *L,
             break;
 
         case LUA_ERRFILE:
-            errcode = NGX_HTTP_NOT_FOUND;
+            if (errno == ENOENT) {
+                errcode = NGX_HTTP_NOT_FOUND;
+
+            } else {
+                errcode = NGX_HTTP_SERVICE_UNAVAILABLE;
+            }
+
             /* fall through */
 
         default:
