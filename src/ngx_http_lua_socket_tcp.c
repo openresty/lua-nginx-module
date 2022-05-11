@@ -1730,7 +1730,7 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 #endif
     }
 
-    if (server_name != NULL && server_name->len == 0) {
+    if (server_name == NULL || server_name->len == 0) {
         u->ssl_name.len = 0;
 
     } else {
