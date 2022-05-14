@@ -166,10 +166,10 @@ enum {
 
 
 enum {
-    SOCKET_OP_CONNECT,
-    SOCKET_OP_READ,
-    SOCKET_OP_WRITE,
-    SOCKET_OP_RESUME_CONN,
+    SOCKET_OP_CONNECT      = 0x01,
+    SOCKET_OP_READ         = 0x02,
+    SOCKET_OP_WRITE        = 0x04,
+    SOCKET_OP_RESUME_CONN  = 0x08,
 };
 
 
