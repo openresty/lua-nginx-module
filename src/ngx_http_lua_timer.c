@@ -821,7 +821,7 @@ ngx_http_lua_abort_pending_timers(ngx_event_t *ev)
     prev = NULL;
 
     events = ngx_pcalloc(ngx_cycle->pool,
-                         lmcf->pending_timers * sizeof(ngx_event_t));
+                         lmcf->pending_timers * sizeof(ngx_event_t *));
     if (events == NULL) {
         return;
     }
