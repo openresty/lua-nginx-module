@@ -774,18 +774,18 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
         }
 
         if (close(in[0]) == -1) {
-            ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
+            ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
                           "lua pipe failed to close the in[0]");
         }
 
         if (close(out[1]) == -1) {
-            ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
+            ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
                           "lua pipe failed to close the out[1]");
         }
 
         if (!merge_stderr) {
             if (close(err[1]) == -1) {
-                ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
+                ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
                               "lua pipe failed to close the err[1]");
             }
         }
