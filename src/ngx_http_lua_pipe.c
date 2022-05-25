@@ -78,7 +78,7 @@ static void ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_write_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_wait_cleanup(void *data);
-static void ngx_http_lua_ffi_pipe_proc_destroy(
+void ngx_http_lua_ffi_pipe_proc_destroy(
     ngx_http_lua_ffi_pipe_proc_t *proc);
 
 
@@ -1132,7 +1132,7 @@ ngx_http_lua_pipe_proc_finalize(ngx_http_lua_ffi_pipe_proc_t *proc)
 }
 
 
-static void
+void
 ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
 {
     ngx_http_lua_pipe_t          *pipe;
@@ -1157,6 +1157,10 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
             }
         }
     }
+
+    *pipe->cleanup = NULL;
+    ngx_http_lua_cleanup_free(pipe->r, pipe->cleanup);
+    pipe->cleanup = NULL;
 
     ngx_http_lua_pipe_proc_finalize(proc);
     ngx_destroy_pool(pipe->pool);
