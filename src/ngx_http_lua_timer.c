@@ -565,7 +565,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     c = ngx_http_lua_create_fake_connection(tctx.pool);
     if (c == NULL) {
         errmsg = "could not create fake connection";
-        /* tctx.pool is free in ngx_http_lua_create_fake_connection */
+        /* tctx.pool is freed in ngx_http_lua_create_fake_connection */
         tctx.pool = NULL;
         goto failed;
     }
