@@ -1197,6 +1197,11 @@ ngx_http_lua_pipe_put_error(ngx_http_lua_pipe_ctx_t *pipe_ctx, u_char *errbuf,
 
     case PIPE_ERR_CLOSED:
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "closed") - errbuf;
+        if (pipe_ctx->c != NULL) {
+            ngx_close_connection(pipe_ctx->c);
+            pipe_ctx->c = NULL;
+        }
+
         break;
 
     case PIPE_ERR_SYSCALL:
