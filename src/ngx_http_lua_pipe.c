@@ -422,6 +422,9 @@ ngx_http_lua_pipe_sigchld_event_handler(ngx_event_t *ev)
                                    &ngx_posted_events);
                 }
 
+                /* TODO: we should proactively close and free up the pipe after
+                 * the user consume all the data in the pipe.
+                 */
                 pipe_node->proc->pipe->dead = 1;
 
                 if (WIFSIGNALED(status)) {
@@ -1158,9 +1161,11 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
         }
     }
 
-    *pipe->cleanup = NULL;
-    ngx_http_lua_cleanup_free(pipe->r, pipe->cleanup);
-    pipe->cleanup = NULL;
+    if (pipe->cleanup != NULL) {
+        *pipe->cleanup = NULL;
+        ngx_http_lua_cleanup_free(pipe->r, pipe->cleanup);
+        pipe->cleanup = NULL;
+    }
 
     ngx_http_lua_pipe_proc_finalize(proc);
     ngx_destroy_pool(pipe->pool);
@@ -1197,11 +1202,6 @@ ngx_http_lua_pipe_put_error(ngx_http_lua_pipe_ctx_t *pipe_ctx, u_char *errbuf,
 
     case PIPE_ERR_CLOSED:
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "closed") - errbuf;
-        if (pipe_ctx->c != NULL) {
-            ngx_close_connection(pipe_ctx->c);
-            pipe_ctx->c = NULL;
-        }
-
         break;
 
     case PIPE_ERR_SYSCALL:
