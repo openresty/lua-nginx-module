@@ -78,6 +78,8 @@ static void ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_write_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_wait_cleanup(void *data);
+void ngx_http_lua_ffi_pipe_proc_destroy(
+    ngx_http_lua_ffi_pipe_proc_t *proc);
 
 
 static ngx_rbtree_t       ngx_http_lua_pipe_rbtree;
@@ -420,6 +422,9 @@ ngx_http_lua_pipe_sigchld_event_handler(ngx_event_t *ev)
                                    &ngx_posted_events);
                 }
 
+                /* TODO: we should proactively close and free up the pipe after
+                 * the user consume all the data in the pipe.
+                 */
                 pipe_node->proc->pipe->dead = 1;
 
                 if (WIFSIGNALED(status)) {
@@ -562,7 +567,8 @@ ngx_http_lua_execvpe(const char *program, char * const argv[],
 
 
 int
-ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
+ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
+    ngx_http_lua_ffi_pipe_proc_t *proc,
     const char *file, const char **argv, int merge_stderr, size_t buffer_size,
     const char **environ, u_char *errbuf, size_t *errbuf_size)
 {
@@ -582,6 +588,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
     ngx_http_lua_pipe_node_t       *pipe_node;
     struct sigaction                sa;
     ngx_http_lua_pipe_signal_t     *sig;
+    ngx_http_cleanup_t             *cln;
     sigset_t                        set;
 
     pool_size = ngx_align(NGX_MIN_POOL_SIZE + buffer_size * 2,
@@ -869,6 +876,21 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
         pp->stderr_fd = stderr_fd;
     }
 
+    if (pp->cleanup == NULL) {
+        cln = ngx_http_lua_cleanup_add(r, 0);
+
+        if (cln == NULL) {
+            *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "no memory")
+                           - errbuf;
+            goto close_in_out_err_fd;
+        }
+
+        cln->handler = (ngx_http_cleanup_pt) ngx_http_lua_ffi_pipe_proc_destroy;
+        cln->data = proc;
+        pp->cleanup = &cln->handler;
+        pp->r = r;
+    }
+
     node = (ngx_rbtree_node_t *) (pp + 1);
     node->key = pid;
     pipe_node = (ngx_http_lua_pipe_node_t *) &node->color;
@@ -1137,6 +1159,12 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
                               proc, proc->_pid);
             }
         }
+    }
+
+    if (pipe->cleanup != NULL) {
+        *pipe->cleanup = NULL;
+        ngx_http_lua_cleanup_free(pipe->r, pipe->cleanup);
+        pipe->cleanup = NULL;
     }
 
     ngx_http_lua_pipe_proc_finalize(proc);
