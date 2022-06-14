@@ -24,7 +24,7 @@
 #endif
 
 
-#define UDP_MAX_DATAGRAM_SIZE 8192
+#define UDP_MAX_DATAGRAM_SIZE 65536
 
 
 static int ngx_http_lua_socket_udp(lua_State *L);
