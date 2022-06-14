@@ -69,7 +69,7 @@ GET /t
 [error]
 --- log_level: debug
 --- error_log
-lua udp socket receive buffer size: 8192
+lua udp socket receive buffer size: 65536
 
 
 
@@ -595,7 +595,7 @@ received a good response.
 [error]
 --- log_level: debug
 --- error_log
-lua udp socket receive buffer size: 8192
+lua udp socket receive buffer size: 65536
 --- no_check_leak
 
 
@@ -662,7 +662,7 @@ received a good response.
 [error]
 --- log_level: debug
 --- error_log
-lua udp socket receive buffer size: 8192
+lua udp socket receive buffer size: 65536
 --- no_check_leak
 
 
