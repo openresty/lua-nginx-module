@@ -287,6 +287,50 @@ ngx_http_lua_worker_thread_handler(void *data, ngx_log_t *log)
 }
 
 
+static ngx_int_t
+ngx_http_lua_worker_thread_resume(ngx_http_request_t *r)
+{
+    lua_State                   *vm;
+    ngx_connection_t            *c;
+    ngx_int_t                    rc;
+    ngx_uint_t                   nreqs;
+    ngx_http_lua_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
+
+    rc = ngx_http_lua_run_thread(vm, r, ctx,
+                                 ctx->cur_co_ctx->nresults_from_worker_thread);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_lua_finalize_request(r, NGX_DONE);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_lua_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
+}
+
+
 /* executed in nginx event loop */
 static void
 ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
@@ -299,7 +343,6 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     size_t                            len;
     const char                       *str;
     int                               i;
-    int                               rc;
     ngx_http_lua_ctx_t               *ctx;
     lua_State                        *vm;
     int                               saved_top;
@@ -349,6 +392,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     }
 
     ctx->cur_co_ctx = worker_thread_ctx->wait_co_ctx;
+    ctx->cur_co_ctx->nresults_from_worker_thread = nresults;
     ctx->cur_co_ctx->cleanup = NULL;
 
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
@@ -356,30 +400,15 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
 
     /* resume the caller coroutine */
 
-    vm = ngx_http_lua_get_lua_vm(r, ctx);
-
-    rc = ngx_http_lua_run_thread(vm, r, ctx, nresults);
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua run thread returned %d", rc);
-
-    if (rc == NGX_AGAIN) {
-        ngx_http_lua_run_posted_threads(c, vm, r, ctx, c->requests);
-        return;
-    }
-
-    if (rc == NGX_DONE) {
-        ngx_http_lua_finalize_request(r, NGX_DONE);
-        ngx_http_lua_run_posted_threads(c, vm, r, ctx, c->requests);
-        return;
-    }
-
-    /* rc == NGX_ERROR || rc >= NGX_OK */
-
     if (ctx->entered_content_phase) {
-        ngx_http_lua_finalize_request(r, rc);
-        return;
+        (void) ngx_http_lua_worker_thread_resume(r);
+
+    } else {
+        ctx->resume_handler = ngx_http_lua_worker_thread_resume;
+        ngx_http_core_run_phases(r);
     }
+
+    ngx_http_run_posted_requests(c);
 
     return;
 

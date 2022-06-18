@@ -469,6 +469,10 @@ struct ngx_http_lua_co_ctx_s {
 
     uint8_t                 *sr_flags;
 
+    unsigned                 nresults_from_worker_thread;  /* number of results
+                                                            * from worker
+                                                            * thread callback */
+
     unsigned                 nsubreqs;  /* number of subrequests of the
                                          * current request */
 
