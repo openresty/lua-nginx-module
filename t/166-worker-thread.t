@@ -1208,3 +1208,41 @@ return {hello=hello}
 GET /hello
 --- response_body_like chop
 ^true : \d+$
+
+
+
+=== TEST 39: write_log_file
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /write_log_file {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok, err = ngx.run_worker_thread("testpool", "write_log_file", "log", ngx.var.arg_str)
+        if not ok then
+            ngx.say(ok, " : ", err)
+            return
+        end
+        ngx.say(ok)
+    }
+}
+--- user_files
+>>> write_log_file.lua
+local function log(str)
+    local file, err = io.open("/tmp/tmp.log", "w")
+    if not file then
+        return false, err
+    end
+    file:write(str)
+    file:flush()
+    file:close()
+    return true
+end
+return {log=log}
+--- request
+GET /write_log_file?str=hello
+--- response_body
+true
