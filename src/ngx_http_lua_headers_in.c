@@ -152,9 +152,15 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
                  ngx_http_set_builtin_header },
 #endif
 
+#if defined(nginx_version) && nginx_version >= 1023000
+    { ngx_string("Cookie"),
+                 offsetof(ngx_http_headers_in_t, cookie),
+                 ngx_http_set_builtin_multi_header },
+#else
     { ngx_string("Cookie"),
                  offsetof(ngx_http_headers_in_t, cookies),
                  ngx_http_set_builtin_multi_header },
+#endif
 
     { ngx_null_string, 0, ngx_http_set_header }
 };
