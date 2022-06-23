@@ -1220,7 +1220,7 @@ GET /hello
 location /write_log_file {
     default_type 'text/plain';
 
-    content_by_lua_block {
+    access_by_lua_block {
         local ok, err = ngx.run_worker_thread("testpool", "write_log_file", "log", ngx.var.arg_str)
         if not ok then
             ngx.say(ok, " : ", err)
