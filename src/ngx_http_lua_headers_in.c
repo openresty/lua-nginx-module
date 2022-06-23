@@ -616,9 +616,11 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
     if (*headers) {
         for (ph = headers; *ph; ph = &(*ph)->next) { /* void */ }
         *ph = h;
+
     } else {
         *headers = h;
     }
+
     h->next = NULL;
 
     return NGX_OK;
