@@ -351,6 +351,7 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
     }
 
 create:
+
     for (ph = headers; *ph; ph = &(*ph)->next) { /* void */ }
 
     ho = ngx_list_push(&r->headers_out.headers);
