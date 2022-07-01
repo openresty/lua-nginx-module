@@ -1,4 +1,3 @@
-Name
 ====
 
 ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
