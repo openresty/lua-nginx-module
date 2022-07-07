@@ -11,7 +11,7 @@ our $HtmlDir = html_dir;
 
 # get ip address in the dev which is default route outgoing dev
 my $dev = `ip route | awk '/default/ {printf "%s", \$5}'`;
-my $local_ip = `ip route | grep $dev | grep -o "src .*" | awk '{print \$2}'`;
+my $local_ip = `ip route | grep $dev | grep -o "src .*" | awk '{printf "%s", \$2}'`;
 chomp $local_ip;
 
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
