@@ -4982,7 +4982,9 @@ Multi-value arguments are also supported:
  ngx.req.set_uri_args({ a = 3, b = {5, 6} })
 ```
 
-which will result in a query string like `a=3&b=5&b=6`.
+which will result in a query string like `a=3&b=5&b=6` or `b=5&b=6&a=3`.
+
+**Note that when using Lua table as the `arg` argument, the order of the arguments in the result query string which change from time to time. If you would like to get an ordered result, you need to use Lua string as the `arg` argument.**
 
 This interface was first introduced in the `v0.3.1rc13` release.
 
