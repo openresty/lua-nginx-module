@@ -1246,3 +1246,452 @@ return {log=log}
 GET /write_log_file?str=hello
 --- response_body
 true
+
+
+
+=== TEST 40: shdict get, int value
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 10m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictget {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        local ok, err = ngx.run_worker_thread("testpool", "test_shdict", "dictget")
+        ngx.say(ok, ",", err)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictget(str)
+    local dogs = ngx.shared.dogs
+    return dogs:get("Jim")
+end
+return {dictget=dictget}
+--- request
+GET /dictget
+--- response_body
+true,8
+
+
+
+=== TEST 41: shdict set nil in main thread
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 10m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictget {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        local ok, err = ngx.run_worker_thread("testpool", "test_shdict", "dictget")
+        ngx.say(ok, ",", err)
+        dogs:set("Jim", nil)
+        local ok, err = ngx.run_worker_thread("testpool", "test_shdict", "dictget")
+        ngx.say(ok, ",", err)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictget(str)
+    local dogs = ngx.shared.dogs
+    return dogs:get("Jim")
+end
+return {dictget=dictget}
+--- request
+GET /dictget
+--- response_body
+true,8
+true,nil
+
+
+
+=== TEST 42: shdict set nil in worker thread
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 10m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictsetnil {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        local ok, err = ngx.run_worker_thread("testpool", "test_shdict", "dictsetnil")
+        ngx.say(ok, ",", err)
+        ngx.say(ok, ",", dogs:get("Jim"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictsetnil(str)
+    local dogs = ngx.shared.dogs
+    return dogs:set("Jim", nil)
+end
+return {dictsetnil=dictsetnil}
+--- request
+GET /dictsetnil
+--- response_body
+true,true
+true,nil
+
+
+
+=== TEST 43: shdict get_stale
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 10m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictget {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8, 1)
+        ngx.sleep(2)
+        local ok, err = ngx.run_worker_thread("testpool", "test_shdict", "dictget")
+        ngx.say(ok, ",", err)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictget(str)
+    local dogs = ngx.shared.dogs
+    return dogs:get_stale("Jim")
+end
+return {dictget=dictget}
+--- request
+GET /dictget
+--- response_body
+true,8
+
+
+
+=== TEST 44: shdict add failed
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 10m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictadd {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        local ok, err, err2 = ngx.run_worker_thread("testpool", "test_shdict", "dictadd")
+        ngx.say(ok, ",", err, ",", err2)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictadd(str)
+    local dogs = ngx.shared.dogs
+    local success, err = dogs:add("Jim", "hello")
+    return success, err
+end
+return {dictadd=dictadd}
+--- request
+GET /dictadd
+--- response_body
+true,false,exists
+
+
+
+=== TEST 45: shdict force add
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictadd {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        local bigstr = string.rep("A", 1024*1024*3)
+        dogs:set("Jim", bigstr)
+        local ok, ret, err, forcible = ngx.run_worker_thread("testpool", "test_shdict", "dictadd")
+        ngx.say(ok, ",", ret, ",", forcible, ",", dogs:get("Jim"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictadd(str)
+    local dogs = ngx.shared.dogs
+    local bigstr = string.rep("A", 1024*1024*5)
+    local success, err, forcible = dogs:add("King", bigstr)
+    return success, err, forcible
+end
+return {dictadd=dictadd}
+--- request
+GET /dictadd
+--- response_body
+true,true,true,nil
+
+
+
+=== TEST 46: shdict replace
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictreplace {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        local bigstr = string.rep("A", 1024*1024*3)
+        dogs:set("Jim", bigstr)
+        local ok, ret, err = ngx.run_worker_thread("testpool", "test_shdict", "dictreplace")
+        ngx.say(ok, ",", ret, ",", err, ",", dogs:get("Jim"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictreplace(str)
+    local dogs = ngx.shared.dogs
+    local success, err = dogs:replace("Jim", 8)
+    return success, err
+end
+return {dictreplace=dictreplace}
+--- request
+GET /dictreplace
+--- response_body
+true,true,nil,8
+
+
+
+=== TEST 47: shdict replace not found
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictreplace {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        local ok, ret, err = ngx.run_worker_thread("testpool", "test_shdict", "dictreplace")
+        ngx.say(ok, ",", ret, ",", err)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictreplace(str)
+    local dogs = ngx.shared.dogs
+    local success, err = dogs:replace("Jim", 8)
+    return success, err
+end
+return {dictreplace=dictreplace}
+--- request
+GET /dictreplace
+--- response_body
+true,false,not found
+
+
+
+=== TEST 48: shdict incr
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictincr {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        local success, err = dogs:set("Jim", 8)
+        local ok, ret, err = ngx.run_worker_thread("testpool", "test_shdict", "dictincr")
+        ngx.say(ok, ",", ret, ",", err, ",", dogs:get("Jim"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictincr(str)
+    local dogs = ngx.shared.dogs
+    local success, err = dogs:incr("Jim", 1)
+    return success, err
+end
+return {dictincr=dictincr}
+--- request
+GET /dictincr
+--- response_body
+true,9,nil,9
+
+
+
+=== TEST 49: shdict lpush lpop
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictlpush {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:lpush("Jim", 8)
+        dogs:lpush("Jim", 9)
+        local ok, val, len, err = ngx.run_worker_thread("testpool", "test_shdict", "dictlpush")
+        ngx.say(ok, ",", val, ",", len, ",", err, ",", dogs:lpop("Jim"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictlpush(str)
+    local dogs = ngx.shared.dogs
+    local val = dogs:lpop("Jim")
+    local len, err = dogs:lpush("Jim", 7)
+    return val, len, err
+end
+return {dictlpush=dictlpush}
+--- request
+GET /dictlpush
+--- response_body
+true,9,2,nil,7
+
+
+
+=== TEST 50: shdict expire ttl
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictexpire {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        local ok, success, err = ngx.run_worker_thread("testpool", "test_shdict", "dictexpire")
+        ngx.say(ok, ",", success, ",", err, ",", dogs:ttl("Jim") <= 1)
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictexpire(str)
+    local dogs = ngx.shared.dogs
+    local success, err = dogs:expire("Jim", 1)
+    return success, err
+end
+return {dictexpire=dictexpire}
+--- request
+GET /dictexpire
+--- response_body
+true,true,nil,true
+
+
+
+=== TEST 51: shdict flush_all
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictexpire {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        dogs:set("King", 9)
+        local ok = ngx.run_worker_thread("testpool", "test_shdict", "dictexpire")
+        ngx.say(ok, ",", dogs:get("Jim"), ",", dogs:get("King"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictexpire(str)
+    local dogs = ngx.shared.dogs
+    dogs:flush_all()
+end
+return {dictexpire=dictexpire}
+--- request
+GET /dictexpire
+--- response_body
+true,nil,nil
+
+
+
+=== TEST 52: shdict get_keys
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+"
+    lua_shared_dict dogs 6m;
+    lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
+"
+--- config
+location /dictgetkeys {
+    default_type 'text/plain';
+
+    access_by_lua_block {
+        local dogs = ngx.shared.dogs
+        dogs:set("Jim", 8)
+        dogs:set("King", 9)
+        local ok, keys = ngx.run_worker_thread("testpool", "test_shdict", "dictgetkeys")
+        ngx.say(ok, ",", table.concat(keys, ":"))
+    }
+}
+--- user_files
+>>> test_shdict.lua
+local function dictgetkeys(str)
+    local dogs = ngx.shared.dogs
+    return dogs:get_keys()
+end
+return {dictgetkeys=dictgetkeys}
+--- request
+GET /dictgetkeys
+--- response_body
+true,Jim:King

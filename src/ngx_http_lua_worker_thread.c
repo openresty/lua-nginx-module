@@ -16,6 +16,7 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_config.h"
+#include "ngx_http_lua_shdict.h"
 
 
 #if (NGX_THREADS)
@@ -148,6 +149,7 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
         lua_newtable(vm);    /* ngx.* */
         ngx_http_lua_inject_string_api(vm);
         ngx_http_lua_inject_config_api(vm);
+        ngx_http_lua_inject_shdict_api(lmcf, vm);
         lua_setglobal(vm, "ngx");
 
         /* inject API via ffi */
@@ -169,6 +171,14 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 
         lua_getglobal(vm, "require");
         lua_pushstring(vm, "resty.core.base64");
+        if (lua_pcall(vm, 1, 0, 0) != 0) {
+            lua_close(vm);
+            ngx_free(ctx);
+            return NULL;
+        }
+
+        lua_getglobal(vm, "require");
+        lua_pushstring(vm, "resty.core.shdict");
         if (lua_pcall(vm, 1, 0, 0) != 0) {
             lua_close(vm);
             ngx_free(ctx);
