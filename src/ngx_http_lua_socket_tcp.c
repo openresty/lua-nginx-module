@@ -20,6 +20,7 @@
 
 
 static int ngx_http_lua_socket_tcp(lua_State *L);
+static int ngx_http_lua_socket_tcp_bind(lua_State *L);
 static int ngx_http_lua_socket_tcp_connect(lua_State *L);
 #if (NGX_HTTP_SSL)
 static void ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c);
@@ -162,6 +163,7 @@ enum {
     SOCKET_READ_TIMEOUT_INDEX = 5,
     SOCKET_CLIENT_CERT_INDEX  = 6 ,
     SOCKET_CLIENT_PKEY_INDEX  = 7 ,
+    SOCKET_BIND_INDEX = 8   /* only in upstream cosocket */
 };
 
 
@@ -314,7 +316,10 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
     /* {{{tcp object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           tcp_socket_metatable_key));
-    lua_createtable(L, 0 /* narr */, 15 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 16 /* nrec */);
+
+    lua_pushcfunction(L, ngx_http_lua_socket_tcp_bind);
+    lua_setfield(L, -2, "bind");
 
     lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
     lua_setfield(L, -2, "connect");
@@ -828,6 +833,61 @@ no_memory_and_not_resuming:
 
 
 static int
+ngx_http_lua_socket_tcp_bind(lua_State *L)
+{
+    ngx_http_request_t   *r;
+    ngx_http_lua_ctx_t   *ctx;
+    int                   n;
+    u_char               *text;
+    size_t                len;
+    ngx_addr_t           *local;
+
+    n = lua_gettop(L);
+
+    if (n != 2) {
+        return luaL_error(L, "expecting 2 arguments, but got %d",
+                          lua_gettop(L));
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "no ctx found");
+    }
+
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_ACCESS
+                               | NGX_HTTP_LUA_CONTEXT_CONTENT
+                               | NGX_HTTP_LUA_CONTEXT_TIMER
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    text = (u_char *) luaL_checklstring(L, 2, &len);
+
+    local = ngx_http_lua_parse_addr(L, text, len);
+    if (local == NULL) {
+        lua_pushnil(L);
+        lua_pushfstring(L, "bad address");
+        return 2;
+    }
+
+    /* TODO: we may reuse the userdata here */
+    lua_rawseti(L, 1, SOCKET_BIND_INDEX);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua tcp socket bind ip: %V", &local->name);
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+
+static int
 ngx_http_lua_socket_tcp_connect(lua_State *L)
 {
     ngx_http_request_t          *r;
@@ -838,6 +898,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     size_t                       len;
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_peer_connection_t       *pc;
+    ngx_addr_t                  *local;
     int                          connect_timeout, send_timeout, read_timeout;
     unsigned                     custom_pool;
     int                          key_index;
@@ -1067,6 +1128,14 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     pc->log_error = NGX_ERROR_ERR;
 
     dd("lua peer connection log: %p", pc->log);
+
+    lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
+    local = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (local) {
+        u->peer.local = local;
+    }
 
     lua_rawgeti(L, 1, SOCKET_CONNECT_TIMEOUT_INDEX);
     lua_rawgeti(L, 1, SOCKET_SEND_TIMEOUT_INDEX);

@@ -6498,6 +6498,7 @@ This API function was first added to the <code>v0.10.1</code> release.
 
 Creates and returns a TCP or stream-oriented unix domain socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object:
 
+* [[#tcpsock:bind|bind]]
 * [[#tcpsock:connect|connect]]
 * [[#tcpsock:setclientcert|setclientcert]]
 * [[#tcpsock:sslhandshake|sslhandshake]]
@@ -6534,6 +6535,38 @@ Starting from the <code>0.9.9</code> release, the cosocket object here is full-d
 This feature was first introduced in the <code>v0.5.0rc1</code> release.
 
 See also [[#ngx.socket.udp|ngx.socket.udp]].
+
+== tcpsock:bind ==
+'''syntax:''' ''ok, err = tcpsock:bind(address)''
+
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, ngx.timer.*, ssl_certificate_by_lua*''
+
+Just like the standard [[HttpProxyModule#proxy_bind|proxy_bind]] directive, this api makes the outgoing connection to a upstream server originate from the specified local IP address.
+
+Only IP addresses can be specified as the <code>address</code> argument.
+
+Here is an example for connecting to a TCP server from the specified local IP address:
+
+<geshi lang="nginx">
+    location /test {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            -- assume "192.168.1.10" is the local ip address
+            local ok, err = sock:bind("192.168.1.10")
+            if not ok then
+                ngx.say("failed to bind")
+                return
+            end
+            local ok, err = sock:connect("192.168.1.67", 80)
+            if not ok then
+                ngx.say("failed to connect server: ", err)
+                return
+            end
+            ngx.say("successfully connected!")
+            sock:close()
+        }
+    }
+</geshi>
 
 == tcpsock:connect ==
 
