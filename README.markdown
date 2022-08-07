@@ -8749,7 +8749,7 @@ be any Lua function, which will be invoked later in a background
 called automatically by the Nginx core with the arguments `premature`,
 `user_arg1`, `user_arg2`, and etc, where the `premature`
 argument takes a boolean value indicating whether it is a premature timer
-expiration or not, and `user_arg1`, `user_arg2`, and etc, are
+expiration or not(for the `0` delay timer it is always `false`), and `user_arg1`, `user_arg2`, and etc, are
 those (extra) user arguments specified when calling `ngx.timer.at`
 as the remaining arguments.
 
