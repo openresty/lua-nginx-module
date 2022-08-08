@@ -10,18 +10,6 @@ version=${1:-1.4.1}
 home=~
 force=$2
 
-# the ngx-build script is from https://github.com/agentzh/nginx-devel-utils
-
-            #--add-module=$home/work/nginx_upload_module-2.2.0 \
-
-            #--without-pcre \
-            #--without-http_rewrite_module \
-            #--without-http_autoindex_module \
-            #--with-cc=gcc46 \
-            #--with-cc=clang \
-            #--without-http_referer_module \
-            #--with-http_spdy_module \
-
 add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
 
 time ngx-build $force $version \
