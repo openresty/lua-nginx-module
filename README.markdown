@@ -9377,6 +9377,7 @@ Example1: do md5 calculation.
 local function md5()
     return ngx.md5("hello")
 end
+return {md5=md5}
 ```
 
 Example2: write logs into the log file.
