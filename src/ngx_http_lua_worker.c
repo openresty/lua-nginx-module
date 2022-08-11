@@ -20,6 +20,7 @@ ngx_http_lua_ffi_worker_pid(void)
     return (int) ngx_pid;
 }
 
+
 int
 ngx_http_lua_ffi_worker_pids(int *pids, size_t *pidslen)
 {

@@ -3714,6 +3714,7 @@ Nginx API for Lua
 * [ngx.config.ngx_lua_version](#ngxconfigngx_lua_version)
 * [ngx.worker.exiting](#ngxworkerexiting)
 * [ngx.worker.pid](#ngxworkerpid)
+* [ngx.worker.pids](#ngxworkerpids)
 * [ngx.worker.count](#ngxworkercount)
 * [ngx.worker.id](#ngxworkerid)
 * [ngx.semaphore](#ngxsemaphore)
@@ -9022,6 +9023,17 @@ ngx.worker.pid
 This function returns a Lua number for the process ID (PID) of the current Nginx worker process. This API is more efficient than `ngx.var.pid` and can be used in contexts where the [ngx.var.VARIABLE](#ngxvarvariable) API cannot be used (like [init_worker_by_lua](#init_worker_by_lua)).
 
 This API was first introduced in the `0.9.5` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.worker.pids
+--------------
+
+**syntax:** *pids = ngx.worker.pids()*
+
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, init_by_lua&#42;, init_worker_by_lua&#42;, exit_worker_by_lua&#42;*
+
+This function returns a Lua table for all Nginx worker process ID (PID). Nginx uses channel to send the current worker PID to another worker in the worker process start or restart. So this API can get all worker PID at any time. `init_by_lua` and `init_worker_by_lua` maybe can not get all worker PID because in these phases other worker isn't started.
 
 [Back to TOC](#nginx-api-for-lua)
 
