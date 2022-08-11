@@ -9,7 +9,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4);
+plan tests => repeat_each() * (blocks() * 4 - 4);
 
 #no_diff();
 no_long_string();
@@ -90,7 +90,6 @@ worker pid is correct\.
             local pid = ngx.worker.pid()
             ngx.say("worker pid: ", pid)
             local count = ngx.worker.count()
-            ngx.say("worker count: ", count)
             if count ~= #pids then
                 ngx.say("worker pids is wrong.")
             end
