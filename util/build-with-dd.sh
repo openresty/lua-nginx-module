@@ -34,24 +34,24 @@ time ngx-build $force $version \
             --without-http_auth_basic_module \
             --without-http_userid_module \
             --with-http_auth_request_module \
-                --add-module=$root/../echo-nginx-module \
-                --add-module=$root/../memc-nginx-module \
-                --add-module=$root/../srcache-nginx-module \
-                --add-module=$root \
-                --add-module=$root/../lua-upstream-nginx-module \
-              --add-module=$root/../headers-more-nginx-module \
-                --add-module=$root/../drizzle-nginx-module \
-                --add-module=$root/../rds-json-nginx-module \
-                --add-module=$root/../coolkit-nginx-module \
-                --add-module=$root/../redis2-nginx-module \
-                --add-module=$root/../stream-lua-nginx-module \
-                --add-module=$root/t/data/fake-module \
-                $add_fake_shm_module \
-                --add-module=$root/t/data/fake-delayed-load-module \
-                --with-http_gunzip_module \
-                --with-http_dav_module \
-          --with-select_module \
-          --with-poll_module \
-                $opts \
-                --with-debug
+            --add-module=$root/../echo-nginx-module \
+            --add-module=$root/../memc-nginx-module \
+            --add-module=$root/../srcache-nginx-module \
+            --add-module=$root \
+            --add-module=$root/../lua-upstream-nginx-module \
+            --add-module=$root/../headers-more-nginx-module \
+            --add-module=$root/../drizzle-nginx-module \
+            --add-module=$root/../rds-json-nginx-module \
+            --add-module=$root/../coolkit-nginx-module \
+            --add-module=$root/../redis2-nginx-module \
+            --add-module=$root/../stream-lua-nginx-module \
+            --add-module=$root/t/data/fake-module \
+            $add_fake_shm_module \
+            --add-module=$root/t/data/fake-delayed-load-module \
+            --with-http_gunzip_module \
+            --with-http_dav_module \
+            --with-select_module \
+            --with-poll_module \
+            $opts \
+            --with-debug
 
