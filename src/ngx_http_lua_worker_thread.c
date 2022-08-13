@@ -25,6 +25,7 @@
 #include <ngx_thread.h>
 #include <ngx_thread_pool.h>
 
+#define LUA_COPY_MAX_DEPTH 100
 
 typedef struct ngx_http_lua_task_ctx_s {
     lua_State                        *vm;
@@ -208,7 +209,7 @@ ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
 
 static int
 ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
-    const int allow_nil)
+    const int allow_nil, const int depth)
 {
     size_t           len = 0;
     const char      *str;
@@ -235,6 +236,9 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         return LUA_TSTRING;
 
     case LUA_TTABLE:
+        if (depth >= LUA_COPY_MAX_DEPTH) {
+            return LUA_TNONE;
+        }
         top_from = lua_gettop(from);
         top_to = lua_gettop(to);
 
@@ -248,8 +252,8 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         lua_pushnil(from);
 
         while (lua_next(from, idx) != 0) {
-            if (ngx_http_lua_xcopy(from, to, -2, 0) != LUA_TNONE
-                && ngx_http_lua_xcopy(from, to, -1, 0) != LUA_TNONE)
+            if (ngx_http_lua_xcopy(from, to, -2, 0, depth + 1) != LUA_TNONE
+                && ngx_http_lua_xcopy(from, to, -1, 0, depth + 1) != LUA_TNONE)
             {
                 lua_rawset(to, -3);
 
@@ -392,7 +396,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         lua_pushboolean(L, 1);
         nresults = lua_gettop(vm) + 1;
         for (i = 1; i < nresults; i++) {
-            if (ngx_http_lua_xcopy(vm, L, i, 1) == LUA_TNONE) {
+            if (ngx_http_lua_xcopy(vm, L, i, 1, 1) == LUA_TNONE) {
                 lua_settop(L, saved_top);
                 lua_pushboolean(L, 0);
                 lua_pushstring(L, "unsupported return value");
@@ -557,7 +561,7 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     /* copying passed arguments */
     for (i = 4; i <= n_args; i++) {
-        if (ngx_http_lua_xcopy(L, vm, i, 1) == LUA_TNONE) {
+        if (ngx_http_lua_xcopy(L, vm, i, 1, 1) == LUA_TNONE) {
             lua_pushboolean(L, 0);
             lua_pushstring(L, "unsupported argument type");
             ngx_http_lua_free_task_ctx(tctx);
