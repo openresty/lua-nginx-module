@@ -18,6 +18,10 @@
 #include "ngx_http_lua_config.h"
 #include "ngx_http_lua_shdict.h"
 
+#ifndef STRINGIFY
+#define TOSTRING(x)  #x
+#define STRINGIFY(x) TOSTRING(x)
+#endif
 
 #if (NGX_THREADS)
 
@@ -25,6 +29,7 @@
 #include <ngx_thread.h>
 #include <ngx_thread_pool.h>
 
+#define LUA_COPY_MAX_DEPTH 100
 
 typedef struct ngx_http_lua_task_ctx_s {
     lua_State                        *vm;
@@ -208,7 +213,7 @@ ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
 
 static int
 ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
-    const int allow_nil)
+    const int allow_nil, const int depth, const char **err)
 {
     size_t           len = 0;
     const char      *str;
@@ -235,6 +240,13 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         return LUA_TSTRING;
 
     case LUA_TTABLE:
+        if (depth >= LUA_COPY_MAX_DEPTH) {
+            *err = "suspicious circular references, "
+                   "table depth exceed max depth: "
+                   STRINGIFY(LUA_COPY_MAX_DEPTH);
+            return LUA_TNONE;
+        }
+
         top_from = lua_gettop(from);
         top_to = lua_gettop(to);
 
@@ -248,8 +260,9 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         lua_pushnil(from);
 
         while (lua_next(from, idx) != 0) {
-            if (ngx_http_lua_xcopy(from, to, -2, 0) != LUA_TNONE
-                && ngx_http_lua_xcopy(from, to, -1, 0) != LUA_TNONE)
+            if (ngx_http_lua_xcopy(from, to, -2, 0, depth + 1, err) != LUA_TNONE
+                && ngx_http_lua_xcopy(from, to, -1, 0,
+                                      depth + 1, err) != LUA_TNONE)
             {
                 lua_rawset(to, -3);
 
@@ -269,16 +282,24 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
             lua_pushnil(to);
             return LUA_TNIL;
         }
-        /* fall through */
 
-    /*
-     * ignore unsupported values:
-     * LUA_TNONE
-     * LUA_TFUNCTION
-     * LUA_TUSERDATA
-     * LUA_TTHREAD
-     */
+        *err = "unsupported Lua type: LUA_TNIL";
+        return LUA_TNONE;
+
+    case LUA_TFUNCTION:
+        *err = "unsupported Lua type: LUA_TFUNCTION";
+        return LUA_TNONE;
+
+    case LUA_TUSERDATA:
+        *err = "unsupported Lua type: LUA_TUSERDATA";
+        return LUA_TNONE;
+
+    case LUA_TTHREAD:
+        *err = "unsupported Lua type: LUA_TTHREAD";
+        return LUA_TNONE;
+
     default:
+        *err = "unsupported Lua type";
         return LUA_TNONE;
     }
 }
@@ -357,6 +378,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     ngx_http_lua_ctx_t               *ctx;
     lua_State                        *vm;
     int                               saved_top;
+    const char                       *err;
 
     worker_thread_ctx = ev->data;
 
@@ -392,10 +414,12 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         lua_pushboolean(L, 1);
         nresults = lua_gettop(vm) + 1;
         for (i = 1; i < nresults; i++) {
-            if (ngx_http_lua_xcopy(vm, L, i, 1) == LUA_TNONE) {
+            err = NULL;
+            if (ngx_http_lua_xcopy(vm, L, i, 1, 1, &err) == LUA_TNONE) {
                 lua_settop(L, saved_top);
                 lua_pushboolean(L, 0);
-                lua_pushstring(L, "unsupported return value");
+                lua_pushfstring(L, "%s in the return value",
+                                err != NULL ? err : "unsupoorted Lua type");
                 nresults = 2;
                 break;
             }
@@ -557,9 +581,11 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     /* copying passed arguments */
     for (i = 4; i <= n_args; i++) {
-        if (ngx_http_lua_xcopy(L, vm, i, 1) == LUA_TNONE) {
+        err = NULL;
+        if (ngx_http_lua_xcopy(L, vm, i, 1, 1, &err) == LUA_TNONE) {
             lua_pushboolean(L, 0);
-            lua_pushstring(L, "unsupported argument type");
+            lua_pushfstring(L, "%s in the argument",
+                            err != NULL ? err : "unsupoorted Lua type");
             ngx_http_lua_free_task_ctx(tctx);
             return 2;
         }

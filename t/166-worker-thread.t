@@ -229,7 +229,7 @@ return {hello=hello}
 --- request
 GET /hello
 --- response_body
-false : unsupported argument type
+false : unsupported Lua type: LUA_TFUNCTION in the argument
 
 
 
@@ -491,7 +491,7 @@ return {hello=hello}
 --- request
 GET /hello
 --- response_body
-false : unsupported argument type
+false : unsupported Lua type: LUA_TFUNCTION in the argument
 
 
 
@@ -524,7 +524,7 @@ return {hello=hello}
 --- request
 GET /hello
 --- response_body
-false , unsupported return value
+false , unsupported Lua type: LUA_TFUNCTION in the return value
 
 
 
@@ -1695,3 +1695,64 @@ return {dictgetkeys=dictgetkeys}
 GET /dictgetkeys
 --- response_body
 true,Jim:King
+
+
+
+=== TEST 53: unsupported argument type in self-reference table
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local t = {}
+        t.a = t
+        local ok, ok_or_err = ngx.run_worker_thread("testpool", "hello", "hello", t)
+        ngx.say(ok, " , ", ok_or_err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello(arg1)
+    return true
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false , suspicious circular references, table depth exceed max depth: 100 in the argument
+
+
+
+=== TEST 54: unsupported argument type in circular-reference table
+--- main_config
+    thread_pool testpool threads=100;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local t = {}
+        local s = {}
+        t.a = s
+        s.b = t
+
+        local ok, ok_or_err = ngx.run_worker_thread("testpool", "hello", "hello", t)
+        ngx.say(ok, " , ", ok_or_err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello(arg1)
+    return true
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+false , suspicious circular references, table depth exceed max depth: 100 in the argument
