@@ -7742,6 +7742,13 @@ This function returns a Lua number for the process ID (PID) of the current Nginx
 
 This API was first introduced in the <code>0.9.5</code> release.
 
+== ngx.worker.pids ==
+
+'''syntax:''' ''pid = ngx.worker.pids()''
+
+'''context:''' ''set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, exit_worker_by_lua*''
+
+This function returns a Lua table for all Nginx worker process ID (PID). Nginx uses channel to send the current worker PID to another worker in the worker process start or restart. So this API can get all current worker PID.
 == ngx.worker.count ==
 
 '''syntax:''' ''count = ngx.worker.count()''

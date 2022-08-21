@@ -8,6 +8,7 @@
 #define DDEBUG 0
 #endif
 #include "ddebug.h"
+#include <ngx_channel.h>
 
 
 #define NGX_PROCESS_PRIVILEGED_AGENT    99
@@ -17,6 +18,36 @@ int
 ngx_http_lua_ffi_worker_pid(void)
 {
     return (int) ngx_pid;
+}
+
+
+int
+ngx_http_lua_ffi_worker_pids(int *pids, size_t *pids_len)
+{
+    ngx_int_t i, n;
+
+    n = 0;
+    for (i = 0; i < NGX_MAX_PROCESSES; i++) {
+        if (i != ngx_process_slot && ngx_processes[i].pid == 0) {
+            break;
+        }
+
+        if (i == ngx_process_slot && ngx_processes[i].pid == 0) {
+            pids[n++] = ngx_pid;
+        }
+
+        if (ngx_processes[i].pid > 0) {
+            pids[n++] = ngx_processes[i].pid;
+        }
+    }
+
+    if (n == 0) {
+        return NGX_ERROR;
+    }
+
+    *pids_len = n;
+
+    return NGX_OK;
 }
 
 
