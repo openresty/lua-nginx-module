@@ -4112,7 +4112,7 @@ Because HTTP request is created after SSL handshake, the `ngx.ctx` created
 in [ssl_certificate_by_lua*](#ssl_certificate_by_lua), [ssl_session_store_by_lua*](#ssl_session_store_by_lua), [ssl_session_fetch_by_lua*](#ssl_session_fetch_by_lua) and [ssl_client_hello_by_lua*](#ssl_client_hello_by_lua)
 is not available in the following phases like [rewrite_by_lua*](#rewrite_by_lua).
 
-Since `dev`, the `ngx.ctx` created during a SSL handshake
+Since `v0.10.18`, the `ngx.ctx` created during a SSL handshake
 will be inherited by the requests which share the same TCP connection established by the handshake.
 Note that overwrite values in `ngx.ctx` in the http request phases (like `rewrite_by_lua*`) will only take affect in the current http request.
 
