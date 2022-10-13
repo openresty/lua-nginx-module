@@ -3529,7 +3529,7 @@ lua_max_running_timers
 
 Controls the maximum number of "running timers" allowed.
 
-Running timers are those timers whose user callback functions are still running.
+Running timers are those timers whose user callback functions are still running or `lightthreads` spawned in callback functions are still running.
 
 When exceeding this limit, Nginx will stop running the callbacks of newly expired timers and log an error message "N lua_max_running_timers are not enough" where "N" is the current value of this directive.
 
