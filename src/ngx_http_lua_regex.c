@@ -173,6 +173,8 @@ ngx_http_lua_ffi_set_jit_stack_size(int size, u_char *errstr,
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
 
+    ngx_http_lua_assert(lmcf != NULL);
+
     if (size < NGX_LUA_RE_MIN_JIT_STACK_SIZE) {
         size = NGX_LUA_RE_MIN_JIT_STACK_SIZE;
     }
@@ -269,6 +271,8 @@ ngx_http_lua_ffi_compile_regex(const unsigned char *pat, size_t pat_len,
 
     lmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle,
                                                ngx_http_lua_module);
+
+    ngx_http_lua_assert(lmcf != NULL);
 
 #if (LUA_HAVE_PCRE_JIT)
 
