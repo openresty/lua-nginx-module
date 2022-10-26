@@ -6356,6 +6356,10 @@ Returns the elapsed microseconds which is a monotonic time from the Nginx time c
 
 Updates of the Nginx time cache can be forced by calling [ngx.update_time](#ngxupdate_time) first.
 
+Note: need to update to the real version number in the next release
+
+This API was first introduced in `v0.10.23`.
+
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.update_time
