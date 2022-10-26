@@ -3640,7 +3640,6 @@ Nginx API for Lua
 * [ngx.today](#ngxtoday)
 * [ngx.time](#ngxtime)
 * [ngx.now](#ngxnow)
-* [ngx.msec](#ngxmsec)
 * [ngx.update_time](#ngxupdate_time)
 * [ngx.localtime](#ngxlocaltime)
 * [ngx.utctime](#ngxutctime)
@@ -6342,23 +6341,6 @@ Returns a floating-point number for the elapsed time in seconds (including milli
 You can forcibly update the Nginx time cache by calling [ngx.update_time](#ngxupdate_time) first.
 
 This API was first introduced in `v0.3.1rc32`.
-
-[Back to TOC](#nginx-api-for-lua)
-
-ngx.msec
---------
-
-**syntax:** *secs = ngx.msec()*
-
-**context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, exit_worker_by_lua&#42;, ssl_client_hello_by_lua&#42;*
-
-Returns the elapsed microseconds which is a monotonic time from the Nginx time cache. The time is fetched by clock_gettime(). This clock is not affected by discontinuous jumps in the system time (e.g., if the system administrator manually changes the clock), but is affected by the incremental adjustments performed by adjtime(3) and NTP.
-
-Updates of the Nginx time cache can be forced by calling [ngx.update_time](#ngxupdate_time) first.
-
-Note: need to update to the real version number in the next release
-
-This API was first introduced in `v0.10.23`.
 
 [Back to TOC](#nginx-api-for-lua)
 
