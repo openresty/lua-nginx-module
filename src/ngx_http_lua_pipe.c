@@ -172,7 +172,6 @@ ngx_http_lua_pipe_add_signal_handler(ngx_cycle_t *cycle)
 
     if (!ngx_reap_pid_event.timer_set) {
         ngx_add_timer(&ngx_reap_pid_event, 1000);
-        ngx_reap_pid_event.timer_set = 1;
     }
 
 #if (NGX_HTTP_LUA_HAVE_SIGNALFD)
@@ -476,7 +475,6 @@ ngx_http_lua_pipe_reap_timer_handler(ngx_event_t *ev)
 
     if (!ngx_exiting) {
         ngx_add_timer(&ngx_reap_pid_event, 1000);
-        ngx_reap_pid_event.timer_set = 1;
         ngx_reap_pid_event.timedout = 0;
     }
 }
