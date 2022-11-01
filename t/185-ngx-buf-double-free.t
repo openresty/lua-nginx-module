@@ -8,7 +8,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: ngx.say (integer)
+=== TEST 1: one buf was linked to multiple ngx_chain_t nodes
 --- config
     location /t {
         content_by_lua_block {
