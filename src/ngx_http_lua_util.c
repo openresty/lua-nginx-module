@@ -696,7 +696,6 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_int_t            rc;
     ngx_http_lua_ctx_t  *ctx;
     ngx_http_request_t  *ar; /* active request */
-    ngx_chain_t         *cl;
 
     ar = r->connection->data;
 
@@ -710,29 +709,7 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return rc;
     }
 
-    /*
-     * Avoid buf double free:
-     * set the tag of buf used by lua module to ngx_http_lua_output_filter,
-     * so that it would not be freed by ngx_http_lua_body_filter
-     * (if body filter is enabled).
-     */
-    for (cl = in; cl; cl = cl->next) {
-        if (cl->buf->tag == (ngx_buf_tag_t) &ngx_http_lua_module) {
-            cl->buf->tag = (ngx_buf_tag_t) &ngx_http_lua_output_filter;
-        }
-    }
-
     rc = ngx_http_output_filter(r, in);
-
-    /*
-     * recover the tag,
-     * so that the buf could be freed here.
-     */
-    for (cl = in; cl; cl = cl->next) {
-        if (cl->buf->tag == (ngx_buf_tag_t) &ngx_http_lua_output_filter) {
-            cl->buf->tag = (ngx_buf_tag_t) &ngx_http_lua_module;
-        }
-    }
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
