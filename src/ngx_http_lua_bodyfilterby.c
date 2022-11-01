@@ -299,7 +299,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         out = NULL;
         ngx_chain_update_chains(r->pool,
                                 &ctx->free_bufs, &ctx->filter_busy_bufs, &out,
-                                (ngx_buf_tag_t) &ngx_http_lua_module);
+                                (ngx_buf_tag_t) &ngx_http_lua_body_filter);
         if (rc != NGX_OK
             && ctx->filter_busy_bufs != NULL
             && (r->connection->buffered
