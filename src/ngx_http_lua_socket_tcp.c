@@ -3457,7 +3457,7 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
 
 
                 ngx_chain_update_chains(r->pool,
-                                        &ctx->free_bufs, &ctx->busy_bufs,
+                                        &ctx->free_bufs, &u->busy_bufs,
                                         &u->request_bufs,
                                         (ngx_buf_tag_t) &ngx_http_lua_module);
 
