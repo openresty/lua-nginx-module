@@ -125,6 +125,8 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     int                              openssl_error_code_ret;
 #endif
 
+    ngx_chain_t                     *busy_bufs;
+
     unsigned                         ft_type:16;
     unsigned                         no_close:1;
     unsigned                         conn_waiting:1;
