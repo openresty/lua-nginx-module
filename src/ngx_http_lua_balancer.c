@@ -24,6 +24,7 @@ typedef struct {
     ngx_connection_t              *connection;
     socklen_t                      socklen;
     ngx_sockaddr_t                 sockaddr;
+    ngx_sockaddr_t                 local_sockaddr;
     ngx_str_t                      host;
     /* try to avoid allocating memory from the connection pool */
     u_char                         host_data[NGX_BALANCER_DEF_HOST_LEN];
@@ -52,6 +53,7 @@ struct ngx_http_lua_balancer_peer_data_s {
 
     struct sockaddr                    *sockaddr;
     socklen_t                           socklen;
+    ngx_addr_t                         *local;
 
     ngx_str_t                           host;
     ngx_str_t                          *addr_text;
@@ -91,7 +93,7 @@ static void ngx_http_lua_balancer_close_handler(ngx_event_t *ev);
 static ngx_connection_t *ngx_http_lua_balancer_get_cached_item(
     ngx_http_lua_srv_conf_t *lscf, ngx_peer_connection_t *pc, ngx_str_t *name);
 static ngx_uint_t ngx_http_lua_balancer_calc_hash(ngx_str_t *name,
-    struct sockaddr *sockaddr, socklen_t socklen);
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
 
 
 static struct sockaddr  *ngx_http_lua_balancer_default_server_sockaddr;
@@ -452,6 +454,10 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
         }
     }
 
+    if (bp->local != NULL) {
+        pc->local = bp->local;
+    }
+
     if (bp->sockaddr && bp->socklen) {
         pc->sockaddr = bp->sockaddr;
         pc->socklen = bp->socklen;
@@ -646,7 +652,8 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
 
             ngx_queue_insert_head(&lscf->balancer.cache, q);
             hash = ngx_http_lua_balancer_calc_hash(host,
-                                                   bp->sockaddr, bp->socklen);
+                                                   bp->sockaddr, bp->socklen,
+                                                   bp->local);
             item->hash = hash;
             hash %= lscf->balancer.bucket_cnt;
             ngx_queue_insert_head(&lscf->balancer.buckets[hash], &item->hnode);
@@ -672,6 +679,15 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
 
             item->socklen = pc->socklen;
             ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
+            if (pc->local) {
+                ngx_memcpy(&item->local_sockaddr,
+                           pc->local->sockaddr, pc->local->socklen);
+
+            } else {
+                ngx_memzero(&item->local_sockaddr,
+                            sizeof(item->local_sockaddr));
+            }
+
             if (host->data && host->len) {
                 if (host->len <= sizeof(item->host_data)) {
                     ngx_memcpy(item->host_data, host->data, host->len);
@@ -704,6 +720,7 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
             return;
 
 invalid:
+
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                            "lua balancer: keepalive not saving connection %p",
                            c);
@@ -909,6 +926,68 @@ ngx_http_lua_ffi_balancer_set_current_peer(ngx_http_request_t *r,
 
     } else {
         ngx_str_null(&bp->host);
+    }
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
+    const u_char *addr, size_t addr_len,
+    u_char *errbuf, size_t *errbuf_size)
+{
+    u_char                *p;
+    ngx_http_lua_ctx_t    *ctx;
+    ngx_http_upstream_t   *u;
+    ngx_int_t              rc;
+
+    ngx_http_lua_balancer_peer_data_t  *bp;
+
+    if (r == NULL) {
+        p = ngx_snprintf(errbuf, *errbuf_size, "no request found");
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+
+    if (u == NULL) {
+        p = ngx_snprintf(errbuf, *errbuf_size, "no upstream found");
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        p = ngx_snprintf(errbuf, *errbuf_size, "no ctx found");
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        p = ngx_snprintf(errbuf, *errbuf_size,
+                         "API disabled in the current context");
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
+    }
+
+    bp = (ngx_http_lua_balancer_peer_data_t *) u->peer.data;
+
+    if (bp->local == NULL) {
+        bp->local = ngx_palloc(r->pool, sizeof(ngx_addr_t));
+        if (bp->local == NULL) {
+            p = ngx_snprintf(errbuf, *errbuf_size, "no memory");
+            *errbuf_size = p - errbuf;
+            return NGX_ERROR;
+        }
+    }
+
+    rc = ngx_parse_addr_port(r->pool, bp->local, (u_char *) addr, addr_len);
+    if (rc == NGX_ERROR) {
+        p = ngx_snprintf(errbuf, *errbuf_size, "invalid addr %s", addr);
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
     }
 
     return NGX_OK;
@@ -1328,12 +1407,15 @@ done:
 
 static ngx_uint_t
 ngx_http_lua_balancer_calc_hash(ngx_str_t *name,
-    struct sockaddr *sockaddr, socklen_t socklen)
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local)
 {
     ngx_uint_t hash;
 
     hash = ngx_hash_key_lc(name->data, name->len);
     hash ^= ngx_hash_key((u_char *) sockaddr, socklen);
+    if (local != NULL) {
+        hash ^= ngx_hash_key((u_char *) local->sockaddr, local->socklen);
+    }
 
     return hash;
 }
@@ -1349,12 +1431,14 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
     ngx_connection_t                  *c;
     struct sockaddr                   *sockaddr;
     socklen_t                          socklen;
+    ngx_addr_t                        *local;
     ngx_http_lua_balancer_ka_item_t   *item;
 
     sockaddr = pc->sockaddr;
     socklen = pc->socklen;
+    local = pc->local;
 
-    hash = ngx_http_lua_balancer_calc_hash(name, sockaddr, socklen);
+    hash = ngx_http_lua_balancer_calc_hash(name, sockaddr, socklen, pc->local);
     head = &lscf->balancer.buckets[hash % lscf->balancer.bucket_cnt];
 
     c = NULL;
@@ -1372,7 +1456,11 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
                             (u_char *) sockaddr,
                             item->socklen, socklen) == 0
             && ngx_strncasecmp(name->data,
-                               item->host.data, name->len) == 0)
+                               item->host.data, name->len) == 0
+            && (local == NULL
+                || ngx_memn2cmp((u_char *) &item->local_sockaddr,
+                                (u_char *) local->sockaddr,
+                                socklen, local->socklen) == 0))
         {
             c = item->connection;
             ngx_queue_remove(q);
