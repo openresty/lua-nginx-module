@@ -239,4 +239,4 @@ exit_worker_by_lua error: exit_worker_by_lua(nginx.conf:25):4: ')' expected (to 
 --- response_body
 hello world
 --- shutdown_error_log eval
-qr|exit_worker_by_lua_file error: .*lua-nginx-module/t/servroot/html/exit.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|
+qr|exit_worker_by_lua_file error: .*?t/servroot\w*/html/exit.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|

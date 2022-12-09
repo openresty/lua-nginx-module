@@ -842,6 +842,11 @@ lua close the global Lua VM \3 in the cache helper process \d+
 lua close the global Lua VM \3
 lua close the global Lua VM \3 in the cache helper process \d+
 )(?:lua close the global Lua VM [0-9A-F]+
+|lua close the global Lua VM ([0-9A-F]+)
+lua close the global Lua VM \4 in the cache helper process \d+
+lua close the global Lua VM \4 in the cache helper process \d+
+lua close the global Lua VM \4 
+lua close the global Lua VM \4
 )*\z/
 --- no_error_log
 [error]
@@ -1022,6 +1027,6 @@ no_such_error_log
 --- response_body
 hello world
 --- error_log eval
-qr|init_worker_by_lua_file error: .*lua-nginx-module/t/servroot/html/init.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|
+qr|init_worker_by_lua_file error: .*?t/servroot\w*/html/init.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|
 --- no_error_log
 no_such_error_log
