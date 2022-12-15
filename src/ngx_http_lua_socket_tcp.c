@@ -4864,11 +4864,13 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
 
         /* matched */
 
-        dd("adding pending data: %.*s", (int) (old_state + 1 - state),
+        int pending_bytes = old_state + 1 - state;
+
+        dd("adding pending data: %.*s", (int) pending_bytes,
            (char *) pat);
 
         rc = ngx_http_lua_socket_add_pending_data(r, u, b->pos, i, pat,
-                                                  old_state + 1 - state,
+                                                  pending_bytes,
                                                   old_state);
 
         if (rc != NGX_OK) {
@@ -4879,14 +4881,14 @@ ngx_http_lua_socket_read_until(void *data, ssize_t bytes)
         i++;
 
         if (u->length) {
-            if (u->rest <= (size_t) state) {
+            if (u->rest <= (size_t) pending_bytes) {
                 u->rest = 0;
                 cp->state = state;
                 b->pos += i;
                 return NGX_OK;
 
             } else {
-                u->rest -= state;
+                u->rest -= pending_bytes;
             }
         }
 
