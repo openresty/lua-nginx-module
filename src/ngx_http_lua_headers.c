@@ -84,6 +84,12 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         break;
 #endif
 
+#ifdef NGX_HTTP_VERSION_30
+    case NGX_HTTP_VERSION_30:
+        lua_pushnumber(L, 3.0);
+        break;
+#endif
+
     default:
         lua_pushnil(L);
         break;
