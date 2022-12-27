@@ -75,6 +75,8 @@ static void ngx_http_lua_socket_dummy_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static int ngx_http_lua_socket_tcp_receive_helper(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
+static void ngx_http_lua_socket_tcp_read_prepare(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, void *data, lua_State *L);
 static ngx_int_t ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u);
 static int ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
@@ -2163,8 +2165,6 @@ ngx_http_lua_socket_tcp_receive_helper(ngx_http_request_t *r,
     ngx_http_lua_ctx_t                  *ctx;
     ngx_http_lua_co_ctx_t               *coctx;
 
-    u->input_filter_ctx = u;
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (u->bufs_in == NULL) {
@@ -2192,6 +2192,8 @@ ngx_http_lua_socket_tcp_receive_helper(ngx_http_request_t *r,
 
     u->read_waiting = 0;
     u->read_co_ctx = NULL;
+
+    ngx_http_lua_socket_tcp_read_prepare(r, u, u, L);
 
     rc = ngx_http_lua_socket_tcp_read(r, u);
 
@@ -2511,6 +2513,81 @@ ngx_http_lua_socket_read_any(void *data, ssize_t bytes)
     }
 
     return rc;
+}
+
+
+static void
+ngx_http_lua_socket_tcp_read_prepare(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, void *data, lua_State *L)
+{
+    ngx_http_lua_ctx_t                  *ctx;
+    ngx_chain_t                         *new_cl;
+    ngx_buf_t                           *b;
+    off_t                                size;
+
+    ngx_http_lua_socket_compiled_pattern_t     *cp;
+
+    /* input_filter_ctx doesn't change, no need recovering */
+    if (u->input_filter_ctx == data) {
+        return;
+    }
+
+    /* last input_filter_ctx is null or upstream, no data pending */
+    if (u->input_filter_ctx == NULL || u->input_filter_ctx == u) {
+        u->input_filter_ctx = data;
+        return;
+    }
+
+    /* compiled pattern may be with data pending */
+
+    cp = u->input_filter_ctx;
+    u->input_filter_ctx = data;
+
+    /* no data pending */
+    if (cp->state <= 0) {
+        return;
+    }
+
+    b = &u->buffer;
+
+    if (b->pos - b->start >= cp->state) {
+        b->pos -= cp->state;
+
+        u->buf_in->buf->pos = b->pos;
+        u->buf_in->buf->last = b->pos;
+
+        /* reset dfa state for future matching */
+        cp->state = 0;
+        return;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+
+    size = ngx_buf_size(b);
+
+    new_cl =
+        ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
+                                        &ctx->free_recv_bufs,
+                                        cp->state + size);
+
+    if (new_cl == NULL) {
+        luaL_error(L, "no memory");
+        return;
+    }
+
+    ngx_memcpy(b, new_cl->buf, sizeof(ngx_buf_t));
+
+    b->last = ngx_copy(b->last, cp->pattern.data, cp->state);
+    b->last = ngx_copy(b->last, u->buf_in->buf->pos, size);
+
+    u->buf_in->next = ctx->free_recv_bufs;
+    ctx->free_recv_bufs = u->buf_in;
+
+    u->bufs_in = new_cl;
+    u->buf_in = new_cl;
+
+    /* reset dfa state for future matching */
+    cp->state = 0;
 }
 
 
@@ -4551,8 +4628,6 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
         (u_char *) lua_tolstring(L, lua_upvalueindex(2),
                                  &cp->pattern.len);
 
-    u->input_filter_ctx = cp;
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     if (u->bufs_in == NULL) {
@@ -4578,6 +4653,8 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     u->read_waiting = 0;
     u->read_co_ctx = NULL;
+
+    ngx_http_lua_socket_tcp_read_prepare(r, u, cp, L);
 
     rc = ngx_http_lua_socket_tcp_read(r, u);
 
@@ -4907,8 +4984,9 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
 {
     ngx_http_lua_socket_compiled_pattern_t      *cp;
 
-    ngx_http_lua_dfa_edge_t         *edge, *p;
-    unsigned                         i;
+    ngx_http_lua_socket_tcp_upstream_t      *u;
+    ngx_http_lua_dfa_edge_t                 *edge, *p;
+    unsigned                                 i;
 
     dd("cleanup compiled pattern");
 
@@ -4938,6 +5016,11 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
     ngx_free(cp->recovering);
     cp->recovering = NULL;
 #endif
+
+    u = cp->upstream;
+    if (u->input_filter_ctx == cp) {
+        ngx_http_lua_socket_tcp_read_prepare(u->request, u, NULL, L);
+    }
 
     return 0;
 }
