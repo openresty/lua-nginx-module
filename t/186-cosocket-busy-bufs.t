@@ -30,7 +30,7 @@ __DATA__
             --ngx.flush(true)
 
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("127.0.0.1", 1985)
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port + 1)
             assert(ok)
 
             local last_duration = 0

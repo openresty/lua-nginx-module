@@ -39,7 +39,7 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: www.google.com
+=== TEST 1: www.bing.com
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -48,7 +48,7 @@ __DATA__
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
         content_by_lua '
-            -- avoid flushing google in "check leak" testing mode:
+            -- avoid flushing bing in "check leak" testing mode:
             local counter = package.loaded.counter
             if not counter then
                 counter = 1
@@ -62,7 +62,7 @@ __DATA__
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(2000)
-                local ok, err = sock:connect("www.google.com", 443)
+                local ok, err = sock:connect("www.bing.com", 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -78,7 +78,7 @@ __DATA__
 
                 ngx.say("ssl handshake: ", type(sess))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: www.bing.com\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -107,7 +107,7 @@ GET /t
 --- response_body_like chop
 \Aconnected: 1
 ssl handshake: cdata
-sent http request: 59 bytes.
+sent http request: 57 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
