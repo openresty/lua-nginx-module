@@ -135,6 +135,7 @@ script:
   - rm -fr buildroot
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V
+  - python3 ./util/nc_server.py &
   - ldd `which nginx`|grep -E 'luajit|ssl|pcre'
   - export LD_PRELOAD=$PWD/mockeagain/mockeagain.so
   - export LD_LIBRARY_PATH=$PWD/mockeagain:$LD_LIBRARY_PATH

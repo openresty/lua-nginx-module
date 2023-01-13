@@ -1275,12 +1275,6 @@ location /t {
         ngx.say("Hello world")
     }
 }
---- user_files
->>> exit.lua
-    ngx.log(ngx.debug, "pass")
-    error("failed to init"
-    ngx.log(ngx.debug, "unreachable")
-
 --- request
     GET /t
 --- response_body
