@@ -8,6 +8,7 @@ log_level('debug');
 
 repeat_each(3);
 
+# NB: the shutdown_error_log block is independent from repeat times
 plan tests => repeat_each() * (blocks() * 2 + 33) + 1;
 
 our $HtmlDir = html_dir;
