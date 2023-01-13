@@ -2535,6 +2535,14 @@ ngx_http_lua_socket_tcp_read(ngx_http_request_t *r,
                    "lua tcp socket read data: wait:%d",
                    (int) u->read_waiting);
 
+    /* ngx_shutdown_timer_handler will set c->close and c->error on timeout
+     * when worker_shutdown_timeout is configured.
+     * The rev->ready is false at that time, so we need to set u->eof.
+     */
+    if (c->close && c->error) {
+        u->eof = 1;
+    }
+
     b = &u->buffer;
     read = 0;
 
