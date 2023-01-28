@@ -190,6 +190,9 @@ uintptr_t ngx_http_lua_escape_uri(u_char *dst, u_char *src,
 ngx_int_t ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
     ngx_str_t *dst, int is_name);
 
+ngx_int_t ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
+    ngx_str_t *dst, int is_name);
+
 void ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L);
 
 void ngx_http_lua_process_args_option(ngx_http_request_t *r,
