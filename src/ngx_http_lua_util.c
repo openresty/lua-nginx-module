@@ -4363,7 +4363,7 @@ ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size)
 
 
 ngx_int_t
-ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
+ngx_http_lua_strip_whitespace(ngx_str_t *dst)
 {
     size_t       len;
     u_char      *data;
@@ -4424,7 +4424,7 @@ ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
         ? NGX_HTTP_LUA_ESCAPE_HEADER_NAME : NGX_HTTP_LUA_ESCAPE_HEADER_VALUE;
 
     rc = is_name
-      ? ngx_http_lua_strip_whitespace(dst, len): NGX_OK;
+      ? ngx_http_lua_strip_whitespace(dst): NGX_OK;
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
