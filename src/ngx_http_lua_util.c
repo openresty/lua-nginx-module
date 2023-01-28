@@ -4374,7 +4374,7 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
     len = dst->len;
 
     for (i = 0; i < len; i++) {
-        if (data[i] == ' ' || data[i] == '\t'|| data[i] == CR || data[i] == LF)
+        if (data[i] == ' ' || data[i] == '\t' || data[i] == CR || data[i] == LF)
         {
             continue;
 
@@ -4387,8 +4387,8 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
         return NGX_ERROR;
     }
 
-    for(j = len - 1; j >= 0; j--) {
-        if (data[j] == ' ' || data[j] == '\t'|| data[j] == CR || data[j] == LF)
+    for (j = len - 1; j >= 0; j--) {
+        if (data[j] == ' ' || data[j] == '\t' || data[j] == CR || data[j] == LF)
         {
             continue;
 
