@@ -4377,7 +4377,8 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
         if (data[i] == ' '
             || data[i] == '\t'
             || data[i] == CR
-            || data[i] == LF) {
+            || data[i] == LF)
+        {
             continue;
 
         } else {
@@ -4393,7 +4394,8 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
         if (data[j] == ' '
             || data[j] == '\t'
             || data[j] == CR
-            || data[j] == LF) {
+            || data[j] == LF)
+        {
             continue;
 
         } else {
