@@ -4390,7 +4390,10 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
     }
 
     for (j = len - 1; j >= 0; j--) {
-        if (data[j] == ' ' || data[j] == '\t' || data[j] == CR || data[j] == LF) {
+        if (data[j] == ' '
+            || data[j] == '\t'
+            || data[j] == CR
+            || data[j] == LF) {
             continue;
 
         } else {
