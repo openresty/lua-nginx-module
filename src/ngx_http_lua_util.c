@@ -4361,21 +4361,23 @@ ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size)
     return 0;
 }
 
+
 ngx_int_t
 ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
 {
     size_t       len;
     u_char      *data;
-    ngx_int_t   i;
-    ngx_int_t   j;
+    ngx_int_t    i;
+    ngx_int_t    j;
 
     data = dst->data;
     len = dst->len;
 
     for (i = 0; i < len; i++) {
-        if (data[i] == ' ' || data[i] == '\t'|| data[i] == CR || data[i] == LF) 
+        if (data[i] == ' ' || data[i] == '\t'|| data[i] == CR || data[i] == LF)
         {
             continue;
+        
         } else {
             break;
         }
@@ -4386,19 +4388,21 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst, size_t size)
     }
 
     for(j = len - 1; j >= 0; j--) {
-        if (data[j] == ' ' || data[j] == '\t'|| data[j] == CR || data[j] == LF) 
+        if (data[j] == ' ' || data[j] == '\t'|| data[j] == CR || data[j] == LF)
         {
             continue;
+        
         } else {
             break;
         }
     }
 
-    data=data+i;
-    dst->data=data;
+    data = data + i;
+    dst->data = data;
     dst->len = j - i + 1;
     return NGX_OK;
 }
+
 
 ngx_int_t
 ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
