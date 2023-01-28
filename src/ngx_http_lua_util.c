@@ -4367,8 +4367,8 @@ ngx_http_lua_strip_whitespace(ngx_str_t *dst)
 {
     size_t       len;
     u_char      *data;
-    ngx_int_t    i;
-    ngx_int_t    j;
+    ngx_uint_t   i;
+    ngx_uint_t   j;
 
     data = dst->data;
     len = dst->len;
