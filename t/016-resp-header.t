@@ -2075,7 +2075,7 @@ bar:
 --- request
 GET /t
 --- response_headers
-%0Aheader%3A%20value%0Afoo%3Abar%0Dbar%3Afoo: xx
+header%3A%20value%0Afoo%3Abar%0Dbar%3Afoo: xx
 header:
 foo:
 bar:
