@@ -2226,3 +2226,43 @@ GET /test
 Hello World
 --- no_error_log
 [error]
+
+
+
+=== TEST 98: unsafe header name (with prefix ' ' and suffix ' ')
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header[" header: value\rfoo:bar\nbar:foo "] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+%0Dheader%3A%20value%0Dfoo%3Abar%0Abar%3Afoo: xx
+header:
+foo:
+bar:
+--- no_error_log
+[error]
+
+
+
+=== TEST 99: unsafe header name (with blank header)
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.header["  "] = "xx"
+            ngx.say("foo")
+        }
+    }
+--- request
+GET /t
+--- response_headers
+%0Dheader%3A%20value%0Dfoo%3Abar%0Abar%3Afoo: xx
+header:
+foo:
+bar:
+--- no_error_log
+[error]
