@@ -2124,7 +2124,7 @@ GET /req-header
 --- request
 GET /bar
 --- response_body_like chomp
-\bFoo%0D: 123%0D%0A\b
+\bFoo: 123%0D%0A\b
 
 
 
