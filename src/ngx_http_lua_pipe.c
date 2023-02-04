@@ -620,7 +620,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
     ngx_http_lua_pipe_node_t       *pipe_node;
     struct sigaction                sa;
     ngx_http_lua_pipe_signal_t     *sig;
-    ngx_http_cleanup_t             *cln;
+    ngx_pool_cleanup_t             *cln;
     sigset_t                        set;
 
     pool_size = ngx_align(NGX_MIN_POOL_SIZE + buffer_size * 2,
@@ -909,7 +909,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
     }
 
     if (pp->cleanup == NULL) {
-        cln = ngx_http_lua_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
 
         if (cln == NULL) {
             *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "no memory")
@@ -917,7 +917,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
             goto close_in_out_err_fd;
         }
 
-        cln->handler = (ngx_http_cleanup_pt) ngx_http_lua_ffi_pipe_proc_destroy;
+        cln->handler = (ngx_pool_cleanup_pt) ngx_http_lua_ffi_pipe_proc_destroy;
         cln->data = proc;
         pp->cleanup = &cln->handler;
         pp->r = r;
