@@ -314,12 +314,10 @@ failed to bind: bad address
         local function tcp()
             local sock = ngx.socket.tcp()
 
-            ---[[
             local ok, err = sock:bind("127.0.0.1")
             if not ok then
                 ngx.log(ngx.ERR, "failed to bind")
             end
-            --]]
 
             package.loaded.share_sock = sock
         end
