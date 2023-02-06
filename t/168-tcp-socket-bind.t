@@ -340,17 +340,25 @@ failed to bind: bad address
             ngx.sleep(0.002)
 
             local sock = package.loaded.share_sock
+            if sock ~= nil then
+                package.loaded.share_sock = nil
 
-            local ok, err = sock:connect("127.0.0.1", port)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
+                local ok, err = sock:connect("127.0.0.1", port)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                sock:close()
+                collectgarbage("collect")
+            else
+                -- the sock from package.loaded.share_sock is just
+                -- for the first request after worker init
+                -- add following code to keep the same result for other request
+                ngx.say("connected: ", 1)
             end
-
-            ngx.say("connected: ", ok)
-
-            sock:close()
-            collectgarbage("collect")
         }
     }
 --- request
