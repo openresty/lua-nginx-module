@@ -64,7 +64,7 @@ before_install:
   - sudo apt install --only-upgrade ca-certificates
   - '! grep -n -P ''(?<=.{80}).+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Found C source lines exceeding 80 columns." > /dev/stderr; exit 1)'
   - '! grep -n -P ''\t+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Cannot use tabs." > /dev/stderr; exit 1)'
-  - sudo cpanm --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
+  - sudo /usr/bin/perl $(comamnd -v cpanm) --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
 
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache http://openresty.org/download/drizzle7-$DRIZZLE_VER.tar.gz; fi
