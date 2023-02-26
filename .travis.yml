@@ -96,7 +96,7 @@ install:
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
 
 before_script:
-  - mysql -uroot -e 'create database ngx_test; grant all on ngx_test.* to "ngx_test"@"%" identified by "ngx_test"; flush privileges;'
+  - mysql -uroot -e "create database ngx_test; CREATE USER 'ngx_test'@'%' IDENTIFIED BY 'ngx_test'; grant all on ngx_test.* to 'ngx_test'@'%'; flush privileges;"
 
 script:
   - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
