@@ -24,6 +24,7 @@ addons:
       - libtest-longstring-perl
       - liblist-moreutils-perl
       - libgd-dev
+      - python
 
 cache:
   directories:
