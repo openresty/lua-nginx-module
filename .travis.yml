@@ -106,6 +106,7 @@ script:
   - sudo iptables -I OUTPUT -p tcp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo iptables -I OUTPUT -p udp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo ip route add prohibit 0.0.0.1/32
+  - sudo sysctl -w kernel.pid_max=10000
   - cd luajit2/
   - make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2' > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
