@@ -1,4 +1,4 @@
-dist: focal
+dist: bionic
 
 branches:
   only:
@@ -24,7 +24,6 @@ addons:
       - libtest-longstring-perl
       - liblist-moreutils-perl
       - libgd-dev
-      - python
 
 cache:
   directories:
@@ -92,6 +91,7 @@ install:
   - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
   - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
+  - git clone https://github.com/spacewander/lua-resty-rsa.git ../lua-resty-rsa
   - git clone https://github.com/openresty/lua-resty-string.git ../lua-resty-string
   - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
