@@ -8200,7 +8200,7 @@ tcpsock:setoption
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility and does nothing for now. Its functionality is implemented `v0.10.18`.
+This function is added for [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) API compatibility, its functionality is implemented `v0.10.18`.
 
 This feature was first introduced in the `v0.5.0rc1` release.
 
