@@ -94,7 +94,7 @@ END
     case "$NGX_PLATFORM" in
         Darwin:*)
             case "$NGX_MACHINE" in
-                amd64 | arm64 | x86_64 | i386)
+                amd64 | x86_64 | i386)
                     echo "adding extra linking options needed by LuaJIT on $NGX_MACHINE"
                     luajit_ld_opt="$luajit_ld_opt -pagezero_size 10000 -image_base 100000000"
                     ngx_feature_libs="$ngx_feature_libs -pagezero_size 10000 -image_base 100000000"
