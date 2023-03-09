@@ -6483,7 +6483,7 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
 
     fd = u->peer.connection->fd;
 
-    if (fd == (ngx_socket_t) -1) {
+    if (fd == (int) -1) {
         *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
         return NGX_ERROR;
     }
@@ -6540,7 +6540,7 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
 
     fd = u->peer.connection->fd;
 
-    if (fd == (ngx_socket_t) -1) {
+    if (fd == (int) -1) {
         *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
         return NGX_ERROR;
     }
@@ -6601,7 +6601,7 @@ ngx_http_lua_ffi_socket_tcp_hack_fd(ngx_http_lua_socket_tcp_upstream_t *u,
     }
 
     rc = u->peer.connection->fd;
-    if (rc == (ngx_socket_t) -1) {
+    if (rc == (int) -1) {
         *errlen = ngx_snprintf(err, *errlen, "invalid socket fd") - err;
         return -1;
     }
