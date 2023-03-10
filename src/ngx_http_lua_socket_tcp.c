@@ -1744,7 +1744,7 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
         /* read rest of the chain */
 
-        for (i = 1; i < sk_X509_num(chain); i++) {
+        for (i = 1; i < (ngx_int_t) sk_X509_num(chain); i++) {
             x509 = sk_X509_value(chain, i);
             if (x509 == NULL) {
                 ERR_clear_error();
