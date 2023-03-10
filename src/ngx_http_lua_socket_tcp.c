@@ -1634,7 +1634,8 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
     int ocsp_status_req, STACK_OF(X509) *chain, EVP_PKEY *pkey,
     const char **errmsg)
 {
-    ngx_int_t                rc, i;
+    ngx_int_t                rc;
+    size_t                   i;
     ngx_connection_t        *c;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_lua_co_ctx_t   *coctx;
