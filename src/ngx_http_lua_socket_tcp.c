@@ -1634,8 +1634,7 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
     int ocsp_status_req, STACK_OF(X509) *chain, EVP_PKEY *pkey,
     const char **errmsg)
 {
-    ngx_int_t                rc;
-    size_t                   i;
+    ngx_int_t                rc, i;
     ngx_connection_t        *c;
     ngx_http_lua_ctx_t      *ctx;
     ngx_http_lua_co_ctx_t   *coctx;
@@ -1745,7 +1744,7 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
         /* read rest of the chain */
 
-        for (i = 1; i < sk_X509_num(chain); i++) {
+        for (i = 1; i < (ngx_int_t) sk_X509_num(chain); i++) {
             x509 = sk_X509_value(chain, i);
             if (x509 == NULL) {
                 ERR_clear_error();
