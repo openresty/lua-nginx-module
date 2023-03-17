@@ -104,7 +104,7 @@ ngx_http_lua_uthread_spawn(lua_State *L)
 static int
 ngx_http_lua_uthread_wait(lua_State *L)
 {
-    int                          i, nargs, nrets;
+    int                          i, nargs, nrets, dead_count;
     lua_State                   *sub_co;
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
@@ -128,6 +128,8 @@ ngx_http_lua_uthread_wait(lua_State *L)
     if (nargs == 0) {
         return luaL_error(L, "at least one coroutine should be specified");
     }
+
+    dead_count = 0;
 
     for (i = 1; i <= nargs; i++) {
         sub_co = lua_tothread(L, i);
@@ -172,11 +174,11 @@ ngx_http_lua_uthread_wait(lua_State *L)
             return nrets;
 
         case NGX_HTTP_LUA_CO_DEAD:
-            dd("uthread already waited: %p (parent %p)", sub_coctx,
-               coctx);
+            dd("uthread already waited: %p (parent %p), dead/total: %d/%d",
+               sub_coctx, coctx, dead_count + 1, nargs);
 
-            if (i < nargs) {
-                /* just ignore it if it is not the last one */
+            if (++dead_count < nargs) {
+                /* just ignore it if not all threads are dead */
                 continue;
             }
 
