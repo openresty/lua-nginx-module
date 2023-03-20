@@ -1,6 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-# vim:set ft= ts=4 sw=4 et fdm=marker:
-  
 our $SkipReason;
 
 BEGIN {
