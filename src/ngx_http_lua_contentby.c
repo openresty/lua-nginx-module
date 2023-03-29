@@ -195,8 +195,8 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         return rc;
     }
 
-/* http2 read body may break http2 stream process */
-/* https://github.com/openresty/lua-nginx-module/issues/2172 */
+/* http2 read body may break http2 stream process
+ * https://github.com/openresty/lua-nginx-module/issues/2172 */
 #if (NGX_HTTP_V2)
     if (llcf->force_read_body && !ctx->read_body_done && !r->main->stream) {
 #else
