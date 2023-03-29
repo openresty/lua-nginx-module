@@ -85,6 +85,14 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "request object not found");
     }
 
+/* http2 read body may break http2 stream process */
+/* https://github.com/openresty/lua-nginx-module/issues/2172 */
+#if (NGX_HTTP_V2)
+    if (r->main->stream) {
+        return luaL_error(L, "http2 requests not supported yet");
+    }
+#endif
+
     r->request_body_in_single_buf = 1;
     r->request_body_in_persistent_file = 1;
     r->request_body_in_clean_file = 1;
@@ -311,6 +319,14 @@ ngx_http_lua_ngx_req_get_body_file(lua_State *L)
     if (r == NULL) {
         return luaL_error(L, "request object not found");
     }
+
+// http2 read body may break http2 stream process
+// https://github.com/openresty/lua-nginx-module/issues/2172
+#if (NGX_HTTP_V2)
+    if (r->main->stream) {
+        return luaL_error(L, "http2 requests not supported yet");
+    }
+#endif
 
     ngx_http_lua_check_fake_request(L, r);
 
