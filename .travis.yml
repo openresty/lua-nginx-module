@@ -91,12 +91,13 @@ install:
   - git clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
   - git clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
   - git clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
+  - git clone https://github.com/spacewander/lua-resty-rsa.git ../lua-resty-rsa
   - git clone https://github.com/openresty/lua-resty-string.git ../lua-resty-string
   - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
 
 before_script:
-  - mysql -uroot -e 'create database ngx_test; grant all on ngx_test.* to "ngx_test"@"%" identified by "ngx_test"; flush privileges;'
+  - mysql -uroot -e "create database ngx_test; CREATE USER 'ngx_test'@'%' IDENTIFIED BY 'ngx_test'; grant all on ngx_test.* to 'ngx_test'@'%'; flush privileges;"
 
 script:
   - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
@@ -106,6 +107,7 @@ script:
   - sudo iptables -I OUTPUT -p tcp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo iptables -I OUTPUT -p udp --dst 127.0.0.2 --dport 12345 -j DROP
   - sudo ip route add prohibit 0.0.0.1/32
+  - sudo sysctl -w kernel.pid_max=10000
   - cd luajit2/
   - make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2' > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
