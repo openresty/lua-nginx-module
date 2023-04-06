@@ -280,6 +280,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     h->value.len = len;
     h->value.data = uri;
+    h->next = NULL;
     ngx_str_set(&h->key, "Location");
 
     r->headers_out.status = rc;

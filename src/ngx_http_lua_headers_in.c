@@ -280,6 +280,7 @@ new_header:
 
     h->key = hv->key;
     h->value = *value;
+    h->next = NULL;
 
     h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
     if (h->lowcase_key == NULL) {
