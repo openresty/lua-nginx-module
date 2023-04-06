@@ -10,6 +10,8 @@ repeat_each(2);
 
 plan tests => repeat_each() * (4 * blocks());
 
+$ENV{MALLOC_PERTURB_} = 9;
+
 #no_diff();
 no_long_string();
 
