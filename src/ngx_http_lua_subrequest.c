@@ -1667,6 +1667,9 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
 
         clh->hash = ngx_http_lua_content_length_hash;
         clh->key = ngx_http_lua_content_length_header_key;
+#if defined(nginx_version) && nginx_version >= 1023000
+        clh->next = NULL;
+#endif
         clh->lowcase_key = ngx_pnalloc(sr->pool, clh->key.len);
         if (clh->lowcase_key == NULL) {
             return NGX_ERROR;
