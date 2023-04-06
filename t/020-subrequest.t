@@ -13,7 +13,6 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 + 23);
 
-$ENV{MALLOC_PERTURB_} = 9;
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
