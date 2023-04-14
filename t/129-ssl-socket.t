@@ -1034,6 +1034,8 @@ SSL reused session
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_protocols TLSv1 TLSv1.1 TLSV1.2;
+
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;

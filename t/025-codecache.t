@@ -1720,6 +1720,7 @@ grep me: b
     }
 --- config
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
+    lua_ssl_protocols TLSv1 TLSv1.1 TLSV1.2;
 
     location = /proxy {
         proxy_pass http://backend;
