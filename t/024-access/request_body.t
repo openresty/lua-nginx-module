@@ -177,9 +177,9 @@ http finalize request: 500, "/echo_body?" a:1, c:0
 --- config
     location /echo_body {
         lua_need_request_body on;
-        access_by_lua '
+        access_by_lua_block {
             ngx.print(ngx.var.request_body or "nil")
-        ';
+        }
         content_by_lua 'ngx.exit(ngx.OK)';
     }
 --- http2
