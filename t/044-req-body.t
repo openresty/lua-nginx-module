@@ -1750,10 +1750,10 @@ content length: 5
 === TEST 53: HTTP2 read buffered body was discarded
 --- config
     location = /test {
-        content_by_lua '
+        content_by_lua_block {
             local err = pcall(ngx.req.read_body())
             ngx.say(err)
-        ';
+        }
     }
 --- http2
 --- request
