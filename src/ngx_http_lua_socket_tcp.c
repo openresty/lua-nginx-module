@@ -3261,7 +3261,7 @@ ngx_http_lua_socket_tcp_settimeouts(lua_State *L)
     n = lua_gettop(L);
 
     if (n != 4) {
-        return luaL_error(L, "ngx.socket settimeout: expecting 4 arguments "
+        return luaL_error(L, "ngx.socket settimeouts: expecting 4 arguments "
                           "(including the object) but seen %d", lua_gettop(L));
     }
 
