@@ -189,3 +189,4 @@ hello\x00\x01\x02
 world\x03\x04\xff"
 --- response_body eval
 "nil"
+--- no_error_log
