@@ -91,7 +91,7 @@
  * | Int               | At which line this function is defined
  * | [linedefined]     |
  * ---------------------
- * | Int               | At while line this function definition ended
+ * | Int               | At which line this function definition ended
  * | [lastlinedefined] |
  * ---------------------
  * | Char              | Number of upvalues referenced by this function
