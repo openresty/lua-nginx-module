@@ -128,7 +128,7 @@
  * | Vector            | Debug lineinfo vector
  * | [lineinfo]        | Empty vector here if debug info is stripped
  * ---------------------
- * | Int               | Number of local variable in this function
+ * | Int               | Number of local variables in this function
  * | [sizelocvars]     | 0 if debug info is stripped
  * ---------------------
  * | String            | ------------------------------------
