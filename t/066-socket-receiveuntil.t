@@ -1411,7 +1411,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1425,7 +1425,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1434,7 +1434,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1472,7 +1472,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
@@ -1509,7 +1509,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1523,7 +1523,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1532,7 +1532,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1591,7 +1591,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
@@ -1625,7 +1625,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1639,7 +1639,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1648,7 +1648,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1686,7 +1686,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
@@ -1724,7 +1724,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1738,7 +1738,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1747,7 +1747,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1806,7 +1806,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
@@ -1839,7 +1839,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1853,7 +1853,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1862,7 +1862,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1892,7 +1892,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
@@ -1921,7 +1921,7 @@ close: 1 nil
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
 
-        content_by_lua '
+        content_by_lua_block {
             -- collectgarbage("collect")
 
             local sock = ngx.socket.tcp()
@@ -1935,7 +1935,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -1944,7 +1944,7 @@ close: 1 nil
             end
             ngx.say("request sent: ", bytes)
 
-            local read_headers = sock:receiveuntil("\\r\\n\\r\\n")
+            local read_headers = sock:receiveuntil("\r\n\r\n")
             local headers, err, part = read_headers()
             if not headers then
                 ngx.say("failed to read headers: ", err, " [", part, "]")
@@ -1974,7 +1974,7 @@ close: 1 nil
 
             ok, err = sock:close()
             ngx.say("close: ", ok, " ", err)
-        ';
+        }
     }
 
     location /foo {
