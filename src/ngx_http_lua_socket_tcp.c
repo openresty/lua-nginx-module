@@ -5016,11 +5016,7 @@ ngx_http_lua_socket_cleanup_compiled_pattern(lua_State *L)
 
     u = cp->upstream;
     if (u != NULL) {
-        /* ensure request not released */
-        if (u->cleanup != NULL) {
-            ngx_http_lua_socket_tcp_read_prepare(u->request, u, NULL, L);
-        }
-
+        ngx_http_lua_socket_tcp_read_prepare(u->request, u, NULL, L);
         u->input_filter_ctx = NULL;
     }
 
