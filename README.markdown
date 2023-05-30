@@ -3240,7 +3240,7 @@ lua_socket_pool_size
 
 **default:** *lua_socket_pool_size 30*
 
-**context:** *http, server, location*
+**context:** *http, server, location, location if*
 
 Specifies the size limit (in terms of connection count) for every cosocket connection pool associated with every remote server (i.e., identified by either the host-port pair or the unix domain socket file path).
 
