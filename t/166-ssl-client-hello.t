@@ -117,18 +117,18 @@ lua ssl server name: "test.com"
 --- no_error_log
 [error]
 [alert]
---- grep_error_log eval: qr/ssl_client_hello_by_lua:.*?,|\bssl client hello: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_client_hello_by_lua\(.*?,|\bssl client hello: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
 # before call ssl callback function
 $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/reusable connection: 0
 ssl client hello: connection reusable: 0
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!,/
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
 : qr /reusable connection: 1
 ssl client hello: connection reusable: 1
 reusable connection: 0
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!,/
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
 
 
 
@@ -789,7 +789,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_client_hello_by_lua:2: bad bad bad',
+'runtime error: ssl_client_hello_by_lua(nginx.conf:28):2: bad bad bad',
 'lua_client_hello_by_lua: handler return value: 500, client hello cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
 qr/context: ssl_client_hello_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
@@ -861,7 +861,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_client_hello_by_lua:3: bad bad bad',
+'runtime error: ssl_client_hello_by_lua(nginx.conf:28):3: bad bad bad',
 'lua_client_hello_by_lua: client hello cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
 ]
@@ -1048,7 +1048,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua ssl server name: "test.com"',
-'ssl_client_hello_by_lua:1: API disabled in the context of ssl_client_hello_by_lua*',
+'ssl_client_hello_by_lua(nginx.conf:28):1: API disabled in the context of ssl_client_hello_by_lua*',
 qr/\[info\] .*?callback failed/,
 ]
 
@@ -1479,7 +1479,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl_client_hello_by_lua(nginx.conf:25):1: ssl client hello by lua is running!
 
 --- no_error_log
 [error]
@@ -1574,7 +1574,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua on the server level is running!
+ssl_client_hello_by_lua(nginx.conf:31):1: ssl client hello by lua on the server level is running!
 
 --- no_error_log
 [error]
@@ -1657,7 +1657,7 @@ received: foo
 close: 1 nil
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
 
@@ -1738,7 +1738,7 @@ received: foo
 close: 1 nil
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
 
@@ -1830,7 +1830,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl_client_hello_by_lua(nginx.conf:28):1: ssl client hello by lua is running!
 
 --- no_error_log
 [error]
@@ -1915,7 +1915,7 @@ close: 1 nil
 
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
 
@@ -2018,10 +2018,10 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua in server1 is running!
+ssl_client_hello_by_lua(nginx.conf:29):1: ssl client hello by lua in server1 is running!
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua in server2 is running!
+ssl client hello by lua in server2 is running!
 [error]
 [alert]
 
@@ -2121,7 +2121,7 @@ qr/\[error\] .*? send\(\) failed/,
 ]
 --- no_error_log
 [alert]
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 
 
 
