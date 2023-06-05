@@ -48,6 +48,8 @@ static char *ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static ngx_int_t ngx_http_lua_init(ngx_conf_t *cf);
 static char *ngx_http_lua_lowat_check(ngx_conf_t *cf, void *post, void *data);
 #if (NGX_HTTP_SSL)
+static ngx_int_t ngx_http_lua_merge_ssl(ngx_conf_t *cf,
+    ngx_http_lua_loc_conf_t *conf, ngx_http_lua_loc_conf_t *prev);
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
 #if (nginx_version >= 1019004)
@@ -1464,6 +1466,10 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
 #if (NGX_HTTP_SSL)
 
+    if (ngx_http_lua_merge_ssl(cf, conf, prev) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
     ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
                                  (NGX_CONF_BITMASK_SET
                                   |NGX_SSL_TLSv1|NGX_SSL_TLSv1_1
@@ -1528,16 +1534,60 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 #if (NGX_HTTP_SSL)
 
 static ngx_int_t
+ngx_http_lua_merge_ssl(ngx_conf_t *cf,
+    ngx_http_lua_loc_conf_t *conf, ngx_http_lua_loc_conf_t *prev)
+{
+    ngx_uint_t  preserve;
+
+    if (conf->ssl_protocols == 0
+        && conf->ssl_ciphers.data == NULL
+        && conf->ssl_verify_depth == NGX_CONF_UNSET_UINT
+        && conf->ssl_trusted_certificate.data == NULL
+        && conf->ssl_crl.data == NULL
+#if (nginx_version >= 1019004)
+        && conf->ssl_conf_commands == NGX_CONF_UNSET_PTR
+#endif
+       )
+    {
+        if (prev->ssl) {
+            conf->ssl = prev->ssl;
+            return NGX_OK;
+        }
+
+        preserve = 1;
+
+    } else {
+        preserve = 0;
+    }
+
+    conf->ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
+    if (conf->ssl == NULL) {
+        return NGX_ERROR;
+    }
+
+    conf->ssl->log = cf->log;
+
+    /*
+     * special handling to preserve conf->ssl_* in the "http" section
+     * to inherit it to all servers
+     */
+
+    if (preserve) {
+        prev->ssl = conf->ssl;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
 ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 {
     ngx_pool_cleanup_t  *cln;
 
-    llcf->ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
-    if (llcf->ssl == NULL) {
-        return NGX_ERROR;
+    if (llcf->ssl->ctx) {
+        return NGX_OK;
     }
-
-    llcf->ssl->log = cf->log;
 
     if (ngx_ssl_create(llcf->ssl, llcf->ssl_protocols, NULL) != NGX_OK) {
         return NGX_ERROR;
