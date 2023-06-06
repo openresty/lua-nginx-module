@@ -865,7 +865,9 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT
                                | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT);
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
+                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
+                               | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
