@@ -9358,7 +9358,7 @@ The second argument `module_name` specifies the lua module name to execute in th
 
 The third argument `func_name` specifies the function field in the module table as the second argument.
 
-The type of `arg`s must be one of type below:
+The type of `args` must be one of type below:
 
 * boolean
 * number
