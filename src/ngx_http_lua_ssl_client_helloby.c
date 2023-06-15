@@ -449,7 +449,7 @@ ngx_http_lua_ssl_client_hello_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_int_t                rc;
     lua_State               *co;
     ngx_http_lua_ctx_t      *ctx;
-    ngx_http_cleanup_t      *cln;
+    ngx_pool_cleanup_t      *cln;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -503,7 +503,7 @@ ngx_http_lua_ssl_client_hello_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /* register request cleanup hooks */
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             rc = NGX_ERROR;
             ngx_http_lua_finalize_request(r, rc);
