@@ -1562,6 +1562,8 @@ ngx_http_lua_merge_ssl(ngx_conf_t *cf,
     if (conf->ssl_protocols == 0
         && conf->ssl_ciphers.data == NULL
         && conf->ssl_verify_depth == NGX_CONF_UNSET_UINT
+        && conf->ssl_certificates == NGX_CONF_UNSET_PTR
+        && conf->ssl_certificate_keys == NGX_CONF_UNSET_PTR
         && conf->ssl_trusted_certificate.data == NULL
         && conf->ssl_crl.data == NULL
 #if (nginx_version >= 1019004)
@@ -1619,7 +1621,7 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
                           "for certificate \"%V\"",
                           ((ngx_str_t *) llcf->ssl_certificates->elts)
                           + llcf->ssl_certificates->nelts - 1);
-            return NGX_CONF_ERROR;
+            return NGX_ERROR;
         }
     }
 
