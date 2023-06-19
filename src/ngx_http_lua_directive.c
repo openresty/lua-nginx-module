@@ -1436,7 +1436,7 @@ ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
 {
     lua_State                   *L;
     ngx_http_lua_ctx_t          *ctx;
-    ngx_http_cleanup_t          *cln;
+    ngx_pool_cleanup_t          *cln;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
@@ -1451,7 +1451,7 @@ ngx_http_lua_set_by_lua_init(ngx_http_request_t *r)
     }
 
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             return NGX_ERROR;
         }

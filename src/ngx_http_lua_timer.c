@@ -519,7 +519,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     ngx_connection_t        *c = NULL;
     ngx_http_request_t      *r = NULL;
     ngx_http_lua_ctx_t      *ctx;
-    ngx_http_cleanup_t      *cln;
+    ngx_pool_cleanup_t      *cln;
     ngx_pool_cleanup_t      *pcln;
 
     ngx_http_lua_timer_ctx_t         tctx;
@@ -620,7 +620,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
 
     L = ngx_http_lua_get_lua_vm(r, ctx);
 
-    cln = ngx_http_cleanup_add(r, 0);
+    cln = ngx_pool_cleanup_add(r->pool, 0);
     if (cln == NULL) {
         errmsg = "could not add request cleanup";
         goto failed;

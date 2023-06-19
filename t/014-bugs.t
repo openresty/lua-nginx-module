@@ -1283,3 +1283,52 @@ Hello world
 --- shutdown_error_log eval
 qr|failed to read a line: closed|
 --- timeout: 1.2
+
+
+
+=== TEST 48: nginx crashes when encountering an illegal http if header
+crash with ngx.send_headers()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    rewrite_by_lua_block {
+        ngx.send_headers()
+        -- ngx.print() -- this also triggers the bug
+    }
+}
+location = /my_error_handler_412 {
+    return 412 "hello";
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 412
+--- response_body eval
+qr/\Ahello\z/
+
+
+
+=== TEST 49: nginx crashes when encountering an illegal http if header
+crash with ngx.print()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    rewrite_by_lua_block {
+        ngx.print()
+    }
+}
+location = /my_error_handler_412 {
+    return 412 "hello";
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 412
+--- response_body eval
+qr/\Ahello\z/
