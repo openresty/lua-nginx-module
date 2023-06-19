@@ -234,7 +234,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
     uint16_t                     old_context;
-    ngx_http_cleanup_t          *cln;
+    ngx_pool_cleanup_t          *cln;
     ngx_chain_t                 *out;
     ngx_chain_t                 *cl, *ln;
     ngx_http_lua_main_conf_t    *lmcf;
@@ -314,7 +314,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             return NGX_ERROR;
         }

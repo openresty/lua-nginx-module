@@ -591,7 +591,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_co_ctx_t           *coctx;
     ngx_connection_t                *c;
-    ngx_http_cleanup_t              *cln;
+    ngx_pool_cleanup_t              *cln;
     ngx_http_upstream_resolved_t    *ur;
     ngx_int_t                        rc;
     ngx_http_lua_udp_connection_t   *uc;
@@ -625,7 +625,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     }
 
     if (u->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_ERROR;
             lua_pushnil(L);

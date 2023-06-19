@@ -245,7 +245,7 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_event_t         *rev;
     ngx_connection_t    *c;
     ngx_http_lua_ctx_t  *ctx;
-    ngx_http_cleanup_t  *cln;
+    ngx_pool_cleanup_t  *cln;
 
     ngx_http_lua_loc_conf_t     *llcf;
 
@@ -296,9 +296,9 @@ ngx_http_lua_access_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  }}} */
 
-    /*  {{{ register request cleanup hooks */
+    /*  {{{ register nginx pool cleanup hooks */
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
