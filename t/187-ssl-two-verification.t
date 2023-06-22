@@ -1,55 +1,24 @@
-# vim:set ft= ts=4 sw=4 et:
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+
 use Test::Nginx::Socket::Lua;
-use Cwd qw(cwd);
 
-repeat_each(2);
+repeat_each(3);
 
-plan tests => repeat_each() * (3 * blocks());
+# All these tests need to have new openssl
+my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
+my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+
+if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
+    plan(skip_all => "too old OpenSSL, need 1.1.1, was $1");
+} else {
+    plan tests => repeat_each() * (blocks() * 6 + 6);
+}
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
-$ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
-$ENV{TEST_NGINX_STREAM_REDIS_PORT} ||= 12345;
+$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 
-my $MainConfig = qq{
-    stream {
-        server {
-            listen unix:$ENV{TEST_NGINX_HTML_DIR}/nginx.sock;
-            listen unix:$ENV{TEST_NGINX_HTML_DIR}/nginx-ssl.sock ssl;
-            listen 127.0.0.1:$ENV{TEST_NGINX_STREAM_REDIS_PORT} ssl;
-
-            ssl_certificate ../../cert/redis.crt;
-            ssl_certificate_key ../../cert/redis.key;
-            ssl_trusted_certificate ../../cert/redis_ca.crt;
-
-            proxy_pass 127.0.0.1:$ENV{TEST_NGINX_REDIS_PORT};
-        }
-    }
-};
-
-my $pwd = cwd();
-my $HttpConfig = qq{
-    lua_package_path "$pwd/lib/?.lua;;";
-};
-
-add_block_preprocessor(sub {
-    my $block = shift;
-
-    if (!defined $block->main_config) {
-        $block->set_value("main_config", $MainConfig);
-    }
-
-    if (!defined $block->http_config) {
-        $block->set_value("http_config", $HttpConfig);
-    }
-
-    if (!defined $block->request) {
-        $block->set_value("request", "GET /t");
-    }
-
-    if (!defined $block->no_error_log) {
-        $block->set_value("no_error_log", "[error]");
-    }
-});
+#log_level 'warn';
+log_level 'debug';
 
 no_long_string();
 #no_diff();
@@ -58,86 +27,110 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: ssl connection (without certificate and certificate_key)
---- config
-    location /t {
-        content_by_lua_block {
-            local redis = require "resty.redis"
-            local red = redis:new()
+=== TEST 1: simple logging
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+        ssl_client_hello_by_lua_block { print("ssl client hello by lua is running!") }
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_trusted_certificate ../../cert/test.crt;
 
-            red:set_timeout(100)
-
-            local ok, err = red:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock", {
-                ssl = true
-            })
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
-
-            ngx.say("ok")
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
+            more_clear_headers Date;
         }
     }
---- request
-    GET /t
---- response_body
-failed to connect: failed to do ssl handshake: handshake failed
-
-=== TEST 2: ssl connection (with certificate and certificate_key)
 --- config
-    lua_ssl_certificate ../../cert/redis.crt;
-    lua_ssl_certificate_key ../../cert/redis.key;
+    server_tokens off;
+    lua_ssl_certificate ../../cert/test.crt;
+    lua_ssl_certificate_key ../../cert/test.key;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
 
     location /t {
         content_by_lua_block {
-            local redis = require "resty.redis"
-            local red = redis:new()
+            do
+                local sock = ngx.socket.tcp()
 
-            red:set_timeout(100)
+                sock:settimeout(2000)
 
-            local ok, err = red:connect("unix:$TEST_NGINX_HTML_DIR/nginx-ssl.sock", {
-                ssl = true
-            })
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
 
-            ngx.say("ok")
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
         }
     }
+
 --- request
-    GET /t
+GET /t
 --- response_body
-ok
+connected: 1
+ssl handshake: cdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
 
-=== TEST 3: ssl connection two-way authentication (with certificate and certificate_key and trusted_certificate)
---- config
-    lua_ssl_certificate ../../cert/redis.crt;
-    lua_ssl_certificate_key ../../cert/redis.key;
-    lua_ssl_trusted_certificate ../../cert/redis_ca.crt;
+--- error_log
+lua ssl server name: "test.com"
 
-    location /t {
-        content_by_lua_block {
-            local redis = require "resty.redis"
-            local red = redis:new()
+--- no_error_log
+[error]
+[alert]
+--- grep_error_log eval: qr/ssl_client_hello_by_lua\(.*?,|\bssl client hello: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log_out eval
+# Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
+# before call ssl callback function
+$Test::Nginx::Util::NginxVersion >= 1.017009 ?
+qr/reusable connection: 0
+ssl client hello: connection reusable: 0
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
+: qr /reusable connection: 1
+ssl client hello: connection reusable: 1
+reusable connection: 0
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
 
-            red:set_timeout(100)
-
-            local ok, err = red:connect("unix:$TEST_NGINX_HTML_DIR/nginx-ssl.sock", {
-                ssl = true,
-                ssl_verify = true
-            })
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
-
-            ngx.say("ok")
-        }
-    }
---- request
-    GET /t
---- response_body
-ok
 
