@@ -11,7 +11,7 @@ my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
     plan(skip_all => "too old OpenSSL, need 1.1.1, was $1");
 } else {
-    plan tests => repeat_each() * (blocks() * 6);
+    plan tests => repeat_each() * (blocks() * 7);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
@@ -31,16 +31,23 @@ __DATA__
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        #listen 127.0.0.1:4433 ssl;
         server_name   test.com;
         ssl_client_hello_by_lua_block { print("ssl client hello by lua is running!") }
         ssl_certificate ../../cert/test.crt;
         ssl_certificate_key ../../cert/test.key;
-        ssl_trusted_certificate ../../cert/test.crt;
+        #ssl_trusted_certificate ../../cert/test.crt;
+        ssl_client_certificate ../../cert/test.crt;
+        ssl_verify_client on;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 
         server_tokens off;
         location /foo {
             default_type 'text/plain';
             content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
+            log_by_lua_block {
+                ngx.log(ngx.INFO, "ssl_client_s_dn: ", ngx.var.ssl_client_s_dn)
+            }
             more_clear_headers Date;
         }
     }
@@ -58,6 +65,7 @@ __DATA__
                 sock:settimeout(2000)
 
                 local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                -- local ok, err = sock:connect("127.0.0.1", 4433)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -116,6 +124,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
+ssl_client_s_dn: emailAddress=agentzh@gmail.com,CN=test.com,OU=OpenResty,O=OpenResty,L=San Francisco,ST=California,C=US
 
 --- no_error_log
 [error]
