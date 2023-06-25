@@ -2857,7 +2857,7 @@ Specifies the file path to the SSL/TLS certificate in PEM format used for the [[
 
 This directive allows you to specify the SSL/TLS certificate that will be presented to server during the SSL/TLS handshake process.
 
-This directive was first introduced in the <code>v0.10.25</code> release.
+This directive was first introduced in the <code>v0.10.26</code> release.
 
 See also [[#lua_ssl_certificate_key|lua_ssl_certificate_key]] and [[#lua_ssl_verify_depth|lua_ssl_verify_depth]].
 
@@ -2873,7 +2873,7 @@ Specifies the file path to the private key associated with the SSL/TLS certifica
 
 This directive allows you to specify the private key file corresponding to the SSL/TLS certificate specified by lua_ssl_certificate. The private key should be in PEM format and must match the certificate.
 
-This directive was first introduced in the <code>v0.10.25</code> release.
+This directive was first introduced in the <code>v0.10.26</code> release.
 
 See also [[#lua_ssl_certificate|lua_ssl_certificate]] and [[#lua_ssl_verify_depth|lua_ssl_verify_depth]].
 
