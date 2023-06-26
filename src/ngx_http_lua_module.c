@@ -650,6 +650,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_loc_conf_t, ssl_verify_depth),
       NULL },
 
+    { ngx_string("lua_ssl_certificate"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_array_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_certificates),
+      NULL },
+
+    { ngx_string("lua_ssl_certificate_key"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_array_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, ssl_certificate_keys),
+      NULL },
+
     { ngx_string("lua_ssl_trusted_certificate"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
@@ -1401,6 +1415,8 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
 #if (NGX_HTTP_SSL)
     conf->ssl_verify_depth = NGX_CONF_UNSET_UINT;
+    conf->ssl_certificates = NGX_CONF_UNSET_PTR;
+    conf->ssl_certificate_keys = NGX_CONF_UNSET_PTR;
 #if (nginx_version >= 1019004)
     conf->ssl_conf_commands = NGX_CONF_UNSET_PTR;
 #endif
@@ -1480,6 +1496,10 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_uint_value(conf->ssl_verify_depth,
                               prev->ssl_verify_depth, 1);
+    ngx_conf_merge_ptr_value(conf->ssl_certificates,
+                             prev->ssl_certificates, NULL);
+    ngx_conf_merge_ptr_value(conf->ssl_certificate_keys,
+                             prev->ssl_certificate_keys, NULL);
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
                              prev->ssl_trusted_certificate, "");
     ngx_conf_merge_str_value(conf->ssl_crl, prev->ssl_crl, "");
@@ -1542,6 +1562,8 @@ ngx_http_lua_merge_ssl(ngx_conf_t *cf,
     if (conf->ssl_protocols == 0
         && conf->ssl_ciphers.data == NULL
         && conf->ssl_verify_depth == NGX_CONF_UNSET_UINT
+        && conf->ssl_certificates == NGX_CONF_UNSET_PTR
+        && conf->ssl_certificate_keys == NGX_CONF_UNSET_PTR
         && conf->ssl_trusted_certificate.data == NULL
         && conf->ssl_crl.data == NULL
 #if (nginx_version >= 1019004)
@@ -1589,6 +1611,20 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
         return NGX_OK;
     }
 
+    if (llcf->ssl_certificates) {
+        if (llcf->ssl_certificate_keys == NULL
+            || llcf->ssl_certificate_keys->nelts
+            < llcf->ssl_certificates->nelts)
+        {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no \"lua_ssl_certificate_key\" is defined "
+                          "for certificate \"%V\"",
+                          ((ngx_str_t *) llcf->ssl_certificates->elts)
+                          + llcf->ssl_certificates->nelts - 1);
+            return NGX_ERROR;
+        }
+    }
+
     if (ngx_ssl_create(llcf->ssl, llcf->ssl_protocols, NULL) != NGX_OK) {
         return NGX_ERROR;
     }
@@ -1609,6 +1645,16 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
         ngx_ssl_error(NGX_LOG_EMERG, cf->log, 0,
                       "SSL_CTX_set_cipher_list(\"%V\") failed",
                       &llcf->ssl_ciphers);
+        return NGX_ERROR;
+    }
+
+    if (llcf->ssl_certificates
+        && ngx_ssl_certificates(cf, llcf->ssl,
+                                llcf->ssl_certificates,
+                                llcf->ssl_certificate_keys,
+                                NULL)
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
