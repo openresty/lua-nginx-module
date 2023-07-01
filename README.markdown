@@ -1166,6 +1166,8 @@ Directives
 * [lua_ssl_ciphers](#lua_ssl_ciphers)
 * [lua_ssl_crl](#lua_ssl_crl)
 * [lua_ssl_protocols](#lua_ssl_protocols)
+* [lua_ssl_certificate](#lua_ssl_certificate)
+* [lua_ssl_certificate_key](#lua_ssl_certificate_key)
 * [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 * [lua_ssl_conf_command](#lua_ssl_conf_command)
@@ -3336,12 +3338,50 @@ This directive was first introduced in the `v0.9.11` release.
 
 [Back to TOC](#directives)
 
+lua_ssl_certificate
+-------------------
+
+**syntax:** *lua_ssl_certificate &lt;file&gt;*
+
+**default:** *none*
+
+**context:** *http, server, location*
+
+Specifies the file path to the SSL/TLS certificate in PEM format used for the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive allows you to specify the SSL/TLS certificate that will be presented to server during the SSL/TLS handshake process.
+
+This directive was first introduced in the `v0.10.26` release.
+
+See also [lua_ssl_certificate_key](#lua_ssl_certificate_key) and [lua_ssl_verify_depth](#lua_ssl_verify_depth).
+
+[Back to TOC](#directives)
+
+lua_ssl_certificate_key
+-----------------------
+
+**syntax:** *lua_ssl_certificate_key &lt;file&gt;*
+
+**default:** *none*
+
+**context:** *http, server, location*
+
+Specifies the file path to the private key associated with the SSL/TLS certificate used in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+This directive allows you to specify the private key file corresponding to the SSL/TLS certificate specified by lua_ssl_certificate. The private key should be in PEM format and must match the certificate.
+
+This directive was first introduced in the `v0.10.26` release.
+
+See also [lua_ssl_certificate](#lua_ssl_certificate) and [lua_ssl_verify_depth](#lua_ssl_verify_depth).
+
+[Back to TOC](#directives)
+
 lua_ssl_trusted_certificate
 ---------------------------
 
 **syntax:** *lua_ssl_trusted_certificate &lt;file&gt;*
 
-**default:** *no*
+**default:** *none*
 
 **context:** *http, server, location*
 
@@ -3366,7 +3406,7 @@ Sets the verification depth in the server certificates chain.
 
 This directive was first introduced in the `v0.9.11` release.
 
-See also [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
+See also [lua_ssl_certificate](#lua_ssl_certificate), [lua_ssl_certificate_key](#lua_ssl_certificate_key) and [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
 
 [Back to TOC](#directives)
 
