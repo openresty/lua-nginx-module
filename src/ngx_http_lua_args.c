@@ -461,7 +461,7 @@ ngx_http_lua_ffi_req_get_uri_args_count(ngx_http_request_t *r, int max,
 
 int
 ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
-    ngx_http_lua_ffi_table_elt_t *out, int count)
+    ngx_http_lua_ffi_table_elt_t *out, int count, int allow_empty_key)
 {
     int                          i, parsing_value = 0;
     u_char                      *last, *p, *q;
@@ -511,7 +511,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
                 /* end of the current pair's value */
                 parsing_value = 0;
 
-                if (out[i].key.len) {
+                if (out[i].key.len > 0 || allow_empty_key) {
                     out[i].value.data = q;
                     out[i].value.len = (int) (dst - q);
                     i++;
@@ -553,7 +553,7 @@ ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r, u_char *buf,
         dd("pushing key or value %.*s", (int) (dst - q), q);
 
         if (parsing_value) {
-            if (out[i].key.len) {
+            if (out[i].key.len > 0 || allow_empty_key) {
                 out[i].value.data = q;
                 out[i].value.len = (int) (dst - q);
                 i++;
