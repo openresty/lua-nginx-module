@@ -5001,7 +5001,7 @@ See also [ngx.req.set_uri](#ngxreqset_uri).
 ngx.req.get_uri_args
 --------------------
 
-**syntax:** *args, err = ngx.req.get_uri_args(max_args?, tab?, allow_empty_key?)*
+**syntax:** *args, err = ngx.req.get_uri_args(max_args?, tab?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, balancer_by_lua&#42;*
 
@@ -5101,15 +5101,6 @@ This argument can be set to zero to remove the limit and to process all request 
 ```
 
 Removing the `max_args` cap is strongly discouraged.
-
-If the key of the argument is empty, the argument will be skipped by default.
-For example, calling `ngx.req.get_uri_args()` against the HTTP request `https://example.com/q?a=b&=d`
-will only get a=b. The optional `allow_empty_key` function argument can be used to override this limit:
-
-
-```lua
- local args, err = ngx.req.get_uri_args(nil, nil, true)
-```
 
 [Back to TOC](#nginx-api-for-lua)
 
