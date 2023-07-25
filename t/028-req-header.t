@@ -274,7 +274,7 @@ Content-Type:
 --- request
 GET /bar
 --- response_body
-Foo: a
+Foo: a, b
 
 
 
