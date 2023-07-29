@@ -2849,7 +2849,7 @@ This directive was first introduced in the <code>v0.9.11</code> release.
 
 '''syntax:''' ''lua_ssl_certificate <file>''
 
-'''default:''' ''no''
+'''default:''' ''none''
 
 '''context:''' ''http, server, location''
 
@@ -2865,7 +2865,7 @@ See also [[#lua_ssl_certificate_key|lua_ssl_certificate_key]] and [[#lua_ssl_ver
 
 '''syntax:''' ''lua_ssl_certificate_key <file>''
 
-'''default:''' ''no''
+'''default:''' ''none''
 
 '''context:''' ''http, server, location''
 
@@ -2881,7 +2881,7 @@ See also [[#lua_ssl_certificate|lua_ssl_certificate]] and [[#lua_ssl_verify_dept
 
 '''syntax:''' ''lua_ssl_trusted_certificate <file>''
 
-'''default:''' ''no''
+'''default:''' ''none''
 
 '''context:''' ''http, server, location''
 
@@ -2903,7 +2903,7 @@ Sets the verification depth in the server certificates chain.
 
 This directive was first introduced in the <code>v0.9.11</code> release.
 
-See also [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]].
+See also [[#lua_ssl_certificate|lua_ssl_certificate]], [[#lua_ssl_certificate_key|lua_ssl_certificate_key]] and [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]].
 
 == lua_ssl_conf_command ==
 
