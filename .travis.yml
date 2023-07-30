@@ -148,4 +148,4 @@ script:
   - dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
   - curl https://www.bing.com
   - curl https://bing.com
-  - /usr/bin/env perl $(command -v prove) -I. -Itest-nginx/lib -r t/162-socket-tls-handshake.t
+  - /usr/bin/env perl $(command -v prove) -I. -Itest-nginx/lib -r t/
