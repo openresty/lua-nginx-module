@@ -9366,12 +9366,6 @@ Only the following ngx_lua APIs could be used in `function_name` function of the
 * `ngx.decode_args`
 * `ngx.quote_sql_str`
 
-* `ngx.re.match`
-* `ngx.re.find`
-* `ngx.re.gmatch`
-* `ngx.re.sub`
-* `ngx.re.gsub`
-
 * `ngx.crc32_short`
 * `ngx.crc32_long`
 * `ngx.hmac_sha1`
