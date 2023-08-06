@@ -24,9 +24,16 @@ force=$2
 
 add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
 
+disable_pcre2=--without-pcre2
+answer=`$root/util/ver-ge "$NGINX_VERSION" 1.25.1`
+if [ "$answer" = "N" ]; then
+    disable_pcre2=""
+fi
+
 time ngx-build $force $version \
             --with-threads \
             --with-pcre-jit \
+            $disable_pcre2 \
             --with-ipv6 \
             --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE_INC" \
             --with-http_v2_module \
