@@ -591,10 +591,14 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
 {
 #if defined(nginx_version) && nginx_version >= 1023000
     ngx_table_elt_t  **headers, **ph, *h;
+
+#if defined(DDEBUG) && (DDEBUG)
     int                nelts;
+#endif
 
     headers = (ngx_table_elt_t **) ((char *) &r->headers_in + hv->offset);
 
+#if defined(DDEBUG) && (DDEBUG)
     if (!hv->no_override && *headers != NULL) {
         nelts = 0;
         for (h = *headers; h; h = h->next) {
@@ -605,6 +609,7 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
 
         dd("clear multi-value headers: %d", nelts);
     }
+#endif
 
     if (ngx_http_set_header_helper(r, hv, value, &h) == NGX_ERROR) {
         return NGX_ERROR;
