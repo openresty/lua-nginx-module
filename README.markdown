@@ -309,6 +309,8 @@ Nginx Compatibility
 
 The latest version of this module is compatible with the following versions of Nginx:
 
+* 1.25.x  (last tested: 1.25.1)
+* 1.21.x  (last tested: 1.21.4)
 * 1.19.x  (last tested: 1.19.3)
 * 1.17.x  (last tested: 1.17.8)
 * 1.15.x  (last tested: 1.15.8)
