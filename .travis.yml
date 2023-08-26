@@ -26,7 +26,6 @@ addons:
       - libgd-dev
       - time
       - cmake
-      - curl
       - libunwind-dev
       - libpsl0
       - wget
@@ -85,6 +84,7 @@ install:
   - if [ "$USE_PCRE2" != "Y" ] && [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz; fi
   - if [ "$USE_PCRE2" = "Y" ] && [ ! -f download-cache/pcre2-$PCRE2_VER.tar.gz ]; then wget -P download-cache https://downloads.sourceforge.net/project/pcre/pcre2/${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz; fi
   - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
+  - wget https://github.com/zhuizhuhaomeng/curl-http3/releases/download/v1.0.0/curl-h3.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
@@ -115,7 +115,8 @@ before_script:
   - mysql -uroot -e "create database ngx_test; CREATE USER 'ngx_test'@'%' IDENTIFIED BY 'ngx_test'; grant all on ngx_test.* to 'ngx_test'@'%'; flush privileges;"
 
 script:
-  - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
+  - sudo tar -C / -xf curl-h3.tar.gz
+  - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl-h3/bin:$PATH
   - ngx-releng > check.txt || true
   - lines=`wc -l check.txt | awk '{print $1}'`; if [ $lines -gt 5 ]; then cat check.txt; exit 1; fi
   - sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT

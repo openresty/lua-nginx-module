@@ -168,7 +168,7 @@ received: OK
 
 
 === TEST 3: upstream sockets close prematurely
---- quic_max_idle_timeout: 1.2
+--- no_http3
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
 --- config
