@@ -34,8 +34,11 @@ __DATA__
 --- response_body
 hello
 world
---- error_log
-pcre JIT compiling result: 1
+--- error_log eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully\n"
+:
+"pcre JIT compiling result: 1\n"
 
 
 
@@ -60,8 +63,11 @@ pcre JIT compiling result: 1
 nil
 nil
 nil
---- error_log
-pcre JIT compiling result: 1
+--- error_log eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully\n"
+:
+"pcre JIT compiling result: 1\n"
 
 
 
@@ -77,8 +83,11 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 done
---- error_log
-pcre JIT compiling result: 1
+--- error_log eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully\n"
+:
+"pcre JIT compiling result: 1\n"
 
 
 
@@ -99,8 +108,11 @@ pcre JIT compiling result: 1
     GET /re
 --- response_body
 hello
---- error_log
-pcre JIT compiling result: 1
+--- error_log eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully\n"
+:
+"pcre JIT compiling result: 1\n"
 
 
 
@@ -124,9 +136,15 @@ hello
 world
 
 --- grep_error_log eval
-qr/pcre JIT compiling result: \d+/
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully"
+:
+"pcre JIT compiling result: 1"
 
 --- grep_error_log_out eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+["pcre2 JIT compiled successfully\n", ""]
+:
 ["pcre JIT compiling result: 1\n", ""]
 
 
@@ -154,9 +172,15 @@ nil
 nil
 
 --- grep_error_log eval
-qr/pcre JIT compiling result: \d+/
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully"
+:
+"pcre JIT compiling result: 1"
 
 --- grep_error_log_out eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+["pcre2 JIT compiled successfully\n", ""]
+:
 ["pcre JIT compiling result: 1\n", ""]
 
 
@@ -175,10 +199,17 @@ qr/pcre JIT compiling result: \d+/
 done
 
 --- grep_error_log eval
-qr/pcre JIT compiling result: \d+/
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully"
+:
+"pcre JIT compiling result: 1"
 
 --- grep_error_log_out eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+["pcre2 JIT compiled successfully\n", ""]
+:
 ["pcre JIT compiling result: 1\n", ""]
+
 
 
 
@@ -201,9 +232,15 @@ qr/pcre JIT compiling result: \d+/
 hello
 
 --- grep_error_log eval
-qr/pcre JIT compiling result: \d+/
+$Test::Nginx::Util::PcreVersion == 2 ?
+"pcre2 JIT compiled successfully"
+:
+"pcre JIT compiling result: 1"
 
 --- grep_error_log_out eval
+$Test::Nginx::Util::PcreVersion == 2 ?
+["pcre2 JIT compiled successfully\n", ""]
+:
 ["pcre JIT compiling result: 1\n", ""]
 
 

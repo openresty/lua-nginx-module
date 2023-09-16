@@ -132,7 +132,6 @@ ngx_http_lua_pcre_malloc_done(ngx_pool_t *old_pool)
     ngx_regex_direct_alloc = 0;
 
     dd("lua pcre pool is %p", ngx_http_lua_pcre_pool);
-
 }
 
 #else

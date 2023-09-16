@@ -409,9 +409,8 @@ ngx_http_lua_regex_jit_compile(ngx_http_lua_regex_t *re, int flags,
 #if (NGX_DEBUG)
 
         } else {
-            /* pcre2 jit compiled successfully */
             ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                           "pcre JIT compiling result: 1");
+                           "pcre2 JIT compiled successfully");
 #   endif /* !(NGX_DEBUG) */
         }
 
@@ -727,11 +726,10 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
     }
 
     if (flags & NGX_LUA_RE_MODE_DFA) {
-
         int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
         rc = pcre2_dfa_match(re->regex, s, len, pos, exec_opts,
                              ngx_regex_match_data, ngx_regex_match_context,
-                             ws, sizeof(ws)/sizeof(ws[0]));
+                             ws, sizeof(ws) / sizeof(ws[0]));
 
 
     } else {
@@ -812,7 +810,8 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
         int ws[NGX_LUA_RE_DFA_MODE_WORKSPACE_COUNT];
         rc = ngx_http_lua_regex_dfa_exec(re->regex, sd, &subj,
                                          (int) pos, cap, ovecsize, ws,
-                                         sizeof(ws)/sizeof(ws[0]), exec_opts);
+                                         sizeof(ws) / sizeof(ws[0]),
+                                         exec_opts);
 
 #else
 
