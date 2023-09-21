@@ -212,7 +212,6 @@ $Test::Nginx::Util::PcreVersion == 2 ?
 
 
 
-
 === TEST 8: gmatch matched but only iterate once and still matches remain + o
 --- config
     location /re {
