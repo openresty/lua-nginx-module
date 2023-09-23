@@ -275,7 +275,6 @@ Content-Type:
 GET /bar
 --- response_body eval
 # Since nginx version 1.23.0, nginx combines same $http_* variable together
-# wtf
 $Test::Nginx::Util::NginxVersion >= 1.023000 ?
 
 "Foo: a, b\n"

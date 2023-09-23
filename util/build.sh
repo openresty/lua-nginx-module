@@ -32,8 +32,12 @@ fi
 
 disable_pcre2=--without-pcre2
 answer=`$root/util/ver-ge "$NGINX_VERSION" 1.25.1`
-if [ "$answer" = "N" ]; then
+if [ "$answer" = "N" ] || [ "$USE_PCRE2" = "Y" ]; then
     disable_pcre2=""
+fi
+if [ "$USE_PCRE2" = "Y" ]; then
+    PCRE_INC=$PCRE2_INC
+    PCRE_LIB=$PCRE2_LIB
 fi
 
 time ngx-build $force $version \
