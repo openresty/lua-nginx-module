@@ -966,7 +966,6 @@ TODO
 
 * cosocket: implement LuaSocket's unconnected UDP API.
 * cosocket: add support in the context of [init_by_lua*](#init_by_lua).
-* cosocket: implement the `bind()` method for stream-typed cosockets.
 * cosocket: review and merge aviramc's [patch](https://github.com/openresty/lua-nginx-module/pull/290) for adding the `bsdrecv` method.
 * cosocket: add configure options for different strategies of handling the cosocket connection exceeding in the pools.
 * review and apply vadim-pavlov's patch for [ngx.location.capture](#ngxlocationcapture)'s `extra_headers` option
