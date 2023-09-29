@@ -28,7 +28,6 @@ addons:
       - cmake
       - libunwind-dev
       - wget
-      - libldap-2.4-2
       - libbrotli1
 
 cache:
