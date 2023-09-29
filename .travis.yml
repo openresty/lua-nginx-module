@@ -27,7 +27,6 @@ addons:
       - time
       - cmake
       - libunwind-dev
-      - libpsl0
       - wget
       - libldap-2.4-2
       - libbrotli1
