@@ -102,7 +102,7 @@ install:
   - git clone https://github.com/spacewander/lua-resty-rsa.git ../lua-resty-rsa
   - git clone https://github.com/openresty/lua-resty-string.git ../lua-resty-string
   - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
-  - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
+  - git clone -b merge-231006 https://github.com/openresty/luajit2.git luajit2
 
 before_script:
   - mysql -uroot -e "create database ngx_test; CREATE USER 'ngx_test'@'%' IDENTIFIED BY 'ngx_test'; grant all on ngx_test.* to 'ngx_test'@'%'; flush privileges;"
