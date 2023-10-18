@@ -42,7 +42,7 @@ typedef struct {
     ngx_http_lua_co_ctx_t   *wait_co_ctx;
     int                      n_args;
     int                      rc;
-    unsigned                 is_abort:1;
+    ngx_uint_t               is_abort:1;
 } ngx_http_lua_worker_thread_ctx_t;
 
 
