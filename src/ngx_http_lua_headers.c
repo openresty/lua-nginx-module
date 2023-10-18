@@ -661,6 +661,14 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 #endif
 
+    for (i = len; i > 0; i--) {
+        if (!isspace(p[i - 1])) {
+            break;
+        }
+
+        len--;
+    }
+
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "no memory");
@@ -1000,6 +1008,14 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
 
     if (r->http_version < NGX_HTTP_VERSION_10) {
         return NGX_DECLINED;
+    }
+
+    for (i = key_len; i > 0; i--) {
+        if (!isspace(key[i - 1])) {
+            break;
+        }
+
+        key_len--;
     }
 
     k.data = ngx_palloc(r->pool, key_len + 1);
