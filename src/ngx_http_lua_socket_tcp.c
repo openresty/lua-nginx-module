@@ -4586,7 +4586,7 @@ ngx_http_lua_socket_receiveuntil_iterator(lua_State *L)
 
     n = lua_gettop(L);
     if (n > 1) {
-        return luaL_error(L, "expecting 0 or 1 arguments, "
+        return luaL_error(L, "expecting 0 or 1 argument, "
                           "but seen %d", n);
     }
 
@@ -5076,7 +5076,7 @@ ngx_http_lua_req_socket(lua_State *L)
         lua_pop(L, 1);
 
     } else {
-        return luaL_error(L, "expecting zero arguments, but got %d",
+        return luaL_error(L, "expecting 0 or 1 argument, but got %d",
                           lua_gettop(L));
     }
 
