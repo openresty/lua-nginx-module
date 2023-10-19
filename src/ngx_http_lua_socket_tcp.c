@@ -2413,7 +2413,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         case LUA_TNUMBER:
             bytes = lua_tointeger(L, 2);
             if (bytes < 0) {
-                return luaL_argerror(L, 2, "bad pattern argument");
+                return luaL_argerror(L, 2, "bad number argument");
             }
 
 #if 1
@@ -2430,7 +2430,7 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
             break;
 
         default:
-            return luaL_argerror(L, 2, "bad pattern argument");
+            return luaL_argerror(L, 2, "bad argument");
             break;
         }
 
