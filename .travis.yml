@@ -80,7 +80,7 @@ before_install:
   - /usr/bin/env perl $(command -v cpanm) --sudo --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
   - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
   - sudo update-alternatives --set python /usr/bin/python2.7
-  - python -V
+  - which python && python -V
 
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/drizzle7-$DRIZZLE_VER.tar.gz; fi
