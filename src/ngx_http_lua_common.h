@@ -219,6 +219,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_int_t            lua_thread_cache_max_entries;
 
+    ngx_hash_t           builtin_headers_in;
     ngx_hash_t           builtin_headers_out;
 
 #if (NGX_PCRE || NGX_PCRE2)

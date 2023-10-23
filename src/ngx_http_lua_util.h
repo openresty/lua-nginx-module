@@ -264,6 +264,10 @@ void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 
 ngx_addr_t *ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len);
 
+ngx_int_t ngx_http_lua_init_builtin_headers(ngx_conf_t *cf,
+    ngx_hash_t *builtin_headers, ngx_http_lua_set_header_t *handlers,
+    ngx_uint_t count, char *name);
+
 size_t ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size);
 
 

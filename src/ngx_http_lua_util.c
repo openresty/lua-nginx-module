@@ -4469,4 +4469,43 @@ ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len)
 }
 
 
+ngx_int_t
+ngx_http_lua_init_builtin_headers(ngx_conf_t *cf, ngx_hash_t *builtin_headers,
+    ngx_http_lua_set_header_t *handlers, ngx_uint_t count, char *name)
+{
+    ngx_array_t                   headers;
+    ngx_hash_key_t               *hk;
+    ngx_hash_init_t               hash;
+
+    if (ngx_array_init(&headers, cf->temp_pool, count, sizeof(ngx_hash_key_t))
+        != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+
+    while (handlers->name.data) {
+        hk = ngx_array_push(&headers);
+        if (hk == NULL) {
+            return NGX_ERROR;
+        }
+
+        hk->key = handlers->name;
+        hk->key_hash = ngx_hash_key_lc(handlers->name.data, handlers->name.len);
+        hk->value = (void *) handlers;
+
+        handlers++;
+    }
+
+    hash.hash = builtin_headers;
+    hash.key = ngx_hash_key_lc;
+    hash.max_size = 512;
+    hash.bucket_size = ngx_align(64, ngx_cacheline_size);
+    hash.name = name;
+    hash.pool = cf->pool;
+    hash.temp_pool = NULL;
+
+    return ngx_hash_init(&hash, headers.elts, headers.nelts);
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -703,43 +703,16 @@ ngx_int_t
 ngx_http_lua_init_builtin_headers_out(ngx_conf_t *cf,
     ngx_http_lua_main_conf_t *lmcf)
 {
-    ngx_array_t                   headers;
-    ngx_hash_key_t               *hk;
-    ngx_hash_init_t               hash;
+    char                         *name = "builtin_headers_out_hash";
+    ngx_hash_t                   *hash = &lmcf->builtin_headers_out;
     ngx_http_lua_set_header_t    *handlers = ngx_http_lua_set_handlers;
     ngx_uint_t                    count;
 
     count = sizeof(ngx_http_lua_set_handlers)
             / sizeof(ngx_http_lua_set_header_t);
 
-    if (ngx_array_init(&headers, cf->temp_pool, count, sizeof(ngx_hash_key_t))
-        != NGX_OK)
-    {
-        return NGX_ERROR;
-    }
 
-    while (handlers->name.data) {
-        hk = ngx_array_push(&headers);
-        if (hk == NULL) {
-            return NGX_ERROR;
-        }
-
-        hk->key = handlers->name;
-        hk->key_hash = ngx_hash_key_lc(handlers->name.data, handlers->name.len);
-        hk->value = (void *) handlers;
-
-        handlers++;
-    }
-
-    hash.hash = &lmcf->builtin_headers_out;
-    hash.key = ngx_hash_key_lc;
-    hash.max_size = 512;
-    hash.bucket_size = ngx_align(64, ngx_cacheline_size);
-    hash.name = "builtin_headers_out_hash";
-    hash.pool = cf->pool;
-    hash.temp_pool = NULL;
-
-    return ngx_hash_init(&hash, headers.elts, headers.nelts);
+    return ngx_http_lua_init_builtin_headers(cf, hash, handlers, count, name);
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

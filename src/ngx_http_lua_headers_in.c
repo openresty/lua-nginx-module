@@ -704,9 +704,10 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     ngx_str_t value, unsigned override)
 {
     ngx_http_lua_header_val_t         hv;
-    ngx_http_lua_set_header_t        *handlers = ngx_http_lua_set_handlers;
+    ngx_http_lua_main_conf_t         *lmcf;
     ngx_int_t                         rc;
-    ngx_uint_t                        i;
+    ngx_http_lua_set_header_t        *lsh;
+    ngx_hash_t                       *hash;
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
@@ -731,30 +732,17 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 
     hv.offset = 0;
     hv.no_override = !override;
-    hv.handler = NULL;
+    hv.handler = ngx_http_set_header;
 
-    for (i = 0; handlers[i].name.len; i++) {
-        if (hv.key.len != handlers[i].name.len
-            || ngx_strncasecmp(hv.key.data, handlers[i].name.data,
-                               handlers[i].name.len) != 0)
-        {
-            dd("hv key comparison: %s <> %s", handlers[i].name.data,
-               hv.key.data);
+    lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
+    hash = &lmcf->builtin_headers_in;
+    lsh = ngx_http_lua_hash_find_lc(hash, hv.hash, hv.key.data, hv.key.len);
 
-            continue;
-        }
+    if (lsh) {
+        dd("Matched handler: %s %s", lsh->name.data, hv.key.data);
 
-        dd("Matched handler: %s %s", handlers[i].name.data, hv.key.data);
-
-        hv.offset = handlers[i].offset;
-        hv.handler = handlers[i].handler;
-
-        break;
-    }
-
-    if (handlers[i].name.len == 0 && handlers[i].handler) {
-        hv.offset = handlers[i].offset;
-        hv.handler = handlers[i].handler;
+        hv.offset = lsh->offset;
+        hv.handler = lsh->handler;
     }
 
 #if 1
@@ -902,6 +890,22 @@ ngx_http_lua_rm_header_helper(ngx_list_t *l, ngx_list_part_t *cur,
     }
 
     return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_init_builtin_headers_in(ngx_conf_t *cf,
+    ngx_http_lua_main_conf_t *lmcf)
+{
+    char                         *name = "builtin_headers_in_hash";
+    ngx_hash_t                   *hash = &lmcf->builtin_headers_in;
+    ngx_http_lua_set_header_t    *handlers = ngx_http_lua_set_handlers;
+    ngx_uint_t                    count;
+
+    count = sizeof(ngx_http_lua_set_handlers)
+            / sizeof(ngx_http_lua_set_header_t);
+
+    return ngx_http_lua_init_builtin_headers(cf, hash, handlers, count, name);
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
