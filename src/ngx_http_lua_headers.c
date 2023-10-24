@@ -662,7 +662,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 #endif
 
     for (i = len; i > 0; i--) {
-        if (!isspace(p[i - 1])) {
+        if (!isblank(p[i - 1])) {
             break;
         }
 
@@ -1011,7 +1011,7 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
     }
 
     for (i = key_len; i > 0; i--) {
-        if (!isspace(key[i - 1])) {
+        if (!isblank(key[i - 1])) {
             break;
         }
 
