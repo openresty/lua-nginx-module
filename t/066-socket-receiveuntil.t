@@ -126,7 +126,7 @@ GET /t
 qq{connected: 1
 request sent: 57
 read: HTTP/1.1 200 OK
-read: Server: nginx
+read: Server: openresty
 read: Content-Type: text/plain
 read: Content-Length: 4
 read: Connection: close
@@ -196,7 +196,7 @@ GET /t
 qq{connected: 1
 request sent: 57
 read: HTTP/1.1 200 OK\r
-Server: nginx\r
+Server: openresty\r
 Content-Type: text/plain\r
 Content-Length: 4\r
 Connection: close
@@ -1344,7 +1344,6 @@ this exposed a memory leak in receiveuntil
 ok
 --- no_error_log
 [error]
-<<<<<<< HEAD
 
 
 

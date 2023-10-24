@@ -135,7 +135,6 @@ ok
 
 --- request
     GET /t
---- response_body
-ok
+--- error_code: 500
 --- error_log
 bind(100.100.100.100) failed (99: Cannot assign requested address)
