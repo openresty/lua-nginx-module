@@ -739,7 +739,7 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
         hv.handler = lsh->handler;
     }
 
-#if 1
+#if 0
     if (hv.handler == NULL) {
         return NGX_ERROR;
     }
