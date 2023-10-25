@@ -4,12 +4,10 @@ Name
 ngx_http_lua_module - Embed the power of Lua into Nginx HTTP Servers.
 
 This module is a core component of [OpenResty](https://openresty.org). If you are using this module,
-then you are essentially using OpenResty.
+then you are essentially using OpenResty :)
 
 *This module is not distributed with the Nginx source.* See
 [the installation instructions](#installation).
-
-This is a core component of OpenResty. If you are using this module, then you are essentially using OpenResty :)
 
 Table of Contents
 =================
