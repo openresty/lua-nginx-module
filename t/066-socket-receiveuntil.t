@@ -126,7 +126,7 @@ GET /t
 qq{connected: 1
 request sent: 57
 read: HTTP/1.1 200 OK
-read: Server: openresty
+read: Server: nginx
 read: Content-Type: text/plain
 read: Content-Length: 4
 read: Connection: close
@@ -196,7 +196,7 @@ GET /t
 qq{connected: 1
 request sent: 57
 read: HTTP/1.1 200 OK\r
-Server: openresty\r
+Server: nginx\r
 Content-Type: text/plain\r
 Content-Length: 4\r
 Connection: close
