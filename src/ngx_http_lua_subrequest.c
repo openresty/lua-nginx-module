@@ -78,11 +78,17 @@ static ngx_int_t ngx_http_post_request_to_head(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_copy_in_file_request_body(ngx_http_request_t *r);
 static ngx_int_t ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
     ngx_http_request_t *pr, int pr_not_chunked);
+static void ngx_http_lua_create_subrequest_headers_metatable(ngx_log_t *log,
+    lua_State *L);
 
 
 enum {
     NGX_HTTP_LUA_SUBREQ_TRUNCATED = 1,
 };
+
+
+char ngx_http_lua_subrequest_headers_metatable_index_key;
+char ngx_http_lua_subrequest_headers_metatable_newindex_key;
 
 
 /* ngx.location.capture is just a thin wrapper around
@@ -1190,6 +1196,23 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
         lua_createtable(co, 0, count + 5); /* res.header */
 
+        lua_createtable(co, 0, 2);
+
+        lua_pushlightuserdata(co, ngx_http_lua_lightudata_mask(
+            subrequest_headers_metatable_index_key));
+        lua_rawget(co, LUA_REGISTRYINDEX);
+        lua_setfield(co, -2, "__index");
+
+        lua_pushlightuserdata(co, ngx_http_lua_lightudata_mask(
+            subrequest_headers_metatable_newindex_key));
+        lua_rawget(co, LUA_REGISTRYINDEX);
+        lua_setfield(co, -2, "__newindex");
+
+        lua_createtable(co, 0, count + 5);
+        lua_setfield(co, -2, "lowcase_keys");
+
+        lua_setmetatable(co, -2);
+
         dd("saving subrequest response headers");
 
         part = &sr_headers->headers.part;
@@ -1226,7 +1249,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             lua_pushvalue(co, -1); /* stack: table key key */
 
             /* check if header already exists */
-            lua_rawget(co, -3); /* stack: table key value */
+            lua_gettable(co, -3); /* stack: table key value */
 
             if (lua_isnil(co, -1)) {
                 lua_pop(co, 1); /* stack: table key */
@@ -1235,7 +1258,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                                 header[i].value.len);
                     /* stack: table key value */
 
-                lua_rawset(co, -3); /* stack: table */
+                lua_settable(co, -3); /* stack: table */
 
             } else {
 
@@ -1253,7 +1276,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
                     lua_rawseti(co, -2, lua_objlen(co, -2) + 1);
                         /* stack: table key table */
 
-                    lua_rawset(co, -3); /* stack: table */
+                    lua_settable(co, -3); /* stack: table */
 
                 } else {
                     lua_pushlstring(co, (char *) header[i].value.data,
@@ -1272,7 +1295,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             lua_pushliteral(co, "Content-Type"); /* header key */
             lua_pushlstring(co, (char *) sr_headers->content_type.data,
                             sr_headers->content_type.len); /* head key value */
-            lua_rawset(co, -3); /* head */
+            lua_settable(co, -3); /* head */
         }
 
         if (sr_headers->content_length == NULL
@@ -1283,7 +1306,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             lua_pushnumber(co, (lua_Number) sr_headers->content_length_n);
                 /* head key value */
 
-            lua_rawset(co, -3); /* head */
+            lua_settable(co, -3); /* head */
         }
 
         /* to work-around an issue in ngx_http_static_module
@@ -1293,7 +1316,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
             lua_pushlstring(co, (char *) sr_headers->location->value.data,
                             sr_headers->location->value.len);
             /* head key value */
-            lua_rawset(co, -3); /* head */
+            lua_settable(co, -3); /* head */
         }
 
         if (sr_headers->last_modified_time != -1) {
@@ -1314,7 +1337,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
             lua_pushliteral(co, "Last-Modified"); /* header key */
             lua_pushlstring(co, (char *) buf, sizeof(buf)); /* head key value */
-            lua_rawset(co, -3); /* head */
+            lua_settable(co, -3); /* head */
         }
 
         lua_setfield(co, -2, "header");
@@ -1325,7 +1348,7 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
 
 
 void
-ngx_http_lua_inject_subrequest_api(lua_State *L)
+ngx_http_lua_inject_subrequest_api(ngx_log_t *log, lua_State *L)
 {
     lua_createtable(L, 0 /* narr */, 2 /* nrec */); /* .location */
 
@@ -1336,6 +1359,8 @@ ngx_http_lua_inject_subrequest_api(lua_State *L)
     lua_setfield(L, -2, "capture_multi");
 
     lua_setfield(L, -2, "location");
+
+    ngx_http_lua_create_subrequest_headers_metatable(log, L);
 }
 
 
@@ -1730,6 +1755,62 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
        (int) pr->headers_in.headers.part.nelts);
 
     return NGX_OK;
+}
+
+
+void
+ngx_http_lua_create_subrequest_headers_metatable(ngx_log_t *log, lua_State *L)
+{
+    int rc;
+    const char index_buf[] =
+        "local table, key = ...\n"
+        "local lower_key = string.lower(key)\n"
+        "local lowcase_keys getmetatable(table).lowcase_keys\n"
+        "return rawget(table, lowcase_keys[lower_key])";
+    const char newindex_buf[] =
+        "local table, key, value = ...\n"
+        "local lowcase_keys = getmetatable(table).lowcase_keys\n"
+        "local lower_key = string.lower(key)\n"
+        "local prev_key = lowcase_keys[lower_key]\n"
+        "if prev_key == nil then\n"
+        "    lowcase_keys[lower_key] = key\n"
+        "else\n"
+        "    key = prev_key\n"
+        "end\n"
+        "rawset(table, key, value)";
+
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                          subrequest_headers_metatable_index_key));
+
+    rc = luaL_loadbuffer(L, index_buf, sizeof(index_buf) - 1,
+        "=subrequest headers metatable __index");
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to load Lua code for the __index metamethod for "
+                      "subrequest headers: %i: %s", rc, lua_tostring(L, -1));
+
+        lua_pop(L, 2);
+        return;
+    }
+
+    lua_rawset(L, LUA_REGISTRYINDEX);
+
+    lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
+                        subrequest_headers_metatable_newindex_key));
+
+
+    rc = luaL_loadbuffer(L, newindex_buf, sizeof(newindex_buf) - 1,
+        "=subrequest headers metatable __newindex");
+    if (rc != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "failed to load Lua code for the newindex metamethod for "
+                      "subrequest headers: %i: %s", rc, lua_tostring(L, -1));
+
+        lua_pop(L, 2);
+        return;
+    }
+
+    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
