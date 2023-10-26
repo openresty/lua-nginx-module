@@ -135,7 +135,8 @@ ok
 
 --- request
     GET /t
---- response_body
-ok
+--- response_body_like chomp
+500 Internal Server Error
+--- error_code: 500
 --- error_log
 bind(100.100.100.100) failed (99: Cannot assign requested address)

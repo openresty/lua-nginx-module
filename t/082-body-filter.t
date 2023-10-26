@@ -842,7 +842,6 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of body_filter_by_lua*
-<<<<<<< HEAD
 
 
 
