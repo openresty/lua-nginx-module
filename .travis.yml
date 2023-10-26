@@ -77,11 +77,12 @@ before_install:
   - '! grep -n -P ''(?<=.{80}).+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Found C source lines exceeding 80 columns." > /dev/stderr; exit 1)'
   - '! grep -n -P ''\t+'' --color `find src -name ''*.c''` `find . -name ''*.h''` || (echo "ERROR: Cannot use tabs." > /dev/stderr; exit 1)'
   - /usr/bin/env perl $(command -v cpanm) --sudo --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
+
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/drizzle7-$DRIZZLE_VER.tar.gz; fi
   - if [ "$USE_PCRE2" != "Y" ] && [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz; fi
   - if [ "$USE_PCRE2" = "Y" ] && [ ! -f download-cache/pcre2-$PCRE2_VER.tar.gz ]; then wget -P download-cache https://downloads.sourceforge.net/project/pcre/pcre2/${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz; fi
-  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
+  - if [ -n "$OPENSSL_VER" ] && [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - if [ -n "$OPENSSL_VER" ] && [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
