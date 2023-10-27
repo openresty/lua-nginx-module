@@ -1199,12 +1199,12 @@ ngx_http_lua_handle_subreq_responses(ngx_http_request_t *r,
         lua_createtable(co, 0, 2);
 
         lua_pushlightuserdata(co, ngx_http_lua_lightudata_mask(
-            subrequest_headers_metatable_index_key));
+                              subrequest_headers_metatable_index_key));
         lua_rawget(co, LUA_REGISTRYINDEX);
         lua_setfield(co, -2, "__index");
 
         lua_pushlightuserdata(co, ngx_http_lua_lightudata_mask(
-            subrequest_headers_metatable_newindex_key));
+                              subrequest_headers_metatable_newindex_key));
         lua_rawget(co, LUA_REGISTRYINDEX);
         lua_setfield(co, -2, "__newindex");
 
@@ -1783,7 +1783,7 @@ ngx_http_lua_create_subrequest_headers_metatable(ngx_log_t *log, lua_State *L)
                           subrequest_headers_metatable_index_key));
 
     rc = luaL_loadbuffer(L, index_buf, sizeof(index_buf) - 1,
-        "=subrequest headers metatable __index");
+                         "=subrequest headers metatable __index");
     if (rc != 0) {
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "failed to load Lua code for the __index metamethod for "
@@ -1796,11 +1796,11 @@ ngx_http_lua_create_subrequest_headers_metatable(ngx_log_t *log, lua_State *L)
     lua_rawset(L, LUA_REGISTRYINDEX);
 
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
-                        subrequest_headers_metatable_newindex_key));
+                          subrequest_headers_metatable_newindex_key));
 
 
     rc = luaL_loadbuffer(L, newindex_buf, sizeof(newindex_buf) - 1,
-        "=subrequest headers metatable __newindex");
+                         "=subrequest headers metatable __newindex");
     if (rc != 0) {
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "failed to load Lua code for the newindex metamethod for "
