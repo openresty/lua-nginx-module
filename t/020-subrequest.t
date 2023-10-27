@@ -3522,3 +3522,38 @@ HTTP/1.1 400 Bad Request
 [error]
 --- skip_nginx
 3: < 1.21.1
+
+
+
+=== TEST 83: subrequest's resposne headers must be case-insensitive
+--- config
+    error_log /dev/stdout debug;
+    location = /sub {
+        proxy_pass http://localhost:$TEST_NGINX_RAND_PORT_1;
+    }
+
+    location = /t {
+        content_by_lua '
+            local res = ngx.location.capture("/sub")
+            ngx.say(res.header["set-cookie"])
+            ngx.say(res.header["CACHE-CONTROL"])
+        ';
+    }
+--- tcp_listen: $TEST_NGINX_RAND_PORT_1
+--- tcp_reply eval
+sub {
+    return "HTTP/1.1 200 OK\r\n"
+        . "Connection: close\r\n"
+        . "Content-Length: 0\r\n"
+        . "Set-Cookie: Ga=Gallium\r\n"
+        . "set-cookie: In=Indium\r\n"
+        . "SET-COOKIE: Tl=Thallium\r\n"
+        . "X-UA-Compatible: IE=edge\r\n"
+        . "Cache-Control: public\r\n"
+        . "cache-control: no-cache\r\n\r\n";
+}
+--- request
+    GET /t
+--- response_body
+Ga=GalliumIn=IndiumTl=Thallium
+publicno-cache
