@@ -1178,15 +1178,15 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_cert_chunkname = NULL;
      *      lscf->srv.ssl_cert_src_key = NULL;
      *
-     *      lscf->srv.ssl_session_store_handler = NULL;
-     *      lscf->srv.ssl_session_store_src = { 0, NULL };
-     *      lscf->srv.ssl_session_store_chunkname = NULL;
-     *      lscf->srv.ssl_session_store_src_key = NULL;
+     *      lscf->srv.ssl_sess_store_handler = NULL;
+     *      lscf->srv.ssl_sess_store_src = { 0, NULL };
+     *      lscf->srv.ssl_sess_store_chunkname = NULL;
+     *      lscf->srv.ssl_sess_store_src_key = NULL;
      *
-     *      lscf->srv.ssl_session_fetch_handler = NULL;
-     *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
-     *      lscf->srv.ssl_session_fetch_chunkname = NULL;
-     *      lscf->srv.ssl_session_fetch_src_key = NULL;
+     *      lscf->srv.ssl_sess_fetch_handler = NULL;
+     *      lscf->srv.ssl_sess_fetch_src = { 0, NULL };
+     *      lscf->srv.ssl_sess_fetch_chunkname = NULL;
+     *      lscf->srv.ssl_sess_fetch_src_key = NULL;
      *
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
