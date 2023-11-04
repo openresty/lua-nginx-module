@@ -2209,8 +2209,8 @@ upstream prematurely closed connection while sending to client
 Foo
 --- request
 GET /a.txt
---- raw_response_headers_like chomp
-Age: \d\r\n
+--- raw_response_headers_like eval
+qr/^(a|A)ge: \d\r\n/ms
 --- no_error_log
 [error]
 
@@ -2240,8 +2240,8 @@ Age: \d\r\n
 Foo
 --- request
 GET /test/a.txt
---- raw_response_headers_like chomp
-Age: \d\r\n
+--- raw_response_headers_like eval
+qr/^(a|A)ge: \d\r\n/ms
 --- no_error_log
 [error]
 

@@ -1227,8 +1227,8 @@ F(ngx_http_finalize_request) {
 --- error_code
 --- no_error_log
 [error]
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr{(\Qcurl: (52) Empty reply from server\E|\Qcurl: (95) HTTP/3 stream 0 reset by server\E)}ms
 
 
 

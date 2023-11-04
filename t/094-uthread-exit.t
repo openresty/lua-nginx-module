@@ -1401,8 +1401,8 @@ attempt to abort with pending subrequests
 --- no_error_log
 [alert]
 [warn]
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#
 
 
 
@@ -1486,8 +1486,8 @@ free request
 [alert]
 [error]
 [warn]
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#
 
 
 
@@ -1571,8 +1571,8 @@ free request
 [alert]
 [error]
 [warn]
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#
 
 
 
@@ -1656,5 +1656,5 @@ free request
 [alert]
 [error]
 [warn]
---- curl_error
-curl: (52) Empty reply from server
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#

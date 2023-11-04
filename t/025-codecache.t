@@ -993,7 +993,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "lua close the global Lua VM",
 ]
 --- curl_error eval
-qr/curl: \(\d+\) Empty reply from server/
+qr/curl: \(\d+\) Empty reply from server|curl: \(28\) Operation timed out after \d+ milliseconds with 0 bytes received/
 
 
 
