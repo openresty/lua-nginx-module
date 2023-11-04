@@ -705,19 +705,16 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
 {
     ngx_http_lua_header_val_t         hv;
     ngx_http_lua_main_conf_t         *lmcf;
-    ngx_int_t                         rc;
     ngx_http_lua_set_header_t        *lsh;
     ngx_hash_t                       *hash;
 
     dd("set header value: %.*s", (int) value.len, value.data);
 
-    rc = ngx_http_lua_copy_escaped_header(r, &key, 1);
-    if (rc != NGX_OK) {
+    if (ngx_http_lua_copy_escaped_header(r, &key, 1) != NGX_OK) {
         return NGX_ERROR;
     }
 
-    rc = ngx_http_lua_copy_escaped_header(r, &value, 0);
-    if (rc != NGX_OK) {
+    if (ngx_http_lua_copy_escaped_header(r, &value, 0) != NGX_OK) {
         return NGX_ERROR;
     }
 
@@ -731,7 +728,6 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
     hash = &lmcf->builtin_headers_in;
     lsh = ngx_http_lua_hash_find_lc(hash, hv.hash, hv.key.data, hv.key.len);
-
     if (lsh) {
         dd("Matched handler: %s %s", lsh->name.data, hv.key.data);
 
