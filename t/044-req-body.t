@@ -1787,5 +1787,7 @@ content length: 5
 --- request
 POST /test
 hello, world
+--- more_headers
+Content-Length:
 --- error_code: 500
---- error_log: http2 requests are not supported yet
+--- error_log: http2 requests are not supported without content-length header
