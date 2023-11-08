@@ -822,7 +822,7 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
                 i = 0;
             }
 
-            if (has_host == 1 && header[i].key.len == 4
+            if (header[i].key.len == 4
                 && ngx_strncasecmp(header[i].key.data,
                                    (u_char *) "host", 4) == 0)
             {
