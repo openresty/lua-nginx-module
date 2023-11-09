@@ -14,6 +14,12 @@ $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 $ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
 
+my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
+my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+if ($openssl_version =~ m/BoringSSL/) {
+    $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
+}
+
 #log_level 'warn';
 log_level 'debug';
 
@@ -2667,6 +2673,7 @@ SSL reused session
 === TEST 33: explicit cipher configuration - TLSv1.3
 --- skip_openssl: 8: < 1.1.1
 --- skip_nginx: 8: < 1.19.4
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- http_config
     server {
         listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -2760,6 +2767,7 @@ SSL reused session
 === TEST 34: explicit cipher configuration not in the default list - TLSv1.3
 --- skip_openssl: 8: < 1.1.1
 --- skip_nginx: 8: < 1.19.4
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- http_config
     server {
         listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
