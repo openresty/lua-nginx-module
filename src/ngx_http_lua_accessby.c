@@ -174,7 +174,11 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         }
     }
 
+#if defined(NGX_HTTP_V3) || defined(NGX_HTTP_V2)
+
 done:
+
+#endif
 
     dd("calling access handler");
     return llcf->access_handler(r);
