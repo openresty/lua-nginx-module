@@ -832,6 +832,7 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
 
             count++;
         }
+
     } else {
         count = part->nelts;
         while (part->next != NULL) {
