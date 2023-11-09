@@ -798,11 +798,12 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
         max = NGX_HTTP_LUA_MAX_HEADERS;
     }
 
-    count = 0;
     part = &r->headers_in.headers.part;
-    header = part->elts;
 
 #if (NGX_HTTP_V3)
+    count = 0;
+    header = part->elts;
+
     if (r->http_version == NGX_HTTP_VERSION_30
         && r->headers_in.server.data != NULL)
     {
@@ -905,11 +906,13 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
             i = 0;
         }
 
+#if (NGX_HTTP_V3)
         if (has_host == 1 && header[i].key.len == 4
             && ngx_strncasecmp(header[i].key.data, (u_char *) "host", 4) == 0)
         {
             continue;
         }
+#endif
 
         if (raw) {
             out[n].key.data = header[i].key.data;
