@@ -1151,6 +1151,9 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    dd("init built in headers int hash size: %ld",
+       lmcf->builtin_headers_in.size);
+
     if (ngx_http_lua_init_builtin_headers_out(cf, lmcf) != NGX_OK) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "init header out error");
 

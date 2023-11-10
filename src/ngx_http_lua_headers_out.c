@@ -711,8 +711,9 @@ ngx_http_lua_init_builtin_headers_out(ngx_conf_t *cf,
     count = sizeof(ngx_http_lua_set_handlers)
             / sizeof(ngx_http_lua_set_header_t);
 
-
-    return ngx_http_lua_init_builtin_headers(cf, hash, handlers, count, name);
+    return ngx_http_lua_builtin_header_hash_init(cf, hash, handlers, count,
+                                                 name);
 }
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
