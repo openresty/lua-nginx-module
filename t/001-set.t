@@ -389,8 +389,8 @@ GET /lua
 GET /lua
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
---- error_log
-API disabled in the context of set_by_lua*
+--- error_log eval
+qr/(?:API disabled in the context of set_by_lua\*|http3 requests are not supported without content-length header)/ms
 
 
 

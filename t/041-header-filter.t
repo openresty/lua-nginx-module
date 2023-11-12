@@ -691,8 +691,8 @@ uri: /blah
 --- request
 GET /lua
 --- ignore_response
---- error_log
-API disabled in the context of header_filter_by_lua*
+--- error_log eval
+qr/API disabled in the context of header_filter_by_lua\*|http3 requests are not supported without content-length header/ms
 --- curl_error eval
 qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 

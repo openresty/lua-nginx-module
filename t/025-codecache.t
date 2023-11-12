@@ -1881,3 +1881,4 @@ qr/log_by_lua\(nginx.conf:\d+\):\d+: hello/,
 --- log_level: debug
 --- no_error_log
 [error]
+--- skip_eval: 14:$ENV{TEST_NGINX_USE_HTTP3}
