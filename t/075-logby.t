@@ -442,7 +442,7 @@ log_by_lua: uri: /blah
 GET /lua
 --- response_body
 ok
---- error_log eval
+--- error_log
 API disabled in the context of log_by_lua*
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
