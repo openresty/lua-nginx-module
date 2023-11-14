@@ -1982,7 +1982,6 @@ MOVE /a.txt
 client sent no "Destination" header
 [error]
 --- error_code: 204
---- skip_eval: 4: 1
 
 
 
