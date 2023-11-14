@@ -125,7 +125,7 @@ GET /read
 --- error_code
 --- response_body
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -468,7 +468,7 @@ failed to run header_filter_by_lua*: header_filter_by_lua(nginx.conf:47):2: Some
 --- no_error_log
 [alert]
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(52\) Empty reply from server/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -492,7 +492,7 @@ failed to run header_filter_by_lua*: unknown reason
 --- no_error_log
 [alert]
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(52\) Empty reply from server/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -508,7 +508,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -524,7 +524,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -540,7 +540,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -556,7 +556,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -572,7 +572,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -592,7 +592,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -612,7 +612,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -628,7 +628,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -644,7 +644,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -660,7 +660,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -691,10 +691,10 @@ uri: /blah
 --- request
 GET /lua
 --- ignore_response
---- error_log
-API disabled in the context of header_filter_by_lua*
+--- error_log eval
+qr/API disabled in the context of header_filter_by_lua\*|http3 requests are not supported without content-length header/ms
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -718,7 +718,7 @@ if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
 
 $err_log;
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -734,7 +734,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -750,7 +750,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -799,7 +799,7 @@ in function 'error'
 in function 'bar'
 in function 'foo'
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -819,7 +819,7 @@ GET /lua?a=1&b=2
 --- error_log eval
 qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -866,6 +866,8 @@ GET /lua
 failed to load inlined Lua code: header_filter_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
+--- curl_error eval
+qr/curl: \(56\) Failure when receiving data from the peer/
 
 
 
@@ -895,6 +897,8 @@ GET /lua
 failed to load inlined Lua code: header_filter_by_lua(nginx.conf:49):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
+--- curl_error eval
+qr/curl: \(56\) Failure when receiving data from the peer/
 
 
 
@@ -919,3 +923,5 @@ GET /lua
 failed to load inlined Lua code: header_filter_by_lua(...901234567890123456789012345.conf:1):2: unexpected symbol near ''for end''
 --- no_error_log
 [alert]
+--- curl_error eval
+qr/curl: \(56\) Failure when receiving data from the peer/

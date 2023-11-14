@@ -774,6 +774,8 @@ GET /t
 --- response_body
 --- no_error_log
 [error]
+--- curl_error
+curl: (95) HTTP/3 stream 0 reset by server
 
 
 
@@ -790,6 +792,8 @@ GET /t
 --- response_body
 --- no_error_log
 [error]
+--- curl_error
+curl: (95) HTTP/3 stream 0 reset by server
 
 
 

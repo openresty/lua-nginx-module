@@ -957,6 +957,21 @@ close: 1 nil
 qr/ssl ((fetch|store) session|cert) by lua is running!/s
 
 --- grep_error_log_out eval
+if ($ENV{TEST_NGINX_USE_HTTP3}) {
+[
+'ssl cert by lua is running!
+ssl store session by lua is running!
+',
+'ssl cert by lua is running!
+ssl fetch session by lua is running!
+ssl store session by lua is running!
+',
+'ssl cert by lua is running!
+ssl fetch session by lua is running!
+ssl store session by lua is running!
+',
+]
+} else {
 [
 'ssl cert by lua is running!
 ssl store session by lua is running!
@@ -970,6 +985,7 @@ ssl cert by lua is running!
 ssl store session by lua is running!
 ',
 ]
+}
 
 --- no_error_log
 [error]
@@ -1397,6 +1413,7 @@ ssl_session_fetch_by_lua\(nginx\.conf:\d+\):1: ssl_session_fetch_by_lua\* is run
 [error]
 [alert]
 [emerg]
+--- skip_eval: 6:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

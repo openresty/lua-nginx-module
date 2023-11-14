@@ -170,6 +170,7 @@ Expect: 100-Continue
 http finalize request: 500, "/echo_body?" a:1, c:2
 http finalize request: 500, "/echo_body?" a:1, c:0
 --- log_level: debug
+--- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

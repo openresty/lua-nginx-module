@@ -1344,6 +1344,7 @@ this exposed a memory leak in receiveuntil
 ok
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

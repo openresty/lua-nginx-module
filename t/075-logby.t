@@ -444,6 +444,7 @@ GET /lua
 ok
 --- error_log
 API disabled in the context of log_by_lua*
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

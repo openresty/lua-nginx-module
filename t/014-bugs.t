@@ -885,6 +885,7 @@ GET /t
 --- no_error_log
 [error]
 --- timeout: 10
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -1305,8 +1306,17 @@ location /t {
 --- response_body
 Hello world
 --- shutdown_error_log eval
-qr|failed to read a line: closed|
+my $expr;
+
+if ($ENV{TEST_NGINX_USE_HTTP3}) {
+    $expr = qr|lua close the global Lua VM|
+} else {
+    $expr = qr|failed to read a line: closed|
+}
+
+$expr;
 --- timeout: 1.2
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
