@@ -1704,7 +1704,8 @@ ngx_http_lua_copy_request_headers(ngx_http_request_t *sr,
 #if (NGX_HTTP_V3)
     if (pr->headers_in.server.data != NULL) {
         if (ngx_http_lua_set_input_header(sr, host_header,
-                                         pr->headers_in.server, 0) == NGX_ERROR)
+                                          pr->headers_in.server, 0)
+            == NGX_ERROR)
         {
             return NGX_ERROR;
         }
