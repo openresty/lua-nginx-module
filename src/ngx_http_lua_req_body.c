@@ -288,7 +288,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
             return 1;
         }
 
-        len = (max && len > max) ? max : len;
+        len = (max > 0 && len > max) ? max : len;
         lua_pushlstring(L, (char *) cl->buf->pos, len);
         return 1;
     }
@@ -300,7 +300,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
     for (; cl; cl = cl->next) {
         dd("body chunk len: %d", (int) ngx_buf_size(cl->buf));
         size = cl->buf->last - cl->buf->pos;
-        if (max && (len + size > max)) {
+        if (max > 0 && (len + size > max)) {
             len = max;
             break;
         }
