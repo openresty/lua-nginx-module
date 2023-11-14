@@ -1982,6 +1982,7 @@ MOVE /a.txt
 client sent no "Destination" header
 [error]
 --- error_code: 204
+--- skip_eval: 4: 1
 
 
 
@@ -2413,3 +2414,21 @@ GET /bar
 GET /bar
 --- response_body_like chomp
 \bFoo%E4%B8%AD%E6%96%87: ab中文a\r\n
+
+
+=== TEST 69: ignore spaces between request header field names and colons
+--- config
+    location /bar {
+        access_by_lua_block {
+            ngx.req.set_header("X-cnn-Service  ", "chat")
+        }
+        proxy_pass http://127.0.0.1:$server_port/foo;
+    }
+
+    location = /foo {
+        echo $echo_client_request_headers;
+    }
+--- request
+GET /bar
+--- response_body_like chomp
+\bX-cnn-Service: chat\r\n
