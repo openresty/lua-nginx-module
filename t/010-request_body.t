@@ -277,16 +277,13 @@ http finalize request: 500, "/echo_body?" a:1, c:0
 --- config
     location /echo_body {
         lua_need_request_body on;
-        content_by_lua '
+        content_by_lua_block {
             local data = ngx.req.get_body_data(1)
             ngx.say(data)
-        ';
-    }
+        }
+    } 
 --- request
 POST /echo_body
 hello
 --- response_body
 h
-
-
-

@@ -5473,7 +5473,7 @@ ngx.req.get_body_data
 
 Retrieves in-memory request body data. It returns a Lua string rather than a Lua table holding all the parsed query arguments. Use the [ngx.req.get_post_args](#ngxreqget_post_args) function instead if a Lua table is required.
 
-The optional <code>max_bytes</code> function argument can be used when you don't need the entire body.
+The optional `max_bytes` argument can be used when you don't need the entire body.
 
 This function returns `nil` if
 

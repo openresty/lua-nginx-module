@@ -288,7 +288,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
             return 1;
         }
 
-        len = (max && len > max) ? max: len;
+        len = (max && len > max) ? max : len;
         lua_pushlstring(L, (char *) cl->buf->pos, len);
         return 1;
     }
@@ -304,6 +304,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
             len = max;
             break;
         }
+
         len += size;
     }
 
@@ -316,11 +317,12 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
 
     p = buf;
     rest = len;
-    for (cl = r->request_body->bufs; cl && rest; cl = cl->next) {
+    for (cl = r->request_body->bufs; cl != NULL && rest > 0; cl = cl->next) {
         size = ngx_buf_size(cl->buf);
         if (size > rest) { /* reach limit*/
             size = rest;
         }
+
         p = ngx_copy(p, cl->buf->pos, size);
         rest -= size;
     }
