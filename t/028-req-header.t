@@ -2374,7 +2374,7 @@ GET /req-header
 --- request
 GET /bar
 --- response_body_like chomp
-\bFoo%0D: 123%0D%0A\b
+\bFoo: 123%0D%0A\b
 
 
 
@@ -2419,7 +2419,7 @@ GET /bar
 --- config
     location /bar {
         access_by_lua_block {
-            ngx.req.set_header("X-cnn-Service  ", "chat")
+            ngx.req.set_header("X-cnn-Service \r\t\n", "chat")
         }
         proxy_pass http://127.0.0.1:$server_port/foo;
     }

@@ -661,24 +661,19 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 #endif
 
-    for (i = len; i > 0; i--) {
-        if (!isblank(p[i - 1])) {
-            break;
-        }
-
-        len--;
-    }
-
+    key.len = 0;
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "no memory");
     }
 
-    ngx_memcpy(key.data, p, len);
+    for (i = 0; i < len; i++) { /* ignore unsafe charactor */
+        if (!isspace(p[i])) {
+            key.data[key.len++] = p[i];
+        }
+    }
 
-    key.data[len] = '\0';
-
-    key.len = len;
+    key.data[key.len] = '\0';
 
     if (lua_type(L, 2) == LUA_TNIL) {
         ngx_str_null(&value);
@@ -1083,22 +1078,19 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
         return NGX_DECLINED;
     }
 
-    for (i = key_len; i > 0; i--) {
-        if (!isblank(key[i - 1])) {
-            break;
-        }
-
-        key_len--;
-    }
-
+    k.len = 0;
     k.data = ngx_palloc(r->pool, key_len + 1);
     if (k.data == NULL) {
         goto nomem;
     }
 
-    ngx_memcpy(k.data, key, key_len);
-    k.data[key_len] = '\0';
-    k.len = key_len;
+    for (i = 0; i < key_len; i++) { /* ignore unsafe charactor */
+        if (!isspace(key[i])) {
+            k.data[k.len++] = key[i];
+        }
+    }
+
+    k.data[k.len] = '\0';
 
     if (mvals) {
         if (mvals_len > 0) {
