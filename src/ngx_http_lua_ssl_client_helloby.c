@@ -390,7 +390,7 @@ ngx_http_lua_ssl_client_hello_aborted(void *data)
 {
     ngx_http_lua_ssl_ctx_t      *cctx = data;
 
-    dd("lua ssl client hello aborted");
+    dd("lua ssl client hello done");
 
     if (cctx->done) {
         /* completed successfully already */
