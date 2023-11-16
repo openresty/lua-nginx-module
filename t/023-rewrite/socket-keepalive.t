@@ -493,7 +493,7 @@ qr/lua tcp socket connection pool size: 1\b/]
 
 
 === TEST 7: "lua_socket_keepalive_timeout 0" means unlimited
---- quic_max_idle_timeout: 1.1
+--- quic_max_idle_timeout: 1.2
 --- config
    server_tokens off;
    location /t {

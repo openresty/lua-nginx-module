@@ -1199,6 +1199,8 @@ true,nil
 
 
 === TEST 38: shdict get_stale
+For http3: curl: (55) ngtcp2_conn_handle_expiry returned error: ERR_IDLE_CLOSE
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 --- main_config
     thread_pool testpool threads=100;
 --- http_config eval

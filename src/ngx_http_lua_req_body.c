@@ -246,15 +246,21 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
 {
     ngx_http_request_t          *r;
     int                          n;
-    size_t                       len;
+    size_t                       len, max;
+    size_t                       size, rest;
     ngx_chain_t                 *cl;
     u_char                      *p;
     u_char                      *buf;
 
     n = lua_gettop(L);
 
-    if (n != 0) {
-        return luaL_error(L, "expecting 0 arguments but seen %d", n);
+    if (n != 0 && n != 1) {
+        return luaL_error(L, "expecting 0 or 1 arguments but seen %d", n);
+    }
+
+    max = 0;
+    if (n == 1) {
+        max = (size_t) luaL_checknumber(L, 1);
     }
 
     r = ngx_http_lua_get_req(L);
@@ -282,6 +288,7 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
             return 1;
         }
 
+        len = (max > 0 && len > max) ? max : len;
         lua_pushlstring(L, (char *) cl->buf->pos, len);
         return 1;
     }
@@ -292,7 +299,13 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
 
     for (; cl; cl = cl->next) {
         dd("body chunk len: %d", (int) ngx_buf_size(cl->buf));
-        len += cl->buf->last - cl->buf->pos;
+        size = cl->buf->last - cl->buf->pos;
+        if (max > 0 && (len + size > max)) {
+            len = max;
+            break;
+        }
+
+        len += size;
     }
 
     if (len == 0) {
@@ -303,8 +316,15 @@ ngx_http_lua_ngx_req_get_body_data(lua_State *L)
     buf = (u_char *) lua_newuserdata(L, len);
 
     p = buf;
-    for (cl = r->request_body->bufs; cl; cl = cl->next) {
-        p = ngx_copy(p, cl->buf->pos, cl->buf->last - cl->buf->pos);
+    rest = len;
+    for (cl = r->request_body->bufs; cl != NULL && rest > 0; cl = cl->next) {
+        size = ngx_buf_size(cl->buf);
+        if (size > rest) { /* reach limit*/
+            size = rest;
+        }
+
+        p = ngx_copy(p, cl->buf->pos, size);
+        rest -= size;
     }
 
     lua_pushlstring(L, (char *) buf, len);

@@ -763,7 +763,7 @@ GET /lua
 --- error_log
 API disabled in the context of header_filter_by_lua*
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -1700,7 +1700,7 @@ GET /t
     "in function 'co'"
 ]
 --- curl_error eval
-qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly/
+qr/curl: \(52\) Empty reply from server|curl: \(92\) HTTP\/2 stream 0 was not closed cleanly|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
