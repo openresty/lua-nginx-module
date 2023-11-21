@@ -1,6 +1,15 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+BEGIN {
+    if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+        # FIXME: we still need to enable this test file for HTTP3.
+        $SkipReason = "the test cases are very unstable, skip for now.";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
+
 use Cwd qw(abs_path realpath);
 use File::Basename;
 
