@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (2 * blocks() + 48);
+plan tests => repeat_each() * (2 * blocks() + 49);
 
 #no_diff();
 no_long_string();
@@ -2374,7 +2374,7 @@ GET /req-header
 --- request
 GET /bar
 --- response_body_like chomp
-\bFoo: 123%0D%0A\b
+\bFoo%0D: 123%0D%0A\b
 
 
 
@@ -2415,19 +2415,16 @@ GET /bar
 \bFoo%E4%B8%AD%E6%96%87: ab中文a\r\n
 
 
-=== TEST 69: ignore spaces between request header field names and colons
+=== TEST 69: log when unsafe characters appear in field name
 --- config
     location /bar {
         access_by_lua_block {
             ngx.req.set_header("X-cnn-Service \r\t\n", "chat")
         }
-        proxy_pass http://127.0.0.1:$server_port/foo;
-    }
-
-    location = /foo {
-        echo $echo_client_request_headers;
+        echo ok;
     }
 --- request
 GET /bar
---- response_body_like chomp
-\bX-cnn-Service: chat\r\n
+--- response_body
+ok
+--- error_log: invalid characters found in field name

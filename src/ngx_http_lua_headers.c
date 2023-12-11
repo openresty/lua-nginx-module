@@ -652,6 +652,16 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
 
     dd("key: %.*s, len %d", (int) len, p, (int) len);
 
+#if (NGX_DEBUG)
+    for (i = 0; i < len; i++) {
+        if (isspace(p[i])) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                          "invalid characters found in field name");
+            break;
+        }
+    }
+#endif
+
 #if 0
     /* replace "_" with "-" */
     for (i = 0; i < len; i++) {
@@ -661,19 +671,15 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 #endif
 
-    key.len = 0;
     key.data = ngx_palloc(r->pool, len + 1);
     if (key.data == NULL) {
         return luaL_error(L, "no memory");
     }
 
-    for (i = 0; i < len; i++) { /* ignore unsafe charactor */
-        if (!isspace(p[i])) {
-            key.data[key.len++] = p[i];
-        }
-    }
+    ngx_memcpy(key.data, p, len);
+    key.data[len] = '\0';
 
-    key.data[key.len] = '\0';
+    key.len = len;
 
     if (lua_type(L, 2) == LUA_TNIL) {
         ngx_str_null(&value);
@@ -1078,19 +1084,24 @@ ngx_http_lua_ffi_req_set_header(ngx_http_request_t *r, const u_char *key,
         return NGX_DECLINED;
     }
 
-    k.len = 0;
+#if (NGX_DEBUG)
+    for (i = 0; i < key_len; i++) {
+        if (isspace(key[i])) {
+            ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                          "invalid characters found in field name");
+            break;
+        }
+    }
+#endif
+
     k.data = ngx_palloc(r->pool, key_len + 1);
     if (k.data == NULL) {
         goto nomem;
     }
 
-    for (i = 0; i < key_len; i++) { /* ignore unsafe charactor */
-        if (!isspace(key[i])) {
-            k.data[k.len++] = key[i];
-        }
-    }
-
-    k.data[k.len] = '\0';
+    ngx_memcpy(k.data, key, key_len);
+    k.data[key_len] = '\0';
+    k.len = key_len;
 
     if (mvals) {
         if (mvals_len > 0) {
