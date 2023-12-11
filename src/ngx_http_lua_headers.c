@@ -677,6 +677,7 @@ ngx_http_lua_ngx_req_header_set_helper(lua_State *L)
     }
 
     ngx_memcpy(key.data, p, len);
+
     key.data[len] = '\0';
 
     key.len = len;
