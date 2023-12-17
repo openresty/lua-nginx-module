@@ -3686,8 +3686,10 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
     ngx_ssl_conn_t            *ssl_conn;
     ngx_http_lua_ssl_ctx_t    *cctx;
 #endif
+    ngx_http_lua_ctx_t        *ctx;
 
     c = r->connection;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http lua finalize fake request: %d, a:%d, c:%d",
@@ -3710,7 +3712,19 @@ ngx_http_lua_finalize_fake_request(ngx_http_request_t *r, ngx_int_t rc)
                 if (c && c->ssl) {
                     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
                     if (cctx != NULL) {
+                    #if defined(OPENSSL_IS_BORINGSSL)
+                        if (ctx
+                            && ctx->context
+                               & NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO)
+                        {
+                            cctx->exit_code = ssl_select_cert_error;
+
+                        } else {
+                            cctx->exit_code = 0;
+                        }
+                    #else
                         cctx->exit_code = 0;
+                    #endif
                     }
                 }
             }

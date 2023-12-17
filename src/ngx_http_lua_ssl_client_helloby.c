@@ -21,6 +21,13 @@
 #include "ngx_http_lua_ssl.h"
 
 
+#ifdef OPENSSL_IS_BORINGSSL
+    #define NGX_HTTP_LUA_CLIENT_HELLO_PENDING_STATUS ssl_select_cert_retry
+#else
+    #define NGX_HTTP_LUA_CLIENT_HELLO_PENDING_STATUS -1
+#endif
+
+
 static void ngx_http_lua_ssl_client_hello_done(void *data);
 static void ngx_http_lua_ssl_client_hello_aborted(void *data);
 static u_char *ngx_http_lua_log_ssl_client_hello_error(ngx_log_t *log,
@@ -96,7 +103,7 @@ char *
 ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-#ifndef SSL_ERROR_WANT_CLIENT_HELLO_CB
+#if !defined(SSL_ERROR_WANT_CLIENT_HELLO_CB) && !defined(OPENSSL_IS_BORINGSSL)
 
     ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                   "at least OpenSSL 1.1.1 required but found "
@@ -178,9 +185,14 @@ ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+#ifdef OPENSSL_IS_BORINGSSL
+int
+ngx_http_lua_ssl_client_hello_handler(const SSL_CLIENT_HELLO *client_hello)
+#else
 int
 ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     int *al, void *arg)
+#endif
 {
     lua_State                       *L;
     ngx_int_t                        rc;
@@ -193,7 +205,11 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_http_lua_ssl_ctx_t          *cctx;
     ngx_http_core_srv_conf_t        *cscf;
 
+#ifdef OPENSSL_IS_BORINGSSL
+    c = ngx_ssl_get_connection(client_hello->ssl);
+#else
     c = ngx_ssl_get_connection(ssl_conn);
+#endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "ssl client hello: connection reusable: %ud", c->reusable);
@@ -215,7 +231,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
             return cctx->exit_code;
         }
 
-        return -1;
+        return NGX_HTTP_LUA_CLIENT_HELLO_PENDING_STATUS;
     }
 
     dd("first time");
@@ -273,6 +289,10 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     cctx->request = r;
     cctx->entered_client_hello_handler = 1;
     cctx->done = 0;
+
+#ifdef OPENSSL_IS_BORINGSSL
+    cctx->client_hello = client_hello;
+#endif
 
     dd("setting cctx");
 
@@ -339,7 +359,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
 
     *cctx->cleanup = ngx_http_lua_ssl_client_hello_aborted;
 
-    return -1;
+    return NGX_HTTP_LUA_CLIENT_HELLO_PENDING_STATUS;
 
 #if 1
 failed:
@@ -537,15 +557,67 @@ ngx_http_lua_ssl_client_hello_by_chunk(lua_State *L, ngx_http_request_t *r)
 }
 
 
+static int
+ngx_http_lua_ssl_client_hello_get_ext(const uint8_t *exts, ngx_int_t exts_size,
+    ngx_int_t target_type, const unsigned char **out, size_t *out_len,
+    char **err)
+{
+    uint8_t    *p, *last;
+    ngx_int_t   ext_len, ext_type;
+
+    if (err == NULL) {
+        return NGX_ERROR;
+    }
+
+    if (exts == NULL) {
+        *err = "bad boringssl exts";
+        return NGX_ERROR;
+    }
+
+    if (out == NULL || out_len == NULL) {
+        *err = "invalid args";
+        return NGX_ERROR;
+    }
+
+    p = (uint8_t *) exts;
+    last = (uint8_t *) exts + exts_size;
+
+    while (p < last) {
+        ext_type = *p++;
+        ext_type = (ext_type << 8) + *p++;
+        ext_len = *p++;
+        ext_len = (ext_len << 8) + *p++;
+        if (p + ext_len > last) {
+            *err = "invalid boringssl exts";
+            return NGX_ERROR;
+        }
+
+        if (ext_type == target_type) {
+            *out = p;
+            *out_len = ext_len;
+            return NGX_OK;
+        }
+
+        p += ext_len;
+    }
+
+    /* found nothing */
+    return NGX_DECLINED;
+}
+
+
 int
 ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     const char **name, size_t *namelen, char **err)
 {
-    ngx_ssl_conn_t          *ssl_conn;
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
-    const unsigned char     *p;
-    size_t                   remaining, len;
+    size_t                remaining, len;
+    const unsigned char  *p;
+#elif defined(OPENSSL_IS_BORINGSSL)
+    size_t                remaining;
+    const char           *p;
 #endif
+    ngx_ssl_conn_t       *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
@@ -560,9 +632,17 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
 
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
 
-#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+#if defined(SSL_ERROR_WANT_CLIENT_HELLO_CB) || defined(OPENSSL_IS_BORINGSSL)
     remaining = 0;
 
+#ifdef OPENSSL_IS_BORINGSSL
+    p = SSL_get_servername(ssl_conn, TLSEXT_NAMETYPE_host_name);
+    if (p == NULL) {
+        return NGX_DECLINED;
+    }
+    remaining = ngx_strlen(p);
+
+#else
     /* This code block is taken from OpenSSL's client_hello_select_server_ctx()
      * */
     if (!SSL_client_hello_get0_ext(ssl_conn, TLSEXT_TYPE_server_name, &p,
@@ -570,7 +650,9 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     {
         return NGX_DECLINED;
     }
+#endif
 
+#ifndef OPENSSL_IS_BORINGSSL
     if (remaining <= 2) {
         *err = "Bad SSL Client Hello Extension";
         return NGX_ERROR;
@@ -603,8 +685,10 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     }
 
     remaining = len;
+#endif
+
     *name = (const char *) p;
-    *namelen = len;
+    *namelen = remaining;
 
     return NGX_OK;
 
@@ -627,6 +711,11 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     unsigned int type, const unsigned char **out, size_t *outlen, char **err)
 {
     ngx_ssl_conn_t          *ssl_conn;
+#ifdef OPENSSL_IS_BORINGSSL
+    ngx_int_t                rc;
+    const SSL_CLIENT_HELLO  *client_hello;
+    ngx_http_lua_ssl_ctx_t  *cctx;
+#endif
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
@@ -645,6 +734,23 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     }
 
     return NGX_OK;
+#elif defined(OPENSSL_IS_BORINGSSL)
+    cctx = ngx_http_lua_ssl_get_ctx(r->connection->ssl->connection);
+    if (cctx == NULL) {
+        *err = "bad lua ssl ctx";
+        return NGX_ERROR;
+    }
+
+    if (cctx->client_hello == NULL) {
+        *err = "bad boringssl client hello ctx";
+        return NGX_ERROR;
+    }
+
+    client_hello = cctx->client_hello;
+    rc = ngx_http_lua_ssl_client_hello_get_ext(client_hello->extensions,
+                                               client_hello->extensions_len,
+                                               type, out, outlen, err);
+    return rc;
 #else
     *err = "OpenSSL too old to support this function";
     return NGX_ERROR;
