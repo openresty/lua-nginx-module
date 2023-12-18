@@ -24,8 +24,7 @@ $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 $ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
-$ENV{TEST_NGINX_OPENRESTY_ORG_IP} ||= resolve($ENV{TEST_NGINX_RESOLVER},
-    "openresty.org");
+$ENV{TEST_NGINX_OPENRESTY_ORG_IP} ||= resolve("openresty.org", $ENV{TEST_NGINX_RESOLVER});
 
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
@@ -49,7 +48,7 @@ sub read_file {
 }
 
 sub resolve ($$) {
-    my ($resolver, $domain) = @_;
+    my ($domain, $resolver) = @_;
     my $ips = qx/dig \@$resolver +short $domain/;
 
     my $exit_code = $? >> 8;
