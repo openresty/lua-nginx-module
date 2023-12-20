@@ -5601,6 +5601,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     if (c->read->ready) {
         rc = ngx_http_lua_socket_keepalive_close_handler(c->read);
         if (rc != NGX_OK) {
+            ngx_http_lua_socket_tcp_finalize(r, u);
             lua_pushnil(L);
             lua_pushliteral(L, "connection in dubious state");
             return 2;
