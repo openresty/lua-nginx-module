@@ -20,9 +20,6 @@ void ngx_http_lua_pcre_malloc_done(ngx_pool_t *old_pool);
 #if NGX_PCRE2
 void *ngx_http_lua_pcre_malloc(size_t size, void *data);
 void ngx_http_lua_pcre_free(void *ptr, void *data);
-#else
-void *ngx_http_lua_pcre_malloc(size_t size);
-void ngx_http_lua_pcre_free(void *ptr);
 #endif
 
 #endif
