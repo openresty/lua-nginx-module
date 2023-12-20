@@ -3998,10 +3998,13 @@ lua tcp socket read any
 --- config
     server_tokens off;
     location = /t {
+        set $port $TEST_NGINX_RAND_PORT_1;
+
         content_by_lua_block {
             local sock = ngx.socket.tcp()
+            local port = ngx.var.port
             sock:settimeout(500)
-            assert(sock:connect("127.0.0.1", 7658))
+            assert(sock:connect("127.0.0.1", port))
 
             while true do
                 local data, err = sock:receiveany(1024)
@@ -4028,7 +4031,7 @@ lua tcp socket read any
 
 --- request
 GET /t
---- tcp_listen: 7658
+--- tcp_listen: $TEST_NGINX_RAND_PORT_1
 --- tcp_shutdown: 1
 --- tcp_query eval: "send data after read side closed"
 --- tcp_query_len: 32
