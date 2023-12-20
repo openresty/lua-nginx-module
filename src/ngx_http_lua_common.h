@@ -58,7 +58,9 @@ typedef struct {
 #   if (NGX_PCRE2)
 #       define LUA_HAVE_PCRE_JIT 1
 #   else
-#   include <pcre.h>
+
+#include <pcre.h>
+
 #       if (PCRE_MAJOR > 8) || (PCRE_MAJOR == 8 && PCRE_MINOR >= 21)
 #           define LUA_HAVE_PCRE_JIT 1
 #       else
