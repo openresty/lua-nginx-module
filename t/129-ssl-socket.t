@@ -17,7 +17,7 @@ repeat_each(2);
 
 sub resolve($$);
 
-plan tests => repeat_each() * (blocks() * 7 - 3);
+plan tests => repeat_each() * (blocks() * 7 - 4);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
