@@ -260,19 +260,19 @@ variable "query_string" not changeable
     }
     server {
         # this is the real entry point
-        listen 8091;
+        listen $TEST_NGINX_RAND_PORT_1;
         location / {
             content_by_lua_block{
-                ngx.print("this is backend peer 8091")
+                ngx.print("this is backend peer $TEST_NGINX_RAND_PORT_1")
             }
         }
     }
     server {
         # this is the real entry point
-        listen 8092;
+        listen $TEST_NGINX_RAND_PORT_2;
         location / {
             content_by_lua_block{
-                ngx.print("this is backend peer 8092")
+                ngx.print("this is backend peer $TEST_NGINX_RAND_PORT_2")
             }
         }
     }
@@ -287,6 +287,6 @@ variable "query_string" not changeable
         proxy_pass http://balancer;
     }
 --- pipelined_requests eval
-["GET /balancer?port=8091", "GET /balancer?port=8092"]
+["GET /balancer?port=\$TEST_NGINX_RAND_PORT_1", "GET /balancer?port=\$TEST_NGINX_RAND_PORT_2"]
 --- response_body eval
-["this is backend peer 8091", "this is backend peer 8092"]
+["this is backend peer \$TEST_NGINX_RAND_PORT_1", "this is backend peer \$TEST_NGINX_RAND_PORT_2"]

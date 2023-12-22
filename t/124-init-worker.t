@@ -730,8 +730,8 @@ ok
         ';
     }
 --- log_level: error
---- error_log_file: syslog:server=127.0.0.1:12345
---- udp_listen: 12345
+--- error_log_file: syslog:server=127.0.0.1:$TEST_NGINX_RAND_PORT_1
+--- udp_listen: $TEST_NGINX_RAND_PORT_1
 --- udp_query eval: qr/Bad bad bad/
 --- udp_reply: hello
 --- wait: 0.1

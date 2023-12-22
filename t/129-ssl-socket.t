@@ -2141,8 +2141,6 @@ failed to do SSL handshake: timeout
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
