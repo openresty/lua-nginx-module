@@ -1885,7 +1885,7 @@ qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:12345 ssl;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name   test.com;
 
         ssl_certificate_by_lua_block {
@@ -1917,7 +1917,7 @@ qr/\[info\] .*? SSL_do_handshake\(\) failed\b/,
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", 12345)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return

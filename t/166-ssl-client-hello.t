@@ -736,7 +736,7 @@ should never reached here
 === TEST 9: lua exception - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_2 ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             error("bad bad bad")
@@ -764,7 +764,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_2)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2133,7 +2133,7 @@ ssl client hello by lua is running!
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:12346 ssl;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name   test.com;
 
         ssl_client_hello_by_lua_block {
@@ -2165,7 +2165,7 @@ ssl client hello by lua is running!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", 12346)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
