@@ -13,9 +13,14 @@ BEGIN {
         $SkipReason = "http2 does not support mockeagain";
 
     } else {
-        $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
-        $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
-        $ENV{MOCKEAGAIN}='w'
+        if ($ENV{LD_PRELOAD} && $ENV{LD_PRELOAD} =~ /\bmockeagain\.so\b/) {
+            $ENV{TEST_NGINX_POSTPONE_OUTPUT} = 1;
+            $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+            $ENV{MOCKEAGAIN}='w'
+        } else {
+            $SkipReason = "'mockeagain.so' does not appear to be preloaded "
+                . "with 'LD_PRELOAD'";
+        }
     }
 }
 
