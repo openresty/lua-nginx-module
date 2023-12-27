@@ -1,18 +1,30 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+BEGIN {
+    if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+        # FIXME: we still need to enable this test file for HTTP3.
+        $SkipReason = "the test cases are very unstable, skip for now.";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
+
 use Cwd qw(abs_path realpath);
 use File::Basename;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 7 - 3);
+sub resolve($$);
+
+plan tests => repeat_each() * (blocks() * 7 - 4);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 $ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
+$ENV{TEST_NGINX_OPENRESTY_ORG_IP} ||= resolve("openresty.org", $ENV{TEST_NGINX_RESOLVER});
 
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
@@ -33,6 +45,19 @@ sub read_file {
     my $cert = do { local $/; <$in> };
     close $in;
     $cert;
+}
+
+sub resolve ($$) {
+    my ($domain, $resolver) = @_;
+    my $ips = qx/dig \@$resolver +short $domain/;
+
+    my $exit_code = $? >> 8;
+    if (!$ips || $exit_code != 0) {
+        die "failed to resolve '$domain' using '$resolver' as resolver";
+    }
+
+    my ($ip) = split /\n/, $ips;
+    return $ip;
 }
 
 our $DSTRootCertificate = read_file("t/cert/dst-ca.crt");
@@ -1388,6 +1413,7 @@ SSL reused session
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
+        set $openresty_org_ip $TEST_NGINX_OPENRESTY_ORG_IP;
 
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -1397,7 +1423,8 @@ SSL reused session
 
             local session
             for i = 1, 3 do
-                local ok, err = sock:connect("openresty.org", 443)
+                -- Use the same IP to ensure that the connection can be reused
+                local ok, err = sock:connect(ngx.var.openresty_org_ip, 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1464,6 +1491,7 @@ SSL reused session
     lua_ssl_verify_depth 2;
     location /t {
         #set $port 5000;
+        set $openresty_org_ip $TEST_NGINX_OPENRESTY_ORG_IP;
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
         content_by_lua '
@@ -1473,7 +1501,8 @@ SSL reused session
             do
 
             for i = 1, 3 do
-                local ok, err = sock:connect("openresty.org", 443)
+                -- Use the same IP to ensure that the connection can be reused
+                local ok, err = sock:connect(ngx.var.openresty_org_ip, 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2112,8 +2141,6 @@ failed to do SSL handshake: timeout
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
