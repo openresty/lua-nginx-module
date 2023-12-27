@@ -893,7 +893,7 @@ GET /t
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
     server {
-        listen 12354;
+        listen \$TEST_NGINX_RAND_PORT_1;
 
         location = /t {
             echo 'args: \$args';
@@ -903,7 +903,7 @@ GET /t
 --- config
     location = /t {
         set $args "foo=1&bar=2";
-        proxy_pass http://127.0.0.1:12354;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_RAND_PORT_1;
     }
 
 --- request

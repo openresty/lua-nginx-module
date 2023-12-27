@@ -962,7 +962,7 @@ received: OK
         content_by_lua '
             local function f()
                 local sock = ngx.socket.udp()
-                local ok, err = sock:setpeername("127.0.0.1", 12345)
+                local ok, err = sock:setpeername("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 local bytes, err = sock:send("blah")
                 if not bytes then
                     ngx.say("failed to send query: ", err)
@@ -1002,7 +1002,7 @@ delete thread 2
 delete thread 1
 )$
 
---- udp_listen: 12345
+--- udp_listen: $TEST_NGINX_RAND_PORT_1
 --- udp_query: blah
 --- udp_reply: hello udp
 --- response_body_like chop
