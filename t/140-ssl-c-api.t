@@ -57,7 +57,7 @@ ffi.cdef[[
 		char **err)
 
 	void *ngx_http_lua_ffi_parse_der_priv_key(const char *data, size_t len,
-    char **err)
+		char **err)
 
     int ngx_http_lua_ffi_set_cert(void *r,
         void *cdata, char **err);
