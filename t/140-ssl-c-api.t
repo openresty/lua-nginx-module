@@ -53,11 +53,11 @@ ffi.cdef[[
     void *ngx_http_lua_ffi_parse_pem_priv_key(const unsigned char *pem,
         size_t pem_len, char **err);
 
-	void *ngx_http_lua_ffi_parse_der_cert(const char *data, size_t len,
-		char **err)
+    void *ngx_http_lua_ffi_parse_der_cert(const char *data, size_t len,
+        char **err)
 
-	void *ngx_http_lua_ffi_parse_der_priv_key(const char *data, size_t len,
-		char **err)
+    void *ngx_http_lua_ffi_parse_der_priv_key(const char *data, size_t len,
+        char **err)
 
     int ngx_http_lua_ffi_set_cert(void *r,
         void *cdata, char **err);
@@ -1391,7 +1391,6 @@ SNI is test.com
             end
 
             ffi.C.ngx_http_lua_ffi_free_priv_key(pkey)
-        }
         }
 
         ssl_certificate ../../cert/test2.crt;

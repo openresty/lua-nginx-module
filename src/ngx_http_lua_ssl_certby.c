@@ -1181,6 +1181,12 @@ ngx_http_lua_ffi_parse_der_cert(const char *data, size_t len,
     u_long           n;
     STACK_OF(X509)  *chain;
 
+    if (data == NULL || len == 0) {
+        *err = "NULL data passed in";
+        ERR_clear_error();
+        return NULL
+    }
+
     bio = BIO_new_mem_buf((char *) data, len);
     if (bio == NULL) {
         *err = "BIO_new_mem_buf() failed";
@@ -1286,10 +1292,16 @@ ngx_http_lua_ffi_parse_der_priv_key(const char *data, size_t len,
     BIO               *bio = NULL;
     EVP_PKEY          *pkey = NULL;
 
+    if (data == NULL || len == 0)
+    {
+        *err = "NULL data passed in";
+        ERR_clear_error();
+        return NULL;
+    }
+
     bio = BIO_new_mem_buf((char *) data, len);
     if (bio == NULL) {
         *err = "BIO_new_mem_buf() failed";
-        BIO_free(bio);
         ERR_clear_error();
         return NULL;
     }
