@@ -7916,11 +7916,11 @@ Set client certificate chain and corresponding private key to the TCP socket obj
 The certificate chain and private key provided will be used later by the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
 
 * `cert` specify a client certificate chain cdata object that will be used while handshaking with
-remote server. These objects can be created using [ngx.ssl.parse\_pem\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_cert)
+remote server. These objects can be created using [ngx.ssl.parse\_pem\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_cert) or [ngx.ssl.parse\_der\_cert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_der_cert)
 function provided by lua-resty-core. Note that specifying the `cert` option requires
 corresponding `pkey` be provided too. See below.
 * `pkey` specify a private key corresponds to the `cert` option above.
-These objects can be created using [ngx.ssl.parse\_pem\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_priv_key)
+These objects can be created using [ngx.ssl.parse\_pem\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_pem_priv_key) or [ngx.ssl.parse\_der\_priv\_key](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md#parse_der_priv_key)
 function provided by lua-resty-core.
 
 If both of `cert` and `pkey` are `nil`, this method will clear any existing client certificate and private key
