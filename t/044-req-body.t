@@ -7,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 52 );
+plan tests => repeat_each() * (blocks() * 4 + 58 );
 
 #no_diff();
 no_long_string();
