@@ -5639,7 +5639,7 @@ Returns a read-only cosocket object that wraps the downstream connection. Only [
 
 In case of error, `nil` will be returned as well as a string describing the error.
 
-Due to the streaming nature of HTTP2 and HTTP3, this API cannot be used when the downstream connection is HTTP2 and HTTP3.
+Due to the streaming nature of HTTP2 and HTTP3, When the downstream connection maintains a continuous stream (such as GRPC), a block will occur. The block time depends on the [client_body_timeout](http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout) setting. After the timeout, all Lua codes will be skipped and a 408 status code will be returned. [#2286](https://github.com/openresty/lua-nginx-module/pull/2286)
 
 The socket object returned by this method is usually used to read the current request's body in a streaming fashion. Do not turn on the [lua_need_request_body](#lua_need_request_body) directive, and do not mix this call with [ngx.req.read_body](#ngxreqread_body) and [ngx.req.discard_body](#ngxreqdiscard_body).
 
