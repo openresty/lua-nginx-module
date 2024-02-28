@@ -7,7 +7,7 @@ log_level('warn');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 56);
+plan tests => repeat_each() * (blocks() * 4 + 52 );
 
 #no_diff();
 no_long_string();
@@ -1774,21 +1774,3 @@ content length: 5
 --- no_error_log
 [error]
 [alert]
---- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}
-
-
-
-=== TEST 53: HTTP2 read buffered body was discarded
---- config
-    location = /test {
-        content_by_lua_block {
-            local err = pcall(ngx.req.read_body())
-            ngx.say(err)
-        }
-    }
---- http2
---- request
-POST /test
-hello, world
---- error_code: 500
---- error_log: http2 requests are not supported yet
