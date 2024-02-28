@@ -4741,8 +4741,7 @@ Returns a read-only cosocket object that wraps the downstream connection. Only [
 
 In case of error, <code>nil</code> will be returned as well as a string describing the error.
 
-Due to the streaming nature of HTTP2 and HTTP3, this API cannot be used when the downstream connection is HTTP2 and HTTP3.
-
+'''Note:''' This method will block while waiting for client request body to be fully received. Block time depends on the [http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout client_body_timeout] directive and maximum body size specified by the [http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size client_max_body_size] directive. If read timeout occurs or client body size exceeds the defined limit, this function will not return and <code>408 Request Time-out</code> or <code>413 Request Entity Too Large</code> response will be returned to the client instead.
 The socket object returned by this method is usually used to read the current request's body in a streaming fashion. Do not turn on the [[#lua_need_request_body|lua_need_request_body]] directive, and do not mix this call with [[#ngx.req.read_body|ngx.req.read_body]] and [[#ngx.req.discard_body|ngx.req.discard_body]].
 
 If any request body data has been pre-read into the Nginx core request header buffer, the resulting cosocket object will take care of this to avoid potential data loss resulting from such pre-reading.
