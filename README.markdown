@@ -2722,7 +2722,7 @@ lua_need_request_body
 
 **phase:** *depends on usage*
 
-Due to the stream processing feature of HTTP/2 or HTTP/3, this configuration could potentially block the entire request. Therefore, this configuration is effective only when HTTP/2 or HTTP/3 requests send content-length header. For requests with versions lower than HTTP/2, this configuration can still be used without any problems.
+Due to the stream processing feature of HTTP2, it does not support HTTP2 connection.
 
 Determines whether to force the request body data to be read before running rewrite/access/content_by_lua* or not. The Nginx core does not read the client request body by default and if request body data is required, then this directive should be turned `on` or the [ngx.req.read_body](#ngxreqread_body) function should be called within the Lua code.
 
@@ -5426,7 +5426,7 @@ Reads the client request body synchronously without blocking the Nginx event loo
  local args = ngx.req.get_post_args()
 ```
 
-Due to the stream processing feature of HTTP/2 or HTTP/3, this api could potentially block the entire request. Therefore, this api is effective only when HTTP/2 or HTTP/3 requests send content-length header. For requests with versions lower than HTTP/2, this api can still be used without any problems.
+Due to the stream processing feature of HTTP2, it does not support HTTP2 connection.
 
 If the request body is already read previously by turning on [lua_need_request_body](#lua_need_request_body) or by using other modules, then this function does not run and returns immediately.
 

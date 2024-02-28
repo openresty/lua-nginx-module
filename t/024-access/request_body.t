@@ -188,8 +188,6 @@ http finalize request: 500, "/echo_body?" a:1, c:0
 "POST /echo_body
 hello\x00\x01\x02
 world\x03\x04\xff"
---- more_headers
-Content-Length:
 --- response_body eval
 "nil"
 --- no_error_log
