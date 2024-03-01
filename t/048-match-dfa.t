@@ -207,3 +207,31 @@ exec opts: 0
 你
 --- no_error_log
 [error]
+
+
+
+=== TEST 9: multiple match calls with captures and DFA.
+--- config
+    location /re {
+        content_by_lua '
+            local m1 = ngx.re.match("hello", "(a)(a)(a)")
+            local m2 = ngx.re.match("world", "w", "d")
+
+            if m1 then
+                ngx.say(m1[0])
+            else
+                ngx.say("not matched!")
+            end
+
+            if m2 then
+                ngx.say(m2[0])
+            else
+                ngx.say("not matched!")
+            end
+        ';
+    }
+--- request
+    GET /re
+--- response_body
+not matched!
+w

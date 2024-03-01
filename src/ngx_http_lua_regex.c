@@ -760,6 +760,10 @@ ngx_http_lua_ffi_exec_regex(ngx_http_lua_regex_t *re, int flags,
         n = ovecsize / 3;
     }
 
+    if ((flags & NGX_LUA_RE_MODE_DFA)) {
+        n = ovecsize / 2;
+    }
+
     for (i = 0; i < n; i++) {
         re->captures[i * 2] = ov[i * 2];
         re->captures[i * 2 + 1] = ov[i * 2 + 1];
