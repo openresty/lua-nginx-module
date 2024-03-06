@@ -74,6 +74,9 @@ ffi.cdef[[
     int ngx_http_lua_ffi_ssl_verify_client(void *r, void *cdata,
         int depth, char **err);
 
+    int ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
+        unsigned char *out, size_t *outlen, char **err);
+
 ]]
 _EOC_
     }
@@ -1397,6 +1400,147 @@ SNI is test.com
 
         ssl_certificate ../../cert/test2.crt;
         ssl_certificate_key ../../cert/test2.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: cdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+
+--- error_log
+lua ssl server name: "test.com"
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 12: client random
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate_by_lua_block {
+            collectgarbage()
+
+            local ffi = require "ffi"
+            require "defines"
+
+            local errmsg = ffi.new("char *[1]")
+
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            -- test client random length
+            local out = ffi.new("unsigned char[?]", 0)
+            local sizep = ffi.new("size_t[1]", 0)
+			
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_client_random(r, out, sizep, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to get client random length: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            if tonumber(sizep[0]) ~= 32 then
+                ngx.log(ngx.ERR, "client random length does not equal 32")
+                return
+            end
+
+            -- test client random value
+            out = ffi.new("unsigned char[?]", 50)
+            sizep = ffi.new("size_t[1]", 50)
+
+            rc = ffi.C.ngx_http_lua_ffi_ssl_client_random(r, out, sizep, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to get client random: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local init_v = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+            if ffi.string(out, sizep[0]) == init_v then
+                ngx.log(ngx.ERR, "maybe the client random value is incorrect")
+                return
+            end
+        }
+
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
 
         server_tokens off;
         location /foo {
