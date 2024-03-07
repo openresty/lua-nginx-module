@@ -571,7 +571,7 @@ upstream sent more data than specified in "Content-Length" header while reading 
 
 
 
-=== TEST 18: error in balancer_by_llua_block
+=== TEST 18: error in balancer_by_lua_block
 --- http_config
     upstream backend {
         server 0.0.0.1;
