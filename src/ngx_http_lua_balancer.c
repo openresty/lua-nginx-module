@@ -810,7 +810,8 @@ ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
 
 
 int
-ngx_http_lua_ffi_balancer_disable_ssl(ngx_http_request_t *r, char **err)
+ngx_http_lua_ffi_balancer_set_upstream_tls(ngx_http_request_t *r, int on,
+    char **err)
 {
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
@@ -838,8 +839,14 @@ ngx_http_lua_ffi_balancer_disable_ssl(ngx_http_request_t *r, char **err)
         return NGX_ERROR;
     }
 
-    u->ssl = 0;
-    u->schema.len = sizeof("http://") - 1;
+    if (on == 0) {
+        u->ssl = 0;
+        u->schema.len = sizeof("http://") - 1;
+
+    } else {
+        u->ssl = 1;
+        u->schema.len = sizeof("https://") - 1;
+    }
 
     return NGX_OK;
 }

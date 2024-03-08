@@ -605,7 +605,7 @@ upstream sent more data than specified in "Content-Length" header while reading 
             local C = ffi.C
 ffi.cdef[[
 int
-ngx_http_lua_ffi_balancer_disable_ssl(ngx_http_request_t *r, char **err);
+ngx_http_lua_ffi_balancer_set_upstream_tls(ngx_http_request_t *r, int on, char **err);
 ]]
             local errmsg = ffi.new("char *[1]")
             local r = require "resty.core.base" .get_request()
@@ -614,7 +614,7 @@ ngx_http_lua_ffi_balancer_disable_ssl(ngx_http_request_t *r, char **err);
                 return
             end
 
-            local rc = C.ngx_http_lua_ffi_balancer_disable_ssl(r, errmsg)
+            local rc = C.ngx_http_lua_ffi_balancer_set_upstream_tls(r, 0, errmsg)
             if rc < 0 then
                 ngx.log(ngx.ERR, "failed to disable ssl: ", ffi.string(errmsg[0]))
                 return
