@@ -3527,3 +3527,83 @@ HTTP/1.1 400 Bad Request
 [error]
 --- skip_nginx
 3: < 1.21.1
+
+
+
+=== TEST 83: avoid request smuggling of HEAD req
+--- config
+    location /capture {
+        server_tokens off;
+        more_clear_headers Date;
+
+        content_by_lua_block {
+            ngx.say("Hello")
+        }
+    }
+
+    location /t {
+        content_by_lua_block {
+            local req = [[
+HEAD /capture HTTP/1.1
+Host: test.com
+Content-Length: 63
+
+GET /capture HTTP/1.1
+Host: test.com
+X: GET /bar HTTP/1.0
+
+]]
+
+            local sock = ngx.socket.tcp()
+            sock:settimeout(1000)
+
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send req: ", err)
+                return
+            end
+
+            ngx.say("req bytes: ", bytes)
+
+            local n_resp = 0
+
+            local reader = sock:receiveuntil("\r\n")
+            while true do
+                local line, err = reader()
+                if line then
+                    ngx.say(line)
+                    if line == "0" then
+                        n_resp = n_resp + 1
+                    end
+
+                    if n_resp >= 2 then
+                        break
+                    end
+
+                else
+                    ngx.say("err: ", err)
+                    break
+                end
+            end
+
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+req bytes: 117
+HTTP/1.1 200 OK
+Server: nginx
+Content-Type: text/plain
+Connection: keep-alive
+
+err: timeout
+--- error_log
+lua tcp socket read timed out
