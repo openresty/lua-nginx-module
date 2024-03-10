@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks() + 15);
+plan tests => repeat_each() * (3 * blocks() + 16);
 
 our $HtmlDir = html_dir;
 
@@ -1331,5 +1331,4 @@ GET /t
 failed to bind: bad address
 --- no_error_log
 [error]
-[crict]
 --- log_level: debug
