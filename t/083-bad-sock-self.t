@@ -69,7 +69,7 @@ bad argument #1 to 'receiveuntil' (table expected, got number)
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log
-expecting 2 arguments (including the object), but got 1
+expecting 2 or 3 arguments (including the object), but got 1
 
 
 

@@ -2917,18 +2917,19 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     argc = lua_gettop(L);
     if (argc != 2 && argc != 3) {
-        return luaL_error(L, "expecting 2 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+        return luaL_error(L, "expecting 2 or 3 arguments (including the "
+                          "object), but got %d", lua_gettop(L));
     }
 
     type = lua_type(L, 2);
     if (type != LUA_TCDATA && argc == 3) {
-        return luaL_error(L, "expecting 2 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+        return luaL_error(L, "expecting 2 arguments for %s (including the "
+                          "object), but got %d",
+                          lua_typename(L, 2), lua_gettop(L));
 
     } else if (type == LUA_TCDATA && argc != 3) {
-        return luaL_error(L, "expecting 3 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+        return luaL_error(L, "expecting 3 arguments for cdata (including the "
+                          "object), but got %d", lua_gettop(L));
     }
 
     r = ngx_http_lua_get_req(L);
