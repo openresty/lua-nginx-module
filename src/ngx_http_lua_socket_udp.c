@@ -165,6 +165,7 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     ngx_http_request_t          *r;
     ngx_http_lua_ctx_t          *ctx;
     ngx_str_t                    host;
+    ngx_addr_t                  *local;
     int                          port;
     ngx_resolver_ctx_t          *rctx, temp;
     ngx_http_core_loc_conf_t    *clcf;
@@ -295,6 +296,13 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
 
     } else {
         u->read_timeout = u->conf->read_timeout;
+    }
+
+    lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
+    local = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+    if (local != NULL) {
+        u->local = local;
     }
 
     ngx_memzero(&url, sizeof(ngx_url_t));
@@ -601,7 +609,6 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     ngx_http_upstream_resolved_t    *ur;
     ngx_int_t                        rc;
     ngx_http_lua_udp_connection_t   *uc;
-    ngx_addr_t                      *local;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket resolve retval handler");
@@ -625,12 +632,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         return 2;
     }
 
-    
-    lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
-    local = lua_touserdata(L, -1);
-    lua_pop(L, 1);
-
-    rc = ngx_http_lua_udp_connect(uc, local);
+    rc = ngx_http_lua_udp_connect(uc, u->local);
 
     if (rc != NGX_OK) {
         u->socket_errno = ngx_socket_errno;
@@ -774,7 +776,6 @@ ngx_http_lua_socket_udp_bind(lua_State *L)
     }
 
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
-    fprintf(stderr, "=== set local address\n");
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket bind ip: %V", &local->name);

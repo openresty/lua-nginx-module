@@ -15,7 +15,7 @@ log_level 'warn';
 
 no_long_string();
 #no_diff();
-no_shuffle();
+#no_shuffle();
 check_accum_error_log();
 run_tests();
 
@@ -604,7 +604,6 @@ lua udp socket receive buffer size: 65536
 
 
 === TEST 11: access the google DNS server (using domain names)
---- ONLY
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
