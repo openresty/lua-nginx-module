@@ -19,6 +19,11 @@
 #include "ngx_http_lua_probe.h"
 
 
+#ifndef LUA_TCDATA
+#define LUA_TCDATA 10
+#endif
+
+
 static int ngx_http_lua_socket_tcp(lua_State *L);
 static int ngx_http_lua_socket_tcp_bind(lua_State *L);
 static int ngx_http_lua_socket_tcp_connect(lua_State *L);
@@ -2892,6 +2897,7 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_chain_t                         *cl;
     ngx_http_lua_ctx_t                  *ctx;
     ngx_http_lua_socket_tcp_upstream_t  *u;
+    int                                  argc;
     int                                  type;
     int                                  tcp_nodelay;
     const char                          *msg;
@@ -2903,9 +2909,21 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
 
     /* TODO: add support for the optional "i" and "j" arguments */
 
-    if (lua_gettop(L) != 2) {
-        return luaL_error(L, "expecting 2 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+    argc = lua_gettop(L);
+    if (argc != 2 && argc != 3) {
+        return luaL_error(L, "expecting 2 or 3 arguments (including the "
+                          "object), but got %d", lua_gettop(L));
+    }
+
+    type = lua_type(L, 2);
+    if (type != LUA_TCDATA && argc == 3) {
+        return luaL_error(L, "expecting 2 arguments for %s (including the "
+                          "object), but got %d",
+                          lua_typename(L, 2), lua_gettop(L));
+
+    } else if (type == LUA_TCDATA && argc != 3) {
+        return luaL_error(L, "expecting 3 arguments for cdata (including the "
+                          "object), but got %d", lua_gettop(L));
     }
 
     r = ngx_http_lua_get_req(L);
@@ -2951,7 +2969,6 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket send timeout: %M", u->send_timeout);
 
-    type = lua_type(L, 2);
     switch (type) {
         case LUA_TNUMBER:
             len = ngx_http_lua_get_num_len(L, 2);
@@ -2978,6 +2995,10 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                 len = sizeof("false") - 1;
             }
 
+            break;
+
+        case LUA_TCDATA:
+            len = (int) luaL_checkinteger(L, 3);
             break;
 
         default:
@@ -3038,7 +3059,11 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
                 *b->last++ = 's';
                 *b->last++ = 'e';
             }
+            break;
 
+        case LUA_TCDATA:
+            p = (u_char *) lua_topointer(L, 2);
+            b->last = ngx_copy(b->last, (u_char *) p, len);
             break;
 
         default:
