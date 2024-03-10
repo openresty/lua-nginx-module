@@ -861,13 +861,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
-                               | NGX_HTTP_LUA_CONTEXT_ACCESS
-                               | NGX_HTTP_LUA_CONTEXT_CONTENT
-                               | NGX_HTTP_LUA_CONTEXT_TIMER
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CERT
-                               | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
-                               | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO);
+    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_YIELDABLE);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
