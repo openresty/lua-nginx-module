@@ -625,6 +625,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         return 2;
     }
 
+    
     lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
     local = lua_touserdata(L, -1);
     lua_pop(L, 1);
@@ -773,6 +774,7 @@ ngx_http_lua_socket_udp_bind(lua_State *L)
     }
 
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
+    fprintf(stderr, "=== set local address\n");
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua udp socket bind ip: %V", &local->name);
@@ -1478,6 +1480,7 @@ ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc, ngx_addr_t *local)
 #endif
 
     if (local != NULL) {
+        fprintf(stderr, "=== have local address\n");
         if (bind(s, local->sockaddr, local->socklen) == -1) {
             ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
                           "bind(%V) failed", &local->name);
