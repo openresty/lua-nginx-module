@@ -3029,3 +3029,163 @@ connected: 1, reused: 0
 --- error_log
 lua tcp socket keepalive create connection pool for key "A"
 lua tcp socket keepalive create connection pool for key "B"
+
+
+
+=== TEST 54: wrong first argument for setkeepalive
+--- quic_max_idle_timeout: 1.2
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+   server_tokens off;
+   location /t {
+        keepalive_timeout 60s;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
+            local data, err = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ok, err = sock:setkeepalive("not a number", "not a number")
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+        }
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- error_code:
+--- response_body
+--- error_log eval
+qr/\Qbad argument #1 to 'setkeepalive' (number expected, got string)\E/
+--- no_error_log
+[crit]
+--- timeout: 4
+
+
+
+=== TEST 55: wrong second argument for setkeepalive
+--- quic_max_idle_timeout: 1.2
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+   server_tokens off;
+   location /t {
+        keepalive_timeout 60s;
+
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local req = "GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            ngx.say("request sent: ", bytes)
+
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
+            local data, err = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("received response of ", #data, " bytes")
+
+            ok, err = sock:setkeepalive()
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+
+            ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ok, err = sock:setkeepalive(10, "not a number")
+            if not ok then
+                ngx.say("failed to set reusable: ", err)
+            end
+        }
+    }
+
+    location /foo {
+        echo foo;
+    }
+
+    location /sleep {
+        echo_sleep 1;
+    }
+--- request
+GET /t
+--- error_code:
+--- response_body
+--- error_log eval
+qr/\Qbad argument #2 to 'setkeepalive' (number expected, got string)\E/
+--- no_error_log
+[crit]
+--- timeout: 4

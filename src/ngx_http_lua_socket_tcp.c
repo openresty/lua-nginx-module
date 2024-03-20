@@ -5404,6 +5404,34 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "no request found");
+    }
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    /* luaL_checkinteger will throw error if the argument is not a number.
+     * e.g.: bad argument \#2 to '?' (number expected, got string)
+     *
+     * We should check the argument in advance; otherwise,
+     * throwing an exception in the middle can compromise data integrity.
+     * e.g.: set pc->connection to NULL without following cleanup.
+     */
+    if (n >= 2 && !lua_isnil(L, 2)) {
+        timeout = (ngx_msec_t) luaL_checkinteger(L, 2);
+
+    } else {
+        timeout = llcf->keepalive_timeout;
+    }
+
+    if (n >= 3 && !lua_isnil(L, 3)) {
+        pool_size = luaL_checkinteger(L, 3);
+
+    } else {
+        pool_size = llcf->pool_size;
+    }
+
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
@@ -5428,11 +5456,6 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
         lua_pushnil(L);
         lua_pushliteral(L, "closed");
         return 2;
-    }
-
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return luaL_error(L, "no request found");
     }
 
     if (u->request != r) {
@@ -5505,18 +5528,8 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     /* stack: obj timeout? size? pools cache_key */
 
-    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-
     if (spool == NULL) {
         /* create a new socket pool for the current peer key */
-
-        if (n >= 3 && !lua_isnil(L, 3)) {
-            pool_size = luaL_checkinteger(L, 3);
-
-        } else {
-            pool_size = llcf->pool_size;
-        }
-
         if (pool_size <= 0) {
             msg = lua_pushfstring(L, "bad \"pool_size\" option value: %d",
                                   pool_size);
@@ -5578,13 +5591,6 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     if (c->write->timer_set) {
         ngx_del_timer(c->write);
-    }
-
-    if (n >= 2 && !lua_isnil(L, 2)) {
-        timeout = (ngx_msec_t) luaL_checkinteger(L, 2);
-
-    } else {
-        timeout = llcf->keepalive_timeout;
     }
 
 #if (NGX_DEBUG)
