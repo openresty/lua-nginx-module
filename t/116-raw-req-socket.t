@@ -12,7 +12,7 @@ use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
-plan tests => repeat_each() * 43;
+plan tests => repeat_each() * 47;
 
 our $HtmlDir = html_dir;
 
@@ -975,5 +975,44 @@ request body: hey, hello world
 GET /t
 --- response_body
 msg: 1: received: hello
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: rawsocket send cdata
+--- config
+    server_tokens off;
+    location = /t {
+        content_by_lua_block {
+            ngx.status = 101
+            ngx.req.read_body()
+            local sock, err = ngx.req.socket(true)
+            if not sock then
+                ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
+                return
+            end
+            local req = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello"
+            local ffi = require "ffi"
+            local len = #req
+            local cdata = ffi.new("char[?]", len, req)
+            local ok, err = sock:send_cdata(cdata, len)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to send: ", err)
+                return
+            end
+        }
+    }
+
+--- raw_request eval
+"GET /t HTTP/1.0\r
+Host: localhost\r
+Content-Length: 5\r
+\r
+hello"
+--- response_headers
+Content-Length: 5
+--- response_body chop
+hello
 --- no_error_log
 [error]

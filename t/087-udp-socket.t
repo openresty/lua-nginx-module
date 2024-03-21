@@ -1332,3 +1332,106 @@ failed to bind: bad address
 --- no_error_log
 [error]
 --- log_level: debug
+
+
+
+=== TEST 25: send via cdata
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local socket = ngx.socket
+            local ffi = require "ffi"
+
+            local udp = socket.udp()
+
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected")
+
+            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local len = #req
+            local cdata = ffi.new("char[?]", len)
+            ffi.copy(cdata, req, len)
+            local ok, err = udp:send_cdata(cdata, len)
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+
+            local data, err = udp:receive()
+            if not data then
+                ngx.say("failed to receive data: ", err)
+                return
+            end
+            ngx.print("received ", #data, " bytes: ", data)
+        }
+    }
+--- request
+GET /t
+--- response_body eval
+"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+--- no_error_log
+[error]
+--- log_level: debug
+
+
+
+=== TEST 26: send via string.buffer
+--- config
+    server_tokens off;
+    location /t {
+        set $port $TEST_NGINX_MEMCACHED_PORT;
+
+        content_by_lua_block {
+            local socket = ngx.socket
+            local buffer = require "string.buffer"
+
+            local udp = socket.udp()
+
+            local port = ngx.var.port
+            udp:settimeout(1000) -- 1 sec
+
+            local ok, err = udp:setpeername("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected")
+
+            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local len = #req
+            local buf = buffer.new()
+            buf:put(req)
+            local cdata, len = buf:ref()
+            local ok, err = udp:send_cdata(cdata, len)
+            if not ok then
+                ngx.say("failed to send: ", err)
+                return
+            end
+
+            local data, err = udp:receive()
+            if not data then
+                ngx.say("failed to receive data: ", err)
+                return
+            end
+            ngx.print("received ", #data, " bytes: ", data)
+        }
+    }
+--- request
+GET /t
+--- response_body eval
+"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+--- no_error_log
+[error]
+--- log_level: debug

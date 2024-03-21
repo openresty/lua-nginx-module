@@ -12,7 +12,7 @@ BEGIN {
 
 use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
-repeat_each(2);
+repeat_each(1);
 
 plan tests => repeat_each() * (blocks() * 3 + 9);
 

@@ -3718,6 +3718,7 @@ Nginx API for Lua
 * [udpsock:bind](#udpsockbind)
 * [udpsock:setpeername](#udpsocksetpeername)
 * [udpsock:send](#udpsocksend)
+* [udpsock:send_cdata](#udpsocksend_cdata)
 * [udpsock:receive](#udpsockreceive)
 * [udpsock:close](#udpsockclose)
 * [udpsock:settimeout](#udpsocksettimeout)
@@ -3728,6 +3729,7 @@ Nginx API for Lua
 * [tcpsock:setclientcert](#tcpsocksetclientcert)
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
+* [tcpsock:send_cdata](#tcpsocksend_cdata)
 * [tcpsock:receive](#tcpsockreceive)
 * [tcpsock:receiveany](#tcpsockreceiveany)
 * [tcpsock:receiveuntil](#tcpsockreceiveuntil)
@@ -7650,6 +7652,42 @@ This feature was first introduced in the `v0.5.7` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
+udpsock:send_cdata
+------------
+
+**syntax:** *ok, err = udpsock:send_cdata(cdata, len)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Sends data on the current UDP or datagram unix domain socket object.
+
+In case of success, it returns `1`. Otherwise, it returns `nil` and a string describing the error.
+
+The input argument `data` must be a Lua `cdata`. And the input argument `len` is the length of the data to be sent.
+
+For example:
+
+```lua
+local request = "hello world"
+
+-- send data via cdata
+local ffi = require "ffi"
+local len = #request
+local cdata = ffi.new("char[?]", len)
+local bytes, err = sock:send_cdata(cdata, len)
+
+-- send data via cdata pointer
+local buffer = require "string.buffer"
+local buf = buffer.new()
+buf:put(request)
+local cdata, len = buf:ref()
+local bytes, err = sock:send_cdata(cdata, len, true)
+```
+
+This feature was first introduced in the `v0.10.27` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
 udpsock:receive
 ---------------
 
@@ -8022,9 +8060,9 @@ The input argument `data` can either be a Lua string or a (nested) Lua table hol
 Timeout for the sending operation is controlled by the [lua_socket_send_timeout](#lua_socket_send_timeout) config directive and the [settimeout](#tcpsocksettimeout) method. And the latter takes priority. For example:
 
 ```lua
-
- sock:settimeout(1000)  -- one second timeout
- local bytes, err = sock:send(request)
+local request = "hello world"
+sock:settimeout(1000)  -- one second timeout
+local bytes, err = sock:send(request)
 ```
 
 It is important here to call the [settimeout](#tcpsocksettimeout) method *before* calling this method.
@@ -8032,6 +8070,42 @@ It is important here to call the [settimeout](#tcpsocksettimeout) method *before
 In case of any connection errors, this method always automatically closes the current connection.
 
 This feature was first introduced in the `v0.5.0rc1` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:send_cdata
+------------
+
+**syntax:** *bytes, err = tcpsock:send_cdata(cdata, len)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Sends data without blocking on the current TCP or Unix Domain Socket connection.
+
+This method is a synchronous operation that will not return until *all* the data has been flushed into the system socket send buffer or an error occurs.
+
+In case of success, it returns the total number of bytes that have been sent. Otherwise, it returns `nil` and a string describing the error.
+
+The input argument `cdata` must be a Lua cdata. And the input argument `len` is the length of the `cdata`.
+
+For example:
+
+```lua
+-- send data via cdata
+local ffi = require "ffi"
+local len = #request
+local cdata = ffi.new("char[?]", len)
+local bytes, err = sock:send_cdata(cdata, len)
+
+-- send data via cdata pointer
+local buffer = require "string.buffer"
+local buf = buffer.new()
+buf:put(request)
+local cdata, len = buf:ref()
+local bytes, err = sock:send_cdata(cdata, len, true)
+```
+
+This feature was first introduced in the `v0.10.27` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
