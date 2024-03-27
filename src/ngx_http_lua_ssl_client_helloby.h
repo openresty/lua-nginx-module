@@ -23,8 +23,13 @@ char *ngx_http_lua_ssl_client_hello_by_lua_block(ngx_conf_t *cf,
 char *ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
+#ifdef OPENSSL_IS_BORINGSSL
+int ngx_http_lua_ssl_client_hello_handler(const SSL_CLIENT_HELLO *);
+#else
 int ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     int *al, void *arg);
+#endif
+
 
 
 #endif  /* NGX_HTTP_SSL */

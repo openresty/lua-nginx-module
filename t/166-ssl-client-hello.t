@@ -10,8 +10,6 @@ my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
 if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
     plan(skip_all => "too old OpenSSL, need 1.1.1, was $1");
-} elsif ($openssl_version =~ m/running with BoringSSL/) {
-    plan(skip_all => "does not support BoringSSL");
 } else {
     plan tests => repeat_each() * (blocks() * 6 + 8);
 }
@@ -580,8 +578,8 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'lua_client_hello_by_lua: handler return value: -1, client hello cb exit code: 0',
-qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
+'lua_client_hello_by_lua: handler return value: -1, client hello cb exit code: ',
+qr/.*? SSL_do_handshake\(\) failed .*?/,
 'lua exit with code -1',
 ]
 
@@ -721,8 +719,8 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'lua_client_hello_by_lua: client hello cb exit code: 0',
-qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
+'lua_client_hello_by_lua: client hello cb exit code: ',
+qr/.*? SSL_do_handshake\(\) failed .*?/,
 'lua exit with code -1',
 ]
 
@@ -792,8 +790,8 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'runtime error: ssl_client_hello_by_lua(nginx.conf:28):2: bad bad bad',
-'lua_client_hello_by_lua: handler return value: 500, client hello cb exit code: 0',
-qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
+'lua_client_hello_by_lua: handler return value: 500, client hello cb exit code:',
+qr/.*? SSL_do_handshake\(\) failed .*?/,
 qr/context: ssl_client_hello_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
 ]
 
@@ -864,8 +862,8 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'runtime error: ssl_client_hello_by_lua(nginx.conf:28):3: bad bad bad',
-'lua_client_hello_by_lua: client hello cb exit code: 0',
-qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
+'lua_client_hello_by_lua: client hello cb exit code: ',
+qr/.*? SSL_do_handshake\(\) failed .*?/,
 ]
 
 --- no_error_log
@@ -1051,7 +1049,7 @@ failed to do SSL handshake: handshake failed
 [
 'lua ssl server name: "test.com"',
 'ssl_client_hello_by_lua(nginx.conf:28):1: API disabled in the context of ssl_client_hello_by_lua*',
-qr/\[info\] .*?callback failed/,
+qr/.*? SSL_do_handshake\(\) failed .*?/,
 ]
 
 --- no_error_log
