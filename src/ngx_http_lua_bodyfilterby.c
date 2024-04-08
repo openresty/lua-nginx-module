@@ -536,8 +536,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
              * before arg[2] = true*/
             if (in == NULL) {
                 in = ngx_http_lua_chain_get_free_buf(r->connection->log,
-                                                    r->pool,
-                                                    &ctx->free_bufs, 0);
+                                                     r->pool,
+                                                     &ctx->free_bufs, 0);
                 if (in == NULL) {
                     return luaL_error(L, "no memory");
                 }
