@@ -532,7 +532,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
         if (last) {
             ctx->seen_last_in_filter = 1;
 
-            /* the "in" chain cannot be NULL except that we set arg[1] = "" before arg[2] = true*/
+            /* the "in" chain cannot be NULL except that we set arg[1] = ""
+             * before arg[2] = true*/
             if (in == NULL) {
                 in = ngx_http_lua_chain_get_free_buf(r->connection->log,
                                                     r->pool,
