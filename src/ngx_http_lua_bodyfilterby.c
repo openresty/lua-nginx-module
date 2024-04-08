@@ -546,7 +546,8 @@ ngx_http_lua_body_filter_param_set(lua_State *L, ngx_http_request_t *r,
                 lmcf->body_filter_chain = in;
             }
 
-            /* we set the "last_buf" or "last_in_chain" flag in the last buf of "in" */
+            /* we set the "last_buf" or "last_in_chain" flag
+             * in the last buf of "in" */
             for (cl = in; cl; cl = cl->next) {
                 if (cl->next == NULL) {
                     if (r == r->main) {
