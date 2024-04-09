@@ -245,6 +245,8 @@ GET /t
 --- response_body
 --- no_error_log
 [error]
+[alert]
+[crit]
 
 
 
@@ -265,3 +267,5 @@ GET /t
 --- response_body
 --- no_error_log
 [error]
+[alert]
+[crit]
