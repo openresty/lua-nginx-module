@@ -225,3 +225,47 @@ GET /t
 [error]
 [alert]
 [crit]
+
+
+
+=== TEST 4: set resp body nil with ngx.arg[1] first
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("Hello World!")
+        }
+
+        body_filter_by_lua_block {
+            ngx.arg[1] = ""
+            ngx.arg[2] = true
+        }
+    }
+--- request
+GET /t
+--- response_body
+--- no_error_log
+[error]
+[alert]
+[crit]
+
+
+
+=== TEST 5: set resp body nil with ngx.arg[2] first
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("Hello World!")
+        }
+
+        body_filter_by_lua_block {
+            ngx.arg[2] = true
+            ngx.arg[1] = ""
+        }
+    }
+--- request
+GET /t
+--- response_body
+--- no_error_log
+[error]
+[alert]
+[crit]
