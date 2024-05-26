@@ -1602,3 +1602,74 @@ return {hello=hello}
 GET /hello
 --- response_body
 false , suspicious circular references, table depth exceed max depth: 100 in the argument
+
+
+
+=== TEST 50: call run_worker_thread twice
+--- main_config
+    thread_pool testpool threads=1;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok, hello_or_err = ngx.run_worker_thread("testpool", "hello", "hello")
+        ngx.say(ok, " : ", hello_or_err)
+
+        ok, hello_or_err = ngx.run_worker_thread("testpool", "hello", "hello")
+        ngx.say(ok, " : ", hello_or_err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return "hello"
+end
+return {hello=hello}
+--- request
+GET /hello
+--- response_body
+true : hello
+true : hello
+
+
+
+=== TEST 51: big object
+--- main_config
+    thread_pool testpool threads=1;
+--- http_config eval
+    "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
+--- config
+location /hello {
+    default_type 'text/plain';
+
+    content_by_lua_block {
+        local ok, hello_or_err = ngx.run_worker_thread("testpool", "hello", "hello")
+        ngx.say(ok, " : ", #hello_or_err)
+
+        local ok, gcsize_or_err = ngx.run_worker_thread("testpool", "hello", "gcsize")
+        ngx.say(ok, " : ", gcsize_or_err)
+    }
+}
+--- user_files
+>>> hello.lua
+local function hello()
+    return string.rep("helloworld", 1000000)
+end
+
+local function gcsize()
+    return collectgarbage("count")
+end
+
+return {
+    hello = hello,
+    gcsize = gcsize
+}
+--- request
+GET /hello
+--- response_body eval
+qr/\Atrue : 10000000
+true : \d{3,4}\.\d+
+\z/ms

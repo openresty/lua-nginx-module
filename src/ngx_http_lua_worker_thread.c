@@ -194,11 +194,21 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 static void
 ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
 {
+    lua_State   *vm;
+
     ctx->next = ctxpool->next;
     ctxpool->next = ctx;
 
     /* clean Lua stack */
-    lua_settop(ctx->vm, 0);
+    vm = ctx->vm;
+
+    /* call collectgarbage("collect") */
+    lua_settop(vm, 0);
+    lua_getglobal(vm, "collectgarbage");
+    lua_pushstring(vm, "collect");
+    lua_pcall(vm, 1, 1, 0);
+
+    lua_settop(vm, 0);
 }
 
 
