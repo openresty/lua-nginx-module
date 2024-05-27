@@ -1141,7 +1141,7 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 #endif
 
     if (lmcf->worker_thread_vm_pool_size == NGX_CONF_UNSET_UINT) {
-        lmcf->worker_thread_vm_pool_size = 100;
+        lmcf->worker_thread_vm_pool_size = 10;
     }
 
     if (ngx_http_lua_init_builtin_headers_out(cf, lmcf) != NGX_OK) {
