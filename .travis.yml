@@ -64,8 +64,8 @@ env:
     #- NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
     #- NGINX_VERSION=1.25.1 OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
     - NGINX_VERSION=1.21.4 OPENSSL_VER=1.1.1w OPENSSL_PATCH_VER=1.1.1f
-    - NGINX_VERSION=1.25.1 OPENSSL_VER=1.1.1w OPENSSL_PATCH_VER=1.1.1f USE_PCRE2=Y
-    - NGINX_VERSION=1.25.1 BORINGSSL=1 TEST_NGINX_USE_HTTP3=1 USE_PCRE2=Y
+    - NGINX_VERSION=1.25.5 OPENSSL_VER=1.1.1w OPENSSL_PATCH_VER=1.1.1f USE_PCRE2=Y
+    - NGINX_VERSION=1.25.5 BORINGSSL=1 TEST_NGINX_USE_HTTP3=1 USE_PCRE2=Y
     #- NGINX_VERSION=1.25.1 OPENSSL_VER=1.1.1w TEST_NGINX_USE_HTTP2=1
 
 services:
@@ -87,7 +87,7 @@ install:
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
-  - git clone https://github.com/openresty/openresty.git ../openresty
+  - git clone -b bump-1.25.5 https://github.com/xiaocang/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
