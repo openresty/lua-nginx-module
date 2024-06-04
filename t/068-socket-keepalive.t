@@ -3109,6 +3109,8 @@ qr/\Qbad argument #1 to 'setkeepalive' (number expected, got string)\E/
 --- no_error_log
 [crit]
 --- timeout: 4
+--- curl_error eval
+qr{HTTP/3 stream 0 reset by server}
 
 
 
@@ -3189,3 +3191,5 @@ qr/\Qbad argument #2 to 'setkeepalive' (number expected, got string)\E/
 --- no_error_log
 [crit]
 --- timeout: 4
+--- curl_error eval
+qr{HTTP/3 stream 0 reset by server}
