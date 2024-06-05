@@ -462,7 +462,8 @@ ngx_feature_libs=
 ngx_feature_name="NGX_HTTP_LUA_HAVE_SIGNALFD"
 ngx_feature_run=no
 ngx_feature_incs="#include <sys/signalfd.h>"
-ngx_feature_test="sigset_t set; signalfd(-1, &set, SFD_NONBLOCK|SFD_CLOEXEC);"
+ngx_feature_test="sigset_t set = { 0 };
+                  signalfd(-1, &set, SFD_NONBLOCK|SFD_CLOEXEC);"
 SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
 CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
 
