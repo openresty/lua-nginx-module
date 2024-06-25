@@ -552,6 +552,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             if (r->filter_finalize) {
                 ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
             }
+
             ctx->header_sent = 1;
             return rc;
         }
