@@ -1486,4 +1486,70 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
     return NULL;
 }
 
+
+int
+ngx_http_lua_ffi_balancer_set_proxy_bind(ngx_http_request_t *r,
+        const u_char *addr, size_t addr_len, char *err)
+{
+    ngx_int_t                   rc;
+    ngx_str_t                   addr_str;
+    ngx_addr_t                 *addr_val;
+    ngx_http_lua_ctx_t         *ctx;
+    ngx_http_upstream_t        *u;
+
+    if (r == NULL) {
+        err = "no request found";
+        return NGX_ERROR;
+    }
+
+    u = r->upstream;
+    if (u == NULL || u->peer == NULL) {
+        err = "no upstream found";
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        err = "no ctx found";
+        return NGX_ERROR;
+    }
+
+    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
+        err = "API disabled in the current context";
+        return NGX_ERROR;
+    }
+
+    addr_val = ngx_pcalloc(r->pool, sizeof(ngx_addr_t));
+    if (addr_val == NULL) {
+        err = "no memory for addr_val";
+        return NGX_ERROR;
+    }
+
+    addr_str.len  = addr_len;
+    addr_str.data = ngx_palloc(r->pool, addr_len);
+    if (addr_str.data == NULL) {
+        err = "no memory for addr_str";
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(addr_str.data, addr, addr_len);
+
+    rc = ngx_parse_addr_port(r->pool, addr_val, addr_str.data, addr_str.len);
+    if (rc == NGX_ERROR) {
+        err = "parse addr port failed";
+        return NGX_ERROR;
+    }
+
+    if (rc != NGX_OK) {
+        err = "invalid addr port";
+        return NGX_ERROR;
+    }
+
+    addr_val->name = addr_str;
+
+    u->peer.local = addr_val;
+
+    return NGX_OK;
+}
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
