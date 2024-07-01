@@ -33,7 +33,9 @@
 #include "ngx_http_lua_ssl_session_fetchby.h"
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_headers_out.h"
+#if !(NGX_WIN32)
 #include "ngx_http_lua_pipe.h"
+#endif
 
 
 static void *ngx_http_lua_create_main_conf(ngx_conf_t *cf);
@@ -493,6 +495,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_SRV_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_balancer_handler_file },
+
+    { ngx_string("balancer_keepalive"),
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_balancer_keepalive,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      offsetof(ngx_http_lua_srv_conf_t, balancer.max_cached),
+      NULL },
 
     { ngx_string("lua_socket_keepalive_timeout"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -1188,6 +1197,8 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_sess_fetch_chunkname = NULL;
      *      lscf->srv.ssl_sess_fetch_src_key = NULL;
      *
+     *      lscf->balancer.original_init_upstream = NULL;
+     *      lscf->balancer.original_init_peer = NULL;
      *      lscf->balancer.handler = NULL;
      *      lscf->balancer.src = { 0, NULL };
      *      lscf->balancer.chunkname = NULL;
@@ -1202,7 +1213,7 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
 #endif
 
     lscf->balancer.src_ref = LUA_REFNIL;
-
+    lscf->balancer.max_cached = NGX_CONF_UNSET_UINT;
     return lscf;
 }
 
