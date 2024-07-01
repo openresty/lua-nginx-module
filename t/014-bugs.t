@@ -828,7 +828,7 @@ qr/curl: \(28\) Operation timed out after \d+ milliseconds with 0 bytes received
         rewrite    ^/myproxy/(.*)  /$1  break;
         resolver_timeout 3s;
         #resolver 172.16.0.23; #  AWS DNS resolver address is the same in all regions - 172.16.0.23
-        resolver 8.8.8.8;
+        resolver $TEST_NGINX_RESOLVER;
         proxy_read_timeout 1s;
         proxy_send_timeout 1s;
         proxy_connect_timeout 1s;
