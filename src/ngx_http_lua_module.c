@@ -1260,8 +1260,13 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
                                     ngx_http_lua_ssl_client_hello_handler,
                                     NULL);
 
-#else
+#elif defined(OPENSSL_IS_BORINGSSL)
 
+        SSL_CTX_set_select_certificate_cb(sscf->ssl.ctx,
+                                         ngx_http_lua_ssl_client_hello_handler);
+
+
+#else
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "OpenSSL too old to support "
                       "ssl_client_hello_by_lua*");

@@ -32,6 +32,10 @@ typedef struct {
                                            request ctx data in lua
                                            registry */
 
+#ifdef OPENSSL_IS_BORINGSSL
+    const SSL_CLIENT_HELLO  *client_hello;
+#endif
+
     unsigned                 done:1;
     unsigned                 aborted:1;
 
