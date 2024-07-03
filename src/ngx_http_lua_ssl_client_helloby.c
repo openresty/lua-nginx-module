@@ -541,6 +541,10 @@ int
 ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     const char **name, size_t *namelen, char **err)
 {
+#ifdef LIBRESSL_VERSION_NUMBER
+    *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
+#else
     ngx_ssl_conn_t          *ssl_conn;
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
     const unsigned char     *p;
@@ -619,6 +623,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     *err = "no TLS extension support";
     return NGX_ERROR;
 #endif
+#endif  /* LIBRESSL_VERSION_NUMBER */
 }
 
 
