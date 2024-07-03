@@ -386,7 +386,9 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     ngx_int_t                           rc;
     ngx_connection_t                   *c;
     ngx_http_request_t                 *r;
+#if (NGX_HTTP_SSL)
     ngx_http_upstream_t                *u;
+#endif
     ngx_http_lua_ctx_t                 *ctx;
     ngx_http_lua_srv_conf_t            *lscf;
     ngx_http_lua_balancer_peer_data_t  *bp = data;
@@ -395,7 +397,9 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
                    "lua balancer: get peer, tries: %ui", pc->tries);
 
     r = bp->request;
+#if (NGX_HTTP_SSL)
     u = r->upstream;
+#endif
     lscf = bp->conf;
 
     ngx_http_lua_assert(lscf->balancer.handler && r);
