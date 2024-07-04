@@ -625,7 +625,8 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
         ngx_http_set_ctx(sr, sr_ctx, ngx_http_lua_module);
 
         rc = ngx_http_lua_adjust_subrequest(sr, method, always_forward_body,
-                                            body, vars_action, extra_vars, extra_headers);
+                                            body, vars_action, extra_vars,
+                                            extra_headers);
 
         if (rc != NGX_OK) {
             ngx_http_lua_cancel_subreq(sr);
@@ -697,7 +698,9 @@ ngx_http_lua_adjust_subrequest(ngx_http_request_t *sr, ngx_uint_t method,
         }
     }
 
-    if (ngx_http_lua_copy_request_headers(sr, r, pr_not_chunked, extra_headers) != NGX_OK) {
+    if (ngx_http_lua_copy_request_headers(sr, r, pr_not_chunked, extra_headers)
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
