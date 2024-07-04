@@ -1583,7 +1583,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
 
             SSL_set_client_CA_list(ssl_conn, name_chain);
         }
-        
+
         if (trusted_chain != NULL) {
 
             for (i = 0; i < sk_X509_num(trusted_chain); i++) {
