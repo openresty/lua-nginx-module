@@ -1547,7 +1547,6 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
         if (chain != NULL) {
 
             /* construct name chain */
-
             name_chain = sk_X509_NAME_new_null();
             if (name_chain == NULL) {
                 *err = "sk_X509_NAME_new_null() failed";
@@ -1601,6 +1600,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
             }
         }
 
+        /* store in cert->verify_store */
         if (SSL_set0_verify_cert_store(ssl_conn, ca_store) == 0) {
             *err = "SSL_set0_verify_cert_store() failed";
             goto failed;
