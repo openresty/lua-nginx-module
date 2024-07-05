@@ -631,6 +631,10 @@ int
 ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     unsigned int type, const unsigned char **out, size_t *outlen, char **err)
 {
+#ifdef LIBRESSL_VERSION_NUMBER
+    *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
+#else
     ngx_ssl_conn_t          *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -654,7 +658,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     *err = "OpenSSL too old to support this function";
     return NGX_ERROR;
 #endif
-
+#endif  /* LIBRESSL_VERSION_NUMBER */
 }
 
 
