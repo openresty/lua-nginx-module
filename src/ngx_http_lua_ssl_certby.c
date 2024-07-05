@@ -1580,7 +1580,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
                 }
             }
 
-            /* clean subject name list, and set new subject name list for send to client */
+            /* clean subject name list, and set it for send to client */
             SSL_set_client_CA_list(ssl_conn, name_chain);
         }
 
