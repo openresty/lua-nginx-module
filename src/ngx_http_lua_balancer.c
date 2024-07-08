@@ -87,6 +87,8 @@ static ngx_int_t ngx_http_lua_balancer_by_chunk(lua_State *L,
     ngx_http_request_t *r);
 static void ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc,
     void *data, ngx_uint_t state);
+static void ngx_http_lua_balancer_notify_peer(ngx_peer_connection_t *pc,
+    void *data, ngx_uint_t type);
 static void ngx_http_lua_balancer_close(ngx_connection_t *c);
 static void ngx_http_lua_balancer_dummy_handler(ngx_event_t *ev);
 static void ngx_http_lua_balancer_close_handler(ngx_event_t *ev);
@@ -365,6 +367,7 @@ ngx_http_lua_balancer_init_peer(ngx_http_request_t *r,
     r->upstream->peer.data = bp;
     r->upstream->peer.get = ngx_http_lua_balancer_get_peer;
     r->upstream->peer.free = ngx_http_lua_balancer_free_peer;
+    r->upstream->peer.notify = ngx_http_lua_balancer_notify_peer;
 
 #if (NGX_HTTP_SSL)
     bp->original_set_session = r->upstream->peer.set_session;
@@ -734,6 +737,16 @@ invalid:
     }
 
     bp->original_free_peer(pc, bp->data, state);
+}
+
+
+static void
+ngx_http_lua_balancer_notify_peer(ngx_peer_connection_t *pc, void *data,
+    ngx_uint_t type)
+{
+    if (type == NGX_HTTP_UPSTREAM_NOTIFY_CACHED_CONNECTION_ERROR) {
+        pc->tries--;
+    }
 }
 
 
