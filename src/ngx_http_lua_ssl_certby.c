@@ -1468,7 +1468,7 @@ ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
 
 int
-ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs, 
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs,
    void *trusted_certs, int depth, char **err)
 {
 #ifdef LIBRESSL_VERSION_NUMBER
@@ -1585,7 +1585,6 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs,
         }
 
         if (trusted_chain != NULL) {
-
             for (i = 0; i < sk_X509_num(trusted_chain); i++) {
                 x509 = sk_X509_value(trusted_chain, i);
                 if (x509 == NULL) {
