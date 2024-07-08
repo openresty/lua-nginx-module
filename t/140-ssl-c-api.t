@@ -72,7 +72,7 @@ ffi.cdef[[
     void ngx_http_lua_ffi_free_priv_key(void *cdata);
 
     int ngx_http_lua_ffi_ssl_verify_client(void *r, void *cdata,
-        int depth, char **err, void *cdata);
+        void *cdata, int depth, char **err);
 
     int ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
         unsigned char *out, size_t *outlen, char **err);
@@ -853,21 +853,21 @@ lua ssl server name: "test.com"
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg, nil)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -924,7 +924,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, -1, errmsg, nil)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, nil, -1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
@@ -990,21 +990,21 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg, nil)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -1650,21 +1650,21 @@ lua ssl server name: "test.com"
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 2, errmsg, nil)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 2, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
         }
 
         ssl_certificate ../../cert/mtls_server.crt;
@@ -1720,9 +1720,9 @@ FAILED:unable to verify the first certificate
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
@@ -1738,14 +1738,15 @@ FAILED:unable to verify the first certificate
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 2, errmsg, trusted_cert)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, trusted_cert, 2, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(trusted_cert)
         }
 
         ssl_certificate ../../cert/mtls_server.crt;

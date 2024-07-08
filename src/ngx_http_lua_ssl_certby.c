@@ -1468,8 +1468,8 @@ ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
 
 int
-ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
-    int depth, char **err, void *trusted_certs)
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs, 
+   void *trusted_certs, int depth, char **err)
 {
 #ifdef LIBRESSL_VERSION_NUMBER
 
