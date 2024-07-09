@@ -744,9 +744,11 @@ static void
 ngx_http_lua_balancer_notify_peer(ngx_peer_connection_t *pc, void *data,
     ngx_uint_t type)
 {
+#ifdef NGX_HTTP_UPSTREAM_NOTIFY_CACHED_CONNECTION_ERROR
     if (type == NGX_HTTP_UPSTREAM_NOTIFY_CACHED_CONNECTION_ERROR) {
         pc->tries--;
     }
+#endif
 }
 
 
