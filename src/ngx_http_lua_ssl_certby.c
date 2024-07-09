@@ -1481,7 +1481,7 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs,
     ngx_http_lua_ctx_t          *ctx;
     ngx_ssl_conn_t              *ssl_conn;
     ngx_http_ssl_srv_conf_t     *sscf;
-    STACK_OF(X509)              *chain = client_certs;
+    STACK_OF(X509)              *client_chain = client_certs;
     STACK_OF(X509)              *trusted_chain = trusted_certs;
     STACK_OF(X509_NAME)         *name_chain = NULL;
     X509                        *x509 = NULL;

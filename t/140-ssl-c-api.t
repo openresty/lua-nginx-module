@@ -1696,6 +1696,7 @@ FAILED:unable to verify the first certificate
 [alert]
 
 
+
 === TEST 14: verify client and server trust root ca
 --- http_config
     server {
