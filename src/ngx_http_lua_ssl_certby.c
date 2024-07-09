@@ -1468,8 +1468,8 @@ ngx_http_lua_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
 
 
 int
-ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
-    int depth, char **err)
+ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs,
+    void *trusted_certs, int depth, char **err)
 {
 #ifdef LIBRESSL_VERSION_NUMBER
 
@@ -1481,7 +1481,8 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
     ngx_http_lua_ctx_t          *ctx;
     ngx_ssl_conn_t              *ssl_conn;
     ngx_http_ssl_srv_conf_t     *sscf;
-    STACK_OF(X509)              *chain = ca_certs;
+    STACK_OF(X509)              *client_chain = client_certs;
+    STACK_OF(X509)              *trusted_chain = trusted_certs;
     STACK_OF(X509_NAME)         *name_chain = NULL;
     X509                        *x509 = NULL;
     X509_NAME                   *subject = NULL;
@@ -1535,54 +1536,75 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
 
     /* set CA chain */
 
-    if (chain != NULL) {
+    if (client_chain != NULL || trusted_chain != NULL) {
+
         ca_store = X509_STORE_new();
         if (ca_store == NULL) {
             *err = "X509_STORE_new() failed";
             return NGX_ERROR;
         }
 
-        /* construct name chain */
+        if (client_chain != NULL) {
 
-        name_chain = sk_X509_NAME_new_null();
-        if (name_chain == NULL) {
-            *err = "sk_X509_NAME_new_null() failed";
-            goto failed;
+            /* construct name chain */
+            name_chain = sk_X509_NAME_new_null();
+            if (name_chain == NULL) {
+                *err = "sk_X509_NAME_new_null() failed";
+                goto failed;
+            }
+
+            for (i = 0; i < sk_X509_num(client_chain); i++) {
+                x509 = sk_X509_value(client_chain, i);
+                if (x509 == NULL) {
+                    *err = "sk_X509_value() failed";
+                    goto failed;
+                }
+
+                /* add subject to name chain, which will be sent to client */
+                subject = X509_NAME_dup(X509_get_subject_name(x509));
+                if (subject == NULL) {
+                    *err = "X509_get_subject_name() failed";
+                    goto failed;
+                }
+
+                if (!sk_X509_NAME_push(name_chain, subject)) {
+                    *err = "sk_X509_NAME_push() failed";
+                    X509_NAME_free(subject);
+                    goto failed;
+                }
+
+                /* add to trusted CA store */
+                if (X509_STORE_add_cert(ca_store, x509) == 0) {
+                    *err = "X509_STORE_add_cert() failed";
+                    goto failed;
+                }
+            }
+
+            /* clean subject name list, and set it for send to client */
+            SSL_set_client_CA_list(ssl_conn, name_chain);
         }
 
-        for (i = 0; i < sk_X509_num(chain); i++) {
-            x509 = sk_X509_value(chain, i);
-            if (x509 == NULL) {
-                *err = "sk_X509_value() failed";
-                goto failed;
-            }
+        if (trusted_chain != NULL) {
+            for (i = 0; i < sk_X509_num(trusted_chain); i++) {
+                x509 = sk_X509_value(trusted_chain, i);
+                if (x509 == NULL) {
+                    *err = "sk_X509_value() failed";
+                    goto failed;
+                }
 
-            /* add subject to name chain, which will be sent to client */
-            subject = X509_NAME_dup(X509_get_subject_name(x509));
-            if (subject == NULL) {
-                *err = "X509_get_subject_name() failed";
-                goto failed;
-            }
-
-            if (!sk_X509_NAME_push(name_chain, subject)) {
-                *err = "sk_X509_NAME_push() failed";
-                X509_NAME_free(subject);
-                goto failed;
-            }
-
-            /* add to trusted CA store */
-            if (X509_STORE_add_cert(ca_store, x509) == 0) {
-                *err = "X509_STORE_add_cert() failed";
-                goto failed;
+                /* add to trusted CA store */
+                if (X509_STORE_add_cert(ca_store, x509) == 0) {
+                    *err = "X509_STORE_add_cert() failed";
+                    goto failed;
+                }
             }
         }
 
+        /* clean ca_store, and store new ca_store */
         if (SSL_set0_verify_cert_store(ssl_conn, ca_store) == 0) {
             *err = "SSL_set0_verify_cert_store() failed";
             goto failed;
         }
-
-        SSL_set_client_CA_list(ssl_conn, name_chain);
     }
 
     return NGX_OK;

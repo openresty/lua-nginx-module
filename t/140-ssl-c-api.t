@@ -12,7 +12,7 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
 
 } else {
-    plan tests => repeat_each() * (blocks() * 5 + 1);
+    plan tests => repeat_each() * (blocks() * 5 - 1);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
@@ -72,7 +72,7 @@ ffi.cdef[[
     void ngx_http_lua_ffi_free_priv_key(void *cdata);
 
     int ngx_http_lua_ffi_ssl_verify_client(void *r, void *cdata,
-        int depth, char **err);
+        void *cdata, int depth, char **err);
 
     int ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
         unsigned char *out, size_t *outlen, char **err);
@@ -853,21 +853,21 @@ lua ssl server name: "test.com"
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -924,7 +924,7 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, -1, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, nil, nil, -1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
@@ -990,21 +990,21 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
             local cert_data = f:read("*all")
             f:close()
 
-            local cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
-            if not cert then
-                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, 1, errmsg)
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 1, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to verify client: ",
                         ffi.string(errmsg[0]))
                 return
             end
 
-            ffi.C.ngx_http_lua_ffi_free_cert(cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
         }
 
         ssl_certificate ../../cert/test2.crt;
@@ -1619,6 +1619,160 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 13: verify client, but server don't trust root ca
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   example.com;
+
+        ssl_certificate_by_lua_block {
+            collectgarbage()
+
+            require "defines"
+            local ffi = require "ffi"
+
+            local errmsg = ffi.new("char *[1]")
+
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            local f = assert(io.open("t/cert/mtls_server.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, client_cert, nil, 2, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to verify client: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
+        }
+
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
+
+        location / {
+            default_type 'text/plain';
+            content_by_lua_block {
+                ngx.say(ngx.var.ssl_client_verify)
+            }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_certificate       ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key   ../../cert/mtls_client.key;
+        proxy_ssl_session_reuse     off;
+    }
+
+--- request
+GET /t
+--- response_body
+FAILED:unable to verify the first certificate
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 14: verify client and server trust root ca
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   example.com;
+
+        ssl_certificate_by_lua_block {
+            collectgarbage()
+
+            require "defines"
+            local ffi = require "ffi"
+
+            local errmsg = ffi.new("char *[1]")
+
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            local f = assert(io.open("t/cert/mtls_server.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local client_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not client_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM client cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local f = assert(io.open("t/cert/mtls_ca.crt", "rb"))
+            local cert_data = f:read("*all")
+            f:close()
+
+            local trusted_cert = ffi.C.ngx_http_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
+            if not trusted_cert then
+                ngx.log(ngx.ERR, "failed to parse PEM trusted cert: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            local rc = ffi.C.ngx_http_lua_ffi_ssl_verify_client(r, cert, trusted_cert, 2, errmsg)
+            if rc ~= 0 then
+                ngx.log(ngx.ERR, "failed to verify client: ",
+                        ffi.string(errmsg[0]))
+                return
+            end
+
+            ffi.C.ngx_http_lua_ffi_free_cert(client_cert)
+            ffi.C.ngx_http_lua_ffi_free_cert(trusted_cert)
+        }
+
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
+
+        location / {
+            default_type 'text/plain';
+            content_by_lua_block {
+                ngx.say(ngx.var.ssl_client_verify)
+            }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_certificate       ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key   ../../cert/mtls_client.key;
+        proxy_ssl_session_reuse     off;
+    }
+
+--- request
+GET /t
+--- response_body
+SUCCESS
 
 --- no_error_log
 [error]
