@@ -4657,13 +4657,15 @@ See also [[#ngx.req.get_body_data|ngx.req.get_body_data]].
 
 '''syntax:''' ''ngx.req.set_body_data(data)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, balancer_by_lua*''
 
 Set the current request's request body using the in-memory data specified by the <code>data</code> argument.
 
 If the request body has not been read yet, call [[#ngx.req.read_body|ngx.req.read_body]] first (or turn on [[#lua_need_request_body|lua_need_request_body]] to force this module to read the request body. This is not recommended however). Additionally, the request body must not have been previously discarded by [[#ngx.req.discard_body|ngx.req.discard_body]].
 
 Whether the previous request body has been read into memory or buffered into a disk file, it will be freed or the disk file will be cleaned up immediately, respectively.
+
+Note that this function is also work for balancer phase but it needs to call [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/balancer.md#recreate_request balancer.recreate_request] to make the change take effect after set the request body data or headers.
 
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
@@ -4673,7 +4675,7 @@ See also [[#ngx.req.set_body_file|ngx.req.set_body_file]].
 
 '''syntax:''' ''ngx.req.set_body_file(file_name, auto_clean?)''
 
-'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*''
+'''context:''' ''rewrite_by_lua*, access_by_lua*, content_by_lua*, balancer_by_lua*''
 
 Set the current request's request body using the in-file data specified by the <code>file_name</code> argument.
 
@@ -4684,6 +4686,8 @@ If the optional <code>auto_clean</code> argument is given a <code>true</code> va
 Please ensure that the file specified by the <code>file_name</code> argument exists and is readable by an Nginx worker process by setting its permission properly to avoid Lua exception errors.
 
 Whether the previous request body has been read into memory or buffered into a disk file, it will be freed or the disk file will be cleaned up immediately, respectively.
+
+Note that this function is also work for balancer phase but it needs to call [https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/balancer.md#recreate_request balancer.recreate_request] to make the change take effect after set the request body data or headers.
 
 This function was first introduced in the <code>v0.3.1rc18</code> release.
 
