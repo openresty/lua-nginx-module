@@ -639,6 +639,7 @@ ok
 [cirt]
 
 
+
 === TEST 20: recreate_request refresh body buffer when ngx.req.set_body_data is used in balancer phase
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;;";
