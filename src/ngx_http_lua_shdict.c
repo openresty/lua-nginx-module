@@ -210,7 +210,7 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 
                 dd("time to live: %lld", (long long) ms);
 
-                if (ms < 0) {
+                if (ms <= 0) {
                     dd("node already expired");
                     return NGX_DONE;
                 }
