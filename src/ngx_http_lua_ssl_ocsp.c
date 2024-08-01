@@ -280,7 +280,7 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
     OCSP_RESPONSE         *ocsp = NULL;
     OCSP_BASICRESP        *basic = NULL;
     STACK_OF(X509)        *chain = NULL;
-    ASN1_GENERALIZEDTIME  *thisupdate, *nextupdate;
+    ASN1_GENERALIZEDTIME  *thisupdate = NULL, *nextupdate = NULL;
 
     ocsp = d2i_OCSP_RESPONSE(NULL, &resp, resp_len);
     if (ocsp == NULL) {
