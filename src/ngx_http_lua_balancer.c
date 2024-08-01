@@ -1011,7 +1011,7 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
 
     bp->local->name.len = addr_len;
     bp->local->name.data = (u_char *) (bp->local + 1);
-    memcpy(bp->local->name.data, addr, addr_len);
+    ngx_memcpy(bp->local->name.data, addr, addr_len);
 
     return NGX_OK;
 }
