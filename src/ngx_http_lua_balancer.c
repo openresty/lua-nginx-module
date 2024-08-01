@@ -994,7 +994,7 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
     bp = (ngx_http_lua_balancer_peer_data_t *) u->peer.data;
 
     if (bp->local == NULL) {
-        bp->local = ngx_palloc(r->pool, sizeof(ngx_addr_t) + addr_len + 1);
+        bp->local = ngx_palloc(r->pool, sizeof(ngx_addr_t) + addr_len);
         if (bp->local == NULL) {
             p = ngx_snprintf(errbuf, *errbuf_size, "no memory");
             *errbuf_size = p - errbuf;
@@ -1012,7 +1012,6 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
     bp->local->name.len = addr_len;
     bp->local->name.data = (u_char *) (bp->local + 1);
     memcpy(bp->local->name.data, addr, addr_len);
-    bp->local->name.data[addr_len] = '\0';
 
     return NGX_OK;
 }
