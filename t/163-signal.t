@@ -5,6 +5,9 @@ our $SkipReason;
 BEGIN {
     if ($ENV{TEST_NGINX_USE_HUP}) {
         $SkipReason = "unavailable under hup test mode";
+
+    } elsif ($ENV{TEST_NGINX_CHECK_LEAK}) {
+        $SkipReason = "unavailable under check leak test mode";
     }
 }
 
