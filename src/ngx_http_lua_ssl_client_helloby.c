@@ -712,7 +712,7 @@ ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     }
 #endif
 
-#ifdef SSL_OP_NO_TLSv1_3
+#if defined(NGX_SSL_TLSv1_3) && defined( SSL_OP_NO_TLSv1_3)
     SSL_clear_options(ssl_conn, SSL_OP_NO_TLSv1_3);
     if (!(protocols & NGX_SSL_TLSv1_3)) {
         SSL_set_options(ssl_conn, SSL_OP_NO_TLSv1_3);
