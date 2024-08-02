@@ -35,9 +35,9 @@ __DATA__
             if ngx.ctx.tries == 1 then
                 balancer.set_more_tries(5)
             end
-            
+
             local host = "127.0.0.1"
-            local port = 8090;
+            local port = $TEST_NGINX_RAND_PORT_1;
 
             local ok, err = balancer.set_current_peer(host, port)
             if not ok then
@@ -56,9 +56,9 @@ __DATA__
     }
 
     server {
-        listen 0.0.0.0:8090;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
         location /hello {
-            content_by_lua_block{                
+            content_by_lua_block{
                 local request_counter = ngx.shared.request_counter
                 local first_request = request_counter:get("first_request")
                 if first_request == nil then
@@ -74,7 +74,7 @@ __DATA__
     location = /t {
         proxy_pass http://my_upstream;
         proxy_set_header Connection "keep-alive";
-        
+
         rewrite_by_lua_block {
            ngx.req.set_uri("/hello")
         }
