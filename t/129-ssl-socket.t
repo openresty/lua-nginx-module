@@ -1484,6 +1484,72 @@ SSL reused session
 
 
 === TEST 18: openresty.org: passing SSL verify: keepalive (no reusing the ssl session)
+The session returned by SSL_get1_session maybe different.
+After function tls_process_new_session_ticket, the session saved in SSL->session
+will be replace by a new one.
+
+ngx_ssl_session_t *
+ngx_ssl_get_session(ngx_connection_t *c)
+{
+#ifdef TLS1_3_VERSION
+    if (c->ssl->session) {
+        SSL_SESSION_up_ref(c->ssl->session);
+        return c->ssl->session;
+    }
+#endif
+
+    return SSL_get1_session(c->ssl->connection);
+}
+
+SSL_SESSION *SSL_get1_session(SSL *ssl)
+/* variant of SSL_get_session: caller really gets something */
+{
+    SSL_SESSION *sess;
+    /*
+     * Need to lock this all up rather than just use CRYPTO_add so that
+     * somebody doesn't free ssl->session between when we check it's non-null
+     * and when we up the reference count.
+     */
+    CRYPTO_THREAD_read_lock(ssl->lock);
+    sess = ssl->session;
+    if (sess)
+        SSL_SESSION_up_ref(sess);
+    CRYPTO_THREAD_unlock(ssl->lock);
+    return sess;
+}
+
+#0  tls_process_new_session_ticket (s=0x7e6ea0, pkt=0x7fffffffc820) at ssl/statem/statem_clnt.c:2650
+#1  0x00007ffff7af50fd in read_state_machine (s=0x7e6ea0) at ssl/statem/statem.c:636
+#2  state_machine (s=0x7e6ea0, server=0) at ssl/statem/statem.c:434
+#3  0x00007ffff7aca6b3 in ssl3_read_bytes (s=<optimized out>, type=23, recvd_type=0x0, buf=0x7fffffffc9d7 "\027\320\355t", len=1, 
+    peek=0, readbytes=0x7fffffffc978) at ssl/record/rec_layer_s3.c:1677
+#4  0x00007ffff7ad2250 in ssl3_read_internal (readbytes=0x7fffffffc978, peek=0, len=1, buf=0x7fffffffc9d7, s=0x7e6ea0)
+    at ssl/s3_lib.c:4477
+#5  ssl3_read (s=0x7e6ea0, buf=0x7fffffffc9d7, len=1, readbytes=0x7fffffffc978) at ssl/s3_lib.c:4500
+#6  0x00007ffff7ade695 in SSL_read (s=<optimized out>, buf=buf@entry=0x7fffffffc9d7, num=num@entry=1) at ssl/ssl_lib.c:1799
+#7  0x000000000045a965 in ngx_ssl_recv (c=0x72c3b0, buf=0x7fffffffc9d7 "\027\320\355t", size=1)
+    at src/event/ngx_event_openssl.c:2337
+#8  0x0000000000533b17 in ngx_http_lua_socket_keepalive_close_handler (ev=0x7e2f20)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_socket_tcp.c:5753
+#9  0x000000000052cf40 in ngx_http_lua_socket_tcp_setkeepalive (L=0x74edd0)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_socket_tcp.c:5602
+#10 0x00007ffff7f0fabe in lj_BC_FUNCC ()
+   from /tmp/undodb.72729.1722915526.2470007.80d50d088e818fd4/debuggee-1-zwqz8svp/symbol-files/opt/luajit-sysm/lib/libluajit-5.1.so.2
+#11 0x000000000051f2b2 in ngx_http_lua_run_thread (L=L@entry=0x767670, r=r@entry=0x7edf80, ctx=ctx@entry=0x750e40, nrets=0)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_util.c:1194
+#12 0x0000000000524347 in ngx_http_lua_content_by_chunk (L=0x767670, r=0x7edf80)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_contentby.c:124
+#13 0x000000000047c663 in ngx_http_core_content_phase (r=0x7edf80, ph=0x7b4470) at src/http/ngx_http_core_module.c:1271
+#14 0x000000000047b80d in ngx_http_core_run_phases (r=0x7edf80) at src/http/ngx_http_core_module.c:885
+#15 ngx_http_handler (r=r@entry=0x7edf80) at src/http/ngx_http_core_module.c:868
+#16 0x00000000004854ad in ngx_http_process_request (r=r@entry=0x7edf80) at src/http/ngx_http_request.c:2140
+#17 0x00000000004868e8 in ngx_http_process_request_headers (rev=rev@entry=0x7e2f80) at src/http/ngx_http_request.c:1529
+#18 0x0000000000486468 in ngx_http_process_request_line (rev=0x7e2f80) at src/http/ngx_http_request.c:1196
+#19 0x000000000044b338 in ngx_event_process_posted (cycle=cycle@entry=0x721690, posted=0x62f250 <ngx_posted_events>)
+    at src/event/ngx_event_posted.c:35
+#20 0x000000000044a522 in ngx_process_events_and_timers (cycle=cycle@entry=0x721690) at src/event/ngx_event.c:273
+#21 0x0000000000453819 in ngx_single_process_cycle (cycle=cycle@entry=0x721690) at src/os/unix/ngx_process_cycle.c:323
+#22 0x0000000000429dee in main (argc=argc@entry=5, argv=argv@entry=0x7fffffffd1a8) at src/core/nginx.c:384
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -1548,11 +1614,11 @@ set keepalive: 1 nil
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
 qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl save session: \1
-lua ssl save session: \1
-lua ssl free session: \1
-lua ssl free session: \1
-lua ssl free session: \1
+lua ssl save session: ([0-9A-F]+)
+lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
