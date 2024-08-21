@@ -30,6 +30,7 @@
 static int ngx_http_lua_socket_udp(lua_State *L);
 static int ngx_http_lua_socket_udp_setpeername(lua_State *L);
 static int ngx_http_lua_socket_udp_send(lua_State *L);
+static int ngx_http_lua_socket_udp_buff_send(lua_State *L);
 static int ngx_http_lua_socket_udp_receive(lua_State *L);
 static int ngx_http_lua_socket_udp_settimeout(lua_State *L);
 static void ngx_http_lua_socket_udp_finalize(ngx_http_request_t *r,
@@ -86,13 +87,16 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
     /* udp socket object metatable */
     lua_pushlightuserdata(L, ngx_http_lua_lightudata_mask(
                           socket_udp_metatable_key));
-    lua_createtable(L, 0 /* narr */, 6 /* nrec */);
+    lua_createtable(L, 0 /* narr */, 7 /* nrec */);
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_setpeername);
     lua_setfield(L, -2, "setpeername"); /* ngx socket mt */
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_send);
     lua_setfield(L, -2, "send");
+
+    lua_pushcfunction(L, ngx_http_lua_socket_udp_buff_send);
+    lua_setfield(L, -2, "sendbuf");
 
     lua_pushcfunction(L, ngx_http_lua_socket_udp_receive);
     lua_setfield(L, -2, "receive");
@@ -960,6 +964,139 @@ ngx_http_lua_socket_udp_send(lua_State *L)
     return 1;
 }
 
+
+
+#define stack_diff 1
+static int
+ngx_http_lua_socket_udp_buff_send(lua_State *L)
+{
+    ssize_t                              n;
+    ngx_http_request_t                  *r;
+    ngx_http_lua_socket_udp_upstream_t  *u;
+    ngx_http_lua_loc_conf_t             *llcf;
+    // add new variable for buffer send
+    ngx_str_t                           query;
+    size_t size;
+    size_t head_len;
+    size_t buf_len;
+    u_char *msg_tmp;
+    const char *header_str;
+    const char *buff_str;
+
+
+    if (lua_gettop(L) < 4 ) {
+        return luaL_error(L, "expecting at least 4 arguments (including the object), "
+                          "but got %d", lua_gettop(L));
+    }
+
+    r = ngx_http_lua_get_req(L);
+    if (r == NULL) {
+        return luaL_error(L, "request object not found");
+    }
+
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
+    u = lua_touserdata(L, -1);
+    lua_pop(L, 1);
+
+    if (u == NULL || u->udp_connection.connection == NULL) {
+        llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+        if (llcf->log_socket_errors) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "attempt to send data on a closed socket: u:%p, c:%p",
+                          u, u ? u->udp_connection.connection : NULL);
+        }
+
+        lua_pushnil(L);
+        lua_pushliteral(L, "closed");
+        return 2;
+    }
+
+    if (u->request != r) {
+        return luaL_error(L, "bad request");
+    }
+
+    if (u->ft_type) {
+        u->ft_type = 0;
+    }
+
+    if (u->waiting) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "socket busy");
+        return 2;
+    }
+
+    // check and calculate string len
+    int stack_size = lua_gettop(L);
+    size_t start = luaL_checklong(L, -2);
+    size_t end = luaL_checklong(L, -1);
+    buff_str = luaL_checklstring(L, -3, &buf_len);
+    if (start < 1 || end > buf_len || start > end || start > buf_len)
+    {
+        lua_pushnil(L);
+        lua_pushliteral(L, "start or end index invalid");
+        return 2;
+    }
+    size = (end - start + 1);
+    buf_len = size;
+    if (stack_size > 3 + stack_diff)
+    {
+        for (int i = (-1 * stack_size) + stack_diff; i <= -4; i++)
+        {
+            luaL_checklstring(L, i, &head_len);
+            size += head_len;
+        }
+    }
+    // copy msg
+    query.data = lua_newuserdata(L, size);
+    query.len = size;
+    msg_tmp = query.data;
+    lua_pop(L, 1);
+    if (stack_size > 3 + stack_diff)
+    {
+        for (int i = (-1 * stack_size) + stack_diff; i <= -4; i++)
+        {
+            header_str = lua_tolstring(L, i, &head_len);
+            msg_tmp = ngx_cpymem(msg_tmp, (u_char *)header_str, head_len);
+        }
+    }
+    buff_str = buff_str + start - 1;
+    ngx_memcpy(msg_tmp, (u_char *)buff_str, buf_len);
+    
+    u->ft_type = 0;
+
+    /* mimic ngx_http_upstream_init_request here */
+
+#if 1
+    u->waiting = 0;
+#endif
+
+    dd("sending query %.*s", (int) query.len, query.data);
+
+    n = ngx_send(u->udp_connection.connection, query.data, query.len);
+
+    dd("ngx_send returns %d (query len %d)", (int) n, (int) query.len);
+
+    if (n == NGX_ERROR || n == NGX_AGAIN) {
+        u->socket_errno = ngx_socket_errno;
+
+        return ngx_http_lua_socket_error_retval_handler(r, u, L);
+    }
+
+    if (n != (ssize_t) query.len) {
+        dd("not the while query was sent");
+
+        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_PARTIALWRITE;
+        return ngx_http_lua_socket_error_retval_handler(r, u, L);
+    }
+
+    dd("n == len");
+
+    lua_pushinteger(L, 1);
+    return 1;
+}
 
 static int
 ngx_http_lua_socket_udp_receive(lua_State *L)
