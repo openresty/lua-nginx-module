@@ -1034,39 +1034,39 @@ ngx_http_lua_socket_udp_buff_send(lua_State *L)
     size_t start = luaL_checklong(L, -2);
     size_t end = luaL_checklong(L, -1);
     buff_str = luaL_checklstring(L, -3, &buf_len);
-    
+
     if (start < 1 || end > buf_len || start > end || start > buf_len) {
         lua_pushnil(L);
         lua_pushliteral(L, "start or end index invalid");
         return 2;
     }
-    
+
     size = (end - start + 1);
     buf_len = size;
-    
+
     if (stack_size > 3 + stack_diff) {
         for (int i = (-1 * stack_size) + stack_diff; i <= -4; i++) {
             luaL_checklstring(L, i, &head_len);
             size += head_len;
         }
     }
-    
+
     // copy msg
     query.data = lua_newuserdata(L, size);
     query.len = size;
     msg_tmp = query.data;
     lua_pop(L, 1);
-    
+
     if (stack_size > 3 + stack_diff) {
         for (int i = (-1 * stack_size) + stack_diff; i <= -4; i++) {
             header_str = lua_tolstring(L, i, &head_len);
             msg_tmp = ngx_cpymem(msg_tmp, (u_char *) header_str, head_len);
         }
     }
-    
+
     buff_str = buff_str + start - 1;
     ngx_memcpy(msg_tmp, (u_char *) buff_str, buf_len);
-    
+
     u->ft_type = 0;
 
     /* mimic ngx_http_upstream_init_request here */
