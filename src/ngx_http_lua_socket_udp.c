@@ -985,8 +985,8 @@ ngx_http_lua_socket_udp_buff_send(lua_State *L)
 
 
     if (lua_gettop(L) < 4 ) {
-        return luaL_error(L, "expecting at least 4 arguments (including the object), "
-                          "but got %d", lua_gettop(L));
+        return luaL_error(L, "expecting at least 4 arguments, "
+                          "but got %d  (including the object)", lua_gettop(L));
     }
 
     r = ngx_http_lua_get_req(L);
