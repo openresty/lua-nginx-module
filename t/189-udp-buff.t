@@ -1,15 +1,4 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-our $SkipReason;
-
-BEGIN {
-    if ($ENV{TEST_NGINX_CHECK_LEAK}) {
-        $SkipReason = "unavailable for the hup tests";
-
-    } else {
-        $ENV{TEST_NGINX_USE_HUP} = 1;
-        undef $ENV{TEST_NGINX_USE_STAP};
-    }
-}
 
 use Test::Nginx::Socket::Lua 'no_plan';
 
