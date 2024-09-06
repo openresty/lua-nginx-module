@@ -307,7 +307,7 @@ lua ssl server name: "test.com"
 
             local pkey_der = ffi.string(out, rc)
 
-            local rc = ffi.C.ngx_http_lua_ffi_ssl_set_der_private_key(r, pkey_der, #pkey_der, errmsg)
+            local rc = ffi.C.  3(r, pkey_der, #pkey_der, errmsg)
             if rc ~= 0 then
                 ngx.log(ngx.ERR, "failed to set DER priv key: ",
                         ffi.string(errmsg[0]))
