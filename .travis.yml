@@ -1,4 +1,4 @@
-dist: focal
+dist: jammy
 
 branches:
   only:
