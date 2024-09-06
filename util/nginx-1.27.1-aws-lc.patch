@@ -1,5 +1,4 @@
 diff -upr nginx-1.27.1/src/event/ngx_event_openssl.h nginx-1.27.1-patched/src/event/ngx_event_openssl.h
-index c062f91..447f003 100644
 --- nginx-1.27.1/src/event/ngx_event_openssl.h
 +++ nginx-1.27.1-patched/src/event/ngx_event_openssl.h
 @@ -25,7 +25,7 @@
@@ -12,7 +11,6 @@ index c062f91..447f003 100644
  #include <openssl/chacha.h>
  #else
 diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic.c
-index b0cf056..c1ba43f 100644
 --- nginx-1.27.1/src/event/quic/ngx_event_quic.c
 +++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic.c
 @@ -969,7 +969,7 @@ ngx_quic_handle_payload(ngx_connection_t *c, ngx_quic_header_t *pkt)
@@ -25,7 +23,6 @@ index b0cf056..c1ba43f 100644
  
      if (pkt->level == ssl_encryption_application && !c->ssl->handshaked) {
 diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.c
-index 88e6954..cd67eac 100644
 --- nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c
 +++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.c
 @@ -30,7 +30,7 @@ static uint64_t ngx_quic_parse_pn(u_char **pos, ngx_int_t len, u_char *mask,
@@ -161,7 +158,6 @@ index 88e6954..cd67eac 100644
  
      if (ctx == NULL) {
 diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.h
-index 34cfee6..20cd910 100644
 --- nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h
 +++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.h
 @@ -24,7 +24,7 @@
@@ -174,7 +170,6 @@ index 34cfee6..20cd910 100644
  #define ngx_quic_crypto_ctx_t         EVP_AEAD_CTX
  #else
 diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic_ssl.c
-index 7872783..163e0c5 100644
 --- nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c
 +++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_ssl.c
 @@ -11,6 +11,7 @@
