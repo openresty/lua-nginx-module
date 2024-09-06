@@ -28,7 +28,12 @@ if [ "$USE_PCRE2" = "Y" ]; then
     PCRE_LIB=$PCRE2_LIB
 fi
 
-time ngx-build $force $version \
+patch=""
+if [ -n "$AWSLC" ]; then
+    patch="-p util/aws-lc-nginx.patch"
+fi
+
+time ngx-build $force $version $patch \
             --with-threads \
             --with-pcre-jit \
             $disable_pcre2 \
