@@ -17,6 +17,12 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
+my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
+my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+if ($openssl_version =~ m/AWS-LC/) {
+    $ENV{TEST_NGINX_USE_AWSLC} = 1;
+}
+
 #log_level 'warn';
 log_level 'debug';
 
@@ -93,6 +99,7 @@ run_tests();
 __DATA__
 
 === TEST 1: simple cert + private key
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -247,6 +254,7 @@ lua ssl server name: "test.com"
 
 
 === TEST 2: ECDSA cert + private key
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -530,6 +538,7 @@ failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
 
 
 === TEST 4: simple cert + private key cdata
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -680,6 +689,7 @@ lua ssl server name: "test.com"
 
 
 === TEST 5: ECDSA cert + private key cdata
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1040,6 +1050,7 @@ client certificate subject: nil
 
 
 === TEST 9: simple cert + private key with passphrase
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1336,6 +1347,7 @@ SNI is test.com
 
 
 === TEST 11: DER cert + private key cdata
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_AWSLC}
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
