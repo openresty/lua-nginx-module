@@ -1,7 +1,7 @@
-diff --git a/nginx-1.27.1/src/event/ngx_event_openssl.h b/nginx-1.27.1/src/event/ngx_event_openssl.h
+diff -upr nginx-1.27.1/src/event/ngx_event_openssl.h nginx-1.27.1-patched/src/event/ngx_event_openssl.h
 index c062f91..447f003 100644
---- a/nginx-1.27.1/src/event/ngx_event_openssl.h
-+++ b/nginx-1.27.1/src/event/ngx_event_openssl.h
+--- nginx-1.27.1/src/event/ngx_event_openssl.h
++++ nginx-1.27.1-patched/src/event/ngx_event_openssl.h
 @@ -25,7 +25,7 @@
  #endif
  #include <openssl/evp.h>
@@ -11,10 +11,10 @@ index c062f91..447f003 100644
  #include <openssl/hkdf.h>
  #include <openssl/chacha.h>
  #else
-diff --git a/nginx-1.27.1/src/event/quic/ngx_event_quic.c b/nginx-1.27.1/src/event/quic/ngx_event_quic.c
+diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic.c
 index b0cf056..c1ba43f 100644
---- a/nginx-1.27.1/src/event/quic/ngx_event_quic.c
-+++ b/nginx-1.27.1/src/event/quic/ngx_event_quic.c
+--- nginx-1.27.1/src/event/quic/ngx_event_quic.c
++++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic.c
 @@ -969,7 +969,7 @@ ngx_quic_handle_payload(ngx_connection_t *c, ngx_quic_header_t *pkt)
          return NGX_DECLINED;
      }
@@ -24,10 +24,10 @@ index b0cf056..c1ba43f 100644
      /* OpenSSL provides read keys for an application level before it's ready */
  
      if (pkt->level == ssl_encryption_application && !c->ssl->handshaked) {
-diff --git a/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c b/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c
+diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.c
 index 88e6954..cd67eac 100644
---- a/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c
-+++ b/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c
+--- nginx-1.27.1/src/event/quic/ngx_event_quic_protection.c
++++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.c
 @@ -30,7 +30,7 @@ static uint64_t ngx_quic_parse_pn(u_char **pos, ngx_int_t len, u_char *mask,
  
  static ngx_int_t ngx_quic_crypto_open(ngx_quic_secret_t *s, ngx_str_t *out,
@@ -160,10 +160,10 @@ index 88e6954..cd67eac 100644
      uint32_t         cnt;
  
      if (ctx == NULL) {
-diff --git a/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h b/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h
+diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.h
 index 34cfee6..20cd910 100644
---- a/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h
-+++ b/nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h
+--- nginx-1.27.1/src/event/quic/ngx_event_quic_protection.h
++++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_protection.h
 @@ -24,7 +24,7 @@
  #define NGX_QUIC_MAX_MD_SIZE          48
  
@@ -173,10 +173,10 @@ index 34cfee6..20cd910 100644
  #define ngx_quic_cipher_t             EVP_AEAD
  #define ngx_quic_crypto_ctx_t         EVP_AEAD_CTX
  #else
-diff --git a/nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c b/nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c
+diff -upr nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c nginx-1.27.1-patched/src/event/quic/ngx_event_quic_ssl.c
 index 7872783..163e0c5 100644
---- a/nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c
-+++ b/nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c
+--- nginx-1.27.1/src/event/quic/ngx_event_quic_ssl.c
++++ nginx-1.27.1-patched/src/event/quic/ngx_event_quic_ssl.c
 @@ -11,6 +11,7 @@
  
  
@@ -194,9 +194,9 @@ index 7872783..163e0c5 100644
      if (SSL_set_quic_early_data_context(ssl_conn, p, clen) == 0) {
          ngx_log_error(NGX_LOG_INFO, c->log, 0,
                        "quic SSL_set_quic_early_data_context() failed");
-diff --git a/nginx-1.27.1/src/event/ngx_event_openssl.h b/nginx-1.27.1/src/event/ngx_event_openssl.h
---- a/nginx-1.27.1/src/event/ngx_event_openssl.c	Mon Feb 26 20:00:30 2024 +0000
-+++ b/nginx-1.27.1/src/event/ngx_event_openssl.c	Mon Feb 26 20:00:32 2024 +0000
+diff -upr nginx-1.27.1/src/event/ngx_event_openssl.h nginx-1.27.1-patched/src/event/ngx_event_openssl.h
+--- nginx-1.27.1/src/event/ngx_event_openssl.c	Mon Feb 26 20:00:30 2024 +0000
++++ nginx-1.27.1-patched/src/event/ngx_event_openssl.c	Mon Feb 26 20:00:32 2024 +0000
 @@ -5163,6 +5163,72 @@
          return NGX_OK;
      }
