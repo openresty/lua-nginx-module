@@ -30,7 +30,7 @@ fi
 
 patch=""
 if [ -n "$AWSLC" ]; then
-    patch="-p ../util/aws-lc-nginx.patch"
+    patch="-p $root/util/aws-lc-nginx.patch"
 fi
 
 time ngx-build $force $patch $version \
