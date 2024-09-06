@@ -30,10 +30,10 @@ fi
 
 patch=""
 if [ -n "$AWSLC" ]; then
-    patch="-p util/aws-lc-nginx.patch"
+    patch="-p ../util/aws-lc-nginx.patch"
 fi
 
-time ngx-build $force $version $patch \
+time ngx-build $force $patch $version \
             --with-threads \
             --with-pcre-jit \
             $disable_pcre2 \
