@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
 # this script is for developers only.
+# to build nginx with aws-lc, need two patches:
+# https://mailman.nginx.org/pipermail/nginx-devel/2024-February/3J4C2B5L67YSKARKNVLLQHHR7QXXMMRI.html
+# https://mailman.nginx.org/pipermail/nginx-devel/2024-February/R2AD2Q4XEVNAYEZY6WEVQBAKTM45OMTG.html
+# those patches are merged into one patch aws-lc-nginx.patch
+# to test nginx with aws-lc, need one patch:
+# https://github.com/aws/aws-lc/blob/main/tests/ci/integration/nginx_tests_patch/aws-lc-nginx-tests.patch
 
 root=`pwd`
 
