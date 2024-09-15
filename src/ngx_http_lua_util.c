@@ -764,10 +764,6 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         }
 
         r->headers_out.content_length_n = size;
-
-        if (r->headers_out.content_length) {
-            r->headers_out.content_length->hash = 0;
-        }
     }
 
 send:
