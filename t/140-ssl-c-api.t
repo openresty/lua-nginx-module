@@ -954,8 +954,8 @@ client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
 
 --- request
 GET /t
---- response_body
-FAILED:self signed certificate
+--- response_body eval
+qr/FAILED:self[- ]signed certificate/
 
 --- error_log
 client certificate subject: emailAddress=agentzh@gmail.com,CN=test.com
