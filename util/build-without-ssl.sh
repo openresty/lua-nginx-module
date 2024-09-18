@@ -26,10 +26,10 @@ add_fake_shm_module="--add-module=$root/t/data/fake-shm-module"
 
 disable_pcre2=--without-pcre2
 answer=`$root/util/ver-ge "$NGINX_VERSION" 1.25.1`
-if [ "$answer" = "N" ] || [ "$USE_PCRE2" = "Y" ]; then
+if [ "$answer" = "N" ] || [ -n "$PCRE2_VER" ]; then
     disable_pcre2=""
 fi
-if [ "$USE_PCRE2" = "Y" ]; then
+if [ -n "$PCRE2_VER" ]; then
     PCRE_INC=$PCRE2_INC
     PCRE_LIB=$PCRE2_LIB
 fi
