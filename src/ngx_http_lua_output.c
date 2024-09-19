@@ -723,7 +723,7 @@ ngx_http_lua_ngx_send_headers(lua_State *L)
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                    "lua send headers");
+                   "lua send headers");
 
     rc = ngx_http_lua_send_header_if_needed(r, ctx);
     if (rc == NGX_ERROR || rc > NGX_OK) {

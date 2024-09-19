@@ -539,6 +539,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             if (ngx_http_lua_set_content_type(r) != NGX_OK) {
                 return NGX_ERROR;
             }
+
             ngx_http_clear_content_length(r);
             ngx_http_clear_accept_ranges(r);
         }
