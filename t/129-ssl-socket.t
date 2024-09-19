@@ -1155,7 +1155,7 @@ SSL reused session
         server_name         test.com;
         ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols       TLSv1;
+        ssl_protocols       TLSv1.2;
 
         location / {
             content_by_lua_block {
@@ -1165,7 +1165,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    lua_ssl_ciphers ECDHE-RSA-AES256-SHA;
+    lua_ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384;
 
     location /t {
         content_by_lua '
@@ -1229,7 +1229,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
 ['lua ssl server name: "test.com"',
-qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-GCM-SHA384 (SSLv3|TLSv1\.2)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1245,7 +1245,7 @@ SSL reused session
         server_name         test.com;
         ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols       TLSv1;
+        ssl_protocols       TLSv1.2;
 
         location / {
             content_by_lua_block {
@@ -1255,7 +1255,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    lua_ssl_protocols TLSv1;
+    lua_ssl_protocols TLSv1.2;
 
     location /t {
         content_by_lua '
@@ -1319,7 +1319,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
 ['lua ssl server name: "test.com"',
-qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+qr/SSL: TLSv1\.2, cipher: "ECDHE-RSA-AES256-GCM-SHA384 TLSv1\.2/]
 --- no_error_log
 SSL reused session
 [error]
@@ -2614,10 +2614,10 @@ SSL reused session
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 18: self signed certificate
-
+--- response_body eval
+qr/connected: 1
+failed to do SSL handshake: 18: self[- ]signed certificate
+/ms
 --- user_files eval
 ">>> test.key
 $::TestCertificateKey
@@ -2626,8 +2626,8 @@ $::TestCertificate"
 
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl certificate verify error: (18: self signed certificate)
+--- error_log eval
+qr/lua ssl certificate verify error: \(18: self[- ]signed certificate\)/
 --- no_error_log
 SSL reused session
 [alert]

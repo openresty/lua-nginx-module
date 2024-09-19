@@ -535,13 +535,11 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (!ctx->mime_set
-            && ngx_http_lua_set_content_type(r, ctx) != NGX_OK)
-        {
-            return NGX_ERROR;
-        }
-
         if (!ctx->headers_set) {
+            if (ngx_http_lua_set_content_type(r) != NGX_OK) {
+                return NGX_ERROR;
+            }
+
             ngx_http_clear_content_length(r);
             ngx_http_clear_accept_ranges(r);
         }
@@ -764,10 +762,6 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         }
 
         r->headers_out.content_length_n = size;
-
-        if (r->headers_out.content_length) {
-            r->headers_out.content_length->hash = 0;
-        }
     }
 
 send:

@@ -9,7 +9,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 9);
+plan tests => repeat_each() * (blocks() * 2 + 10);
 
 #no_diff();
 #no_long_string();
@@ -293,3 +293,55 @@ ngx.status: 654
 --- no_error_log
 [error]
 --- error_code: 654
+
+
+
+=== TEST 17: set status and reason
+--- config
+location = /upstream {
+    content_by_lua_block {
+        local resp = require "ngx.resp"
+        resp.set_status(500, "user defined reason")
+        ngx.say("set_status_and_reason")
+    }
+}
+
+location /t {
+   content_by_lua_block {
+       local sock = ngx.socket.tcp()
+       local port = ngx.var.server_port
+       local ok, err = sock:connect("127.0.0.1", port)
+       if not ok then
+           ngx.say("failed to connect: ", err)
+           return
+       end
+
+       local req = "GET /upstream HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+
+       local bytes, err = sock:send(req)
+       if not bytes then
+           ngx.say("failed to send request: ", err)
+           return
+       end
+
+       local found = false
+       while true do
+           local line, err, part = sock:receive()
+           if line then
+               if ngx.re.find(line, "HTTP/1.1 500 user defined reason") then
+                   ngx.say("match")
+               end
+           else
+               break
+           end
+       end
+
+       sock:close()
+   }
+}
+--- request
+GET /t
+--- response_body
+match
+--- no_error_log
+[error]
