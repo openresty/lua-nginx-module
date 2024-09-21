@@ -536,7 +536,7 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         }
 
         if (!ctx->headers_set) {
-            if (ngx_http_lua_set_content_type(r) != NGX_OK) {
+            if (ngx_http_lua_set_content_type(r, ctx) != NGX_OK) {
                 return NGX_ERROR;
             }
 
