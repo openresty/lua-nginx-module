@@ -7989,14 +7989,14 @@ An optional Lua table can be specified as the last argument to this method to sp
 * `backlog`
 	if specified, this module will limit the total number of opened connections
 	for this pool. No more connections than `pool_size` can be opened
-	for this pool at any time. If the connection pool is full, subsequent
-	connect operations will be queued into a queue equal to this option's
-	value (the "backlog" queue).
+	for this pool at any time. If `pool_size` number of connections are in use,
+	subsequent connect operations will be queued into a queue equal to this
+	option's value (the "backlog" queue).
 	If the number of queued connect operations is equal to `backlog`,
 	subsequent connect operations will fail and return `nil` plus the
 	error string `"too many waiting connect operations"`.
-	The queued connect operations will be resumed once the number of connections
-	in the pool is less than `pool_size`.
+	The queued connect operations will be resumed once the number of active
+        connections becomes less than `pool_size`.
 	The queued connect operation will abort once they have been queued for more
 	than `connect_timeout`, controlled by
 	[settimeouts](#tcpsocksettimeouts), and will return `nil` plus
