@@ -7996,7 +7996,7 @@ An optional Lua table can be specified as the last argument to this method to sp
 	subsequent connect operations will fail and return `nil` plus the
 	error string `"too many waiting connect operations"`.
 	The queued connect operations will be resumed once the number of active
-  	connections becomes less than `pool_size`.
+	connections becomes less than `pool_size`.
 	The queued connect operation will abort once they have been queued for more
 	than `connect_timeout`, controlled by
 	[settimeouts](#tcpsocksettimeouts), and will return `nil` plus
