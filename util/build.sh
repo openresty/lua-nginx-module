@@ -45,7 +45,7 @@ time ngx-build $force $version \
             --with-pcre-jit \
             $disable_pcre2 \
             --with-ipv6 \
-            --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE_INC -I$OPENSSL_INC" \
+            --with-cc-opt="$ENABLE_AWS_LC-DNGX_LUA_USE_ASSERT -I$PCRE_INC -I$OPENSSL_INC" \
             --with-http_v2_module \
             $add_http3_module \
             --with-http_realip_module \

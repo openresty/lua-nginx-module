@@ -87,7 +87,7 @@ install:
   - if [ -n "$PCRE_VER" ]; then wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v1.0.0/pcre-${PCRE_VER}-x64-focal.tar.gz; fi
   - if [ -n "$PCRE2_VER" ]; then wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v1.0.0/pcre2-${PCRE2_VER}-x64-focal.tar.gz; fi
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
-  - wget -O aws-lc-1.34.2.tar.gz https://github.com/aws/aws-lc/archive/refs/tags/v1.34.2.tar.gz
+  - wget -O aws-lc.tar.gz https://github.com/aws/aws-lc/archive/refs/tags/v1.34.2.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty
@@ -142,7 +142,7 @@ script:
   #- if [ -n "$PCRE2_VER" ]; then tar zxf download-cache/pcre2-$PCRE2_VER.tar.gz; cd pcre2-$PCRE2_VER/; ./configure --prefix=$PCRE2_PREFIX --enable-jit --enable-utf > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
   #- if [ -n "$OPENSSL_VER" ]; then tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz; cd openssl-$OPENSSL_VER/; patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch; ./config shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX --libdir=lib -DPURIFY > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
   - if [ -n "$BORINGSSL" ]; then sudo mkdir -p /opt/ssl && sudo tar -C /opt/ssl -xf boringssl-20230902-x64-focal.tar.gz --strip-components=1; fi
-  - if [ -n "$AWSLC" ]; then sudo mkdir -p /opt/ssl; sudo sh util/build-aws-lc.sh; export CFLAGS="-DOPENSSL_IS_BORINGSSL"; fi
+  - if [ -n "$AWSLC" ]; then sudo mkdir -p /opt/ssl; sudo sh util/build-aws-lc.sh; export ENABLE_AWS_LC="-DOPENSSL_IS_BORINGSSL "; fi
   - if [ -n "$OPENSSL_VER" ]; then sudo mkdir -p /opt/ssl && sudo tar -C /opt/ssl -xf openssl-$OPENSSL_VER-x64-focal.tar.gz --strip-components=2; fi
   - if [ -n "$PCRE_VER" ]; then sudo mkdir -p $PCRE_PREFIX && sudo tar -C $PCRE_PREFIX -xf pcre-$PCRE_VER-x64-focal.tar.gz --strip-components=2; fi
   - if [ -n "$PCRE2_VER" ]; then sudo mkdir -p $PCRE2_PREFIX && sudo tar -C $PCRE2_PREFIX -xf pcre2-$PCRE2_VER-x64-focal.tar.gz --strip-components=2; fi
