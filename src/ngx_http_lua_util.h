@@ -261,6 +261,7 @@ void ngx_http_lua_cleanup_free(ngx_http_request_t *r,
 #if (NGX_HTTP_LUA_HAVE_SA_RESTART)
 void ngx_http_lua_set_sa_restart(ngx_log_t *log);
 #endif
+ngx_int_t ngx_http_lua_decode_base64mime(ngx_str_t *dst, ngx_str_t *src);
 
 ngx_addr_t *ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len);
 

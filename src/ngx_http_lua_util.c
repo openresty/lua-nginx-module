@@ -535,11 +535,13 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
             r->headers_out.status = NGX_HTTP_OK;
         }
 
-        if (!ctx->headers_set) {
-            if (ngx_http_lua_set_content_type(r) != NGX_OK) {
-                return NGX_ERROR;
-            }
+        if (!ctx->mime_set
+            && ngx_http_lua_set_content_type(r, ctx) != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
 
+        if (!ctx->headers_set) {
             ngx_http_clear_content_length(r);
             ngx_http_clear_accept_ranges(r);
         }
@@ -4396,6 +4398,86 @@ ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
         dst->len = len + 2 * escape;
         dst->data[dst->len] = '\0';
     }
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_decode_base64mime(ngx_str_t *dst, ngx_str_t *src)
+{
+    size_t          i;
+    u_char         *d, *s, ch;
+    size_t          data_len = 0;
+    u_char          buf[4];
+    size_t          buf_len = 0;
+    static u_char   basis[] = {
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77, 77, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 77, 77, 77, 77, 77, 77,
+        77,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 77, 77, 77, 77, 77,
+        77, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 77, 77, 77, 77, 77,
+
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77
+    };
+
+    for (i = 0; i < src->len; i++) {
+        ch = src->data[i];
+        if (ch == '=') {
+            break;
+        }
+
+        if (basis[ch] == 77) {
+            continue;
+        }
+
+        data_len++;
+    }
+
+    if (data_len % 4 == 1) {
+        return NGX_ERROR;
+    }
+
+    s = src->data;
+    d = dst->data;
+
+    for (i = 0; i < src->len; i++) {
+        if (s[i] == '=') {
+            break;
+        }
+
+        if (basis[s[i]] == 77) {
+            continue;
+        }
+
+        buf[buf_len++] = s[i];
+        if (buf_len == 4) {
+            *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
+            *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
+            *d++ = (u_char) (basis[buf[2]] << 6 | basis[buf[3]]);
+            buf_len = 0;
+        }
+    }
+
+    if (buf_len > 1) {
+        *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
+    }
+
+    if (buf_len > 2) {
+        *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
+    }
+
+    dst->len = d - dst->data;
 
     return NGX_OK;
 }

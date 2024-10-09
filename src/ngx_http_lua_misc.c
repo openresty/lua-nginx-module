@@ -103,7 +103,7 @@ ngx_http_lua_ffi_set_resp_status_and_reason(ngx_http_request_t *r, int status,
         ngx_str_set(&r->headers_out.status_line, "101 Switching Protocols");
 
     } else if (reason != NULL && reason_len > 0) {
-        reason_len += 5; /* "ddd <reason>\0" */
+        reason_len += 4; /* "ddd <reason>" */
         buf = ngx_palloc(r->pool, reason_len);
         if (buf == NULL) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no memory");
