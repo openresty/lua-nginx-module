@@ -6255,7 +6255,7 @@ ngx.encode_base64
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Encodes `str` to a base64 digest.
+Encodes `str` to a base64 digest. For base64url encoding use [`base64.encode_base64url`](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/base64.md#encode_base64url).
 
 Since the `0.9.16` release, an optional boolean-typed `no_padding` argument can be specified to control whether the base64 padding should be appended to the resulting digest (default to `false`, i.e., with padding enabled).
 
@@ -6268,8 +6268,9 @@ ngx.decode_base64
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Decodes the `str` argument as a base64 digest to the raw form.
-The `str` should be standard 'base64' encoding for RFC 3548 or RFC 4648, and will returns `nil` if is not well formed or any characters not in the base encoding alphabet.
+Decodes the `str` argument as a base64 digest to the raw form. For base64url decoding use [`base64.decode_base64url`](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/base64.md#decode_base64url).
+
+The `str` should be standard 'base64' encoding for RFC 3548 or RFC 4648, and will returns `nil` if is not well formed or any characters not in the base encoding alphabet. Padding may be omitted from the input.
 
 [Back to TOC](#nginx-api-for-lua)
 
