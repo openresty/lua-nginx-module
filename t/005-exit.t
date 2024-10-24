@@ -271,6 +271,7 @@ Logged in 56
 
 
 === TEST 8: working with ngx_auth_request
+--- no_http2
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 --- http_config eval
 "

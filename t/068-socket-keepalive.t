@@ -3034,6 +3034,7 @@ lua tcp socket keepalive create connection pool for key "B"
 
 
 === TEST 54: wrong first argument for setkeepalive
+--- no_http2
 --- quic_max_idle_timeout: 1.2
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"

@@ -449,6 +449,7 @@ GET /lua
 
 
 === TEST 21: lua error (string)
+--- no_http2
 --- config
     location /lua {
         set $foo '';
@@ -473,6 +474,7 @@ qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 s
 
 
 === TEST 22: lua error (nil)
+--- no_http2
 --- config
     location /lua {
         set $foo '';
