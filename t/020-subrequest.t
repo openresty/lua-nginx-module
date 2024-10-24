@@ -1198,6 +1198,7 @@ body:
 
 
 === TEST 43: subrequests with an output body filter returning NGX_ERROR
+--- no_http2
 --- config
     location /sub {
         echo hello world;

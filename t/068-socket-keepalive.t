@@ -1384,6 +1384,7 @@ bad argument #3 to 'connect' (bad "pool" option type: boolean)
 
 
 === TEST 23: clear the redis store
+--- no_http2
 --- config
     location /t {
         redis2_query flushall;

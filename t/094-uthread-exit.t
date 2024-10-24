@@ -1313,6 +1313,7 @@ attempt to abort with pending subrequests
 
 
 === TEST 16: exit in entry thread (user thread is still pending on ngx.location.capture_multi), without pending output
+--- no_http2
 --- config
     location /lua {
         client_body_timeout 12000ms;
@@ -1407,6 +1408,7 @@ qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by se
 
 
 === TEST 17: exit(444) in user thread (entry thread is still pending on ngx.location.capture), with pending output
+--- no_http2
 --- config
     location /lua {
         client_body_timeout 12000ms;
@@ -1492,6 +1494,7 @@ qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by se
 
 
 === TEST 18: exit(408) in user thread (entry thread is still pending on ngx.location.capture), with pending output
+--- no_http2
 --- config
     location /lua {
         client_body_timeout 12000ms;

@@ -124,6 +124,7 @@ GET /api?user=agentz
 
 === TEST 6: working with ngx_auth_request (simplest form, w/o ngx_memc)
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 --- http_config eval
 "
     lua_package_cpath '$::LuaCpath';
@@ -197,6 +198,7 @@ Logged in 56
 
 === TEST 7: working with ngx_auth_request (simplest form)
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+--- no_http2
 --- http_config eval
 "
     lua_package_cpath '$::LuaCpath';

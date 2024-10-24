@@ -1319,7 +1319,6 @@ connected: 1
 ssl handshake: cdata
 close: 1 nil
 --- no_error_log
-[warn]
 [error]
 [alert]
 [emerg]

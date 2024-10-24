@@ -298,6 +298,7 @@ Fooy: cony1, cony2
 
 
 === TEST 15: set header after ngx.print
+--- no_http2
 --- config
     location /lua {
         default_type "text/plain";

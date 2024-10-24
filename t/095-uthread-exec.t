@@ -344,6 +344,7 @@ attempt to abort with pending subrequests
 
 
 === TEST 6: exec in entry thread (user thread is still pending on ngx.location.capture), without pending output
+--- no_http2
 --- config
     location /lua {
         client_body_timeout 12000ms;
