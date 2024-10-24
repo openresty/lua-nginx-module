@@ -1135,7 +1135,6 @@ free request
 attempt to abort with pending subrequests
 --- no_error_log
 [alert]
-[warn]
 
 
 
@@ -1658,6 +1657,6 @@ free request
 --- no_error_log
 [alert]
 [error]
-[warn]
+
 --- curl_error eval
 qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#

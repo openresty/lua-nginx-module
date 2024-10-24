@@ -3116,6 +3116,7 @@ qr{HTTP/3 stream 0 reset by server}
 
 
 === TEST 55: wrong second argument for setkeepalive
+--- no_http2
 --- quic_max_idle_timeout: 1.2
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"

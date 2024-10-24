@@ -777,7 +777,7 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
-curl: (95) HTTP/3 stream 0 reset by server
+-qr/curl: \(95\) HTTP/3 stream 0 reset by server|curl: \(92\) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
 
 
 
@@ -795,7 +795,7 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
-curl: (95) HTTP/3 stream 0 reset by server
+-qr/curl: \(95\) HTTP/3 stream 0 reset by server|curl: \(92\) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
 
 
 

@@ -64,7 +64,6 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 [lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
 [
-'[warn]',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 

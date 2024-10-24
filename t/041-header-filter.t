@@ -468,7 +468,7 @@ failed to run header_filter_by_lua*: header_filter_by_lua(nginx.conf:47):2: Some
 --- no_error_log
 [alert]
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly|curl: \(28\) Remote peer returned unexpected data|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -492,7 +492,7 @@ failed to run header_filter_by_lua*: unknown reason
 --- no_error_log
 [alert]
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly|curl: \(28\) Remote peer returned unexpected data|curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server/
 
 
 
@@ -867,7 +867,7 @@ failed to load inlined Lua code: header_filter_by_lua(nginx.conf:41):2: unexpect
 --- no_error_log
 no_such_error
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
 
 
 
@@ -898,7 +898,7 @@ failed to load inlined Lua code: header_filter_by_lua(nginx.conf:49):2: unexpect
 --- no_error_log
 no_such_error
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
 
 
 
@@ -924,4 +924,4 @@ failed to load inlined Lua code: header_filter_by_lua(...90123456789012345678901
 --- no_error_log
 [alert]
 --- curl_error eval
-qr/curl: \(56\) Failure when receiving data from the peer/
+qr/curl: \(56\) Failure when receiving data from the peer|curl: \(56\) Failure when receiving data from the peer|curl: \(92\) HTTP\/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
