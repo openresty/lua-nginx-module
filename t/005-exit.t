@@ -11,7 +11,7 @@ repeat_each(2);
 #log_level('warn');
 #worker_connections(1024);
 
-plan tests => repeat_each() * (blocks() * 3 + 2);
+plan tests => repeat_each() * (blocks() * 3 + 4);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
@@ -765,6 +765,7 @@ GET /t
 
 
 === TEST 27: accepts NGX_ERROR
+--- no_http2
 --- config
     location = /t {
         content_by_lua_block {
@@ -778,11 +779,11 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
--qr/curl: \(95\) HTTP/3 stream 0 reset by server|curl: \(92\) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
-
+curl: (95) HTTP/3 stream 0 reset by server
 
 
 === TEST 28: accepts NGX_DECLINED
+--- no_http2
 --- config
     location = /t {
         content_by_lua_block {
@@ -796,8 +797,7 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
--qr/curl: \(95\) HTTP/3 stream 0 reset by server|curl: \(92\) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR \(err 2\)/
-
+curl: (95) HTTP/3 stream 0 reset by server
 
 
 === TEST 29: refuses NGX_AGAIN
