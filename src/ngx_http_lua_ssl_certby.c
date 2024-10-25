@@ -1433,7 +1433,7 @@ ngx_http_lua_ffi_set_priv_key(ngx_http_request_t *r,
 
     pkey = cdata;
     if (pkey == NULL) {
-        *err = "invalid private key failed";
+        *err = "invalid private key";
         goto failed;
     }
 
