@@ -782,6 +782,7 @@ GET /t
 curl: (95) HTTP/3 stream 0 reset by server
 
 
+
 === TEST 28: accepts NGX_DECLINED
 --- no_http2
 --- config
@@ -798,6 +799,7 @@ GET /t
 [error]
 --- curl_error
 curl: (95) HTTP/3 stream 0 reset by server
+
 
 
 === TEST 29: refuses NGX_AGAIN

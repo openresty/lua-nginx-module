@@ -43,6 +43,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 ]
 
 
+
 === TEST 2: exit 403
 --- http_config
     upstream backend {
@@ -222,6 +223,7 @@ print("hello from balancer by lua!")
 '[lua] a.lua:1: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
+
 
 
 === TEST 9: cosockets are disabled
