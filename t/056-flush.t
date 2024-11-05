@@ -491,7 +491,6 @@ GET /test
 
 
 === TEST 17: limit_rate
---- no_http2
 --- quic_max_idle_timeout: 2
 --- config
     location /test {
@@ -517,7 +516,7 @@ GET /test
 my @errlog;
 if (defined $ENV{TEST_NGINX_USE_HTTP2}) {
     @errlog = [
-qr/lua writes elapsed 0\.[7-9]\d+ sec/,
+qr/lua writes elapsed (?:0\.[7-9]\d+|[12]\.\d+) sec/,
 qr/lua flush requires waiting: buffered 0x[0-9a-f]+, delayed:1/,
 ];
 } else {
