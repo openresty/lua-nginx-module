@@ -527,7 +527,6 @@ qr/lua flush requires waiting: buffered 0x[0-9a-f]+, delayed:1/,
 ];
 }
 @errlog;
-
 --- no_error_log
 [error]
 --- timeout: 4
