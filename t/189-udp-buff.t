@@ -20,6 +20,7 @@ __DATA__
     location /lua {
         content_by_lua_block {
             local udpsock = ngx.socket.udp()
+            udpsock:settimeout(500)
             local host,port = "127.0.0.1",8080
             local ok, err = udpsock:setpeername(host, port)
             if not ok then
