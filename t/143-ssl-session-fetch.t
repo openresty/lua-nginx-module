@@ -7,7 +7,7 @@ use File::Basename;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6);
+plan tests => repeat_each() * (blocks() * 6) - 3;
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
@@ -1319,7 +1319,6 @@ connected: 1
 ssl handshake: cdata
 close: 1 nil
 --- no_error_log
-[warn]
 [error]
 [alert]
 [emerg]

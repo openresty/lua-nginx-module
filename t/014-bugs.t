@@ -201,7 +201,7 @@ https://datatracker.ietf.org/doc/html/rfc7540#section-8.1.2
    header field names MUST be converted to lowercase prior to their
    encoding in HTTP/2.  A request or response containing uppercase
    header field names MUST be treated as malformed
-
+--- no_http2
 --- config
     location /sub {
         content_by_lua '

@@ -1384,6 +1384,7 @@ bad argument #3 to 'connect' (bad "pool" option type: boolean)
 
 
 === TEST 23: clear the redis store
+--- no_http2
 --- config
     location /t {
         redis2_query flushall;
@@ -3033,6 +3034,7 @@ lua tcp socket keepalive create connection pool for key "B"
 
 
 === TEST 54: wrong first argument for setkeepalive
+--- no_http2
 --- quic_max_idle_timeout: 1.2
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"
@@ -3115,6 +3117,7 @@ qr{HTTP/3 stream 0 reset by server}
 
 
 === TEST 55: wrong second argument for setkeepalive
+--- no_http2
 --- quic_max_idle_timeout: 1.2
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';"

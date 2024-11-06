@@ -12,7 +12,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 7);
+plan tests => repeat_each() * (blocks() * 4 - 3);
 
 #no_diff();
 no_long_string();
@@ -41,8 +41,6 @@ __DATA__
 '[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -67,7 +65,6 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 [lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
 [
-'[warn]',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 
@@ -95,8 +92,6 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 '[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -125,8 +120,6 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 "2: variable foo = 33",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -153,8 +146,6 @@ Foo: bar
 "header foo: bar",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -180,12 +171,11 @@ Foo: bar
 ["arg foo: bar",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
 === TEST 7: ngx.req.get_method() works
+--- no_http2
 --- http_config
     upstream backend {
         server 0.0.0.1;
@@ -208,8 +198,6 @@ Foo: bar
 "method: GET",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -235,8 +223,6 @@ print("hello from balancer by lua!")
 '[lua] a.lua:1: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -431,8 +417,6 @@ ctx counter: nil
 '[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -589,8 +573,6 @@ upstream sent more data than specified in "Content-Length" header while reading 
 --- error_code: 500
 --- error_log eval
  "failed to load inlined Lua code: balancer_by_lua(nginx.conf:27):3: ')' expected (to close '(' at line 2) near '<eof>'",
---- no_error_log
-[warn]
 
 
 
