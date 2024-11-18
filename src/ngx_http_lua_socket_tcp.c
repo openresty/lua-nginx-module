@@ -3153,7 +3153,6 @@ ngx_http_lua_socket_tcp_receive_retval_handler(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L)
 {
     int                          n;
-    ngx_int_t                    rc;
     ngx_http_lua_ctx_t          *ctx;
     ngx_event_t                 *ev;
 
