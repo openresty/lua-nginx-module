@@ -867,7 +867,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
     text = (u_char *) luaL_checklstring(L, 2, &len);
 
-    local = ngx_http_lua_parse_addr(L, text, len);
+    local = ngx_http_lua_parse_addr_port(L, text, len);
     if (local == NULL) {
         lua_pushnil(L);
         lua_pushfstring(L, "bad address");
@@ -3430,7 +3430,7 @@ ngx_http_lua_socket_tcp_handler(ngx_event_t *ev)
 static ngx_int_t
 ngx_http_lua_socket_tcp_get_peer(ngx_peer_connection_t *pc, void *data)
 {
-    /* empty */
+    pc->type = SOCK_STREAM;
     return NGX_OK;
 }
 

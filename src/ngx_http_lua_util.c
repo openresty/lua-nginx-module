@@ -4555,4 +4555,59 @@ ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len)
 }
 
 
+ngx_addr_t *
+ngx_http_lua_parse_addr_port(lua_State *L, u_char *text, size_t len)
+{
+	u_char 			*p, *last;
+	ngx_int_t 		port;
+	ngx_addr_t  	*addr;
+	size_t      	plen;
+
+	addr = ngx_http_lua_parse_addr(L, text, len);
+	if (addr != NULL) {
+		return addr;
+	}
+
+	last = text + len;
+
+#if (NGX_HAVE_INET6)
+    if (len && text[0] == '[') {
+        p = ngx_strlchr(text, last, ']');
+        if (p == NULL || p == last - 1 || *++p != ':') {
+            return NULL;
+        }
+
+        text++;
+        len -= 2;
+    } else
+#endif
+
+    {
+        p = ngx_strlchr(text, last, ':');
+        if (p == NULL) {
+            return NULL;
+        }
+    }
+
+    p++;
+    plen = last - p;
+
+    port = ngx_atoi(p, plen);
+    if (port < 1 || port > 65535) {
+        return NULL;
+    }
+
+    len -= plen + 1;
+
+	addr = ngx_http_lua_parse_addr(L, text, len);
+	if (addr == NULL) {
+		return NULL;
+	}
+	
+	ngx_inet_set_port(addr->sockaddr, (in_port_t) port);
+	
+	return addr;
+}
+
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
