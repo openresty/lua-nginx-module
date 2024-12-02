@@ -365,3 +365,64 @@ GET /t
 connected: 1
 --- no_error_log
 [error]
+
+
+
+=== TEST 7: upstream sockets bind with ip port
+--- config
+   server_tokens off;
+   location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local ip = "127.0.0.1"
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+
+            local ok, err = sock:bind(ip, 12345)
+            if not ok then
+                ngx.say("failed to bind", err)
+                return
+            end
+  
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local ok, err = sock:setoption("reuseaddr", 1)
+            if not ok then
+                ngx.say("setoption reuseaddr failed: ", err)
+            end                  
+
+            ngx.say("connected: ", ok)
+
+            local bytes, err = sock:send("GET /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\n\r\n")
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            local reader = sock:receiveuntil("\r\n0\r\n\r\n")
+            local data, err = reader()
+
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+            sock:close()
+            ngx.say(data)
+
+        }
+    }
+
+    location /foo {
+        echo bind: $remote_addr:$remote_port;
+    }
+--- request
+GET /t
+--- response_body eval
+qr/bind:\s127\.0\.0\.1:12345|failed\s+to\s+connect:\s+address\s+already\s+in\s+use/
+--- error_log eval
+"lua tcp socket bind ip: 127.0.0.1"

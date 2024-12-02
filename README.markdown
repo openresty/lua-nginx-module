@@ -7855,13 +7855,14 @@ See also [ngx.socket.udp](#ngxsocketudp).
 
 tcpsock:bind
 ------------
-**syntax:** *ok, err = tcpsock:bind(address)*
+**syntax:** *ok, err = tcpsock:bind(address, port?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;,ssl_session_fetch_by_lua&#42;,ssl_client_hello_by_lua&#42;*
 
 Just like the standard [proxy_bind](http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_bind) directive, this api makes the outgoing connection to a upstream server originate from the specified local IP address.
 
-Only IP addresses can be specified as the `address` argument.
+IP addresses can be specified as the `address` argument.
+The optional `port` argument is usually used in the transparent proxy.
 
 Here is an example for connecting to a TCP server from the specified local IP address:
 
