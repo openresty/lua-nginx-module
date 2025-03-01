@@ -106,7 +106,7 @@ ngx_http_lua_access_handler(ngx_http_request_t *r)
         }
 
         if (rc == NGX_OK) {
-            if (r->header_sent || r->headers_out.status!= 0) {
+            if (r->header_sent || r->headers_out.status != 0) {
                 dd("header already sent");
 
                 /* response header was already generated in access_by_lua*,
