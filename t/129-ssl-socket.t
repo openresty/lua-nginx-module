@@ -1963,7 +1963,7 @@ $::TestCertificate"
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
-qr/SSL_do_handshake\(\) failed .*?(unknown protocol|wrong version number)/
+qr/SSL_do_handshake\(\) failed .*?(unknown protocol|wrong version number|routines::record layer failure)/
 --- no_error_log
 lua ssl server name:
 SSL reused session
