@@ -1366,3 +1366,33 @@ If-Match: 1
 --- error_code: 412
 --- response_body eval
 qr/\Ahello\z/
+
+
+
+=== TEST 50: nginx crashes when encountering an illegal http if header
+crash with ngx.print()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    access_by_lua_block {
+        local ngx_resp = require "ngx.resp"
+        ngx_resp.bypass_if_checks()
+        ngx.print("hello")
+        ngx.exit(200)
+    }
+}
+location = /my_error_handler_412 {
+    content_by_lua_block {
+        ngx.sleep(0.002)
+        ngx.header["Content-Type"] = "text/plain"
+    }
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 200
+--- response_body eval
+qr/\Ahello\z/
