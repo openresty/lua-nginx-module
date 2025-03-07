@@ -4555,4 +4555,10 @@ ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len)
 }
 
 
+void
+ngx_http_lua_ffi_bypass_if_checks(ngx_http_request_t *r)
+{
+    r->disable_not_modified = 1;
+}
+
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
