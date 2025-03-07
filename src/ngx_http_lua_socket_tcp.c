@@ -13,6 +13,7 @@
 #include "ngx_http_lua_socket_tcp.h"
 #include "ngx_http_lua_input_filters.h"
 #include "ngx_http_lua_util.h"
+#include "ngx_http_lua_exception.h"
 #include "ngx_http_lua_uthread.h"
 #include "ngx_http_lua_output.h"
 #include "ngx_http_lua_contentby.h"
@@ -5912,62 +5913,72 @@ ngx_http_lua_socket_push_input_data(ngx_http_request_t *r,
     size_t                   nbufs;
     luaL_Buffer              luabuf;
 
-    dd("bufs_in: %p, buf_in: %p", u->bufs_in, u->buf_in);
+    /* set Lua VM panic handler */
+    lua_atpanic(L, ngx_http_lua_atpanic);
 
-    nbufs = 0;
-    ll = NULL;
+    NGX_LUA_EXCEPTION_TRY {
 
-    luaL_buffinit(L, &luabuf);
+        dd("bufs_in: %p, buf_in: %p", u->bufs_in, u->buf_in);
 
-    for (cl = u->bufs_in; cl; cl = cl->next) {
-        b = cl->buf;
-        chunk_size = b->last - b->pos;
+        nbufs = 0;
+        ll = NULL;
 
-        dd("copying input data chunk from %p: \"%.*s\"", cl,
-           (int) chunk_size, b->pos);
+        luaL_buffinit(L, &luabuf);
 
-        luaL_addlstring(&luabuf, (char *) b->pos, chunk_size);
+        for (cl = u->bufs_in; cl; cl = cl->next) {
+            b = cl->buf;
+            chunk_size = b->last - b->pos;
 
-        if (cl->next) {
-            ll = &cl->next;
-        }
+            dd("copying input data chunk from %p: \"%.*s\"", cl,
+               (int) chunk_size, b->pos);
+
+            luaL_addlstring(&luabuf, (char *) b->pos, chunk_size);
+
+            if (cl->next) {
+                ll = &cl->next;
+            }
 
 #if (DDEBUG) || (NGX_DTRACE)
-        size += chunk_size;
+            size += chunk_size;
 #endif
 
-        nbufs++;
-    }
+            nbufs++;
+        }
 
-    luaL_pushresult(&luabuf);
+        luaL_pushresult(&luabuf);
 
 #if (DDEBUG)
-    dd("size: %d, nbufs: %d", (int) size, (int) nbufs);
+        dd("size: %d, nbufs: %d", (int) size, (int) nbufs);
 #endif
 
 #if (NGX_DTRACE)
-    ngx_http_lua_probe_socket_tcp_receive_done(r, u,
-                                               (u_char *) lua_tostring(L, -1),
-                                               size);
+        ngx_http_lua_probe_socket_tcp_receive_done(
+                                    r, u, (u_char *) lua_tostring(L, -1), size);
 #endif
 
-    if (nbufs > 1 && ll) {
-        dd("recycle buffers: %d", (int) (nbufs - 1));
+        if (nbufs > 1 && ll) {
+            dd("recycle buffers: %d", (int) (nbufs - 1));
 
-        *ll = ctx->free_recv_bufs;
-        ctx->free_recv_bufs = u->bufs_in;
-        u->bufs_in = u->buf_in;
-    }
+            *ll = ctx->free_recv_bufs;
+            ctx->free_recv_bufs = u->bufs_in;
+            u->bufs_in = u->buf_in;
+        }
 
-    if (u->buffer.pos == u->buffer.last) {
-        dd("resetting u->buffer pos & last");
-        u->buffer.pos = u->buffer.start;
-        u->buffer.last = u->buffer.start;
-    }
+        if (u->buffer.pos == u->buffer.last) {
+            dd("resetting u->buffer pos & last");
+            u->buffer.pos = u->buffer.start;
+            u->buffer.last = u->buffer.start;
+        }
 
-    if (u->bufs_in) {
-        u->buf_in->buf->last = u->buffer.pos;
-        u->buf_in->buf->pos = u->buffer.pos;
+        if (u->bufs_in) {
+            u->buf_in->buf->last = u->buffer.pos;
+            u->buf_in->buf->pos = u->buffer.pos;
+        }
+
+    } NGX_LUA_EXCEPTION_CATCH {
+
+        dd("nginx execution restored");
+        return NGX_ERROR;
     }
 }
 
