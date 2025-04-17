@@ -89,7 +89,7 @@ install:
   - if [ -n "$PCRE_VER" ]; then wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v1.0.0/pcre-${PCRE_VER}-x64-focal.tar.gz; fi
   - if [ -n "$PCRE2_VER" ]; then wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v1.0.0/pcre2-${PCRE2_VER}-x64-focal.tar.gz; fi
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
-  - wget -O aws-lc.tar.gz https://github.com/aws/aws-lc/archive/refs/tags/v1.34.2.tar.gz
+  - wget -O aws-lc.tar.gz https://github.com/aws/aws-lc/archive/refs/tags/v1.49.1.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
   - git clone https://github.com/openresty/openresty.git ../openresty

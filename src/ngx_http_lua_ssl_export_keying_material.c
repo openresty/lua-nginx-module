@@ -85,9 +85,6 @@ ngx_http_lua_ffi_ssl_export_keying_material_early(ngx_http_request_t *r,
 #elif defined(LIBRESSL_VERSION_NUMBER)
     *err = "LibreSSL does not support SSL_export_keying_material_early";
     return NGX_ERROR;
-#elif defined(OPENSSL_IS_AWSLC)
-    *err = "AWS-LC does not support SSL_export_keying_material_early";
-    return NGX_ERROR;
 #elif OPENSSL_VERSION_NUMBER < 0x10101000L
     *err = "OpenSSL too old";
     return NGX_ERROR;
