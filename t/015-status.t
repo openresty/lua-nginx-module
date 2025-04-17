@@ -9,7 +9,7 @@ log_level('warn');
 #repeat_each(120);
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 10);
+plan tests => repeat_each() * (blocks() * 3 + 2);
 
 #no_diff();
 #no_long_string();
@@ -29,6 +29,8 @@ __DATA__
 GET /nil
 --- response_body
 nil
+--- no_error_log
+[error]
 
 
 
@@ -43,6 +45,8 @@ nil
 GET /nil
 --- response_body
 not nil
+--- no_error_log
+[error]
 
 
 
@@ -57,6 +61,8 @@ not nil
 GET /nil
 --- response_body
 0
+--- no_error_log
+[error]
 
 
 
@@ -73,6 +79,8 @@ GET /nil
 --- response_body
 blah
 200
+--- no_error_log
+[error]
 
 
 
@@ -89,6 +97,8 @@ GET /201
 --- response_body
 created
 --- error_code: 201
+--- no_error_log
+[error]
 
 
 
@@ -105,6 +115,8 @@ GET /201
 --- response_body
 created
 --- error_code: 201
+--- no_error_log
+[error]
 
 
 
@@ -121,6 +133,8 @@ GET /201
 --- response_body
 created
 --- error_code: 201
+--- no_error_log
+[error]
 
 
 
@@ -136,6 +150,8 @@ created
 GET /201
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
+--- no_error_log
+[crit]
 
 
 
@@ -248,6 +264,8 @@ GET /t
 --- http09
 --- response_body
 status = 9
+--- no_error_log
+[error]
 
 
 
@@ -343,5 +361,171 @@ location /t {
 GET /t
 --- response_body
 match
+--- no_error_log
+[error]
+
+
+
+=== TEST 18: set ngx.status in server_rewrite_by_lua_block
+don't proxy_pass to upstream
+--- config
+    server_rewrite_by_lua_block {
+        if ngx.var.uri == "/t" then
+            ngx.status = 403
+            ngx.say("Hello World")
+        end
+    }
+
+    location /t {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 19: set ngx.status in rewrite_by_lua_block
+don't proxy_pass to upstream
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            ngx.status = 403
+            ngx.say("Hello World")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 20: set ngx.status in access_by_lua_block
+don't proxy_pass to upstream
+--- config
+    location /t {
+        access_by_lua_block {
+            ngx.status = 403
+            ngx.say("Hello World")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 21: set ngx.status in server_rewrite_by_lua_block with sleep
+don't proxy_pass to upstream
+--- config
+    server_rewrite_by_lua_block {
+        if ngx.var.uri == "/t" then
+            ngx.sleep(0.001)
+            ngx.status = 403
+            ngx.say("Hello World")
+        end
+    }
+
+    location /t {
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: set ngx.status in rewrite_by_lua_block with sleep
+don't proxy_pass to upstream
+--- config
+    location /t {
+        rewrite_by_lua_block {
+            ngx.sleep(0.001)
+            ngx.status = 403
+            ngx.say("Hello World")
+        }
+
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: set ngx.status in access_by_lua_block
+don't proxy_pass to upstream
+--- config
+    location /t {
+        access_by_lua_block {
+            ngx.sleep(0.001)
+            ngx.status = 403
+            ngx.say("Hello World")
+        }
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/u;
+    }
+
+    location /u {
+        content_by_lua_block {
+            ngx.say("From upstream")
+        }
+    }
+--- request
+GET /t HTTP/1.0
+--- response_body
+Hello World
+--- error_code: 403
 --- no_error_log
 [error]

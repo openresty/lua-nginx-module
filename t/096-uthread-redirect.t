@@ -190,6 +190,7 @@ free request
 
 
 === TEST 3: ngx.redirect() in entry thread (user thread is still pending on ngx.location.capture_multi), without pending output
+--- no_http2
 --- config
     location /lua {
         client_body_timeout 12000ms;
