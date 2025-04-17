@@ -31,7 +31,7 @@ ngx_http_lua_ffi_ssl_export_keying_material(ngx_http_request_t *r,
     u_char *out, size_t out_size, const char *label, size_t llen,
     const u_char *context, size_t ctxlen, int use_ctx, char **err)
 {
-#if defined(OPENSSL_IS_BORINGSSL)
+#if defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
     *err = "BoringSSL does not support SSL_export_keying_material";
     return NGX_ERROR;
 #elif defined(LIBRESSL_VERSION_NUMBER)
