@@ -847,7 +847,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
     n = lua_gettop(L);
 
-    // 修正参数检查，允许2或3个参数
+    /* Correct the parameter check and allow 2 or 3 parameters */
     if (n != 2 && n != 3) {
         return luaL_error(L, "expecting 2 or 3 arguments, but got %d",
                           lua_gettop(L));
@@ -868,7 +868,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
     luaL_checktype(L, 1, LUA_TTABLE);
 
     port = 0;
-    /* most popular suit: host:port */
+    /* handle case: host:port */
     if (n == 3 && lua_isnumber(L, 3)) {
 
         /* Hit the following parameter combination:
@@ -882,11 +882,11 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
             lua_pushfstring(L, "bad port number: %d", port);
             return 2;
         }
-    } 
+    }
 
     text = (u_char *) luaL_checklstring(L, 2, &len);
 
-    local = ngx_http_lua_parse_addr_port(L, text, len, port);
+    local = ngx_http_lua_parse_address_with_port(L, text, len, port);
     if (local == NULL) {
         lua_pushnil(L);
         lua_pushfstring(L, "bad address");
@@ -895,7 +895,6 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
     /* TODO: we may reuse the userdata here */
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
-    
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket bind ip: %V", &local->name);
 
@@ -1147,7 +1146,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     dd("lua peer connection log: %p", pc->log);
 
     lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
-        local = lua_touserdata(L, -1);
+    local = lua_touserdata(L, -1);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
         "lua tcp socket sock:connect ip: %V", &local->name);

@@ -265,7 +265,8 @@ ngx_int_t ngx_http_lua_decode_base64mime(ngx_str_t *dst, ngx_str_t *src);
 
 ngx_addr_t *ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len);
 
-ngx_addr_t *ngx_http_lua_parse_addr_port(lua_State *L, u_char *text, size_t len, int port);
+ngx_addr_t *ngx_http_lua_parse_address_with_port(lua_State *L, u_char *text,
+    size_t len, int port);
 
 size_t ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size);
 
