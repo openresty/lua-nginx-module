@@ -4559,7 +4559,7 @@ ngx_addr_t *
 ngx_http_lua_parse_address_with_port(lua_State *L, u_char *text,
     size_t len, int port)
 {
-    ngx_addr_t  	*addr;
+    ngx_addr_t      *addr;
 
     addr = ngx_http_lua_parse_addr(L, text, len);
     if (addr == NULL) {
