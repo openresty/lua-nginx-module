@@ -869,14 +869,16 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
     port = 0;
     /* handle case: host:port */
-    if (n == 3 && lua_isnumber(L, 3)) {
-
-        /* Hit the following parameter combination:
-         * sock:bind("127.0.0.1", port)
-        */
+    /* Hit the following parameter combination:
+     * sock:bind("127.0.0.1", port)     */
+    if (n == 3) {
+        if (!lua_isnumber(L, 3)) {
+            lua_pushnil(L);
+            lua_pushliteral(L, "bad port number: need int type");
+            return 2;
+        }
 
         port = (int) lua_tointeger(L, 3);
-
         if (port < 0 || port > 65535) {
             lua_pushnil(L);
             lua_pushfstring(L, "bad port number: %d", port);
@@ -886,13 +888,16 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
 
     text = (u_char *) luaL_checklstring(L, 2, &len);
 
-    local = ngx_http_lua_parse_address_with_port(L, text, len, port);
+    local = ngx_http_lua_parse_addr(L, text, len);
     if (local == NULL) {
         lua_pushnil(L);
         lua_pushfstring(L, "bad address");
         return 2;
     }
 
+    if (port > 0) {
+        ngx_inet_set_port(addr->sockaddr, (in_port_t) port);
+    }
     /* TODO: we may reuse the userdata here */
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
