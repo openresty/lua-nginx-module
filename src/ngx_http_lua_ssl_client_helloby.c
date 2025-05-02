@@ -663,6 +663,50 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
 
 
 int
+ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
+    int **extensions, size_t *extensions_len, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+    int                      got_extensions;
+    size_t                   ext_len;
+    int                     *ext_out;
+    /* OPENSSL will allocate memory for us and make the ext_out point to it */
+
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+    got_extensions = SSL_client_hello_get1_extensions_present(ssl_conn, &ext_out, &ext_len);
+    if (!got_extensions || !ext_out || !ext_len) {
+        *err = "failed SSL_client_hello_get1_extensions_present()";
+        return NGX_DECLINED;
+    }
+
+    *extensions = ngx_palloc(r->pool, sizeof(int) * ext_len);
+    if (extensions != NULL) {
+        ngx_memcpy(*extensions, ext_out, sizeof(int) * ext_len);
+        *extensions_len = ext_len;
+    }
+
+    OPENSSL_free(ext_out);
+    return NGX_OK;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
+}
+
+
+int
 ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     int protocols, char **err)
 {
