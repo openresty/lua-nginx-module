@@ -1176,3 +1176,31 @@ GET /t
 received: received: abc
 --- no_error_log
 [error]
+
+
+
+=== TEST 19: getfd
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock, err = ngx.req.socket()
+            if sock then
+                ngx.say("got the request socket")
+            else
+                ngx.say("failed to get the request socket: ", err)
+            end
+
+            ngx.say(sock:getfd())
+        }
+    }
+--- request
+POST /t
+hello world
+--- response_body eval
+qr/\Agot the request socket
+\d+
+\z/ms
+--- no_error_log
+[error]

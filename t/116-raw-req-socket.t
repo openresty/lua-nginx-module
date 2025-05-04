@@ -12,7 +12,7 @@ use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
-plan tests => repeat_each() * 43;
+plan tests => repeat_each() * 46;
 
 our $HtmlDir = html_dir;
 
@@ -975,5 +975,91 @@ request body: hey, hello world
 GET /t
 --- response_body
 msg: 1: received: hello
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: getfd()
+--- config
+    server_tokens off;
+    location = /t {
+        #set $port 5000;
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local req = "GET /mysock HTTP/1.1\r\nUpgrade: mysock\r\nHost: localhost\r\nConnection: close\r\n\r\nhello"
+            -- req = "OK"
+
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            local reader = sock:receiveuntil("\r\n\r\n")
+            local data, err, partial = reader()
+            if not data then
+                ngx.say("no response header found")
+                return
+            end
+
+            local msg, err = sock:receive()
+            if not msg then
+                ngx.say("failed to receive: ", err)
+                return
+            end
+
+            ngx.say("msg: ", msg)
+
+            ok, err = sock:close()
+            if not ok then
+                ngx.say("failed to close socket: ", err)
+                return
+            end
+        }
+    }
+
+    location = /mysock {
+        content_by_lua_block {
+            ngx.status = 101
+            ngx.send_headers()
+            ngx.flush(true)
+            ngx.req.read_body()
+            local sock, err = ngx.req.socket(true)
+            if not sock then
+                ngx.log(ngx.ERR, "server: failed to get raw req socket: ", err)
+                return
+            end
+
+            local s = sock:getfd()
+            local data, err = sock:receive(5)
+            if not data then
+                ngx.log(ngx.ERR, "server: failed to receive: ", err)
+                return
+            end
+
+            local bytes, err = sock:send("fd: " .. tostring(s) .. " 1: received: " .. data .. "\n")
+            if not bytes then
+                ngx.log(ngx.ERR, "server: failed to send: ", err)
+                return
+            end
+        }
+        more_clear_headers Date;
+    }
+
+--- request
+GET /t
+--- response_body eval
+qr/\Amsg: fd: \d+ 1: received: hello
+/ms
 --- no_error_log
 [error]

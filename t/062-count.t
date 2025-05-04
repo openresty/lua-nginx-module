@@ -259,7 +259,7 @@ n = 10
 POST /test
 hello world
 --- response_body
-n = 6
+n = 7
 --- no_error_log
 [error]
 --- skip_eval: 3: $ENV{TEST_NGINX_USE_HTTP3}
@@ -460,7 +460,7 @@ worker: 5
 --- request
 GET /test
 --- response_body
-n = 16
+n = 17
 --- no_error_log
 [error]
 
@@ -513,7 +513,7 @@ n = 7
 --- request
 GET /test
 --- response_body
-n = 7
+n = 8
 --- no_error_log
 [error]
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}

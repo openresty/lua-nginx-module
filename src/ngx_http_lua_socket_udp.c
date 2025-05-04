@@ -1207,7 +1207,7 @@ ngx_http_lua_socket_udp_read(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "lua udp socket read data: waiting: %d", (int) u->waiting);
 
-    n = ngx_udp_recv(u->udp_connection.connection,
+    n = ngx_udp_recv(c,
                      ngx_http_lua_socket_udp_buffer, u->recv_buf_size);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,

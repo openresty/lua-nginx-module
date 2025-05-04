@@ -3751,6 +3751,7 @@ Nginx API for Lua
 * [ngx.socket.tcp](#ngxsockettcp)
 * [tcpsock:bind](#tcpsockbind)
 * [tcpsock:connect](#tcpsockconnect)
+* [tcpsock:getfd](#getfd)
 * [tcpsock:setclientcert](#tcpsocksetclientcert)
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
@@ -8009,6 +8010,21 @@ The support for the options table argument was first introduced in the `v0.5.7` 
 This method was first introduced in the `v0.5.0rc1` release.
 
 [Back to TOC](#nginx-api-for-lua)
+
+
+tcpsock:getfd
+--------------------
+
+**syntax:** *fd, err = tcpsock:getfd()*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Get the file describer of the current tcp socket.
+
+This method was first introduced in the `v0.10.29` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
 
 tcpsock:setclientcert
 ---------------------
