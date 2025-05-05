@@ -1030,6 +1030,13 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
      *      lmcf->shm_zones = NULL;
      *      lmcf->init_handler = NULL;
      *      lmcf->init_src = { 0, NULL };
+     *      lmcf->init_chunkname = NULL;
+     *      lmcf->init_worker_handler = NULL;
+     *      lmcf->init_worker_src = { 0, NULL };
+     *      lmcf->init_worker_chunkname = NULL;
+     *      lmcf->exit_worker_handler = NULL;
+     *      lmcf->exit_worker_src = { 0, NULL };
+     *      lmcf->exit_worker_chunkname = NULL;
      *      lmcf->shm_zones_inited = 0;
      *      lmcf->shdict_zones = NULL;
      *      lmcf->preload_hooks = NULL;
@@ -1197,6 +1204,11 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_sess_fetch_chunkname = NULL;
      *      lscf->srv.ssl_sess_fetch_src_key = NULL;
      *
+     *      lscf->srv.server_rewrite_handler = NULL;
+     *      lscf->srv.server_rewrite_src = { 0, NULL };
+     *      lscf->srv.server_rewrite_chunkname = NULL;
+     *      lscf->srv.server_rewrite_src_key = NULL;
+     *
      *      lscf->balancer.original_init_upstream = NULL;
      *      lscf->balancer.original_init_peer = NULL;
      *      lscf->balancer.handler = NULL;
@@ -1212,6 +1224,7 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     lscf->srv.ssl_sess_fetch_src_ref = LUA_REFNIL;
 #endif
 
+    lscf->srv.server_rewrite_src_ref = LUA_REFNIL;
     lscf->balancer.src_ref = LUA_REFNIL;
     lscf->balancer.max_cached = NGX_CONF_UNSET_UINT;
     return lscf;
@@ -1387,25 +1400,33 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     /* set by ngx_pcalloc:
      *      conf->access_src  = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->access_src_key = NULL
+     *      conf->access_handler = NULL;
+     *      conf->access_chunkname = NULL;
+     *
      *      conf->rewrite_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->rewrite_src_key = NULL;
      *      conf->rewrite_handler = NULL;
+     *      conf->rewrite_chunkname = NULL;
      *
      *      conf->content_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->content_src_key = NULL;
      *      conf->content_handler = NULL;
+     *      conf->content_chunkname = NULL;
      *
      *      conf->log_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->log_src_key = NULL;
      *      conf->log_handler = NULL;
+     *      conf->log_chunkname = NULL;
      *
      *      conf->header_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->header_filter_src_key = NULL;
      *      conf->header_filter_handler = NULL;
+     *      conf->header_filter_chunkname = NULL;
      *
      *      conf->body_filter_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->body_filter_src_key = NULL;
      *      conf->body_filter_handler = NULL;
+     *      conf->body_filter_chunkname = NULL;
      *
      *      conf->ssl = 0;
      *      conf->ssl_protocols = 0;
