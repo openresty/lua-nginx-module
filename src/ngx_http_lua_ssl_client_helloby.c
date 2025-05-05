@@ -685,7 +685,8 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
     }
 
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
-    got_extensions = SSL_client_hello_get1_extensions_present(ssl_conn, &ext_out, &ext_len);
+    got_extensions = SSL_client_hello_get1_extensions_present(ssl_conn,
+                                                           &ext_out, &ext_len);
     if (!got_extensions || !ext_out || !ext_len) {
         *err = "failed SSL_client_hello_get1_extensions_present()";
         return NGX_DECLINED;
