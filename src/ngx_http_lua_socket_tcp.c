@@ -874,7 +874,8 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
     if (n == 3) {
         if (!lua_isnumber(L, 3)) {
             lua_pushnil(L);
-            lua_pushliteral(L, "expecting port to be a number but got %s", xxxx);
+            lua_pushfstring(L, "expecting port to be a
+                            number but got type: %s", luaL_typename(L, 3));
             return 2;
         }
 
