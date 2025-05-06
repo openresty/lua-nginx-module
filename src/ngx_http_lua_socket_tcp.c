@@ -874,8 +874,8 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
     if (n == 3) {
         if (!lua_isnumber(L, 3)) {
             lua_pushnil(L);
-            lua_pushfstring(L, "expecting port to be a
-                            number but got type: %s", luaL_typename(L, 3));
+            lua_pushfstring(L, "expecting port to be a"
+                            "number but got type: %s", luaL_typename(L, 3));
             return 2;
         }
 
@@ -897,7 +897,7 @@ ngx_http_lua_socket_tcp_bind(lua_State *L)
     }
 
     if (port > 0) {
-        ngx_inet_set_port(addr->sockaddr, (in_port_t) port);
+        ngx_inet_set_port(local->sockaddr, (in_port_t) port);
     }
     /* TODO: we may reuse the userdata here */
     lua_rawseti(L, 1, SOCKET_BIND_INDEX);
