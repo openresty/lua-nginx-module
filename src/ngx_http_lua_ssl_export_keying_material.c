@@ -31,7 +31,7 @@ ngx_http_lua_ffi_ssl_export_keying_material(ngx_http_request_t *r,
     u_char *out, size_t out_size, const char *label, size_t llen,
     const u_char *context, size_t ctxlen, int use_ctx, char **err)
 {
-#if defined(OPENSSL_IS_BORINGSSL) || OPENSSL_VERSION_NUMBER < 0x10101000L
+#if defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
     *err = "BoringSSL does not support SSL_export_keying_material";
     return NGX_ERROR;
 #elif defined(LIBRESSL_VERSION_NUMBER)
@@ -79,11 +79,11 @@ ngx_http_lua_ffi_ssl_export_keying_material_early(ngx_http_request_t *r,
     u_char *out, size_t out_size, const char *label, size_t llen,
     const u_char *context, size_t ctxlen, char **err)
 {
-#if defined(OPENSSL_IS_BORINGSSL) || OPENSSL_VERSION_NUMBER < 0x10101000L
-    *err = "BoringSSL does not support SSL_export_keying_material";
+#if defined(OPENSSL_IS_BORINGSSL)
+    *err = "BoringSSL does not support SSL_export_keying_material_early";
     return NGX_ERROR;
 #elif defined(LIBRESSL_VERSION_NUMBER)
-    *err = "LibreSSL does not support SSL_export_keying_material";
+    *err = "LibreSSL does not support SSL_export_keying_material_early";
     return NGX_ERROR;
 #elif OPENSSL_VERSION_NUMBER < 0x10101000L
     *err = "OpenSSL too old";
