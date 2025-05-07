@@ -707,6 +707,68 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
 }
 
 
+int ngx_http_lua_ffi_ssl_get_client_hello_ciphers(ngx_http_request_t *r,
+                     unsigned short **ciphers,  size_t *ciphers_cnt, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+    size_t                   ciphersuites_bytes;
+    const unsigned char     *ciphers_raw;
+    unsigned short          *ciphers_ja3;
+    ngx_connection_t        *c;
+
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    c = ngx_ssl_get_connection(ssl_conn);
+    if (c == NULL) {
+        *err = "couldn't get real ngx_connection_t pointer";
+        return NGX_ERROR;
+    }
+
+#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+    ciphersuites_bytes = SSL_client_hello_get0_ciphers(ssl_conn, &ciphers_raw);
+
+    if (!ciphersuites_bytes) {
+        *err = "failed SSL_client_hello_get0_ciphers()";
+        return NGX_DECLINED;
+    }
+
+    if (ciphersuites_bytes % 2 != 0) {
+        *err = "SSL_client_hello_get0_ciphers() odd ciphersuites_bytes";
+        return NGX_DECLINED;
+    }
+
+    *ciphers_cnt = ciphersuites_bytes / 2;
+
+    *ciphers = ngx_palloc(c->pool, sizeof(short) * (*ciphers_cnt));
+    if (*ciphers == NULL) {
+        *err = "ngx_palloc() failed for the ciphers array";
+        return NGX_ERROR;
+    }
+
+    for (int i = 0 ; i < *ciphers_cnt ; i++) {
+        uint16_t cipher = (ciphers_raw[i*2] << 8) | ciphers_raw[i*2 + 1];
+        (*ciphers)[i] = cipher; /* like ntohs but more portable, supposedly */
+    }
+
+
+    return NGX_OK;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
+}
+
+
 int
 ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     int protocols, char **err)
