@@ -853,6 +853,7 @@ no_memory_and_not_resuming:
 static int
 ngx_http_lua_socket_tcp_bind(lua_State *L)
 {
+    int                   port;
     ngx_http_request_t   *r;
     ngx_http_lua_ctx_t   *ctx;
     int                   n;
@@ -1169,8 +1170,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     lua_rawgeti(L, 1, SOCKET_BIND_INDEX);
     local = lua_touserdata(L, -1);
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-        "lua tcp socket sock:connect ip: %V", &local->name);
+    if (local != NULL) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua tcp socket sock:connect ip: %V", &local->name);
+    }
 
     lua_pop(L, 1);
 
