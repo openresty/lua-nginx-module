@@ -707,6 +707,60 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
 }
 
 
+int ngx_http_lua_ffi_ssl_get_client_hello_ciphers(ngx_http_request_t *r,
+                      unsigned short **ciphers,  size_t *cipherslen, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+    size_t                   ciphersuites_length;
+    const unsigned char     *ciphers_raw;
+
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+    ciphersuites_length = SSL_client_hello_get0_ciphers(ssl_conn, &ciphers_raw);
+
+    if (!ciphersuites_length) {
+        *err = "failed SSL_client_hello_get0_ciphers()";
+        return NGX_DECLINED;
+    }
+
+    if (ciphersuites_length %2 != 0) {
+        *err = "SSL_client_hello_get0_ciphers() odd ciphersuites_length";
+        return NGX_DECLINED;
+    }
+
+    *cipherslen = ciphersuites_length / 2;
+
+    *ciphers = ngx_palloc(r->connection->pool, sizeof(int) * (*cipherslen));
+    if (*ciphers == NULL) {
+        *err = "failed to ngx_palloc() for the ciphers' array";
+        return NGX_ERROR;
+    }
+
+    for (int i = 0 ; i < *cipherslen ; i++) {
+        uint16_t cipher = (ciphers_raw[i*2] << 8) | ciphers_raw[i*2 + 1];
+
+        (*ciphers)[i] = cipher;
+    }
+
+    return NGX_OK;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
+}
+
+
 int
 ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     int protocols, char **err)
