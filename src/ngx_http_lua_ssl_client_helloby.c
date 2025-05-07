@@ -708,7 +708,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
 
 
 int ngx_http_lua_ffi_ssl_get_client_hello_ciphers(ngx_http_request_t *r,
-                                 int **ciphers,  size_t *cipherslen, char **err)
+                      unsigned short **ciphers,  size_t *cipherslen, char **err)
 {
     ngx_ssl_conn_t          *ssl_conn;
     size_t                   ciphersuites_length;
