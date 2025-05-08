@@ -685,7 +685,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
 
     c = ngx_ssl_get_connection(ssl_conn);
     if (c == NULL) {
-        *err = "bad ssl conn";
+        *err = "couldn't get real ngx_connection_t pointer";
         return NGX_ERROR;
     }
 
