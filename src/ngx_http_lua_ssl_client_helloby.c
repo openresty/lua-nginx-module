@@ -670,8 +670,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
     int                      got_extensions;
     size_t                   ext_len;
     int                     *ext_out;
-    /* OPENSSL will allocate memory for us and make the ext_out point to it */
-
+    ngx_connection_t        *c;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
@@ -684,6 +683,13 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+    c = ngx_ssl_get_connection(ssl_conn);
+    if (c == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
     got_extensions = SSL_client_hello_get1_extensions_present(ssl_conn,
                                                            &ext_out, &ext_len);
@@ -692,7 +698,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
         return NGX_DECLINED;
     }
 
-    *extensions = ngx_palloc(r->connection->pool, sizeof(int) * ext_len);
+    *extensions = ngx_palloc(c->pool, sizeof(int) * ext_len);
     if (*extensions != NULL) {
         ngx_memcpy(*extensions, ext_out, sizeof(int) * ext_len);
         *extensions_len = ext_len;
