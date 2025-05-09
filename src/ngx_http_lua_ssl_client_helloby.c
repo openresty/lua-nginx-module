@@ -728,11 +728,6 @@ int ngx_http_lua_ffi_ssl_get_client_hello_ciphers(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    c = ngx_ssl_get_connection(ssl_conn);
-    if (c == NULL) {
-        *err = "couldn't get real ngx_connection_t pointer";
-        return NGX_ERROR;
-    }
 
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
     ciphersuites_bytes = SSL_client_hello_get0_ciphers(ssl_conn, &ciphers_raw);
@@ -749,7 +744,7 @@ int ngx_http_lua_ffi_ssl_get_client_hello_ciphers(ngx_http_request_t *r,
 
     *ciphers_cnt = ciphersuites_bytes / 2;
 
-    *ciphers = ngx_palloc(c->pool, sizeof(short) * (*ciphers_cnt));
+    *ciphers = ngx_palloc(r->connection->pool, sizeof(short) * (*ciphers_cnt));
     if (*ciphers == NULL) {
         *err = "ngx_palloc() failed for the ciphers array";
         return NGX_ERROR;
