@@ -166,6 +166,7 @@ ok
 
 
 === TEST 8: content_by_lua_block (cosockets)
+--- no_http2
 --- config
     server_tokens off;
     location = /t {
@@ -312,7 +313,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:\d+/
 
 
 
@@ -331,7 +332,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]==]", the inlined Lua code may be too long in .*?\bnginx.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]==]", the inlined Lua code may be too long in .*?\bnginx.conf:\d+/
 
 
 
@@ -350,7 +351,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:\d+/
 
 
 
@@ -369,7 +370,7 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]=]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]=]", the inlined Lua code may be too long in .*?\bnginx\.conf:\d+/
 
 
 
@@ -640,4 +641,4 @@ hello, world
 [error]
 --- must_die
 --- error_log eval
-qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:41/
+qr/\[emerg\] .*? Lua code block missing the closing long bracket "]]", the inlined Lua code may be too long in .*?\bnginx\.conf:\d+/

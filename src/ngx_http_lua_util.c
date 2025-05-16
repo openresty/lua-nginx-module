@@ -119,7 +119,6 @@ static int ngx_http_lua_thread_traceback(lua_State *L, lua_State *co,
 static void ngx_http_lua_inject_ngx_api(lua_State *L,
     ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log);
 static void ngx_http_lua_inject_arg_api(lua_State *L);
-static int ngx_http_lua_param_get(lua_State *L);
 static int ngx_http_lua_param_set(lua_State *L);
 static ngx_int_t ngx_http_lua_output_filter(ngx_http_request_t *r,
     ngx_chain_t *in);
@@ -281,7 +280,6 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
 
         lua_pushliteral(L, LUA_DEFAULT_CPATH ";"); /* package default */
         lua_getfield(L, -2, "cpath"); /* package default old */
-        old_cpath = lua_tolstring(L, -1, &old_cpath_len);
         lua_concat(L, 2); /* package new */
         lua_setfield(L, -2, "cpath"); /* package */
 #endif
@@ -551,6 +549,10 @@ ngx_http_lua_send_header_if_needed(ngx_http_request_t *r,
         if (!ctx->buffering) {
             dd("sending headers");
             rc = ngx_http_send_header(r);
+            if (r->filter_finalize) {
+                ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
+            }
+
             ctx->header_sent = 1;
             return rc;
         }
@@ -600,6 +602,12 @@ ngx_http_lua_send_chain_link(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx,
 
     if (r->header_only) {
         ctx->eof = 1;
+
+        if (!r->request_body && r == r->main) {
+            if (ngx_http_discard_request_body(r) != NGX_OK) {
+                return NGX_ERROR;
+            }
+        }
 
         if (ctx->buffering) {
             return ngx_http_lua_send_http10_headers(r, ctx);
@@ -719,6 +727,10 @@ ngx_http_lua_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
+    if (ctx == NULL) {
+        return rc;
+    }
+
     ngx_chain_update_chains(r->pool,
                             &ctx->free_bufs, &ctx->busy_bufs, &in,
                             (ngx_buf_tag_t) &ngx_http_lua_module);
@@ -752,10 +764,6 @@ ngx_http_lua_send_http10_headers(ngx_http_request_t *r,
         }
 
         r->headers_out.content_length_n = size;
-
-        if (r->headers_out.content_length) {
-            r->headers_out.content_length->hash = 0;
-        }
     }
 
 send:
@@ -823,7 +831,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 113 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 115 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -1001,6 +1009,7 @@ ngx_http_lua_reset_ctx(ngx_http_request_t *r, lua_State *L,
 
     ctx->entry_co_ctx.co_ref = LUA_NOREF;
 
+    ctx->entered_server_rewrite_phase = 0;
     ctx->entered_rewrite_phase = 0;
     ctx->entered_access_phase = 0;
     ctx->entered_content_phase = 0;
@@ -1027,9 +1036,13 @@ ngx_http_lua_generic_phase_post_read(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    ctx->read_body_done = 1;
-
     r->main->count--;
+
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->read_body_done = 1;
 
     if (ctx->waiting_more_body) {
         ctx->waiting_more_body = 0;
@@ -3092,9 +3105,6 @@ ngx_http_lua_inject_arg_api(lua_State *L)
 
     lua_createtable(L, 0 /* narr */, 2 /* nrec */);    /*  the metatable */
 
-    lua_pushcfunction(L, ngx_http_lua_param_get);
-    lua_setfield(L, -2, "__index");
-
     lua_pushcfunction(L, ngx_http_lua_param_set);
     lua_setfield(L, -2, "__newindex");
 
@@ -3103,35 +3113,6 @@ ngx_http_lua_inject_arg_api(lua_State *L)
     dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
 
     lua_rawset(L, -3);    /*  set ngx.arg table */
-}
-
-
-static int
-ngx_http_lua_param_get(lua_State *L)
-{
-    ngx_http_lua_ctx_t          *ctx;
-    ngx_http_request_t          *r;
-
-    r = ngx_http_lua_get_req(L);
-    if (r == NULL) {
-        return 0;
-    }
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
-        return luaL_error(L, "ctx not found");
-    }
-
-    ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_SET
-                               | NGX_HTTP_LUA_CONTEXT_BODY_FILTER);
-
-    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SET)) {
-        return ngx_http_lua_setby_param_get(L, r);
-    }
-
-    /* ctx->context & (NGX_HTTP_LUA_CONTEXT_BODY_FILTER) */
-
-    return ngx_http_lua_body_filter_param_get(L, r);
 }
 
 
@@ -4419,6 +4400,165 @@ ngx_http_lua_copy_escaped_header(ngx_http_request_t *r,
     }
 
     return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_http_lua_decode_base64mime(ngx_str_t *dst, ngx_str_t *src)
+{
+    size_t          i;
+    u_char         *d, *s, ch;
+    size_t          data_len = 0;
+    u_char          buf[4];
+    size_t          buf_len = 0;
+    static u_char   basis[] = {
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77, 77, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 77, 77, 77, 77, 77, 77,
+        77,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 77, 77, 77, 77, 77,
+        77, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 77, 77, 77, 77, 77,
+
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77
+    };
+
+    for (i = 0; i < src->len; i++) {
+        ch = src->data[i];
+        if (ch == '=') {
+            break;
+        }
+
+        if (basis[ch] == 77) {
+            continue;
+        }
+
+        data_len++;
+    }
+
+    if (data_len % 4 == 1) {
+        return NGX_ERROR;
+    }
+
+    s = src->data;
+    d = dst->data;
+
+    for (i = 0; i < src->len; i++) {
+        if (s[i] == '=') {
+            break;
+        }
+
+        if (basis[s[i]] == 77) {
+            continue;
+        }
+
+        buf[buf_len++] = s[i];
+        if (buf_len == 4) {
+            *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
+            *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
+            *d++ = (u_char) (basis[buf[2]] << 6 | basis[buf[3]]);
+            buf_len = 0;
+        }
+    }
+
+    if (buf_len > 1) {
+        *d++ = (u_char) (basis[buf[0]] << 2 | basis[buf[1]] >> 4);
+    }
+
+    if (buf_len > 2) {
+        *d++ = (u_char) (basis[buf[1]] << 4 | basis[buf[2]] >> 2);
+    }
+
+    dst->len = d - dst->data;
+
+    return NGX_OK;
+}
+
+
+ngx_addr_t *
+ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len)
+{
+    ngx_addr_t           *addr;
+    size_t                socklen;
+    in_addr_t             inaddr;
+    ngx_uint_t            family;
+    struct sockaddr_in   *sin;
+#if (NGX_HAVE_INET6)
+    struct in6_addr       inaddr6;
+    struct sockaddr_in6  *sin6;
+
+    /*
+     * prevent MSVC8 warning:
+     *    potentially uninitialized local variable 'inaddr6' used
+     */
+    ngx_memzero(&inaddr6, sizeof(struct in6_addr));
+#endif
+
+    inaddr = ngx_inet_addr(text, len);
+
+    if (inaddr != INADDR_NONE) {
+        family = AF_INET;
+        socklen = sizeof(struct sockaddr_in);
+
+#if (NGX_HAVE_INET6)
+
+    } else if (ngx_inet6_addr(text, len, inaddr6.s6_addr) == NGX_OK) {
+        family = AF_INET6;
+        socklen = sizeof(struct sockaddr_in6);
+#endif
+
+    } else {
+        return NULL;
+    }
+
+    addr = lua_newuserdata(L, sizeof(ngx_addr_t) + socklen + len);
+    if (addr == NULL) {
+        luaL_error(L, "no memory");
+        return NULL;
+    }
+
+    addr->sockaddr = (struct sockaddr *) ((u_char *) addr + sizeof(ngx_addr_t));
+
+    ngx_memzero(addr->sockaddr, socklen);
+
+    addr->sockaddr->sa_family = (u_char) family;
+    addr->socklen = socklen;
+
+    switch (family) {
+
+#if (NGX_HAVE_INET6)
+    case AF_INET6:
+        sin6 = (struct sockaddr_in6 *) addr->sockaddr;
+        ngx_memcpy(sin6->sin6_addr.s6_addr, inaddr6.s6_addr, 16);
+        break;
+#endif
+
+    default: /* AF_INET */
+        sin = (struct sockaddr_in *) addr->sockaddr;
+        sin->sin_addr.s_addr = inaddr;
+        break;
+    }
+
+    addr->name.data = (u_char *) addr->sockaddr + socklen;
+    addr->name.len = len;
+    ngx_memcpy(addr->name.data, text, len);
+
+    return addr;
+}
+
+
+void
+ngx_http_lua_ffi_bypass_if_checks(ngx_http_request_t *r)
+{
+    r->disable_not_modified = 1;
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

@@ -120,7 +120,12 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
+    ngx_ssl_session_t               *ssl_session_ret;
+    const char                      *error_ret;
+    int                              openssl_error_code_ret;
 #endif
+
+    ngx_chain_t                     *busy_bufs;
 
     unsigned                         ft_type:16;
     unsigned                         no_close:1;

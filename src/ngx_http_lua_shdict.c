@@ -198,9 +198,6 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
         rc = ngx_memn2cmp(kdata, sd->data, klen, (size_t) sd->key_len);
 
         if (rc == 0) {
-            ngx_queue_remove(&sd->queue);
-            ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
-
             *sdp = sd;
 
             dd("node expires: %lld", (long long) sd->expires);
@@ -213,11 +210,14 @@ ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone, ngx_uint_t hash,
 
                 dd("time to live: %lld", (long long) ms);
 
-                if (ms < 0) {
+                if (ms <= 0) {
                     dd("node already expired");
                     return NGX_DONE;
                 }
             }
+
+            ngx_queue_remove(&sd->queue);
+            ngx_queue_insert_head(&ctx->sh->lru_queue, &sd->queue);
 
             return NGX_OK;
         }
@@ -654,7 +654,7 @@ ngx_http_lua_shared_dict_get(ngx_shm_zone_t *zone, u_char *key_data,
             return NGX_ERROR;
         }
 
-        ngx_memcpy(&value->value.b, data, len);
+        ngx_memcpy(&value->value.n, data, len);
         break;
 
     case SHDICT_TBOOLEAN:
@@ -943,7 +943,7 @@ push_node:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
-        lua_pushboolean(L, 0);
+        lua_pushnil(L);
         lua_pushliteral(L, "no memory");
         return 2;
     }
@@ -2088,6 +2088,43 @@ ngx_http_lua_ffi_shdict_free_space(ngx_shm_zone_t *zone)
     ngx_shmtx_unlock(&ctx->shpool->mutex);
 
     return bytes;
+}
+#endif
+
+
+#if (NGX_DARWIN)
+int
+ngx_http_lua_ffi_shdict_get_macos(ngx_http_lua_shdict_get_params_t *p)
+{
+    return ngx_http_lua_ffi_shdict_get(p->zone,
+                                       (u_char *) p->key, p->key_len,
+                                       p->value_type, p->str_value_buf,
+                                       p->str_value_len, p->num_value,
+                                       p->user_flags, p->get_stale,
+                                       p->is_stale, p->errmsg);
+}
+
+
+int
+ngx_http_lua_ffi_shdict_store_macos(ngx_http_lua_shdict_store_params_t *p)
+{
+    return ngx_http_lua_ffi_shdict_store(p->zone, p->op,
+                                         (u_char *) p->key, p->key_len,
+                                         p->value_type,
+                                         (u_char *) p->str_value_buf,
+                                         p->str_value_len, p->num_value,
+                                         p->exptime, p->user_flags,
+                                         p->errmsg, p->forcible);
+}
+
+
+int
+ngx_http_lua_ffi_shdict_incr_macos(ngx_http_lua_shdict_incr_params_t *p)
+{
+    return ngx_http_lua_ffi_shdict_incr(p->zone, (u_char *) p->key, p->key_len,
+                                        p->num_value, p->errmsg,
+                                        p->has_init, p->init, p->init_ttl,
+                                        p->forcible);
 }
 #endif
 

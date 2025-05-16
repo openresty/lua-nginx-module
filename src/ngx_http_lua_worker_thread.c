@@ -16,7 +16,12 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_lua_string.h"
 #include "ngx_http_lua_config.h"
+#include "ngx_http_lua_shdict.h"
 
+#ifndef STRINGIFY
+#define TOSTRING(x)  #x
+#define STRINGIFY(x) TOSTRING(x)
+#endif
 
 #if (NGX_THREADS)
 
@@ -24,6 +29,7 @@
 #include <ngx_thread.h>
 #include <ngx_thread_pool.h>
 
+#define LUA_COPY_MAX_DEPTH 100
 
 typedef struct ngx_http_lua_task_ctx_s {
     lua_State                        *vm;
@@ -36,13 +42,27 @@ typedef struct {
     ngx_http_lua_co_ctx_t   *wait_co_ctx;
     int                      n_args;
     int                      rc;
-    int                      is_abort:1;
+    ngx_uint_t               is_abort:1;
 } ngx_http_lua_worker_thread_ctx_t;
 
 
 static  ngx_http_lua_task_ctx_t   dummy_ctx;
 static  ngx_http_lua_task_ctx_t  *ctxpool = &dummy_ctx;
 static  ngx_uint_t                worker_thread_vm_count;
+
+
+void
+ngx_http_lua_thread_exit_process(void)
+{
+    ngx_http_lua_task_ctx_t  *ctx;
+
+    while (ctxpool->next != NULL) {
+        ctx = ctxpool->next;
+        ctxpool->next = ctx->next;
+        lua_close(ctx->vm);
+        ngx_free(ctx);
+    }
+}
 
 
 /*
@@ -125,24 +145,17 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
         lua_setfield(vm, -2, "path");
         lua_pushlstring(vm, cpath, cpath_len);
         lua_setfield(vm, -2, "cpath");
+        lua_pop(vm, 1);
 
         /* pop path, cpath and "package" table from L */
         lua_pop(L, 3);
 
         /* inject API from C */
-        lua_newtable(L);    /* ngx.* */
+        lua_newtable(vm);    /* ngx.* */
         ngx_http_lua_inject_string_api(vm);
         ngx_http_lua_inject_config_api(vm);
+        ngx_http_lua_inject_shdict_api(lmcf, vm);
         lua_setglobal(vm, "ngx");
-
-        /* inject API via ffi */
-        lua_getglobal(vm, "require");
-        lua_pushstring(vm, "resty.core.regex");
-        if (lua_pcall(vm, 1, 0, 0) != 0) {
-            lua_close(vm);
-            ngx_free(ctx);
-            return NULL;
-        }
 
         lua_getglobal(vm, "require");
         lua_pushstring(vm, "resty.core.hash");
@@ -154,6 +167,14 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 
         lua_getglobal(vm, "require");
         lua_pushstring(vm, "resty.core.base64");
+        if (lua_pcall(vm, 1, 0, 0) != 0) {
+            lua_close(vm);
+            ngx_free(ctx);
+            return NULL;
+        }
+
+        lua_getglobal(vm, "require");
+        lua_pushstring(vm, "resty.core.shdict");
         if (lua_pcall(vm, 1, 0, 0) != 0) {
             lua_close(vm);
             ngx_free(ctx);
@@ -173,17 +194,27 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
 static void
 ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
 {
+    lua_State   *vm;
+
     ctx->next = ctxpool->next;
     ctxpool->next = ctx;
 
     /* clean Lua stack */
-    lua_settop(ctx->vm, 0);
+    vm = ctx->vm;
+
+    /* call collectgarbage("collect") */
+    lua_settop(vm, 0);
+    lua_getglobal(vm, "collectgarbage");
+    lua_pushstring(vm, "collect");
+    lua_pcall(vm, 1, 1, 0);
+
+    lua_settop(vm, 0);
 }
 
 
 static int
 ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
-    const int allow_nil)
+    const int allow_nil, const int depth, const char **err)
 {
     size_t           len = 0;
     const char      *str;
@@ -210,6 +241,13 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         return LUA_TSTRING;
 
     case LUA_TTABLE:
+        if (depth >= LUA_COPY_MAX_DEPTH) {
+            *err = "suspicious circular references, "
+                   "table depth exceed max depth: "
+                   STRINGIFY(LUA_COPY_MAX_DEPTH);
+            return LUA_TNONE;
+        }
+
         top_from = lua_gettop(from);
         top_to = lua_gettop(to);
 
@@ -223,8 +261,9 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
         lua_pushnil(from);
 
         while (lua_next(from, idx) != 0) {
-            if (ngx_http_lua_xcopy(from, to, -2, 0) != LUA_TNONE
-                && ngx_http_lua_xcopy(from, to, -1, 0) != LUA_TNONE)
+            if (ngx_http_lua_xcopy(from, to, -2, 0, depth + 1, err) != LUA_TNONE
+                && ngx_http_lua_xcopy(from, to, -1, 0,
+                                      depth + 1, err) != LUA_TNONE)
             {
                 lua_rawset(to, -3);
 
@@ -244,16 +283,24 @@ ngx_http_lua_xcopy(lua_State *from, lua_State *to, int idx,
             lua_pushnil(to);
             return LUA_TNIL;
         }
-        /* fall through */
 
-    /*
-     * ignore unsupported values:
-     * LUA_TNONE
-     * LUA_TFUNCTION
-     * LUA_TUSERDATA
-     * LUA_TTHREAD
-     */
+        *err = "unsupported Lua type: LUA_TNIL";
+        return LUA_TNONE;
+
+    case LUA_TFUNCTION:
+        *err = "unsupported Lua type: LUA_TFUNCTION";
+        return LUA_TNONE;
+
+    case LUA_TUSERDATA:
+        *err = "unsupported Lua type: LUA_TUSERDATA";
+        return LUA_TNONE;
+
+    case LUA_TTHREAD:
+        *err = "unsupported Lua type: LUA_TTHREAD";
+        return LUA_TNONE;
+
     default:
+        *err = "unsupported Lua type";
         return LUA_TNONE;
     }
 }
@@ -273,6 +320,50 @@ ngx_http_lua_worker_thread_handler(void *data, ngx_log_t *log)
 }
 
 
+static ngx_int_t
+ngx_http_lua_worker_thread_resume(ngx_http_request_t *r)
+{
+    lua_State                   *vm;
+    ngx_connection_t            *c;
+    ngx_int_t                    rc;
+    ngx_uint_t                   nreqs;
+    ngx_http_lua_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    ctx->resume_handler = ngx_http_lua_wev_handler;
+
+    c = r->connection;
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
+
+    rc = ngx_http_lua_run_thread(vm, r, ctx,
+                                 ctx->cur_co_ctx->nresults_from_worker_thread);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "lua run thread returned %d", rc);
+
+    if (rc == NGX_AGAIN) {
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_http_lua_finalize_request(r, NGX_DONE);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
+    }
+
+    if (ctx->entered_content_phase) {
+        ngx_http_lua_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
+    return rc;
+}
+
+
 /* executed in nginx event loop */
 static void
 ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
@@ -285,10 +376,10 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     size_t                            len;
     const char                       *str;
     int                               i;
-    int                               rc;
     ngx_http_lua_ctx_t               *ctx;
     lua_State                        *vm;
     int                               saved_top;
+    const char                       *err;
 
     worker_thread_ctx = ev->data;
 
@@ -324,10 +415,12 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
         lua_pushboolean(L, 1);
         nresults = lua_gettop(vm) + 1;
         for (i = 1; i < nresults; i++) {
-            if (ngx_http_lua_xcopy(vm, L, i, 1) == LUA_TNONE) {
+            err = NULL;
+            if (ngx_http_lua_xcopy(vm, L, i, 1, 1, &err) == LUA_TNONE) {
                 lua_settop(L, saved_top);
                 lua_pushboolean(L, 0);
-                lua_pushstring(L, "unsupported return value");
+                lua_pushfstring(L, "%s in the return value",
+                                err != NULL ? err : "unsupoorted Lua type");
                 nresults = 2;
                 break;
             }
@@ -335,6 +428,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     }
 
     ctx->cur_co_ctx = worker_thread_ctx->wait_co_ctx;
+    ctx->cur_co_ctx->nresults_from_worker_thread = nresults;
     ctx->cur_co_ctx->cleanup = NULL;
 
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
@@ -342,30 +436,15 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
 
     /* resume the caller coroutine */
 
-    vm = ngx_http_lua_get_lua_vm(r, ctx);
-
-    rc = ngx_http_lua_run_thread(vm, r, ctx, nresults);
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "lua run thread returned %d", rc);
-
-    if (rc == NGX_AGAIN) {
-        ngx_http_lua_run_posted_threads(c, vm, r, ctx, c->requests);
-        return;
-    }
-
-    if (rc == NGX_DONE) {
-        ngx_http_lua_finalize_request(r, NGX_DONE);
-        ngx_http_lua_run_posted_threads(c, vm, r, ctx, c->requests);
-        return;
-    }
-
-    /* rc == NGX_ERROR || rc >= NGX_OK */
-
     if (ctx->entered_content_phase) {
-        ngx_http_lua_finalize_request(r, rc);
-        return;
+        (void) ngx_http_lua_worker_thread_resume(r);
+
+    } else {
+        ctx->resume_handler = ngx_http_lua_worker_thread_resume;
+        ngx_http_core_run_phases(r);
     }
+
+    ngx_http_run_posted_requests(c);
 
     return;
 
@@ -503,9 +582,11 @@ ngx_http_lua_run_worker_thread(lua_State *L)
 
     /* copying passed arguments */
     for (i = 4; i <= n_args; i++) {
-        if (ngx_http_lua_xcopy(L, vm, i, 1) == LUA_TNONE) {
+        err = NULL;
+        if (ngx_http_lua_xcopy(L, vm, i, 1, 1, &err) == LUA_TNONE) {
             lua_pushboolean(L, 0);
-            lua_pushstring(L, "unsupported argument type");
+            lua_pushfstring(L, "%s in the argument",
+                            err != NULL ? err : "unsupoorted Lua type");
             ngx_http_lua_free_task_ctx(tctx);
             return 2;
         }

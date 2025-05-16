@@ -6,6 +6,10 @@ BEGIN {
     if ($ENV{TEST_NGINX_CHECK_LEAK}) {
         $SkipReason = "unavailable for the hup tests";
 
+    } elsif (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+        #os.execute("kill -HUP " .. pid)
+        $SkipReason = "send HUP relaod signal by self make two workers with same id";
+
     } else {
         $ENV{TEST_NGINX_USE_HUP} = 1;
         undef $ENV{TEST_NGINX_USE_STAP};
@@ -32,7 +36,8 @@ __DATA__
         set $port $TEST_NGINX_SERVER_PORT;
 
         content_by_lua_block {
-            local f, err = io.open("$TEST_NGINX_SERVER_ROOT/logs/nginx.pid", "r")
+            local pidfile = ngx.config.prefix() .. "/logs/nginx.pid"
+            local f, err = io.open(pidfile, "r")
             if not f then
                 ngx.say("failed to open nginx.pid: ", err)
                 return

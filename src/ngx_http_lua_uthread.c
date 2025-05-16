@@ -125,6 +125,9 @@ ngx_http_lua_uthread_wait(lua_State *L)
     coctx = ctx->cur_co_ctx;
 
     nargs = lua_gettop(L);
+    if (nargs == 0) {
+        return luaL_error(L, "at least one coroutine should be specified");
+    }
 
     for (i = 1; i <= nargs; i++) {
         sub_co = lua_tothread(L, i);

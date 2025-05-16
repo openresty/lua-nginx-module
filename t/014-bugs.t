@@ -8,7 +8,8 @@ log_level('debug');
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 2 + 33);
+# NB: the shutdown_error_log block is independent from repeat times
+plan tests => repeat_each() * (blocks() * 2 + 33) + 1;
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -193,6 +194,14 @@ Hi"
 
 === TEST 8: github issue 37: header bug
 https://github.com/chaoslawful/lua-nginx-module/issues/37
+
+https://datatracker.ietf.org/doc/html/rfc7540#section-8.1.2
+   Just as in HTTP/1.x, header field names are strings of ASCII
+   characters that are compared in a case-insensitive fashion. However,
+   header field names MUST be converted to lowercase prior to their
+   encoding in HTTP/2.  A request or response containing uppercase
+   header field names MUST be treated as malformed
+--- no_http2
 --- config
     location /sub {
         content_by_lua '
@@ -219,8 +228,17 @@ https://github.com/chaoslawful/lua-nginx-module/issues/37
 --- request
 GET /lua
 --- raw_response_headers_like eval
-".*Set-Cookie: TestCookie1=foo\r
+my $headers;
+
+if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+    $headers = ".*set-cookie: TestCookie1=foo\r
+set-cookie: TestCookie2=bar.*"
+} else {
+    $headers = ".*Set-Cookie: TestCookie1=foo\r
 Set-Cookie: TestCookie2=bar.*"
+}
+
+$headers;
 
 
 
@@ -713,6 +731,7 @@ Content-Type: application/json; charset=utf-8
 
 
 === TEST 32: hang on upstream_next (from kindy)
+--- no_http2
 --- no_check_leak
 --- http_config
     upstream xx {
@@ -769,6 +788,10 @@ eof found in body stream
 
 === TEST 34: testing a segfault when using ngx_poll_module + ngx_resolver
 See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-January/003275.html
+
+http3 may cache the dns result.
+so need to skip for http3
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 --- config
     location /t {
         set $myserver nginx.org;
@@ -785,6 +808,8 @@ See more details here: http://mailman.nginx.org/pipermail/nginx-devel/2013-Janua
 [alert]
 --- error_log eval
 qr/(?:send|recv)\(\) failed \(\d+: Connection refused\) while resolving/
+--- curl_error eval
+qr/curl: \(28\) Operation timed out after \d+ milliseconds with 0 bytes received/
 
 
 
@@ -803,7 +828,7 @@ qr/(?:send|recv)\(\) failed \(\d+: Connection refused\) while resolving/
         rewrite    ^/myproxy/(.*)  /$1  break;
         resolver_timeout 3s;
         #resolver 172.16.0.23; #  AWS DNS resolver address is the same in all regions - 172.16.0.23
-        resolver 8.8.8.8;
+        resolver $TEST_NGINX_RESOLVER;
         proxy_read_timeout 1s;
         proxy_send_timeout 1s;
         proxy_connect_timeout 1s;
@@ -860,6 +885,7 @@ GET /t
 --- no_error_log
 [error]
 --- timeout: 10
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -867,7 +893,7 @@ GET /t
 --- http_config eval
     "lua_package_path '$::HtmlDir/?.lua;./?.lua;;';
     server {
-        listen 12354;
+        listen \$TEST_NGINX_RAND_PORT_1;
 
         location = /t {
             echo 'args: \$args';
@@ -877,7 +903,7 @@ GET /t
 --- config
     location = /t {
         set $args "foo=1&bar=2";
-        proxy_pass http://127.0.0.1:12354;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_RAND_PORT_1;
     }
 
 --- request
@@ -1239,3 +1265,134 @@ res: true
 --- must_die
 --- error_log eval
 qr/\[emerg\] \d+#\d+: unexpected "A" in/
+
+
+
+=== TEST 47: cosocket does not exit on worker_shutdown_timeout
+--- main_config
+worker_shutdown_timeout 1;
+--- config
+location /t {
+    content_by_lua_block {
+        local function thread_func()
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", 65110)
+            local bytes, err = sock:send("hello")
+            if bytes ~= 5 then
+                sock:close()
+                return ngx.exit(500)
+            end
+
+            local data, err = sock:receive(20)
+            local line, err, partial = sock:receive()
+            if not line then
+                ngx.log(ngx.ERR, "failed to read a line: ", err)
+                return
+            end
+
+            ngx.log(ngx.ERR, "successfully read a line: ", line)
+        end
+
+        local function timer_func()
+            ngx.thread.spawn(thread_func)
+        end
+
+        ngx.timer.at(1, timer_func)
+        ngx.say("Hello world")
+    }
+}
+--- request
+    GET /t
+--- response_body
+Hello world
+--- shutdown_error_log eval
+my $expr;
+
+if ($ENV{TEST_NGINX_USE_HTTP3}) {
+    $expr = qr|lua close the global Lua VM|
+} else {
+    $expr = qr|failed to read a line: closed|
+}
+
+$expr;
+--- timeout: 1.2
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
+
+
+
+=== TEST 48: nginx crashes when encountering an illegal http if header
+crash with ngx.send_headers()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    rewrite_by_lua_block {
+        ngx.send_headers()
+        -- ngx.print() -- this also triggers the bug
+    }
+}
+location = /my_error_handler_412 {
+    return 412 "hello";
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 412
+--- response_body eval
+qr/\Ahello\z/
+
+
+
+=== TEST 49: nginx crashes when encountering an illegal http if header
+crash with ngx.print()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    rewrite_by_lua_block {
+        ngx.print()
+    }
+}
+location = /my_error_handler_412 {
+    return 412 "hello";
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 412
+--- response_body eval
+qr/\Ahello\z/
+
+
+
+=== TEST 50: nginx crashes when encountering an illegal http if header
+crash with ngx.print()
+--- main_config
+--- config
+error_page 412 /my_error_handler_412;
+
+location /t {
+    access_by_lua_block {
+        local ngx_resp = require "ngx.resp"
+        ngx_resp.bypass_if_checks()
+        ngx.print("hello")
+        ngx.exit(200)
+    }
+}
+location = /my_error_handler_412 {
+    content_by_lua_block {
+        ngx.sleep(0.002)
+        ngx.header["Content-Type"] = "text/plain"
+    }
+}
+--- request
+    GET /t
+--- more_headers
+If-Match: 1
+--- error_code: 200
+--- response_body eval
+qr/\Ahello\z/

@@ -1,6 +1,16 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+
+BEGIN {
+    if ($ENV{TEST_NGINX_USE_HTTP3}) {
+        $SkipReason = "http3 does not support ngx.req.socket";
+    } elsif ($ENV{TEST_NGINX_USE_HTTP2}) {
+        $SkipReason = "http2 does not support ngx.req.socket";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
@@ -1164,5 +1174,33 @@ GC cycle done
 GET /t
 --- response_body
 received: received: abc
+--- no_error_log
+[error]
+
+
+
+=== TEST 19: getfd
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock, err = ngx.req.socket()
+            if sock then
+                ngx.say("got the request socket")
+            else
+                ngx.say("failed to get the request socket: ", err)
+            end
+
+            ngx.say(sock:getfd())
+        }
+    }
+--- request
+POST /t
+hello world
+--- response_body eval
+qr/\Agot the request socket
+\d+
+\z/ms
 --- no_error_log
 [error]

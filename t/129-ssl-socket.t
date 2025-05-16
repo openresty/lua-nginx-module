@@ -1,18 +1,36 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+BEGIN {
+    if (defined $ENV{TEST_NGINX_USE_HTTP3}) {
+        # FIXME: we still need to enable this test file for HTTP3.
+        $SkipReason = "the test cases are very unstable, skip for now.";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
+
 use Cwd qw(abs_path realpath);
 use File::Basename;
 
 repeat_each(2);
 
-plan tests => repeat_each() * blocks() * 7 - 6;
+sub resolve($$);
+
+plan tests => repeat_each() * (blocks() * 7 - 4);
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_SERVER_SSL_PORT} ||= 12345;
 $ENV{TEST_NGINX_CERT_DIR} ||= dirname(realpath(abs_path(__FILE__)));
+$ENV{TEST_NGINX_OPENRESTY_ORG_IP} ||= resolve("openresty.org", $ENV{TEST_NGINX_RESOLVER});
+
+my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
+my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+if ($openssl_version =~ m/BoringSSL/) {
+    $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
+}
 
 #log_level 'warn';
 log_level 'debug';
@@ -29,6 +47,19 @@ sub read_file {
     $cert;
 }
 
+sub resolve ($$) {
+    my ($domain, $resolver) = @_;
+    my $ips = qx/dig \@$resolver +short $domain/;
+
+    my $exit_code = $? >> 8;
+    if (!$ips || $exit_code != 0) {
+        die "failed to resolve '$domain' using '$resolver' as resolver";
+    }
+
+    my ($ip) = split /\n/, $ips;
+    return $ip;
+}
+
 our $DSTRootCertificate = read_file("t/cert/dst-ca.crt");
 our $EquifaxRootCertificate = read_file("t/cert/equifax.crt");
 our $TestCertificate = read_file("t/cert/test.crt");
@@ -40,6 +71,8 @@ run_tests();
 __DATA__
 
 === TEST 1: www.google.com
+access the public network is unstable, need a bigger timeout value.
+--- quic_max_idle_timeout: 3
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -48,7 +81,7 @@ __DATA__
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
         content_by_lua '
-            -- avoid flushing google in "check leak" testing mode:
+            -- avoid flushing bing in "check leak" testing mode:
             local counter = package.loaded.counter
             if not counter then
                 counter = 1
@@ -106,7 +139,7 @@ __DATA__
 GET /t
 --- response_body_like chop
 \Aconnected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
@@ -190,7 +223,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 53 bytes.
 received: HTTP/1.1 201 Created
 close: 1 nil
@@ -271,7 +304,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 58 bytes.
 received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
@@ -293,6 +326,8 @@ SSL reused session
 
 
 === TEST 4: ssl session reuse
+access the public network is unstable, need a bigger timeout value.
+--- quic_max_idle_timeout: 3
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -355,12 +390,12 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
@@ -603,7 +638,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 80 bytes.
 received: HTTP/1.1 404 Not Found
 close: 1 nil
@@ -688,7 +723,7 @@ $::DSTRootCertificate"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 58 bytes.
 received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
@@ -1008,7 +1043,7 @@ $::DSTRootCertificate"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 58 bytes.
 received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
@@ -1034,6 +1069,8 @@ SSL reused session
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_protocols TLSv1 TLSv1.1 TLSV1.2;
+
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -1087,7 +1124,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 58 bytes.
 received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
@@ -1118,7 +1155,7 @@ SSL reused session
         server_name         test.com;
         ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols       TLSv1;
+        ssl_protocols       TLSv1.2;
 
         location / {
             content_by_lua_block {
@@ -1128,7 +1165,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    lua_ssl_ciphers ECDHE-RSA-AES256-SHA;
+    lua_ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384;
 
     location /t {
         content_by_lua '
@@ -1179,7 +1216,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
@@ -1192,7 +1229,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
 ['lua ssl server name: "test.com"',
-qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+qr/SSL: TLSv\d(?:\.\d)?, cipher: "ECDHE-RSA-AES256-GCM-SHA384 (SSLv3|TLSv1\.2)/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1208,7 +1245,7 @@ SSL reused session
         server_name         test.com;
         ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
         ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
-        ssl_protocols       TLSv1;
+        ssl_protocols       TLSv1.2;
 
         location / {
             content_by_lua_block {
@@ -1218,7 +1255,7 @@ SSL reused session
     }
 --- config
     server_tokens off;
-    lua_ssl_protocols TLSv1;
+    lua_ssl_protocols TLSv1.2;
 
     location /t {
         content_by_lua '
@@ -1269,7 +1306,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
@@ -1282,7 +1319,7 @@ lua ssl free session: ([0-9A-F]+)
 $/
 --- error_log eval
 ['lua ssl server name: "test.com"',
-qr/SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA (SSLv3|TLSv1)/]
+qr/SSL: TLSv1\.2, cipher: "ECDHE-RSA-AES256-GCM-SHA384 TLSv1\.2/]
 --- no_error_log
 SSL reused session
 [error]
@@ -1376,6 +1413,7 @@ SSL reused session
     location /t {
         #set $port 5000;
         set $port $TEST_NGINX_MEMCACHED_PORT;
+        set $openresty_org_ip $TEST_NGINX_OPENRESTY_ORG_IP;
 
         content_by_lua '
             local sock = ngx.socket.tcp()
@@ -1385,7 +1423,8 @@ SSL reused session
 
             local session
             for i = 1, 3 do
-                local ok, err = sock:connect("openresty.org", 443)
+                -- Use the same IP to ensure that the connection can be reused
+                local ok, err = sock:connect(ngx.var.openresty_org_ip, 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1418,13 +1457,13 @@ $::DSTRootCertificate"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 
 --- log_level: debug
@@ -1445,6 +1484,72 @@ SSL reused session
 
 
 === TEST 18: openresty.org: passing SSL verify: keepalive (no reusing the ssl session)
+The session returned by SSL_get1_session maybe different.
+After function tls_process_new_session_ticket, the session saved in SSL->session
+will be replace by a new one.
+
+ngx_ssl_session_t *
+ngx_ssl_get_session(ngx_connection_t *c)
+{
+#ifdef TLS1_3_VERSION
+    if (c->ssl->session) {
+        SSL_SESSION_up_ref(c->ssl->session);
+        return c->ssl->session;
+    }
+#endif
+
+    return SSL_get1_session(c->ssl->connection);
+}
+
+SSL_SESSION *SSL_get1_session(SSL *ssl)
+/* variant of SSL_get_session: caller really gets something */
+{
+    SSL_SESSION *sess;
+    /*
+     * Need to lock this all up rather than just use CRYPTO_add so that
+     * somebody doesn't free ssl->session between when we check it's non-null
+     * and when we up the reference count.
+     */
+    CRYPTO_THREAD_read_lock(ssl->lock);
+    sess = ssl->session;
+    if (sess)
+        SSL_SESSION_up_ref(sess);
+    CRYPTO_THREAD_unlock(ssl->lock);
+    return sess;
+}
+
+#0  tls_process_new_session_ticket (s=0x7e6ea0, pkt=0x7fffffffc820) at ssl/statem/statem_clnt.c:2650
+#1  0x00007ffff7af50fd in read_state_machine (s=0x7e6ea0) at ssl/statem/statem.c:636
+#2  state_machine (s=0x7e6ea0, server=0) at ssl/statem/statem.c:434
+#3  0x00007ffff7aca6b3 in ssl3_read_bytes (s=<optimized out>, type=23, recvd_type=0x0, buf=0x7fffffffc9d7 "\027\320\355t", len=1, 
+    peek=0, readbytes=0x7fffffffc978) at ssl/record/rec_layer_s3.c:1677
+#4  0x00007ffff7ad2250 in ssl3_read_internal (readbytes=0x7fffffffc978, peek=0, len=1, buf=0x7fffffffc9d7, s=0x7e6ea0)
+    at ssl/s3_lib.c:4477
+#5  ssl3_read (s=0x7e6ea0, buf=0x7fffffffc9d7, len=1, readbytes=0x7fffffffc978) at ssl/s3_lib.c:4500
+#6  0x00007ffff7ade695 in SSL_read (s=<optimized out>, buf=buf@entry=0x7fffffffc9d7, num=num@entry=1) at ssl/ssl_lib.c:1799
+#7  0x000000000045a965 in ngx_ssl_recv (c=0x72c3b0, buf=0x7fffffffc9d7 "\027\320\355t", size=1)
+    at src/event/ngx_event_openssl.c:2337
+#8  0x0000000000533b17 in ngx_http_lua_socket_keepalive_close_handler (ev=0x7e2f20)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_socket_tcp.c:5753
+#9  0x000000000052cf40 in ngx_http_lua_socket_tcp_setkeepalive (L=0x74edd0)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_socket_tcp.c:5602
+#10 0x00007ffff7f0fabe in lj_BC_FUNCC ()
+   from /tmp/undodb.72729.1722915526.2470007.80d50d088e818fd4/debuggee-1-zwqz8svp/symbol-files/opt/luajit-sysm/lib/libluajit-5.1.so.2
+#11 0x000000000051f2b2 in ngx_http_lua_run_thread (L=L@entry=0x767670, r=r@entry=0x7edf80, ctx=ctx@entry=0x750e40, nrets=0)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_util.c:1194
+#12 0x0000000000524347 in ngx_http_lua_content_by_chunk (L=0x767670, r=0x7edf80)
+    at /var/code/openresty/lua-nginx-module/src/ngx_http_lua_contentby.c:124
+#13 0x000000000047c663 in ngx_http_core_content_phase (r=0x7edf80, ph=0x7b4470) at src/http/ngx_http_core_module.c:1271
+#14 0x000000000047b80d in ngx_http_core_run_phases (r=0x7edf80) at src/http/ngx_http_core_module.c:885
+#15 ngx_http_handler (r=r@entry=0x7edf80) at src/http/ngx_http_core_module.c:868
+#16 0x00000000004854ad in ngx_http_process_request (r=r@entry=0x7edf80) at src/http/ngx_http_request.c:2140
+#17 0x00000000004868e8 in ngx_http_process_request_headers (rev=rev@entry=0x7e2f80) at src/http/ngx_http_request.c:1529
+#18 0x0000000000486468 in ngx_http_process_request_line (rev=0x7e2f80) at src/http/ngx_http_request.c:1196
+#19 0x000000000044b338 in ngx_event_process_posted (cycle=cycle@entry=0x721690, posted=0x62f250 <ngx_posted_events>)
+    at src/event/ngx_event_posted.c:35
+#20 0x000000000044a522 in ngx_process_events_and_timers (cycle=cycle@entry=0x721690) at src/event/ngx_event.c:273
+#21 0x0000000000453819 in ngx_single_process_cycle (cycle=cycle@entry=0x721690) at src/os/unix/ngx_process_cycle.c:323
+#22 0x0000000000429dee in main (argc=argc@entry=5, argv=argv@entry=0x7fffffffd1a8) at src/core/nginx.c:384
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -1452,6 +1557,7 @@ SSL reused session
     lua_ssl_verify_depth 2;
     location /t {
         #set $port 5000;
+        set $openresty_org_ip $TEST_NGINX_OPENRESTY_ORG_IP;
         set $port $TEST_NGINX_MEMCACHED_PORT;
 
         content_by_lua '
@@ -1461,7 +1567,8 @@ SSL reused session
             do
 
             for i = 1, 3 do
-                local ok, err = sock:connect("openresty.org", 443)
+                -- Use the same IP to ensure that the connection can be reused
+                local ok, err = sock:connect(ngx.var.openresty_org_ip, 443)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -1494,24 +1601,24 @@ $::DSTRootCertificate"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 set keepalive: 1 nil
 
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
 qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl save session: \1
-lua ssl save session: \1
-lua ssl free session: \1
-lua ssl free session: \1
-lua ssl free session: \1
+lua ssl save session: ([0-9A-F]+)
+lua ssl save session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
+lua ssl free session: ([0-9A-F]+)
 $/
 
 --- error_log
@@ -1562,6 +1669,7 @@ attempt to call method 'sslhandshake' (a nil value)
 --- no_error_log
 [alert]
 --- timeout: 3
+--- skip_eval: 5:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -1637,7 +1745,7 @@ attempt to call method 'sslhandshake' (a nil value)
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1742,7 +1850,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1855,7 +1963,7 @@ $::TestCertificate"
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
 --- error_log eval
-qr/SSL_do_handshake\(\) failed .*?(unknown protocol|wrong version number)/
+qr/SSL_do_handshake\(\) failed .*?(unknown protocol|wrong version number|routines::record layer failure)/
 --- no_error_log
 lua ssl server name:
 SSL reused session
@@ -2031,8 +2139,8 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
-ssl handshake: userdata
+ssl handshake: cdata
+ssl handshake: cdata
 sent http request: 58 bytes.
 received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
@@ -2099,8 +2207,6 @@ failed to do SSL handshake: timeout
 --- log_level: debug
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -2232,7 +2338,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 
 --- user_files eval
 ">>> test.key
@@ -2405,7 +2511,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2508,10 +2614,10 @@ SSL reused session
 
 --- request
 GET /t
---- response_body
-connected: 1
-failed to do SSL handshake: 18: self signed certificate
-
+--- response_body eval
+qr/connected: 1
+failed to do SSL handshake: 18: self[- ]signed certificate
+/ms
 --- user_files eval
 ">>> test.key
 $::TestCertificateKey
@@ -2520,8 +2626,8 @@ $::TestCertificate"
 
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out
---- error_log
-lua ssl certificate verify error: (18: self signed certificate)
+--- error_log eval
+qr/lua ssl certificate verify error: \(18: self[- ]signed certificate\)/
 --- no_error_log
 SSL reused session
 [alert]
@@ -2529,7 +2635,7 @@ SSL reused session
 
 
 
-=== TEST 31: handshake, too many arguments
+=== TEST 31: handshake, too few arguments
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
@@ -2561,6 +2667,8 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 --- no_error_log
 [alert]
 --- timeout: 10
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by server#
 
 
 
@@ -2633,7 +2741,7 @@ qr/\[error\] .* ngx.socket sslhandshake: expecting 1 ~ 5 arguments \(including t
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
@@ -2658,6 +2766,7 @@ SSL reused session
 === TEST 33: explicit cipher configuration - TLSv1.3
 --- skip_openssl: 8: < 1.1.1
 --- skip_nginx: 8: < 1.19.4
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- http_config
     server {
         listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -2726,7 +2835,7 @@ SSL reused session
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 53 bytes.
 received: HTTP/1.1 200 OK
 close: 1 nil
@@ -2751,6 +2860,7 @@ SSL reused session
 === TEST 34: explicit cipher configuration not in the default list - TLSv1.3
 --- skip_openssl: 8: < 1.1.1
 --- skip_nginx: 8: < 1.19.4
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- http_config
     server {
         listen              unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;

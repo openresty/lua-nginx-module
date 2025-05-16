@@ -65,6 +65,7 @@ GET /read
 Content-Length: 3
 --- response_body chop
 Hel
+--- skip_eval: 3:defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2}) 
 
 
 
@@ -113,8 +114,16 @@ Hello
     }
 --- request
 GET /read
---- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: bc\r\n
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
+    $headers = qr/x-foo: a\r\n.*?x-foo: bc\r\n/
+} else {
+    $headers = qr/X-Foo: a\r\n.*?X-Foo: bc\r\n/
+}
+
+$headers;
 --- response_body
 Hello
 
@@ -184,8 +193,16 @@ Hello
     }
 --- request
 GET /read
---- raw_response_headers_like chomp
-X-Foo: a\r\n.*?X-Foo: abc\r\n
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
+    $headers = "x-foo: a\r\n.*?x-foo: abc\r\n"
+} else {
+    $headers = "X-Foo: a\r\n.*?X-Foo: abc\r\n"
+}
+
+$headers;
 --- response_body
 Hello
 
@@ -203,8 +220,17 @@ Hello
 --- request
     GET /lua
 --- raw_response_headers_like eval
-".*Foo: a\r
-Foo: b.*"
+my $headers;
+
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
+    $headers = ".*foo: a\r
+foo: b.*";
+} else {
+    $headers = ".*Foo: a\r
+Foo: b.*";
+}
+
+$headers;
 --- response_body
 
 
@@ -222,8 +248,17 @@ Foo: b.*"
 --- request
     GET /lua
 --- raw_response_headers_like eval
-".*Foo: a\r
-Foo: b.*"
+my $headers;
+
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
+    $headers = ".*foo: a\r
+foo: b.*";
+} else {
+    $headers = ".*Foo: a\r
+Foo: b.*";
+}
+
+$headers;
 --- response_body
 
 
@@ -263,6 +298,7 @@ Fooy: cony1, cony2
 
 
 === TEST 15: set header after ngx.print
+--- no_http2
 --- config
     location /lua {
         default_type "text/plain";
@@ -278,7 +314,7 @@ hello
 --- error_log
 attempt to set ngx.header.HEADER after sending out response headers
 --- no_error_log eval
-["alert", "warn"]
+["[alert]", "[warn]"]
 
 
 
@@ -1071,8 +1107,8 @@ GET /t
 --- more_headers
 Foo: bar
 Bah: baz
---- response_headers
-Location: http://localhost:$ServerPort/t/
+--- response_headers_like
+Location: https?://localhost:\d+/t/
 --- response_body_like: 301 Moved Permanently
 --- error_code: 301
 --- no_error_log
@@ -1094,8 +1130,8 @@ GET /t
 Foo: bar
 Bah: baz
 --- response_body_like: 301 Moved Permanently
---- response_headers
-Location: http://localhost:$ServerPort/t/
+--- response_headers_like
+Location: https?://localhost:\d+/t/
 --- error_code: 301
 --- no_error_log
 [error]
@@ -1115,8 +1151,8 @@ GET /t
 --- more_headers
 Foo: bar
 Bah: baz
---- response_headers
-Location: http://localhost:$ServerPort/t/
+--- response_headers_like
+Location: https?://localhost:\d+/t/
 Foo: /t/
 --- response_body_like: 301 Moved Permanently
 --- error_code: 301
@@ -1139,8 +1175,8 @@ GET /t
 --- more_headers
 Foo: bar
 Bah: baz
---- response_headers
-Location: http://localhost:$ServerPort/t/
+--- response_headers_like
+Location: https?://localhost:\d+/t/
 Foo: /t/
 --- response_body_like: 301 Moved Permanently
 --- error_code: 301
@@ -1159,8 +1195,16 @@ Foo: /t/
     }
 --- request
     GET /lua
---- raw_response_headers_like chop
-cache-Control: private
+--- raw_response_headers_like eval
+my $headers;
+
+if (defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2})) {
+    $headers = "cache-control: private"
+} else {
+    $headers = "cache-Control: private"
+}
+
+$headers;
 --- response_body
 Cache-Control: private
 
@@ -1509,6 +1553,7 @@ hi
 --- error_log
 my Transfer-Encoding: chunked
 my transfer-encoding: chunked
+--- skip_eval: 6:defined($ENV{TEST_NGINX_USE_HTTP3}) || defined($ENV{TEST_NGINX_USE_HTTP2}) 
 
 
 
@@ -2141,3 +2186,88 @@ hi
 --- error_log
 my Content-Length: 8589934591
 upstream prematurely closed connection while sending to client
+
+
+
+=== TEST 95: Expose the 'Last-Modified' response header as ngx.header["Last-Modified"]
+--- config
+    location /a.txt {
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.ERR, "can not get lasted modified")
+                ngx.exit(500)
+                return
+            end
+
+            local last_mod = ngx.parse_http_time(last_modified)
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        }
+    }
+--- user_files
+>>> a.txt
+Foo
+--- request
+GET /a.txt
+--- raw_response_headers_like eval
+qr/^(a|A)ge: \d\r\n/ms
+--- no_error_log
+[error]
+
+
+
+=== TEST 96: 'Last-Modified' from upstream
+--- config
+    location /test/ {
+        proxy_pass http://127.0.0.1:$server_port/;
+
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.ERR, "can not get lasted modified")
+                ngx.exit(500)
+                return
+            end
+
+            local last_mod = ngx.parse_http_time(last_modified)
+            local age = ngx.time() - last_mod
+            ngx.header["Age"] = age
+        }
+    }
+
+--- user_files
+>>> a.txt
+Foo
+--- request
+GET /test/a.txt
+--- raw_response_headers_like eval
+qr/^(a|A)ge: \d\r\n/ms
+--- no_error_log
+[error]
+
+
+
+=== TEST 97: 'Last-Modified' does not exist
+--- config
+    location /test {
+        header_filter_by_lua_block {
+            local last_modified = ngx.header["Last-Modified"]
+            if last_modified == nil then
+                ngx.log(ngx.INFO, "Last-Modified is nil as expected")
+                return
+            end
+
+            ngx.log(ngx.ERR, "Last-Modified expected to be nil, but got ", last_modified)
+        }
+
+        content_by_lua_block {
+            ngx.say("Hello World")
+        }
+    }
+--- request
+GET /test
+--- response_body
+Hello World
+--- no_error_log
+[error]

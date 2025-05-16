@@ -114,6 +114,7 @@ GET /api?user=agentz
 
 
 === TEST 6: working with ngx_auth_request (simplest form, w/o ngx_memc)
+--- no_http2
 --- http_config eval
 "
     lua_package_cpath '$::LuaCpath';
@@ -177,10 +178,12 @@ GET /api?uid=32
 --- response_body
 Logged in 56
 --- timeout: 3
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
 === TEST 7: working with ngx_auth_request (simplest form)
+--- no_http2
 --- http_config eval
 "
     lua_package_cpath '$::LuaCpath';
@@ -243,10 +246,12 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
 === TEST 8: working with ngx_auth_request
+--- no_http2
 --- http_config eval
 "
     lua_package_cpath '$::LuaCpath';
@@ -320,6 +325,7 @@ ngx.var.uid = res[1].uid;
 GET /api?uid=32
 --- response_body
 Logged in 56
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

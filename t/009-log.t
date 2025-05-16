@@ -243,7 +243,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: HELLO,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua\(nginx.conf:43\):2: HELLO,/
 
 
 
@@ -261,7 +261,7 @@ GET /log
 --- response_body
 32
 --- error_log eval
-qr/\[error\] \S+: \S+ \[lua\] set_by_lua:2: truefalsenil,/
+qr/\[error\] \S+: \S+ \[lua\] set_by_lua\(nginx.conf:43\):2: truefalsenil,/
 
 
 
@@ -368,7 +368,7 @@ GET /log
 --- response_headers
 foo: 32
 --- error_log eval
-qr/\[notice\] .*? \[lua\] header_filter_by_lua:2: hello world/
+qr/\[notice\] .*? \[lua\] header_filter_by_lua\(nginx.conf:43\):2: hello world/
 --- response_body
 hi
 
@@ -390,7 +390,7 @@ foo: 32
 --- response_body
 hi
 --- error_log eval
-qr/\[error\] .*? \[lua\] header_filter_by_lua:2: howdy, lua!/
+qr/\[error\] .*? \[lua\] header_filter_by_lua\(nginx.conf:43\):2: howdy, lua!/
 
 
 

@@ -34,7 +34,7 @@ __DATA__
 --- request
 GET /test
 --- response_body
-ngx: 114
+ngx: 117
 --- no_error_log
 [error]
 
@@ -55,7 +55,7 @@ ngx: 114
 --- request
 GET /test
 --- response_body
-114
+117
 --- no_error_log
 [error]
 
@@ -83,7 +83,7 @@ GET /test
 --- request
 GET /test
 --- response_body
-n = 114
+n = 117
 --- no_error_log
 [error]
 
@@ -259,9 +259,10 @@ n = 10
 POST /test
 hello world
 --- response_body
-n = 6
+n = 7
 --- no_error_log
 [error]
+--- skip_eval: 3: $ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -305,7 +306,7 @@ GET /t
 --- response_body_like: 404 Not Found
 --- error_code: 404
 --- error_log
-ngx. entry count: 114
+ngx. entry count: 117
 
 
 
@@ -438,7 +439,7 @@ thread: 3
 --- request
 GET /test
 --- response_body
-worker: 4
+worker: 5
 --- no_error_log
 [error]
 
@@ -459,7 +460,7 @@ worker: 4
 --- request
 GET /test
 --- response_body
-n = 14
+n = 17
 --- no_error_log
 [error]
 
@@ -480,7 +481,7 @@ n = 14
 --- request
 GET /test
 --- response_body
-n = 6
+n = 7
 --- no_error_log
 [error]
 
@@ -512,9 +513,10 @@ n = 6
 --- request
 GET /test
 --- response_body
-n = 7
+n = 8
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -554,6 +556,7 @@ narr = 2
 nrec = 3
 --- no_error_log
 [error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -589,3 +592,4 @@ narr = 2
 nrec = 3
 --- no_error_log
 [error]
+--- skip_eval: 3: $ENV{TEST_NGINX_USE_HTTP3}

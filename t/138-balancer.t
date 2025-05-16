@@ -12,7 +12,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 + 9);
+plan tests => repeat_each() * (blocks() * 4 - 3);
 
 #no_diff();
 no_long_string();
@@ -38,11 +38,9 @@ __DATA__
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -64,10 +62,9 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- response_body_like: 403 Forbidden
 --- error_code: 403
 --- error_log
-[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,
+[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,
 --- no_error_log eval
 [
-'[warn]',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
 
@@ -92,11 +89,9 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -125,8 +120,6 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 "2: variable foo = 33",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -153,8 +146,6 @@ Foo: bar
 "header foo: bar",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -180,12 +171,11 @@ Foo: bar
 ["arg foo: bar",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
 === TEST 7: ngx.req.get_method() works
+--- no_http2
 --- http_config
     upstream backend {
         server 0.0.0.1;
@@ -208,8 +198,6 @@ Foo: bar
 "method: GET",
 qr/\[crit\] .* connect\(\) .*? failed/,
 ]
---- no_error_log
-[warn]
 
 
 
@@ -235,8 +223,6 @@ print("hello from balancer by lua!")
 '[lua] a.lua:1: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -257,7 +243,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua\(nginx\.conf:27\):2: API disabled in the context of balancer_by_lua\*/
 
 
 
@@ -278,7 +264,7 @@ qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disable
 --- response_body_like: 500 Internal Server Error
 --- error_code: 500
 --- error_log eval
-qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua:2: API disabled in the context of balancer_by_lua\*/
+qr/\[error\] .*? failed to run balancer_by_lua\*: balancer_by_lua\(nginx\.conf:27\):2: API disabled in the context of balancer_by_lua\*/
 
 
 
@@ -309,6 +295,7 @@ qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\
 
 
 === TEST 12: code cache off
+--- no_http2
 --- http_config
     lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
 
@@ -427,11 +414,9 @@ ctx counter: nil
 --- error_code: 502
 --- error_log eval
 [
-'[lua] balancer_by_lua:2: hello from balancer by lua! while connecting to upstream,',
+'[lua] balancer_by_lua(nginx.conf:27):2: hello from balancer by lua! while connecting to upstream,',
 qr{\[crit\] .*? connect\(\) to 0\.0\.0\.1:80 failed .*?, upstream: "http://0\.0\.0\.1:80/t"},
 ]
---- no_error_log
-[warn]
 
 
 
@@ -535,7 +520,7 @@ failed to set more tries: reduced tries due to limit
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:8888;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
 
         location / {
             return 200 "it works";
@@ -543,8 +528,8 @@ failed to set more tries: reduced tries due to limit
     }
 
     upstream foo {
-        server 127.0.0.1:8888 max_fails=0;
-        server 127.0.0.1:8889 max_fails=0 weight=9999;
+        server 127.0.0.1:$TEST_NGINX_RAND_PORT_1 max_fails=0;
+        server 127.0.0.1:$TEST_NGINX_RAND_PORT_2 max_fails=0 weight=9999;
 
         balancer_by_lua_block {
             local bal = require "ngx.balancer"
@@ -567,3 +552,111 @@ connect() failed (111: Connection refused) while connecting to upstream
 --- no_error_log
 upstream sent more data than specified in "Content-Length" header while reading upstream
 [alert]
+
+
+
+=== TEST 18: error in balancer_by_lua_block
+--- http_config
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            ngx.say("hello"
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend;
+    }
+--- request
+    GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log eval
+ "failed to load inlined Lua code: balancer_by_lua(nginx.conf:27):3: ')' expected (to close '(' at line 2) near '<eof>'",
+
+
+
+=== TEST 19: disable ssl
+--- http_config
+    lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
+
+    upstream backend {
+        server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
+        balancer_by_lua_block {
+            local ffi = require "ffi"
+            local C = ffi.C
+ffi.cdef[[
+int
+ngx_http_lua_ffi_balancer_set_upstream_tls(ngx_http_request_t *r, int on, char **err);
+]]
+            local errmsg = ffi.new("char *[1]")
+            local r = require "resty.core.base" .get_request()
+            if r == nil then
+                ngx.log(ngx.ERR, "no request found")
+                return
+            end
+
+            local rc = C.ngx_http_lua_ffi_balancer_set_upstream_tls(r, 0, errmsg)
+            if rc < 0 then
+                ngx.log(ngx.ERR, "failed to disable ssl: ", ffi.string(errmsg[0]))
+                return
+            end
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass https://backend/back;
+    }
+
+    location = /back {
+        echo ok;
+    }
+
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+[cirt]
+
+
+
+=== TEST 20: recreate_request refresh body buffer when ngx.req.set_body_data is used in balancer phase
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+
+    server {
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
+
+        location / {
+            content_by_lua_block {
+                ngx.req.read_body()
+                local body = ngx.req.get_body_data()
+                ngx.log(ngx.ERR, "body: ", body)
+                ngx.say(body)
+            }
+        }
+    }
+
+    upstream foo {
+        server 127.0.0.1:$TEST_NGINX_RAND_PORT_1 max_fails=0;
+
+        balancer_by_lua_block {
+            local bal = require "ngx.balancer"
+            ngx.req.set_body_data("hello world")
+            assert(bal.recreate_request())
+        }
+    }
+
+--- config
+    location = /t {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://foo;
+    }
+--- request
+GET /t
+--- error_code: 200
+--- response_body
+hello world

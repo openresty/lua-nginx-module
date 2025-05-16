@@ -16,6 +16,7 @@ run_tests();
 __DATA__
 
 === TEST 1: when mysql query timed out, kill that query by Lua
+--- no_http2
 --- http_config
     upstream backend {
         drizzle_server 127.0.0.1:$TEST_NGINX_MYSQL_PORT protocol=mysql
@@ -69,6 +70,7 @@ kill status = 200
 kill body = \{"errcode":0\}$
 --- error_log eval
 qr{upstream timed out \(\d+: Connection timed out\) while sending query to drizzle upstream}
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

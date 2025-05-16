@@ -84,6 +84,12 @@ ngx_http_lua_ngx_req_http_version(lua_State *L)
         break;
 #endif
 
+#ifdef NGX_HTTP_VERSION_30
+    case NGX_HTTP_VERSION_30:
+        lua_pushnumber(L, 3.0);
+        break;
+#endif
+
     default:
         lua_pushnil(L);
         break;
@@ -166,6 +172,12 @@ ngx_http_lua_ngx_req_raw_header(lua_State *L)
 
     size = 0;
     b = c->buffer;
+
+    if (mr->request_line.len == 0) {
+        /* return empty string on invalid request */
+        lua_pushlstring(L, "", 0);
+        return 1;
+    }
 
     if (mr->request_line.data[mr->request_line.len] == CR) {
         line_break_len = 2;
@@ -770,6 +782,11 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
 {
     int                           count;
     ngx_list_part_t              *part;
+#if (NGX_HTTP_V3)
+    int                           has_host = 0;
+    ngx_uint_t                    i;
+    ngx_table_elt_t              *header;
+#endif
 
     if (r->connection->fd == (ngx_socket_t) -1) {
         return NGX_HTTP_LUA_FFI_BAD_CONTEXT;
@@ -782,11 +799,54 @@ ngx_http_lua_ffi_req_get_headers_count(ngx_http_request_t *r, int max,
     }
 
     part = &r->headers_in.headers.part;
+
+#if (NGX_HTTP_V3)
+    count = 0;
+    header = part->elts;
+
+    if (r->http_version == NGX_HTTP_VERSION_30
+        && r->headers_in.server.data != NULL)
+    {
+        has_host = 1;
+        count++;
+    }
+
+    if (has_host == 1) {
+        for (i = 0; /* void */; i++) {
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                header = part->elts;
+                i = 0;
+            }
+
+            if (header[i].key.len == 4
+                && ngx_strncasecmp(header[i].key.data,
+                                   (u_char *) "host", 4) == 0)
+            {
+                continue;
+            }
+
+            count++;
+        }
+
+    } else {
+        count = part->nelts;
+        while (part->next != NULL) {
+            part = part->next;
+            count += part->nelts;
+        }
+    }
+#else
     count = part->nelts;
     while (part->next != NULL) {
         part = part->next;
         count += part->nelts;
     }
+#endif
 
     if (max > 0 && count > max) {
         *truncated = 1;
@@ -809,12 +869,29 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
     ngx_uint_t                    i;
     ngx_list_part_t              *part;
     ngx_table_elt_t              *header;
+#if (NGX_HTTP_V3)
+    int                           has_host = 0;
+#endif
 
     if (count <= 0) {
         return NGX_OK;
     }
 
     n = 0;
+
+#if (NGX_HTTP_V3)
+    if (r->http_version == NGX_HTTP_VERSION_30
+        && r->headers_in.server.data != NULL)
+    {
+        out[n].key.data = (u_char *) "host";
+        out[n].key.len = sizeof("host") - 1;
+        out[n].value.len = r->headers_in.server.len;
+        out[n].value.data = r->headers_in.server.data;
+        has_host = 1;
+        ++n;
+    }
+#endif
+
     part = &r->headers_in.headers.part;
     header = part->elts;
 
@@ -829,6 +906,14 @@ ngx_http_lua_ffi_req_get_headers(ngx_http_request_t *r,
             header = part->elts;
             i = 0;
         }
+
+#if (NGX_HTTP_V3)
+        if (has_host == 1 && header[i].key.len == 4
+            && ngx_strncasecmp(header[i].key.data, (u_char *) "host", 4) == 0)
+        {
+            continue;
+        }
+#endif
 
         if (raw) {
             out[n].key.data = header[i].key.data;
@@ -1068,6 +1153,7 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
 {
     int                  found;
     u_char               c, *p;
+    time_t               last_modified;
     ngx_uint_t           i;
     ngx_table_elt_t     *h;
     ngx_list_part_t     *part;
@@ -1130,6 +1216,28 @@ ngx_http_lua_ffi_get_resp_header(ngx_http_request_t *r,
             values[0].data = r->headers_out.content_type.data;
             values[0].len = r->headers_out.content_type.len;
             return 1;
+        }
+
+        break;
+
+    case 13:
+        if (ngx_strncasecmp(key_buf, (u_char *) "Last-Modified", 13) == 0) {
+            last_modified = r->headers_out.last_modified_time;
+            if (last_modified >= 0) {
+                p = ngx_palloc(r->pool,
+                               sizeof("Mon, 28 Sep 1970 06:00:00 GMT"));
+                if (p == NULL) {
+                    *errmsg = "no memory";
+                    return NGX_ERROR;
+                }
+
+                values[0].data = p;
+                values[0].len = ngx_http_time(p, last_modified) - p;
+
+                return 1;
+            }
+
+            return 0;
         }
 
         break;
@@ -1207,6 +1315,20 @@ ngx_http_lua_ngx_raw_header_cleanup(void *data)
         ngx_free(lmcf->busy_buf_ptrs);
         lmcf->busy_buf_ptrs = NULL;
     }
+}
+#endif
+
+
+#if (NGX_DARWIN)
+int
+ngx_http_lua_ffi_set_resp_header_macos(ngx_http_lua_set_resp_header_params_t *p)
+{
+    return ngx_http_lua_ffi_set_resp_header(p->r, (const u_char *) p->key_data,
+                                            p->key_len, p->is_nil,
+                                            (const u_char *) p->sval,
+                                            p->sval_len,
+                                            p->mvals, p->mvals_len,
+                                            p->override, p->errmsg);
 }
 #endif
 

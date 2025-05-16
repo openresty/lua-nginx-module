@@ -1,5 +1,14 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
-use Test::Nginx::Socket::Lua;
+
+our $SkipReason;
+
+BEGIN {
+    if ($ENV{TEST_NGINX_USE_HTTP3}) {
+        $SkipReason = "http3 does not support ngx.req.raw_header()";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 #worker_connections(1014);
 #master_on();
@@ -1017,3 +1026,36 @@ client sent invalid header line: "\x20..." while reading client request headers
 [error]
 --- skip_nginx
 3: < 1.21.1
+
+
+
+=== TEST 35: bugfix: invalid http request
+--- log_level: error
+--- http_config
+    lua_package_path "../lua-resty-core/lib/?.lua;;";
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+                return
+            end
+            sock:send("\n")
+            sock:close()
+
+            ngx.say("OK")
+        }
+    }
+
+    log_by_lua_block {
+        local h = ngx.req.raw_header()
+    }
+
+--- request
+GET /t
+--- response_body
+OK
+--- no_error_log
+[error]

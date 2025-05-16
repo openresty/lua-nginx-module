@@ -61,7 +61,7 @@ ngx_http_lua_ssl_client_hello_handler_inline(ngx_http_request_t *r,
                                        lscf->srv.ssl_client_hello_src.len,
                                        &lscf->srv.ssl_client_hello_src_ref,
                                        lscf->srv.ssl_client_hello_src_key,
-                                       "=ssl_client_hello_by_lua");
+                           (const char *) lscf->srv.ssl_client_hello_chunkname);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -106,6 +106,8 @@ ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 
 #else
 
+    size_t                       chunkname_len;
+    u_char                      *chunkname;
     u_char                      *cache_key = NULL;
     u_char                      *name;
     ngx_str_t                   *value;
@@ -148,15 +150,24 @@ ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         lscf->srv.ssl_client_hello_src.len = ngx_strlen(name);
 
     } else {
-        cache_key = ngx_http_lua_gen_file_cache_key(cf, value[1].data,
-                                                    value[1].len);
+        cache_key = ngx_http_lua_gen_chunk_cache_key(cf,
+                                                     "ssl_client_hello_by_lua",
+                                                     value[1].data,
+                                                     value[1].len);
         if (cache_key == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        chunkname = ngx_http_lua_gen_chunk_name(cf, "ssl_client_hello_by_lua",
+                                          sizeof("ssl_client_hello_by_lua")- 1,
+                                          &chunkname_len);
+        if (chunkname == NULL) {
             return NGX_CONF_ERROR;
         }
 
         /* Don't eval nginx variables for inline lua code */
         lscf->srv.ssl_client_hello_src = value[1];
-
+        lscf->srv.ssl_client_hello_chunkname = chunkname;
     }
 
     lscf->srv.ssl_client_hello_src_key = cache_key;
@@ -379,7 +390,7 @@ ngx_http_lua_ssl_client_hello_aborted(void *data)
 {
     ngx_http_lua_ssl_ctx_t      *cctx = data;
 
-    dd("lua ssl client hello done");
+    dd("lua ssl client hello aborted");
 
     if (cctx->done) {
         /* completed successfully already */
@@ -438,7 +449,7 @@ ngx_http_lua_ssl_client_hello_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_int_t                rc;
     lua_State               *co;
     ngx_http_lua_ctx_t      *ctx;
-    ngx_http_cleanup_t      *cln;
+    ngx_pool_cleanup_t      *cln;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
@@ -492,7 +503,7 @@ ngx_http_lua_ssl_client_hello_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /* register request cleanup hooks */
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             rc = NGX_ERROR;
             ngx_http_lua_finalize_request(r, rc);
@@ -530,6 +541,10 @@ int
 ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     const char **name, size_t *namelen, char **err)
 {
+#ifdef LIBRESSL_VERSION_NUMBER
+    *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
+#else
     ngx_ssl_conn_t          *ssl_conn;
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
     const unsigned char     *p;
@@ -608,6 +623,7 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
     *err = "no TLS extension support";
     return NGX_ERROR;
 #endif
+#endif  /* LIBRESSL_VERSION_NUMBER */
 }
 
 
@@ -615,6 +631,10 @@ int
 ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     unsigned int type, const unsigned char **out, size_t *outlen, char **err)
 {
+#ifdef LIBRESSL_VERSION_NUMBER
+    *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
+#else
     ngx_ssl_conn_t          *ssl_conn;
 
     if (r->connection == NULL || r->connection->ssl == NULL) {
@@ -638,7 +658,52 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
     *err = "OpenSSL too old to support this function";
     return NGX_ERROR;
 #endif
+#endif  /* LIBRESSL_VERSION_NUMBER */
+}
 
+
+int
+ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
+    int **extensions, size_t *extensions_len, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+    int                      got_extensions;
+    size_t                   ext_len;
+    int                     *ext_out;
+    /* OPENSSL will allocate memory for us and make the ext_out point to it */
+
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+    got_extensions = SSL_client_hello_get1_extensions_present(ssl_conn,
+                                                           &ext_out, &ext_len);
+    if (!got_extensions || !ext_out || !ext_len) {
+        *err = "failed SSL_client_hello_get1_extensions_present()";
+        return NGX_DECLINED;
+    }
+
+    *extensions = ngx_palloc(r->connection->pool, sizeof(int) * ext_len);
+    if (*extensions != NULL) {
+        ngx_memcpy(*extensions, ext_out, sizeof(int) * ext_len);
+        *extensions_len = ext_len;
+    }
+
+    OPENSSL_free(ext_out);
+    return NGX_OK;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
 }
 
 
@@ -692,7 +757,7 @@ ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     }
 #endif
 
-#ifdef SSL_OP_NO_TLSv1_3
+#if defined(NGX_SSL_TLSv1_3) && defined( SSL_OP_NO_TLSv1_3)
     SSL_clear_options(ssl_conn, SSL_OP_NO_TLSv1_3);
     if (!(protocols & NGX_SSL_TLSv1_3)) {
         SSL_set_options(ssl_conn, SSL_OP_NO_TLSv1_3);

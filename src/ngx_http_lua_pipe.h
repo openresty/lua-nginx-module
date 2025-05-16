@@ -57,6 +57,8 @@ struct ngx_http_lua_pipe_s {
     ngx_http_lua_pipe_ctx_t            *stdout_ctx;
     ngx_http_lua_pipe_ctx_t            *stderr_ctx;
     ngx_http_lua_pipe_retval_handler    retval_handler;
+    ngx_http_cleanup_pt                *cleanup;
+    ngx_http_request_t                 *r;
     size_t                              buffer_size;
     unsigned                            closed:1;
     unsigned                            dead:1;

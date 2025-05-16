@@ -19,7 +19,11 @@
 /* Public API for other Nginx modules */
 
 
-#define ngx_http_lua_version  10021
+#define ngx_http_lua_version  10028
+#define NGX_HTTP_LUA_EXPORT_CO_CTX_CLEANUP 1
+
+
+typedef struct ngx_http_lua_co_ctx_s  ngx_http_lua_co_ctx_t;
 
 
 typedef struct {
@@ -55,6 +59,24 @@ ngx_shm_zone_t *ngx_http_lua_find_zone(u_char *name_data, size_t name_len);
 
 ngx_shm_zone_t *ngx_http_lua_shared_memory_add(ngx_conf_t *cf, ngx_str_t *name,
     size_t size, void *tag);
+
+ngx_http_lua_co_ctx_t *ngx_http_lua_get_cur_co_ctx(ngx_http_request_t *r);
+
+void ngx_http_lua_set_cur_co_ctx(ngx_http_request_t *r,
+    ngx_http_lua_co_ctx_t *coctx);
+
+lua_State *ngx_http_lua_get_co_ctx_vm(ngx_http_lua_co_ctx_t *coctx);
+
+
+void *ngx_http_lua_get_co_ctx_data(ngx_http_lua_co_ctx_t *coctx);
+void ngx_http_lua_set_co_ctx_cleanup(ngx_http_lua_co_ctx_t *coctx,
+    ngx_http_cleanup_pt cleanup, void *data);
+void ngx_http_lua_cleanup_co_ctx_pending_operation(
+    ngx_http_lua_co_ctx_t *coctx);
+
+void ngx_http_lua_co_ctx_resume_helper(ngx_http_lua_co_ctx_t *coctx, int nrets);
+
+int ngx_http_lua_get_lua_http10_buffering(ngx_http_request_t *r);
 
 
 #endif /* _NGX_HTTP_LUA_API_H_INCLUDED_ */

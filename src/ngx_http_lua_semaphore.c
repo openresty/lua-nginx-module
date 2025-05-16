@@ -466,8 +466,11 @@ ngx_http_lua_sema_handler(ngx_event_t *ev)
 
     sem = ev->data;
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                   "semaphore handler: wait queue: %sempty, resource count: %d",
+                   ngx_queue_empty(&sem->wait_queue) ? "" : "not ",
+                   sem->resource_count);
     while (!ngx_queue_empty(&sem->wait_queue) && sem->resource_count > 0) {
-
         q = ngx_queue_head(&sem->wait_queue);
         ngx_queue_remove(q);
 
@@ -564,6 +567,10 @@ ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem)
                       "in lua semaphore gc wait queue is"
                       " not empty while the semaphore %p is being "
                       "destroyed", sem);
+    }
+
+    if (sem->sem_event.posted) {
+        ngx_delete_posted_event(&sem->sem_event);
     }
 
     ngx_http_lua_free_sema(sem);

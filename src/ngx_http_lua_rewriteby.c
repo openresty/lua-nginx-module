@@ -107,7 +107,9 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         }
 
         if (rc == NGX_DECLINED) {
-            if (r->header_sent) {
+            if (r->header_sent
+                || (r->headers_out.status != 0 && ctx->out != NULL))
+            {
                 dd("header already sent");
 
                 /* response header was already generated in rewrite_by_lua*,
@@ -241,7 +243,7 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     ngx_event_t             *rev;
     ngx_connection_t        *c;
     ngx_http_lua_ctx_t      *ctx;
-    ngx_http_cleanup_t      *cln;
+    ngx_pool_cleanup_t      *cln;
 
     ngx_http_lua_loc_conf_t     *llcf;
 
@@ -291,9 +293,9 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
 
     /*  }}} */
 
-    /*  {{{ register request cleanup hooks */
+    /*  {{{ register nginx pool cleanup hooks */
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -349,7 +351,9 @@ ngx_http_lua_rewrite_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     if (rc == NGX_OK || rc == NGX_DECLINED) {
-        if (r->header_sent) {
+        if (r->header_sent
+            || (r->headers_out.status != 0 && ctx->out != NULL))
+        {
             dd("header already sent");
 
             /* response header was already generated in rewrite_by_lua*,

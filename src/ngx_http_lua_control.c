@@ -91,6 +91,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
     }
 
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
@@ -232,6 +233,7 @@ ngx_http_lua_ngx_redirect(lua_State *L)
     }
 
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                               | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS
                                | NGX_HTTP_LUA_CONTEXT_CONTENT);
 
@@ -278,6 +280,9 @@ ngx_http_lua_ngx_redirect(lua_State *L)
 
     h->value.len = len;
     h->value.data = uri;
+#if defined(nginx_version) && nginx_version >= 1023000
+    h->next = NULL;
+#endif
     ngx_str_set(&h->key, "Location");
 
     r->headers_out.status = rc;
@@ -358,6 +363,14 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
 {
     ngx_http_lua_ctx_t       *ctx;
 
+    if (status == NGX_AGAIN || status == NGX_DONE) {
+        *errlen = ngx_snprintf(err, *errlen,
+                               "bad argument to 'ngx.exit': does not accept "
+                               "NGX_AGAIN or NGX_DONE")
+                  - err;
+        return NGX_ERROR;
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
     if (ctx == NULL) {
         *errlen = ngx_snprintf(err, *errlen, "no request ctx found") - err;
@@ -365,6 +378,7 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
     }
 
     if (ngx_http_lua_ffi_check_context(ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
+                                       | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE
                                        | NGX_HTTP_LUA_CONTEXT_ACCESS
                                        | NGX_HTTP_LUA_CONTEXT_CONTENT
                                        | NGX_HTTP_LUA_CONTEXT_TIMER

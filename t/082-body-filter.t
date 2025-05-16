@@ -317,7 +317,7 @@ hiya globe
 GET /t
 --- ignore_response
 --- error_log
-failed to run body_filter_by_lua*: body_filter_by_lua:4: something bad happened!
+failed to run body_filter_by_lua*: body_filter_by_lua(nginx.conf:49):4: something bad happened!
 
 
 
@@ -482,6 +482,8 @@ stack traceback:
 in function 'error'
 in function 'bar'
 in function 'foo'
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server#
 
 
 
@@ -524,6 +526,8 @@ GET /lua?a=1&b=2
 --- ignore_response
 --- error_log eval
 qr/failed to load external Lua file ".*?test2\.lua": cannot open .*? No such file or directory/
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server#
 
 
 
@@ -838,3 +842,61 @@ GET /lua
 --- ignore_response
 --- error_log
 API disabled in the context of body_filter_by_lua*
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server#
+
+
+
+=== TEST 27: syntax error in body_filter_by_lua_block
+--- config
+    location /lua {
+
+        body_filter_by_lua_block {
+            'for end';
+        }
+        content_by_lua_block {
+            ngx.say("Hello world")
+        }
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to load inlined Lua code: body_filter_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
+--- no_error_log
+no_such_error1
+no_such_error2
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server#
+
+
+
+=== TEST 28: syntax error in second body_by_lua_block
+--- config
+    location /foo {
+        body_filter_by_lua_block {
+            'for end';
+        }
+        content_by_lua_block {
+            ngx.say("Hello world")
+        }
+    }
+
+    location /lua {
+        body_filter_by_lua_block {
+            'for end';
+        }
+        content_by_lua_block {
+            ngx.say("Hello world")
+        }
+    }
+--- request
+GET /lua
+--- ignore_response
+--- error_log
+failed to load inlined Lua code: body_filter_by_lua(nginx.conf:49):2: unexpected symbol near ''for end''
+--- no_error_log
+no_such_error1
+no_such_error2
+--- curl_error eval
+qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP\/3 stream 0 reset by server#

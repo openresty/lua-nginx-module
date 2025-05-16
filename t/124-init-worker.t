@@ -529,6 +529,7 @@ second line received: (?:Date|Server): .*?
 --- no_error_log
 [error]
 --- timeout: 10
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -729,8 +730,8 @@ ok
         ';
     }
 --- log_level: error
---- error_log_file: syslog:server=127.0.0.1:12345
---- udp_listen: 12345
+--- error_log_file: syslog:server=127.0.0.1:$TEST_NGINX_RAND_PORT_1
+--- udp_listen: $TEST_NGINX_RAND_PORT_1
 --- udp_query eval: qr/Bad bad bad/
 --- udp_reply: hello
 --- wait: 0.1
@@ -842,6 +843,11 @@ lua close the global Lua VM \3 in the cache helper process \d+
 lua close the global Lua VM \3
 lua close the global Lua VM \3 in the cache helper process \d+
 )(?:lua close the global Lua VM [0-9A-F]+
+|lua close the global Lua VM ([0-9A-F]+)
+lua close the global Lua VM \4 in the cache helper process \d+
+lua close the global Lua VM \4 in the cache helper process \d+
+lua close the global Lua VM \4 
+lua close the global Lua VM \4
 )*\z/
 --- no_error_log
 [error]
@@ -975,3 +981,53 @@ qr/lua close the global Lua VM ([0-9A-F]+)$/,
 --- no_error_log
 [error]
 start privileged agent process
+
+
+
+=== TEST 25: syntax error in init_worker_by_lua_block
+--- http_config
+    init_worker_by_lua_block {
+        ngx.log(ngx.debug, "pass")
+        error("failed to init"
+        ngx.log(ngx.debug, "unreachable")
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+hello world
+--- error_log
+init_worker_by_lua error: init_worker_by_lua(nginx.conf:25):4: ')' expected (to close '(' at line 3) near 'ngx'
+--- no_error_log
+no_such_error_log
+
+
+
+=== TEST 26: syntax error in init_worker_by_lua_file
+--- http_config
+    init_worker_by_lua_file html/init.lua;
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("hello world")
+        }
+    }
+--- user_files
+>>> init.lua
+    ngx.log(ngx.debug, "pass")
+    error("failed to init"
+    ngx.log(ngx.debug, "unreachable")
+
+--- request
+    GET /t
+--- response_body
+hello world
+--- error_log eval
+qr|init_worker_by_lua_file error: .*?t/servroot\w*/html/init.lua:3: '\)' expected \(to close '\(' at line 2\) near 'ngx'|
+--- no_error_log
+no_such_error_log

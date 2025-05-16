@@ -10,8 +10,10 @@ my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
 if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
     plan(skip_all => "too old OpenSSL, need 1.1.1, was $1");
+} elsif ($openssl_version =~ m/running with BoringSSL/) {
+    plan(skip_all => "does not support BoringSSL");
 } else {
-    plan tests => repeat_each() * (blocks() * 6 + 6);
+    plan tests => repeat_each() * (blocks() * 6 + 8);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
@@ -100,7 +102,7 @@ __DATA__
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -117,18 +119,18 @@ lua ssl server name: "test.com"
 --- no_error_log
 [error]
 [alert]
---- grep_error_log eval: qr/ssl_client_hello_by_lua:.*?,|\bssl client hello: connection reusable: \d+|\breusable connection: \d+/
+--- grep_error_log eval: qr/ssl_client_hello_by_lua\(.*?,|\bssl client hello: connection reusable: \d+|\breusable connection: \d+/
 --- grep_error_log_out eval
 # Since nginx version 1.17.9, nginx call ngx_reusable_connection(c, 0)
 # before call ssl callback function
 $Test::Nginx::Util::NginxVersion >= 1.017009 ?
 qr/reusable connection: 0
 ssl client hello: connection reusable: 0
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!,/
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
 : qr /reusable connection: 1
 ssl client hello: connection reusable: 1
 reusable connection: 0
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!,/
+ssl_client_hello_by_lua\(nginx.conf:\d+\):1: ssl client hello by lua is running!,/
 
 
 
@@ -209,7 +211,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!,/
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -314,7 +316,7 @@ qr/elapsed in ssl client hello by lua: 0.(?:09|1\d)\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -432,7 +434,7 @@ my timer run!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -456,7 +458,7 @@ received memc reply: OK
 === TEST 5: ngx.exit(0) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.exit(0)
@@ -484,7 +486,7 @@ received memc reply: OK
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -523,7 +525,7 @@ should never reached here
 === TEST 6: ngx.exit(ngx.ERROR) - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.exit(ngx.ERROR)
@@ -551,7 +553,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -593,7 +595,7 @@ should never reached here
 === TEST 7: ngx.exit(0) -  yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -623,7 +625,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -662,7 +664,7 @@ should never reached here
 === TEST 8: ngx.exit(ngx.ERROR) - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -692,7 +694,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -734,7 +736,7 @@ should never reached here
 === TEST 9: lua exception - no yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen 127.0.0.2:$TEST_NGINX_RAND_PORT_2 ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             error("bad bad bad")
@@ -762,7 +764,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("127.0.0.2", $TEST_NGINX_RAND_PORT_2)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -789,7 +791,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_client_hello_by_lua:2: bad bad bad',
+'runtime error: ssl_client_hello_by_lua(nginx.conf:28):2: bad bad bad',
 'lua_client_hello_by_lua: handler return value: 500, client hello cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
 qr/context: ssl_client_hello_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
@@ -805,7 +807,7 @@ should never reached here
 === TEST 10: lua exception - yield
 --- http_config
     server {
-        listen 127.0.0.2:8080 ssl;
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name test.com;
         ssl_client_hello_by_lua_block {
             ngx.sleep(0.001)
@@ -834,7 +836,7 @@ should never reached here
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.2", 8080)
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -861,7 +863,7 @@ failed to do SSL handshake: handshake failed
 
 --- error_log eval
 [
-'runtime error: ssl_client_hello_by_lua:3: bad bad bad',
+'runtime error: ssl_client_hello_by_lua(nginx.conf:28):3: bad bad bad',
 'lua_client_hello_by_lua: client hello cb exit code: 0',
 qr/\[info\] .*? SSL_do_handshake\(\) failed .*?callback failed/,
 ]
@@ -924,7 +926,7 @@ should never reached here
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 
 --- error_log
 lua ssl server name: "test.com"
@@ -1048,7 +1050,7 @@ failed to do SSL handshake: handshake failed
 --- error_log eval
 [
 'lua ssl server name: "test.com"',
-'ssl_client_hello_by_lua:1: API disabled in the context of ssl_client_hello_by_lua*',
+'ssl_client_hello_by_lua(nginx.conf:28):1: API disabled in the context of ssl_client_hello_by_lua*',
 qr/\[info\] .*?callback failed/,
 ]
 
@@ -1135,7 +1137,7 @@ print("ssl client hello by lua is running!")
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1246,7 +1248,7 @@ a.lua:1: ssl client hello by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1370,7 +1372,7 @@ lua ssl server name: "test.com"
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1466,7 +1468,7 @@ GitHub openresty/lua-resty-core#42
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1479,7 +1481,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl_client_hello_by_lua(nginx.conf:25):1: ssl client hello by lua is running!
 
 --- no_error_log
 [error]
@@ -1561,7 +1563,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1574,7 +1576,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua on the server level is running!
+ssl_client_hello_by_lua(nginx.conf:31):1: ssl client hello by lua on the server level is running!
 
 --- no_error_log
 [error]
@@ -1657,7 +1659,7 @@ received: foo
 close: 1 nil
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
 
@@ -1738,9 +1740,10 @@ received: foo
 close: 1 nil
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
+--- skip_eval: 5:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 
@@ -1817,7 +1820,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -1830,7 +1833,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl_client_hello_by_lua(nginx.conf:28):1: ssl client hello by lua is running!
 
 --- no_error_log
 [error]
@@ -1915,7 +1918,7 @@ close: 1 nil
 
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 [error]
 [alert]
 
@@ -2005,7 +2008,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 57 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2018,10 +2021,10 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-ssl_client_hello_by_lua:1: ssl client hello by lua in server1 is running!
+ssl_client_hello_by_lua(nginx.conf:29):1: ssl client hello by lua in server1 is running!
 
 --- no_error_log
-ssl_client_hello_by_lua:1: ssl client hello by lua in server2 is running!
+ssl client hello by lua in server2 is running!
 [error]
 [alert]
 
@@ -2103,7 +2106,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua in server2 is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2121,7 +2124,7 @@ qr/\[error\] .*? send\(\) failed/,
 ]
 --- no_error_log
 [alert]
-ssl_client_hello_by_lua:1: ssl client hello by lua is running!
+ssl client hello by lua is running!
 
 
 
@@ -2130,7 +2133,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
     lua_package_path "../lua-resty-core/lib/?.lua;;";
 
     server {
-        listen 127.0.0.1:12345 ssl;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1 ssl;
         server_name   test.com;
 
         ssl_client_hello_by_lua_block {
@@ -2162,7 +2165,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
 
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", 12345)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -2208,7 +2211,7 @@ ssl_client_hello_by_lua:1: ssl client hello by lua is running!
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2308,7 +2311,7 @@ client ip: 127.0.0.1
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
 received: Server: nginx
@@ -2465,7 +2468,7 @@ qr/elapsed in ssl_client_hello_by_lua\*: 0\.(?:09|1\d)\d+,/,
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 --- no_error_log
 [error]
 [alert]
@@ -2555,7 +2558,7 @@ ssl handshake: userdata
 GET /t
 --- response_body
 connected: 1
-ssl handshake: userdata
+ssl handshake: cdata
 --- no_error_log
 [error]
 [alert]
@@ -2565,3 +2568,72 @@ ssl handshake: userdata
 uthread: hello from f()
 uthread: killed
 uthread: failed to kill: already waited or killed
+
+
+
+=== TEST 30: ngx.exit(ngx.OK) - no yield
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_client_hello_by_lua_block {
+            ngx.exit(ngx.OK)
+            ngx.log(ngx.ERR, "should never reached here...")
+        }
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {ngx.status = 201 ngx.say("foo") ngx.exit(201)}
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(false, nil, true, false)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+            end  -- do
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: boolean
+
+--- error_log eval
+[
+'lua_client_hello_by_lua: handler return value: 0, client hello cb exit code: 1',
+qr/\[debug\] .*? SSL_do_handshake: 1/,
+'lua exit with code 0',
+]
+--- no_error_log
+should never reached here
+[alert]
+[emerg]

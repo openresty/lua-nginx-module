@@ -78,10 +78,15 @@ static void ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_write_cleanup(void *data);
 static void ngx_http_lua_pipe_proc_wait_cleanup(void *data);
+static void ngx_http_lua_pipe_reap_pids(ngx_event_t *ev);
+static void ngx_http_lua_pipe_reap_timer_handler(ngx_event_t *ev);
+void ngx_http_lua_ffi_pipe_proc_destroy(
+    ngx_http_lua_ffi_pipe_proc_t *proc);
 
 
 static ngx_rbtree_t       ngx_http_lua_pipe_rbtree;
 static ngx_rbtree_node_t  ngx_http_lua_pipe_proc_sentinel;
+static ngx_event_t        ngx_reap_pid_event;
 
 
 #if (NGX_HTTP_LUA_HAVE_SIGNALFD)
@@ -159,6 +164,15 @@ ngx_http_lua_pipe_add_signal_handler(ngx_cycle_t *cycle)
     int                  rc;
     struct sigaction     sa;
 #endif
+
+    ngx_reap_pid_event.handler = ngx_http_lua_pipe_reap_timer_handler;
+    ngx_reap_pid_event.log = cycle->log;
+    ngx_reap_pid_event.data = cycle;
+    ngx_reap_pid_event.cancelable = 1;
+
+    if (!ngx_reap_pid_event.timer_set) {
+        ngx_add_timer(&ngx_reap_pid_event, 1000);
+    }
 
 #if (NGX_HTTP_LUA_HAVE_SIGNALFD)
     if (sigemptyset(&set) != 0) {
@@ -351,11 +365,7 @@ static void
 ngx_http_lua_pipe_sigchld_event_handler(ngx_event_t *ev)
 {
     int                              n;
-    int                              status;
-    ngx_pid_t                        pid;
     ngx_connection_t                *c = ev->data;
-    ngx_rbtree_node_t               *node;
-    ngx_http_lua_pipe_node_t        *pipe_node;
 
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ngx_cycle->log, 0,
                    "lua pipe reaping children");
@@ -377,68 +387,95 @@ ngx_http_lua_pipe_sigchld_event_handler(ngx_event_t *ev)
             break;
         }
 
-        for ( ;; ) {
-            pid = waitpid(-1, &status, WNOHANG);
+        ngx_http_lua_pipe_reap_pids(ev);
+    }
+}
 
-            if (pid == 0) {
-                break;
+
+static void
+ngx_http_lua_pipe_reap_pids(ngx_event_t *ev)
+{
+    int                              status;
+    ngx_pid_t                        pid;
+    ngx_rbtree_node_t               *node;
+    ngx_http_lua_pipe_node_t        *pipe_node;
+
+    for ( ;; ) {
+        pid = waitpid(-1, &status, WNOHANG);
+
+        if (pid == 0) {
+            break;
+        }
+
+        if (pid < 0) {
+            if (ngx_errno != NGX_ECHILD) {
+                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
+                              "lua pipe waitpid failed");
             }
 
-            if (pid < 0) {
-                if (ngx_errno != NGX_ECHILD) {
-                    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, ngx_errno,
-                                  "lua pipe waitpid failed");
-                }
+            break;
+        }
 
-                break;
+        /* This log is ported from Nginx's signal handler since we override
+         * or block it in this implementation. */
+        ngx_log_error(NGX_LOG_NOTICE, ngx_cycle->log, 0,
+                      "signal %d (SIGCHLD) received from %P",
+                      SIGCHLD, pid);
+
+        ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                       "lua pipe SIGCHLD fd read pid:%P status:%d", pid,
+                       status);
+
+        node = ngx_http_lua_pipe_lookup_pid(pid);
+        if (node != NULL) {
+            pipe_node = (ngx_http_lua_pipe_node_t *) &node->color;
+            if (pipe_node->wait_co_ctx != NULL) {
+                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
+                               "lua pipe resume process:%p waiting for %P",
+                               pipe_node->proc, pid);
+
+                /*
+                 * We need the extra parentheses around the first argument
+                 * of ngx_post_event() just to work around macro issues in
+                 * nginx cores older than 1.7.12 (exclusive).
+                 */
+                ngx_post_event((&pipe_node->wait_co_ctx->sleep),
+                               &ngx_posted_events);
             }
 
-            /* This log is ported from Nginx's signal handler since we override
-             * or block it in this implementation. */
-            ngx_log_error(NGX_LOG_NOTICE, ngx_cycle->log, 0,
-                          "signal %d (SIGCHLD) received from %P",
-                          SIGCHLD, pid);
+            /* TODO: we should proactively close and free up the pipe after
+             * the user consume all the data in the pipe.
+             */
+            pipe_node->proc->pipe->dead = 1;
 
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                           "lua pipe SIGCHLD fd read pid:%P status:%d", pid,
-                           status);
+            if (WIFSIGNALED(status)) {
+                pipe_node->status = WTERMSIG(status);
+                pipe_node->reason_code = REASON_SIGNAL_CODE;
 
-            node = ngx_http_lua_pipe_lookup_pid(pid);
-            if (node != NULL) {
-                pipe_node = (ngx_http_lua_pipe_node_t *) &node->color;
-                if (pipe_node->wait_co_ctx != NULL) {
-                    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
-                                   "lua pipe resume process:%p waiting for %P",
-                                   pipe_node->proc, pid);
+            } else if (WIFEXITED(status)) {
+                pipe_node->status = WEXITSTATUS(status);
+                pipe_node->reason_code = REASON_EXIT_CODE;
 
-                    /*
-                     * We need the extra parentheses around the first argument
-                     * of ngx_post_event() just to work around macro issues in
-                     * nginx cores older than 1.7.12 (exclusive).
-                     */
-                    ngx_post_event((&pipe_node->wait_co_ctx->sleep),
-                                   &ngx_posted_events);
-                }
-
-                pipe_node->proc->pipe->dead = 1;
-
-                if (WIFSIGNALED(status)) {
-                    pipe_node->status = WTERMSIG(status);
-                    pipe_node->reason_code = REASON_SIGNAL_CODE;
-
-                } else if (WIFEXITED(status)) {
-                    pipe_node->status = WEXITSTATUS(status);
-                    pipe_node->reason_code = REASON_EXIT_CODE;
-
-                } else {
-                    ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                                  "lua pipe unknown exit status %d from "
-                                  "process %P", status, pid);
-                    pipe_node->status = status;
-                    pipe_node->reason_code = REASON_UNKNOWN_CODE;
-                }
+            } else {
+                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                              "lua pipe unknown exit status %d from "
+                              "process %P", status, pid);
+                pipe_node->status = status;
+                pipe_node->reason_code = REASON_UNKNOWN_CODE;
             }
         }
+    }
+}
+
+
+static void
+ngx_http_lua_pipe_reap_timer_handler(ngx_event_t *ev)
+{
+    ngx_http_lua_pipe_reap_pids(ev);
+
+    if (!ngx_exiting) {
+        ngx_add_timer(&ngx_reap_pid_event, 1000);
+        ngx_reap_pid_event.timedout = 0;
     }
 }
 
@@ -562,7 +599,8 @@ ngx_http_lua_execvpe(const char *program, char * const argv[],
 
 
 int
-ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
+ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
+    ngx_http_lua_ffi_pipe_proc_t *proc,
     const char *file, const char **argv, int merge_stderr, size_t buffer_size,
     const char **environ, u_char *errbuf, size_t *errbuf_size)
 {
@@ -582,6 +620,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
     ngx_http_lua_pipe_node_t       *pipe_node;
     struct sigaction                sa;
     ngx_http_lua_pipe_signal_t     *sig;
+    ngx_pool_cleanup_t             *cln;
     sigset_t                        set;
 
     pool_size = ngx_align(NGX_MIN_POOL_SIZE + buffer_size * 2,
@@ -773,6 +812,23 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
             }
         }
 
+        if (close(in[0]) == -1) {
+            ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
+                          "lua pipe failed to close the in[0]");
+        }
+
+        if (close(out[1]) == -1) {
+            ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
+                          "lua pipe failed to close the out[1]");
+        }
+
+        if (!merge_stderr) {
+            if (close(err[1]) == -1) {
+                ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_errno,
+                              "lua pipe failed to close the err[1]");
+            }
+        }
+
         if (environ != NULL) {
 #if (NGX_HTTP_LUA_HAVE_EXECVPE)
             if (execvpe(file, (char * const *) argv, (char * const *) environ)
@@ -850,6 +906,21 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
         }
 
         pp->stderr_fd = stderr_fd;
+    }
+
+    if (pp->cleanup == NULL) {
+        cln = ngx_pool_cleanup_add(r->pool, 0);
+
+        if (cln == NULL) {
+            *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "no memory")
+                           - errbuf;
+            goto close_in_out_err_fd;
+        }
+
+        cln->handler = (ngx_pool_cleanup_pt) ngx_http_lua_ffi_pipe_proc_destroy;
+        cln->data = proc;
+        pp->cleanup = &cln->handler;
+        pp->r = r;
     }
 
     node = (ngx_rbtree_node_t *) (pp + 1);
@@ -1122,6 +1193,12 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
         }
     }
 
+    if (pipe->cleanup != NULL) {
+        *pipe->cleanup = NULL;
+        ngx_http_lua_cleanup_free(pipe->r, pipe->cleanup);
+        pipe->cleanup = NULL;
+    }
+
     ngx_http_lua_pipe_proc_finalize(proc);
     ngx_destroy_pool(pipe->pool);
     proc->pipe = NULL;
@@ -1135,7 +1212,7 @@ ngx_http_lua_pipe_get_lua_ctx(ngx_http_request_t *r,
     int                                 rc;
 
     *ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
-    if (ctx == NULL) {
+    if (*ctx == NULL) {
         return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
     }
 

@@ -171,7 +171,8 @@ ngx_http_lua_header_filter_inline(ngx_http_request_t *r)
                                        llcf->header_filter_src.value.len,
                                        &llcf->header_filter_src_ref,
                                        llcf->header_filter_src_key,
-                                       "=header_filter_by_lua");
+                                       (const char *)
+                                       llcf->header_filter_chunkname);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
@@ -230,7 +231,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
-    ngx_http_cleanup_t          *cln;
+    ngx_pool_cleanup_t          *cln;
     uint16_t                     old_context;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -259,7 +260,7 @@ ngx_http_lua_header_filter(ngx_http_request_t *r)
     }
 
     if (ctx->cleanup == NULL) {
-        cln = ngx_http_cleanup_add(r, 0);
+        cln = ngx_pool_cleanup_add(r->pool, 0);
         if (cln == NULL) {
             return NGX_ERROR;
         }
