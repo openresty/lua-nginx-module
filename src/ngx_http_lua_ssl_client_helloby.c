@@ -544,6 +544,9 @@ ngx_http_lua_ffi_ssl_get_client_hello_server_name(ngx_http_request_t *r,
 #ifdef LIBRESSL_VERSION_NUMBER
     *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
     return NGX_ERROR;
+#elif defined(OPENSSL_IS_AWSLC)
+    *err = "AWS-LC does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
 #else
     ngx_ssl_conn_t          *ssl_conn;
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
@@ -633,6 +636,9 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext(ngx_http_request_t *r,
 {
 #ifdef LIBRESSL_VERSION_NUMBER
     *err = "LibreSSL does not support by ssl_client_hello_by_lua*";
+    return NGX_ERROR;
+#elif defined(OPENSSL_IS_AWSLC)
+    *err = "AWSLC does not support by ssl_client_hello_by_lua*";
     return NGX_ERROR;
 #else
     ngx_ssl_conn_t          *ssl_conn;
