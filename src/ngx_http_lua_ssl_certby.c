@@ -837,12 +837,20 @@ int
 ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, uint16_t *ciphers,
     uint16_t *nciphers, char **err)
 {
+
+#ifdef OPENSSL_IS_BORINGSSL
+
+    *err = "BoringSSL is not supported for SSL cipher operations";
+    return NGX_ERROR;
+
+#else
+
     ngx_ssl_conn_t         *ssl_conn;
     STACK_OF(SSL_CIPHER)   *sk, *ck;
     int                     sn, cn, i, n;
     uint16_t                tp;
 
-    if (r->connection == NULL || r->connection->ssl == NULL) {
+    if (r == NULL || r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
         return NGX_ERROR;
     }
@@ -862,7 +870,6 @@ ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, uint16_t *ciphers,
         *err = "buffer too small";
         *nciphers = 0;
         sk_SSL_CIPHER_free(sk);
-
         return NGX_ERROR;
     }
 
@@ -879,6 +886,8 @@ ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, uint16_t *ciphers,
     sk_SSL_CIPHER_free(sk);
 
     return NGX_OK;
+#endif
+
 }
 
 
