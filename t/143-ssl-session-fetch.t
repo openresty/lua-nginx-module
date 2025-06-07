@@ -142,7 +142,7 @@ ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
-    lua_ssl_protocols TLSv1 TLSv1.1 TLSV1.2;
+    lua_ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
 
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
@@ -199,6 +199,7 @@ qr/elapsed in ssl fetch session by lua: 0.(?:09|1[01])\d+,/,
 [error]
 [alert]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -388,6 +389,7 @@ qr/received memc reply: OK/s
 [alert]
 [error]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -635,6 +637,7 @@ qr/ssl_session_fetch_by_lua\*: sess get cb exit code: 0/s
 should never reached here
 [alert]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -804,6 +807,7 @@ ssl_session_fetch_by_lua*: sess get cb exit code: 0
 should never reached here
 [alert]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -991,6 +995,7 @@ ssl store session by lua is running!
 [error]
 [alert]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -1399,6 +1404,7 @@ qr/elapsed in ssl_session_fetch_by_lua\*: 0\.(?:09|1[01])\d+,/,
 [error]
 [alert]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -1494,6 +1500,7 @@ close: 1 nil
 [alert]
 [error]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
 
 
 
@@ -1695,3 +1702,4 @@ uthread: failed to kill: already waited or killed
 [alert]
 [error]
 [emerg]
+--- skip_openssl: 6: > 1.1.1w
