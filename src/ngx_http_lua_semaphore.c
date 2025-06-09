@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) Yichun Zhang (agentzh)
  * Copyright (C) cuiweixie
@@ -26,10 +25,16 @@ static void ngx_http_lua_free_sema(ngx_http_lua_sema_t *sem);
 static ngx_int_t ngx_http_lua_sema_resume(ngx_http_request_t *r);
 int ngx_http_lua_ffi_sema_new(ngx_http_lua_sema_t **psem,
     int n, char **errmsg);
-int ngx_http_lua_ffi_sema_post(ngx_http_lua_sema_t *sem, int n);
+int ngx_http_lua_ffi_sema_post(ngx_http_request_t *r, ngx_http_lua_sema_t *sem,
+    int n);
 int ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
     ngx_http_lua_sema_t *sem, int wait_ms, u_char *err, size_t *errlen);
 static void ngx_http_lua_sema_cleanup(void *data);
+static void ngx_http_lua_sema_abort_cleanup(void *data);
+static void ngx_http_lua_sema_add_abort_cleanup(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_sema_t *sem);
+static void ngx_http_lua_sema_del_abort_cleanup(ngx_http_request_t *r,
+    ngx_http_lua_sema_t *sem);
 static void ngx_http_lua_sema_handler(ngx_event_t *ev);
 static void ngx_http_lua_sema_timeout_handler(ngx_event_t *ev);
 void ngx_http_lua_ffi_sema_gc(ngx_http_lua_sema_t *sem);
@@ -334,7 +339,8 @@ ngx_http_lua_ffi_sema_new(ngx_http_lua_sema_t **psem,
 
 
 int
-ngx_http_lua_ffi_sema_post(ngx_http_lua_sema_t *sem, int n)
+ngx_http_lua_ffi_sema_post(ngx_http_request_t *r, ngx_http_lua_sema_t *sem,
+    int n)
 {
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "http lua semaphore post: %p, n: %d, resources: %d",
@@ -349,6 +355,8 @@ ngx_http_lua_ffi_sema_post(ngx_http_lua_sema_t *sem, int n)
          */
         ngx_post_event((&sem->sem_event), &ngx_posted_events);
     }
+
+    ngx_http_lua_sema_del_abort_cleanup(r, sem);
 
     return NGX_OK;
 }
@@ -392,6 +400,7 @@ ngx_http_lua_ffi_sema_wait(ngx_http_request_t *r,
 
     if (ngx_queue_empty(&sem->wait_queue) && sem->resource_count > 0) {
         sem->resource_count--;
+        ngx_http_lua_sema_add_abort_cleanup(r, ctx, sem);
         return NGX_OK;
     }
 
@@ -455,6 +464,78 @@ ngx_http_lua_sema_cleanup(void *data)
 
 
 static void
+ngx_http_lua_sema_abort_cleanup(void *data)
+{
+    ngx_http_lua_sema_ctx_t    *sema_ctx = data;
+    ngx_http_lua_sema_t        *sem;
+
+    sem = sema_ctx->sem;
+
+    if (sem) {
+        sem->resource_count += 1;
+
+        if (!ngx_queue_empty(&sem->wait_queue)) {
+            ngx_post_event((&sem->sem_event), &ngx_posted_events);
+        }
+    }
+}
+
+
+static void
+ngx_http_lua_sema_add_abort_cleanup(ngx_http_request_t *r,
+    ngx_http_lua_ctx_t *ctx, ngx_http_lua_sema_t *sem)
+{
+    ngx_http_cleanup_t          *cln;
+    ngx_http_lua_sema_ctx_t     *sema_ctx;
+
+    cln = ngx_http_lua_cleanup_add(r, sizeof(ngx_http_lua_sema_ctx_t));
+    if (cln == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            "ngx_http_lua_sema_add_abort_cleanup failed to add cleanup");
+        return;
+    }
+
+    cln->handler = ngx_http_lua_sema_abort_cleanup;
+    sema_ctx = cln->data;
+    sema_ctx->sem = sem;
+}
+
+
+static void
+ngx_http_lua_sema_del_abort_cleanup(ngx_http_request_t *r,
+    ngx_http_lua_sema_t *sem)
+{
+    ngx_http_cleanup_t        **last, *cln;
+    ngx_http_lua_ctx_t         *ctx;
+    ngx_http_lua_sema_ctx_t    *sema_ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx == NULL) {
+        return;
+    }
+
+    r = r->main;
+
+    last = &r->cleanup;
+
+    while (*last) {
+        if ((*last)->handler == ngx_http_lua_sema_abort_cleanup) {
+            sema_ctx = (*last)->data;
+            if (sema_ctx->sem == sem) {
+                cln = *last;
+                *last = cln->next;
+
+                sema_ctx->sem = NULL;
+                return;
+            }
+        }
+
+        last = &(*last)->next;
+    }
+}
+
+
+static void
 ngx_http_lua_sema_handler(ngx_event_t *ev)
 {
     ngx_http_lua_sema_t         *sem;
@@ -492,6 +573,7 @@ ngx_http_lua_sema_handler(ngx_event_t *ev)
         sem->resource_count--;
 
         ctx->cur_co_ctx = wait_co_ctx;
+        ngx_http_lua_sema_add_abort_cleanup(r, ctx, sem);
 
         wait_co_ctx->sem_resume_status = SEMAPHORE_WAIT_SUCC;
 
