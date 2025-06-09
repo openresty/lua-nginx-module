@@ -80,7 +80,7 @@ ffi.cdef[[
     int ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
         unsigned char *out, size_t *outlen, char **err);
 
-    int ngx_http_lua_ffi_ssl_ciphers(void *r, uint16_t *ciphers,
+    int ngx_http_lua_ffi_req_shared_ssl_ciphers(void *r, uint16_t *ciphers,
         uint16_t *nciphers, char **err);
 ]]
 _EOC_
@@ -1813,7 +1813,7 @@ SUCCESS
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
 
                 if ret ~= 0 then
                     ngx.log(ngx.ERR, "error: ", ffi.string(err[0]))
@@ -1846,6 +1846,7 @@ GET /t
 TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(128) Mac=AEAD"
 
 
+
 === TEST 16: SSL cipher API error handling (no SSL)
 --- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- config
@@ -1858,8 +1859,8 @@ TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(
             local nciphers = ffi.new("uint16_t[1]", 64)
             local err = ffi.new("char*[1]")
 
-            -- 使用无效的请求上下文
-            local ret = ffi.C.ngx_http_lua_ffi_ssl_ciphers(nil, ciphers, nciphers, err)
+            -- use nil request to trigger error
+            local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(nil, ciphers, nciphers, err)
 
             ngx.say("ret: ", ret)
             if err[0] ~= nil then
@@ -1876,6 +1877,7 @@ err: bad request
 --- no_error_log
 [error]
 [alert]
+
 
 
 === TEST 17: Buffer overflow handling
@@ -1906,7 +1908,7 @@ err: bad request
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
 
                 if ret ~= 0 then
                     ngx.log(ngx.ERR, "error: ", ffi.string(err[0]))
@@ -1939,6 +1941,7 @@ GET /t
 TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(128) Mac=AEAD"
 
 
+
 === TEST 18: BORINGSSL error handling
 --- skip_eval: 8:$ENV{TEST_NGINX_USE_OPENSSL}
 --- http_config
@@ -1966,7 +1969,7 @@ TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
 
                 if ret ~= 0 then
                     ngx.say("Error: ", ffi.string(err[0]))
@@ -1992,13 +1995,6 @@ Error: BoringSSL is not supported for SSL cipher operations
 --- no_error_log
 [error]
 [alert]
-
-
-
-
-
-
-
 
 
 

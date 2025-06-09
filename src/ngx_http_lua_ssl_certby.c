@@ -834,8 +834,8 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
 
 
 int
-ngx_http_lua_ffi_ssl_ciphers(ngx_http_request_t *r, uint16_t *ciphers,
-    uint16_t *nciphers, char **err)
+ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
+    uint16_t *ciphers, uint16_t *nciphers, char **err)
 {
 
 #ifdef OPENSSL_IS_BORINGSSL
