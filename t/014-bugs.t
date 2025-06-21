@@ -1274,9 +1274,9 @@ worker_shutdown_timeout 1;
 --- config
 location /t {
     content_by_lua_block {
-        local function thread_func()
+        local function thread_func(port)
             local sock = ngx.socket.tcp()
-            local ok, err = sock:connect("127.0.0.1", 65110)
+            local ok, err = sock:connect("127.0.0.1", port)
             local bytes, err = sock:send("hello")
             if bytes ~= 5 then
                 sock:close()
@@ -1293,11 +1293,11 @@ location /t {
             ngx.log(ngx.ERR, "successfully read a line: ", line)
         end
 
-        local function timer_func()
-            ngx.thread.spawn(thread_func)
+        local function timer_func(port)
+            ngx.thread.spawn(thread_func, port)
         end
 
-        ngx.timer.at(1, timer_func)
+        ngx.timer.at(1, timer_func, ngx.var.server_port)
         ngx.say("Hello world")
     }
 }
@@ -1311,7 +1311,7 @@ my $expr;
 if ($ENV{TEST_NGINX_USE_HTTP3}) {
     $expr = qr|lua close the global Lua VM|
 } else {
-    $expr = qr|failed to read a line: closed|
+    $expr = qr/failed to read a line: closed|attempt to send data on a closed socket/
 }
 
 $expr;

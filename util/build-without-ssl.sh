@@ -17,12 +17,12 @@ time ngx-build $force $version \
             --with-threads \
             --with-pcre-jit \
             --with-ipv6 \
-            --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE_INC" \
+            --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE2_INC" \
             --with-http_v2_module \
             --with-http_realip_module \
             --add-module=$root/../ndk-nginx-module \
             --add-module=$root/../set-misc-nginx-module \
-            --with-ld-opt="-L$PCRE_LIB -Wl,-rpath,$PCRE_LIB:$LIBDRIZZLE_LIB" \
+            --with-ld-opt="-L$PCRE2_LIB -Wl,-rpath,$PCRE2_LIB:$LIBDRIZZLE_LIB" \
             --without-mail_pop3_module \
             --without-mail_imap_module \
             --with-http_image_filter_module \
