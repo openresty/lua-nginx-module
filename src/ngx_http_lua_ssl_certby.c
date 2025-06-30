@@ -346,7 +346,6 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
     return -1;
 
-#if 1
 failed:
 
     if (r && r->pool) {
@@ -358,15 +357,14 @@ failed:
     }
 
     return 0;
-#endif
 }
 
 
 static void
 ngx_http_lua_ssl_cert_done(void *data)
 {
-    ngx_connection_t                *c;
-    ngx_http_lua_ssl_ctx_t          *cctx = data;
+    ngx_connection_t        *c;
+    ngx_http_lua_ssl_ctx_t  *cctx = data;
 
     dd("lua ssl cert done");
 
@@ -387,6 +385,12 @@ ngx_http_lua_ssl_cert_done(void *data)
     c->log->action = "SSL handshaking";
 
     ngx_post_event(c->write, &ngx_posted_events);
+
+#if (NGX_HTTP_V3) && OPENSSL_VERSION_NUMBER >= 0x1000205fL
+#   if (NGX_QUIC_OPENSSL_COMPAT)
+    ngx_http_lua_resume_quic_ssl_handshake(c);
+#   endif
+#endif
 }
 
 

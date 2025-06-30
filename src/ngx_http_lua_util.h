@@ -267,6 +267,10 @@ ngx_addr_t *ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len);
 
 size_t ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size);
 
+#if (NGX_HTTP_V3)
+void ngx_http_lua_resume_quic_ssl_handshake(ngx_connection_t *c);
+#endif
+
 
 static ngx_inline void
 ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
