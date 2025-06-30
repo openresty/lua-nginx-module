@@ -1169,6 +1169,7 @@ Directives
 * [lua_ssl_certificate_key](#lua_ssl_certificate_key)
 * [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
+* [lua_ssl_key_log](#lua_ssl_key_log)
 * [lua_ssl_conf_command](#lua_ssl_conf_command)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
@@ -3427,6 +3428,19 @@ Sets the verification depth in the server certificates chain.
 This directive was first introduced in the `v0.9.11` release.
 
 See also [lua_ssl_certificate](#lua_ssl_certificate), [lua_ssl_certificate_key](#lua_ssl_certificate_key) and [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate).
+
+[Back to TOC](#directives)
+
+lua_ssl_key_log
+---------------
+
+**syntax:** *lua_ssl_key_log &lt;file&gt;*
+
+**default:** *none*
+
+**context:** *http, server, location*
+
+Enables logging of client connection SSL keys in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method and specifies the path to the key log file. Keys are logged in the SSLKEYLOGFILE format compatible with Wireshark.
 
 [Back to TOC](#directives)
 
