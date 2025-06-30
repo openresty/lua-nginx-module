@@ -45,6 +45,7 @@ Table of Contents
     * [Missing data on short circuited requests](#missing-data-on-short-circuited-requests)
 * [TODO](#todo)
 * [Changes](#changes)
+* [Build And Test](#build-and-test)
 * [Test Suite](#test-suite)
 * [Copyright and License](#copyright-and-license)
 * [See Also](#see-also)
@@ -982,6 +983,23 @@ The changes made in every release of this module are listed in the change logs o
 
 [Back to TOC](#table-of-contents)
 
+Build And Test
+==============
+
+This module uses `.travis.yml` as the CI configuration.
+You can always check `.travis.yml` for the latest CI configuration.
+
+For developers, you need to run tests locally. You can use `util/run-ci.sh`
+to easily set up the environment and execute the test suite.
+
+To run the Test from the beginning:
+
+```shell
+git clone https://github.com/openresty/lua-nginx-module.git
+cd lua-nginx-module
+bash util/run-ci.sh
+```
+
 Test Suite
 ==========
 
@@ -1025,7 +1043,6 @@ To run the whole test suite in the default testing mode:
     cd /path/to/lua-nginx-module
     export PATH=/path/to/your/nginx/sbin:$PATH
     prove -I/path/to/test-nginx/lib -r t
-
 
 To run specific test files:
 
