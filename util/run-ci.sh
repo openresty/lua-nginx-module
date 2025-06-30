@@ -35,7 +35,15 @@ export DRIZZLE_VER=2011.07.21
 export NGINX_VERSION=1.27.1
 #export NGX_BUILD_ASAN=1
 
-export PATH=/opt/curl-h3/bin:$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
+export PATH=/opt/bin:$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
+
+if [ ! -f /opt/bin/curl ]; then
+    wget https://github.com/stunnel/static-curl/releases/download/8.14.1/curl-linux-x86_64-glibc-8.14.1.tar.xz
+    tar -xf curl-linux-x86_64-glibc-8.14.1.tar.xz
+    tar -xf curl-linux-x86_64-glibc-8.14.1.tar.xz
+    sudo mkdir -p /opt/bin
+    sudo mv curl /opt/bin/
+fi
 
 function git_download()
 {
