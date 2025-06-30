@@ -87,6 +87,10 @@ function download_deps()
 
 function make_deps()
 {
+    if [ "$TEST_NGINX_BUILD_DEPS" = "n" ]; then
+        return
+    fi
+
     cd luajit2/
     make clean
     make -j"$JOBS" CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC XCFLAGS="-DLUAJIT_USE_VALGRIND -I$VALGRIND_INC -DLUAJIT_USE_SYSMALLOC -DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2" > build.log 2>&1 || (cat build.log && exit 1)
@@ -122,7 +126,10 @@ function make_deps()
 
 function make_ngx()
 {
-    rm -fr buildroot
+    if [ "$TEST_NGINX_FRESH_BUILD" = "y" ]; then
+        rm -fr buildroot
+    fi
+
     sh util/build.sh $NGINX_VERSION 2>&1 | tee build.log
 }
 
