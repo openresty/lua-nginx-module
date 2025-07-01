@@ -7,6 +7,9 @@ repeat_each(3);
 # All these tests need to have new openssl
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+if ($openssl_version =~ m/BoringSSL/) {
+    $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
+}
 
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
@@ -16,6 +19,7 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+$ENV{TEST_NGINX_QUIC_IDLE_TIMEOUT} ||= 0.6;
 
 #log_level 'warn';
 log_level 'debug';
@@ -2075,7 +2079,7 @@ received: foo
 close: 1 nil
 
 --- error_log
-client socket file: 
+client socket file:
 
 --- no_error_log
 [error]
@@ -2321,3 +2325,445 @@ ssl handshake: cdata
 uthread: hello from f()
 uthread: killed
 uthread: failed to kill: already waited or killed
+
+
+
+=== TEST 27: ssl_certificate_by_lua* with TCP cosocket (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: TCP cosocket test start")
+
+        local sock = ngx.socket.tcp()
+        sock:settimeout(2000)
+
+        local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+            return
+        end
+
+        local bytes, err = sock:send("flush_all\r\n")
+        if not bytes then
+            ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
+            return
+        end
+
+        local res, err = sock:receive()
+        if not res then
+            ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+            return
+        end
+
+        print("ssl certificate: received TCP memc reply: ", res)
+        sock:close()
+        print("ssl certificate: TCP cosocket test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: TCP cosocket test start|ssl certificate: received TCP memc reply: OK|ssl certificate: TCP cosocket test done|test completed)/
+--- grep_error_log_out
+ssl certificate: TCP cosocket test start
+ssl certificate: received TCP memc reply: OK
+ssl certificate: TCP cosocket test done
+test completed
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 28: ssl_certificate_by_lua* with UDP cosocket (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: UDP cosocket test start")
+
+        local sock = ngx.socket.udp()
+        sock:settimeout(1000)
+
+        local ok, err = sock:setpeername("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to connect to memc: ", err)
+            return
+        end
+
+        local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+        local ok, err = sock:send(req)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+            return
+        end
+
+        local res, err = sock:receive()
+        if not res then
+            ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
+            return
+        end
+
+        print("ssl certificate: received UDP memc reply of ", #res, " bytes")
+        sock:close()
+        print("ssl certificate: UDP cosocket test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: UDP cosocket test start|ssl certificate: received UDP memc reply of \d+ bytes|ssl certificate: UDP cosocket test done|test completed)/
+--- grep_error_log_out eval
+[
+qr/ssl certificate: UDP cosocket test start/,
+qr/ssl certificate: received UDP memc reply of 12 bytes/,
+qr/ssl certificate: UDP cosocket test done/,
+qr/test completed/,
+]
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 29: ssl_certificate_by_lua* with ngx.timer (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: timer test start")
+
+        local function timer_handler()
+            print("ssl certificate: timer executed")
+        end
+
+        local ok, err = ngx.timer.at(0, timer_handler)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to create timer: ", err)
+            return
+        end
+
+        print("ssl certificate: timer created")
+        print("ssl certificate: timer test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: timer test start|ssl certificate: timer created|ssl certificate: timer test done|ssl certificate: timer executed|test completed)/
+--- grep_error_log_out
+ssl certificate: timer test start
+ssl certificate: timer created
+ssl certificate: timer test done
+ssl certificate: timer executed
+test completed
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 30: ssl_certificate_by_lua* with user threads (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: uthread test start")
+
+        local function worker()
+            ngx.sleep(0.01)
+            print("ssl certificate: uthread worker executed")
+            return "worker_result"
+        end
+
+        local t, err = ngx.thread.spawn(worker)
+        if not t then
+            ngx.log(ngx.ERR, "failed to spawn thread: ", err)
+            return
+        end
+
+        print("ssl certificate: uthread spawned")
+
+        local ok, res = ngx.thread.wait(t)
+        if not ok then
+            ngx.log(ngx.ERR, "failed to wait thread: ", res)
+            return
+        end
+
+        print("ssl certificate: uthread result: ", res)
+        print("ssl certificate: uthread test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: uthread test start|ssl certificate: uthread spawned|ssl certificate: uthread worker executed|ssl certificate: uthread result: worker_result|ssl certificate: uthread test done|test completed)/
+--- grep_error_log_out
+ssl certificate: uthread test start
+ssl certificate: uthread spawned
+ssl certificate: uthread worker executed
+ssl certificate: uthread result: worker_result
+ssl certificate: uthread test done
+test completed
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 31: ssl_certificate_by_lua* with coroutines (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: coroutine test start")
+
+        local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
+
+        local function coro_func()
+            local cnt = 0
+            for i = 1, 3 do
+                print("ssl certificate: coro yield: ", cnt)
+                cy()
+                cnt = cnt + 1
+            end
+            return "coro_done"
+        end
+
+        local c = cc(coro_func)
+        for i = 1, 4 do
+            print("ssl certificate: coro resume, status: ", coroutine.status(c))
+            local ok, res = cr(c)
+            if not ok then
+                print("ssl certificate: coro error: ", res)
+                break
+            end
+            if coroutine.status(c) == "dead" then
+                print("ssl certificate: coro result: ", res)
+                break
+            end
+        end
+
+        print("ssl certificate: coroutine test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: coroutine test start|ssl certificate: coro resume, status: \w+|ssl certificate: coro yield: \d+|ssl certificate: coro result: coro_done|ssl certificate: coroutine test done|test completed)/
+--- grep_error_log_out
+ssl certificate: coroutine test start
+ssl certificate: coro resume, status: suspended
+ssl certificate: coro yield: 0
+ssl certificate: coro resume, status: suspended
+ssl certificate: coro yield: 1
+ssl certificate: coro resume, status: suspended
+ssl certificate: coro yield: 2
+ssl certificate: coro resume, status: suspended
+ssl certificate: coro result: coro_done
+ssl certificate: coroutine test done
+test completed
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 32: ssl_certificate_by_lua* without yield API (simple logic)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: simple test start")
+
+        -- Simple calculations without yield
+        local sum = 0
+        for i = 1, 10 do
+            sum = sum + i
+        end
+
+        print("ssl certificate: calculated sum: ", sum)
+
+        -- String operations
+        local str = "hello"
+        str = str .. " world"
+        print("ssl certificate: concatenated string: ", str)
+
+        -- Table operations
+        local t = {a = 1, b = 2, c = 3}
+        local count = 0
+        for k, v in pairs(t) do
+            count = count + v
+        end
+        print("ssl certificate: table sum: ", count)
+
+        print("ssl certificate: simple test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: simple test start|ssl certificate: calculated sum: 55|ssl certificate: concatenated string: hello world|ssl certificate: table sum: 6|ssl certificate: simple test done|test completed)/
+--- grep_error_log_out
+ssl certificate: simple test start
+ssl certificate: calculated sum: 55
+ssl certificate: concatenated string: hello world
+ssl certificate: table sum: 6
+ssl certificate: simple test done
+test completed
+
+--- no_error_log
+[error]
+[alert]
+[emerg]
+
+
+
+=== TEST 33: ssl_certificate_by_lua* with multiple network operations (yield API)
+--- skip_eval: 6:!$ENV{TEST_NGINX_USE_HTTP3} || $ENV{TEST_NGINX_USE_BORINGSSL}
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+    lua_ssl_verify_depth 3;
+
+    ssl_certificate_by_lua_block {
+        print("ssl certificate: multiple network test start")
+
+        -- First TCP operation
+        local sock1 = ngx.socket.tcp()
+        sock1:settimeout(2000)
+        local ok, err = sock1:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if ok then
+            local bytes, err = sock1:send("version\r\n")
+            if bytes then
+                local res, err = sock1:receive()
+                if res then
+                    print("ssl certificate: TCP1 version: ", res)
+                end
+            end
+            sock1:close()
+        end
+
+        ngx.sleep(0.01)  -- Small delay
+
+        -- Second UDP operation
+        local sock2 = ngx.socket.udp()
+        sock2:settimeout(1000)
+        local ok, err = sock2:setpeername("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
+        if ok then
+            local req = "\0\1\0\0\0\1\0\0version\r\n"
+            local ok, err = sock2:send(req)
+            if ok then
+                local res, err = sock2:receive()
+                if res then
+                    print("ssl certificate: UDP version reply length: ", #res)
+                end
+            end
+            sock2:close()
+        end
+
+        print("ssl certificate: multiple network test done")
+    }
+
+    location /t {
+        content_by_lua_block {
+            print("test completed")
+            ngx.say("test completed")
+        }
+    }
+--- request
+GET /t
+--- response_body
+test completed
+
+--- grep_error_log eval: qr/(ssl certificate: multiple network test start|ssl certificate: TCP1 version: VERSION|ssl certificate: UDP version reply length: \d+|ssl certificate: multiple network test done|test completed)/
+--- grep_error_log_out eval
+[
+qr/ssl certificate: multiple network test start/,
+qr/ssl certificate: TCP1 version: VERSION/,
+qr/ssl certificate: UDP version reply length: \d+/,
+qr/ssl certificate: multiple network test done/,
+qr/test completed/,
+]
+
+--- no_error_log
+[error]
+[alert]
+[emerg]

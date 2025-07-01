@@ -9,6 +9,12 @@ repeat_each(3);
 
 plan tests => repeat_each() * (blocks() * 6) - 3;
 
+my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
+my $openssl_version = eval { `$NginxBinary -V 2>&1` };
+if ($openssl_version =~ m/BoringSSL/) {
+    $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
+}
+
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
@@ -138,11 +144,12 @@ ssl_session_fetch_by_lua\(nginx\.conf:25\):1: ssl fetch sess by lua is running!,
 
         server_tokens off;
     }
+--- skip_eval: 6:$ENV{TEST_NGINX_USE_BORINGSSL}
 --- config
     server_tokens off;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate $TEST_NGINX_CERT_DIR/cert/test.crt;
-    lua_ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+    lua_ssl_protocols TLSv1 TLSv1.1 TLSV1.2 TLSv1.3;
 
     location /t {
         set $port $TEST_NGINX_MEMCACHED_PORT;
