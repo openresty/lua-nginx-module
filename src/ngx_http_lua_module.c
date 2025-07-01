@@ -1836,11 +1836,6 @@ ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
         return NGX_ERROR;
     }
 
-    /*
-     * ngx_http_lua_ssl_cleanup_key_log will be inserted before
-     * ngx_ssl_cleanup_ctx, therefore the ssl->ctx will be available
-     * when it executed
-     */
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
         ngx_http_lua_ssl_cleanup_key_log(ssl_key_log);
