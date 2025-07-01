@@ -2944,3 +2944,105 @@ SSL reused session
 [alert]
 [emerg]
 --- timeout: 10
+
+
+
+=== TEST 35: lua_ssl_key_log directive
+--- skip_openssl: 8: < 1.1.1
+--- http_config
+    server {
+        listen              $TEST_NGINX_SERVER_SSL_PORT ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+    lua_ssl_key_log sslkey.log;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_SSL_PORT)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com")
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local req = "GET / HTTP/1.1\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
+
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+
+                local f, err = io.open("$TEST_NGINX_SERVER_ROOT/conf/sslkey.log", "r")
+                if not f then
+                    ngx.log(ngx.ERR, "failed to open sslkey.log: ", err)
+                    return
+                end
+
+                local key_log = f:read("*a")
+                ngx.say(key_log)
+                f:close()
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+connected: 1
+ssl handshake: cdata
+sent http request: 53 bytes.
+received: HTTP/1.1 200 OK
+close: 1 nil
+SERVER_HANDSHAKE_TRAFFIC_SECRET [0-9a-z\s]+
+EXPORTER_SECRET [0-9a-z\s]+
+SERVER_TRAFFIC_SECRET_0 [0-9a-z\s]+
+CLIENT_HANDSHAKE_TRAFFIC_SECRET [0-9a-z\s]+
+CLIENT_TRAFFIC_SECRET_0 [0-9a-z\s]+
+
+--- log_level: debug
+--- error_log eval
+['lua ssl server name: "test.com"',
+qr/SSL: TLSv1.3, cipher: "TLS_AES_256_GCM_SHA384 TLSv1.3/]
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 10
