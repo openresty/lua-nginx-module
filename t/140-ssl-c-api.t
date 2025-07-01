@@ -14,7 +14,7 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
     plan tests => repeat_each() * (blocks() * 6 - 8);
 } else {
-    plan tests => repeat_each() * (blocks() * 5 - 3);
+    plan tests => repeat_each() * (blocks() * 5 - 5);
     $ENV{TEST_NGINX_USE_OPENSSL} = 1;
 }
 
@@ -81,7 +81,7 @@ ffi.cdef[[
         unsigned char *out, size_t *outlen, char **err);
 
     int ngx_http_lua_ffi_req_shared_ssl_ciphers(void *r, uint16_t *ciphers,
-        uint16_t *nciphers, char **err);
+        uint16_t *nciphers, int filter_grease, char **err);
 ]]
 _EOC_
     }
@@ -1813,7 +1813,7 @@ SUCCESS
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, 0, err)
 
                 if ret ~= 0 then
                     ngx.log(ngx.ERR, "error: ", ffi.string(err[0]))
@@ -1860,7 +1860,7 @@ TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(
             local err = ffi.new("char*[1]")
 
             -- use nil request to trigger error
-            local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(nil, ciphers, nciphers, err)
+            local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(nil, ciphers, nciphers, 0, err)
 
             ngx.say("ret: ", ret)
             if err[0] ~= nil then
@@ -1908,7 +1908,7 @@ err: bad request
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, 0, err)
 
                 if ret ~= 0 then
                     ngx.log(ngx.ERR, "error: ", ffi.string(err[0]))
@@ -1969,7 +1969,7 @@ TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(
                 local err = ffi.new("char*[1]")
 
                 local r = get_request()
-                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, err)
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, 0, err)
 
                 if ret ~= 0 then
                     ngx.say("Error: ", ffi.string(err[0]))
@@ -1995,6 +1995,85 @@ Error: BoringSSL is not supported for SSL cipher operations
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 19: Get supported ciphers with GREASE filtering
+--- skip_eval: 8:$ENV{TEST_NGINX_USE_BORINGSSL}
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+        ssl_protocols TLSv1.2;
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384;
+
+        server_tokens off;
+        
+        location /ciphers {
+            content_by_lua_block {
+                require "defines"
+                local ffi = require "ffi"
+                local cjson = require "cjson.safe"
+                local base = require "resty.core.base"
+                local get_request = base.get_request
+
+                local MAX_CIPHERS = 64
+                local ciphers = ffi.new("uint16_t[?]", MAX_CIPHERS)
+                local nciphers = ffi.new("uint16_t[1]", MAX_CIPHERS)
+                local err = ffi.new("char*[1]")
+
+                local r = get_request()
+                -- Test without GREASE filtering
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, 0, err)
+                if ret ~= 0 then
+                    ngx.log(ngx.ERR, "error without filtering: ", ffi.string(err[0]))
+                    return
+                end
+
+                local res_no_filter = {}
+                for i = 0, nciphers[0] - 1 do
+                    local cipher_id = string.format("%04x", ciphers[i])
+                    table.insert(res_no_filter, cipher_id)
+                end
+
+                -- Reset buffers
+                nciphers[0] = MAX_CIPHERS
+                
+                -- Test with GREASE filtering
+                local ret = ffi.C.ngx_http_lua_ffi_req_shared_ssl_ciphers(r, ciphers, nciphers, 1, err)
+                if ret ~= 0 then
+                    ngx.log(ngx.ERR, "error with filtering: ", ffi.string(err[0]))
+                    return
+                end
+
+                local res_with_filter = {}
+                for i = 0, nciphers[0] - 1 do
+                    local cipher_id = string.format("%04x", ciphers[i])
+                    table.insert(res_with_filter, cipher_id)
+                end
+
+                ngx.say("without_filter:", cjson.encode(res_no_filter))
+                ngx.say("with_filter:", cjson.encode(res_with_filter))
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    location /t {
+        proxy_ssl_protocols TLSv1.2;
+        proxy_ssl_session_reuse     off;
+        proxy_ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256;
+        proxy_pass https://unix:$TEST_NGINX_HTML_DIR/nginx.sock:/ciphers;
+    }
+--- request
+GET /t
+--- response_body_like
+without_filter:\[.*\]
+with_filter:\[.*\]
+--- error_log chomp
+TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(128) Mac=AEAD"
 
 
 

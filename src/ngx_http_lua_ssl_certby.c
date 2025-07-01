@@ -36,6 +36,7 @@ static u_char *ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
     size_t len);
 static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
+static int ngx_http_lua_is_grease_cipher(uint16_t cipher_id);
 
 
 ngx_int_t
@@ -446,6 +447,20 @@ ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
 }
 
 
+static int
+ngx_http_lua_is_grease_cipher(uint16_t cipher_id)
+{
+    /* GREASE values follow pattern: 0x?A?A where ? can be any hex digit */
+    /* and both ? must be the same */
+    uint8_t high_byte = (cipher_id >> 8) & 0xFF;
+    uint8_t low_byte = cipher_id & 0xFF;
+    /* Check if both bytes follow ?A pattern and high nibbles match */
+    return ((high_byte & 0x0F) == 0x0A) &&
+           ((low_byte & 0x0F) == 0x0A) &&
+           ((high_byte & 0xF0) == (low_byte & 0xF0));
+}
+
+
 static ngx_int_t
 ngx_http_lua_ssl_cert_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
@@ -835,16 +850,14 @@ ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
 
 int
 ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
-    uint16_t *ciphers, uint16_t *nciphers, char **err)
+    uint16_t *ciphers, uint16_t *nciphers, int filter_grease, char **err)
 {
-
 #ifdef OPENSSL_IS_BORINGSSL
 
     *err = "BoringSSL is not supported for SSL cipher operations";
     return NGX_ERROR;
 
 #else
-
     ngx_ssl_conn_t         *ssl_conn;
     STACK_OF(SSL_CIPHER)   *sk, *ck;
     int                     sn, cn, i, n;
@@ -875,6 +888,12 @@ ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
 
     for (*nciphers = 0, i = 0; i < sn; i++) {
         tp = SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(sk, i));
+        
+        /* Skip GREASE ciphers if filtering is enabled */
+        if (filter_grease && ngx_http_lua_is_grease_cipher(tp)) {
+            continue;
+        }
+        
         for (n = 0; n < cn; n++) {
             if (SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(ck, n)) == tp) {
                 ciphers[(*nciphers)++] = tp;
