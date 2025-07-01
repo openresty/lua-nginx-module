@@ -86,7 +86,7 @@ install:
   #- if [ -n "$OPENSSL_VER" ] && [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VER/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
-  - git clone https://github.com/openresty/test-nginx.git
+  - git clone https://github.com/swananan/test-nginx.git -b fix_http2_test_cases
   - git clone https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
