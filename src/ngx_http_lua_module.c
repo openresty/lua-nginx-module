@@ -1771,8 +1771,8 @@ key_log_callback(const ngx_ssl_conn_t *ssl_conn, const char *line)
         return;
     }
 
-    (void) ngx_write_fd(ssl_key_log->fd, line, ngx_strlen(line));
-    (void) ngx_write_fd(ssl_key_log->fd, "\n", 1);
+    (void) ngx_write_fd(ssl_key_log->fd, (void *) line, ngx_strlen(line));
+    (void) ngx_write_fd(ssl_key_log->fd, (void *) "\n", 1);
 }
 
 
