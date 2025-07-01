@@ -42,9 +42,9 @@ typedef struct {
 
 
 typedef struct {
-	ngx_ssl_t     *ssl;
-	ngx_fd_t       fd;
-	ngx_str_t      name;
+    ngx_ssl_t     *ssl;
+    ngx_fd_t       fd;
+    ngx_str_t      name;
 } ngx_http_lua_ssl_key_log_t;
 
 

@@ -1739,7 +1739,8 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
     }
 
     if (ngx_http_lua_ssl_key_log(cf, llcf->ssl, &llcf->ssl_key_log)
-        != NGX_OK) {
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
@@ -1770,8 +1771,8 @@ key_log_callback(const ngx_ssl_conn_t *ssl_conn, const char *line)
         return;
     }
 
-    (void)ngx_write_fd(ssl_key_log->fd, line, ngx_strlen(line));
-    (void)ngx_write_fd(ssl_key_log->fd, "\n", 1);
+    (void) ngx_write_fd(ssl_key_log->fd, line, ngx_strlen(line));
+    (void) ngx_write_fd(ssl_key_log->fd, "\n", 1);
 }
 
 
@@ -1828,7 +1829,8 @@ ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
     ssl_key_log->name = *file;
 
     if (SSL_CTX_set_ex_data(ssl->ctx, ngx_http_lua_ssl_key_log_index,
-                            ssl_key_log) == 0) {
+                            ssl_key_log) == 0)
+    {
         ngx_ssl_error(NGX_LOG_EMERG, ssl->log, 0,
                       "SSL_CTX_set_ex_data() failed");
         return NGX_ERROR;
