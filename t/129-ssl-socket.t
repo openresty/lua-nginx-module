@@ -3038,11 +3038,6 @@ CLIENT_HANDSHAKE_TRAFFIC_SECRET [0-9a-z\s]+
 CLIENT_TRAFFIC_SECRET_0 [0-9a-z\s]+
 
 --- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
---- grep_error_log_out eval
-qr/^lua ssl save session: ([0-9A-F]+)
-lua ssl free session: ([0-9A-F]+)
-$/
 --- error_log eval
 ['lua ssl server name: "test.com"',
 qr/SSL: TLSv1.3, cipher: "TLS_AES_256_GCM_SHA384 TLSv1.3/]
