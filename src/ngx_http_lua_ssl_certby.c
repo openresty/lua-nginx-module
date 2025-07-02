@@ -456,12 +456,8 @@ ngx_http_lua_is_grease_cipher(uint16_t cipher_id)
 {
     /* GREASE values follow pattern: 0x?A?A where ? can be any hex digit */
     /* and both ? must be the same */
-    uint8_t high_byte = (cipher_id >> 8) & 0xFF;
-    uint8_t low_byte = cipher_id & 0xFF;
     /* Check if both bytes follow ?A pattern and high nibbles match */
-    return ((high_byte & 0x0F) == 0x0A) &&
-           ((low_byte & 0x0F) == 0x0A) &&
-           ((high_byte & 0xF0) == (low_byte & 0xF0));
+    return (cipher_id & 0x0F0F) == 0x0A0A;
 }
 
 
@@ -865,7 +861,7 @@ ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
     ngx_ssl_conn_t         *ssl_conn;
     STACK_OF(SSL_CIPHER)   *sk, *ck;
     int                     sn, cn, i, n;
-    uint16_t                tp;
+    uint16_t                cipher;
 
     if (r == NULL || r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
@@ -891,16 +887,18 @@ ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
     }
 
     for (*nciphers = 0, i = 0; i < sn; i++) {
-        tp = SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(sk, i));
-        
+        cipher = SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(sk, i));
+
         /* Skip GREASE ciphers if filtering is enabled */
-        if (filter_grease && ngx_http_lua_is_grease_cipher(tp)) {
+        if (filter_grease && ngx_http_lua_is_grease_cipher(cipher)) {
             continue;
         }
-        
+
         for (n = 0; n < cn; n++) {
-            if (SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(ck, n)) == tp) {
-                ciphers[(*nciphers)++] = tp;
+            if (SSL_CIPHER_get_protocol_id(sk_SSL_CIPHER_value(ck, n))
+                == cipher)
+            {
+                ciphers[(*nciphers)++] = cipher;
                 break;
             }
         }
