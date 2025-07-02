@@ -2925,6 +2925,16 @@ This directive was first introduced in the <code>v0.9.11</code> release.
 
 See also [[#lua_ssl_certificate|lua_ssl_certificate]], [[#lua_ssl_certificate_key|lua_ssl_certificate_key]] and [[#lua_ssl_trusted_certificate|lua_ssl_trusted_certificate]].
 
+== lua_ssl_key_log ==
+
+'''syntax:''' ''lua_ssl_key_log <file>''
+
+'''default:''' ''none''
+
+'''context:''' ''http, server, location''
+
+Enables logging of client connection SSL keys in the [[#tcpsock:sslhandshake|tcpsock:sslhandshake]] method and specifies the path to the key log file. Keys are logged in the SSLKEYLOGFILE format compatible with Wireshark.
+
 == lua_ssl_conf_command ==
 
 '''syntax:''' ''lua_ssl_conf_command <command>''
