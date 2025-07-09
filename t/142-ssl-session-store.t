@@ -975,4 +975,3 @@ qr/ssl_session_store_by_lua\*: skipped since TLS version >= 1\.3 \(\d+\)/
 [error]
 [alert]
 [emerg]
---- skip_eval: 6:$ENV{TEST_NGINX_USE_HTTP3}
