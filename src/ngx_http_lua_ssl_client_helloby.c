@@ -207,7 +207,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
 
         if (cctx->done) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                           "lua_client_hello_by_lua: "
+                           "ssl_client_hello_by_lua: "
                            "client hello cb exit code: %d",
                            cctx->exit_code);
 
@@ -310,7 +310,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
         }
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua_client_hello_by_lua: handler return value: %i, "
+                       "ssl_client_hello_by_lua: handler return value: %i, "
                        "client hello cb exit code: %d", rc, cctx->exit_code);
 
         c->log->action = "SSL handshaking";
@@ -402,7 +402,7 @@ ngx_http_lua_ssl_client_hello_aborted(void *data)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cctx->connection->log, 0,
-                   "lua_client_hello_by_lua: client hello cb aborted");
+                   "ssl_client_hello_by_lua: client hello cb aborted");
 
     cctx->aborted = 1;
     cctx->request->connection->ssl = NULL;
