@@ -159,7 +159,7 @@ ngx_http_lua_ssl_client_hello_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf, "ssl_client_hello_by_lua",
-                                          sizeof("ssl_client_hello_by_lua")- 1,
+                                          sizeof("ssl_client_hello_by_lua") - 1,
                                           &chunkname_len);
         if (chunkname == NULL) {
             return NGX_CONF_ERROR;
