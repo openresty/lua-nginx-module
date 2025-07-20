@@ -20,7 +20,7 @@
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
 
 
-#if HAVE_LUA_PROXY_SSL_VERIFY
+#if HAVE_PROXY_SSL_PATCH
 
 static void ngx_http_lua_proxy_ssl_verify_done(void *data);
 static void ngx_http_lua_proxy_ssl_verify_aborted(void *data);
@@ -658,5 +658,5 @@ ngx_http_lua_ffi_proxy_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
     return x509;
 }
 
-#endif /* HAVE_LUA_PROXY_SSL_VERIFY */
+#endif /* HAVE_PROXY_SSL_PATCH */
 #endif /* NGX_HTTP_SSL */

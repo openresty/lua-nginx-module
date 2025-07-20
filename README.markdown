@@ -1174,6 +1174,8 @@ Directives
 * [ssl_session_fetch_by_lua_file](#ssl_session_fetch_by_lua_file)
 * [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block)
 * [ssl_session_store_by_lua_file](#ssl_session_store_by_lua_file)
+* [proxy_ssl_certificate_by_lua_block](#proxy_ssl_certificate_by_lua_block)
+* [proxy_ssl_certificate_by_lua_file](#proxy_ssl_certificate_by_lua_file)
 * [proxy_ssl_verify_by_lua_block](#proxy_ssl_verify_by_lua_block)
 * [proxy_ssl_verify_by_lua_file](#proxy_ssl_verify_by_lua_file)
 * [lua_shared_dict](#lua_shared_dict)
@@ -3233,6 +3235,96 @@ This directive was first introduced in the `v0.10.6` release.
 
 Note that: this directive is only allowed to used in **http context** from the `v0.10.7` release
 (because SSL session resumption happens before server name dispatch).
+
+[Back to TOC](#directives)
+
+proxy_ssl_certificate_by_lua_block
+----------------------------------
+
+**syntax:** *proxy_ssl_certificate_by_lua_block { lua-script }*
+
+**context:** *location*
+
+**phase:** *right-after-server-certificate-request-message-was-processed*
+
+This directive runs user Lua code when Nginx is about to post-process the SSL server certificate request message from upstream. It is particularly useful for setting the SSL certificate chain and the corresponding private key for the upstream SSL (https) connections. It is also useful to load such handshake configurations nonblockingly from the remote (for example, with the [cosocket](#ngxsockettcp) API).
+
+The [ngx.ssl.proxysslcert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslcert.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme) library are particularly useful in this context.
+
+Below is a trivial example using the [ngx.ssl](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl.md) module and the [ngx.ssl.proxysslcert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslcert.md) module at the same time:
+
+```nginx
+
+ server {
+     listen 443 ssl;
+     server_name   test.com;
+     ssl_certificate /path/to/cert.crt;
+     ssl_certificate_key /path/to/key.key;
+
+     location /t {
+         proxy_pass https://upstream;
+
+         proxy_ssl_certificate_by_lua_block {
+             local ssl = require "ngx.ssl"
+             local proxy_ssl_cert = require "ngx.ssl.proxysslcert"
+
+             -- NOTE: for illustration only, we don't handle error below
+
+             local f = assert(io.open("/path/to/cert.crt"))
+             local cert_data = f:read("*a")
+             f:close()
+
+             local cert, err = ssl.parse_pem_cert(cert_data)
+             local ok, err = proxy_ssl_cert.set_cert(cert)
+
+             local f = assert(io.open("/path/to/key.key"))
+             local pkey_data = f:read("*a")
+             f:close()
+
+             local pkey, err = ssl.parse_pem_priv_key(pkey_data)
+             local ok, err = proxy_ssl_cert.set_priv_key(pkey)
+             -- ...
+        }
+     }
+     ...
+ }
+```
+
+See more information in the [ngx.ssl.proxysslcert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslcert.md) Lua module's official documentation.
+
+Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
+[ngx.exit](#ngxexit) call with an error code like `ngx.ERROR`.
+
+This Lua code execution context *does* support yielding, so Lua APIs that may yield (like cosockets, sleeping, and "light threads") are enabled in this context.
+
+Note that, unlike the relations between the [ssl_certificate](https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate) and [ssl_certificate_key](https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key) directives and [ssl_certificate_by_lua*](#ssl_certificate_by_lua_block), the [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) and [proxy_ssl_certificate_key](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate_key) directives can be used together with [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block).
+
+* When there are only [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) and [proxy_ssl_certificate_key](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate_key) directives, the original Nginx behavior will obviously remain the same.
+
+* When there is only [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block), Nginx will send the certificate and its related private key and chain set by Lua codes.
+
+* When the [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) and [proxy_ssl_certificate_key](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate_key) directives and [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block) are used at the same time, then [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block) will take precedence over the [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) and [proxy_ssl_certificate_key](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate_key) directives.
+
+Please refer to corresponding test case file and [ngx.ssl.proxysslcert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslcert.md) for more details.
+
+Note also that, it has the same condition as the [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) directive for [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block) to work, that is the upstream server should enable verification of client certificates.
+
+This directive requires OpenSSL 1.0.2e or greater.
+
+[Back to TOC](#directives)
+
+proxy_ssl_certificate_by_lua_file
+---------------------------------
+
+**syntax:** *proxy_ssl_certificate_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *location*
+
+**phase:** *right-after-server-certificate-request-message-was-processed*
+
+Equivalent to [proxy_ssl_certificate_by_lua_block](#proxy_ssl_certificate_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
 
 [Back to TOC](#directives)
 
