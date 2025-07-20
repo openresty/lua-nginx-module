@@ -622,6 +622,7 @@ ngx_http_lua_ffi_ssl_set_verify_result(ngx_http_request_t *r,
 {
 #ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_ssl_conn_t                  *ssl_conn;
+    ngx_connection_t                *c;
     ngx_http_lua_ssl_ctx_t          *cctx;
     X509_STORE_CTX                  *x509_store;
 
@@ -637,6 +638,8 @@ ngx_http_lua_ffi_ssl_set_verify_result(ngx_http_request_t *r,
     }
 
     dd("get cctx session");
+
+    c = ngx_ssl_get_connection(ssl_conn);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
     if (cctx == NULL) {
@@ -662,6 +665,7 @@ ngx_http_lua_ffi_ssl_get_verify_result(ngx_http_request_t *r, char **err)
 {
 #ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_ssl_conn_t                  *ssl_conn;
+    ngx_connection_t                *c;
     ngx_http_lua_ssl_ctx_t          *cctx;
     X509_STORE_CTX                  *x509_store;
 
@@ -677,6 +681,8 @@ ngx_http_lua_ffi_ssl_get_verify_result(ngx_http_request_t *r, char **err)
     }
 
     dd("get cctx session");
+
+    c = ngx_ssl_get_connection(ssl_conn);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
     if (cctx == NULL) {
@@ -700,6 +706,7 @@ ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
 {
 #ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_ssl_conn_t                  *ssl_conn;
+    ngx_connection_t                *c;
     ngx_http_lua_ssl_ctx_t          *cctx;
     X509_STORE_CTX                  *x509_store;
     X509                            *x509;
@@ -716,6 +723,8 @@ ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
     }
 
     dd("get cctx session");
+
+    c = ngx_ssl_get_connection(ssl_conn);
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
     if (cctx == NULL) {
