@@ -395,6 +395,7 @@ struct ngx_http_lua_loc_conf_s {
     u_char                                *proxy_ssl_verify_src_key;
     u_char                                *proxy_ssl_verify_chunkname;
     int                                    proxy_ssl_verify_src_ref;
+    ngx_flag_t                             upstream_skip_openssl_default_verify;
 #endif
 
     ngx_flag_t              force_read_body; /* whether force request body to

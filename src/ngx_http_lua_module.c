@@ -676,6 +676,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_proxy_ssl_verify_handler_file },
 
+    { ngx_string("lua_upstream_skip_openssl_default_verify"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, upstream_skip_openssl_default_verify),
+      NULL },
+
     { ngx_string("lua_ssl_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -1501,6 +1508,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->ssl_conf_commands = NGX_CONF_UNSET_PTR;
 #endif
     conf->proxy_ssl_verify_src_ref = LUA_REFNIL;
+    conf->upstream_skip_openssl_default_verify = NGX_CONF_UNSET;
 #endif
 
     return conf;
@@ -1608,6 +1616,9 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
             return NGX_CONF_ERROR;
         }
     }
+
+    ngx_conf_merge_value(conf->upstream_skip_openssl_default_verify,
+                         prev->upstream_skip_openssl_default_verify, 0);
 
     if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
         return NGX_CONF_ERROR;

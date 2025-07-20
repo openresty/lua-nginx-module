@@ -2960,6 +2960,19 @@ Note though that configuring OpenSSL directly with <code>lua_ssl_conf_command</c
 
 This directive was first introduced in the <code>v0.10.21</code> release.
 
+== lua_upstream_skip_openssl_default_verify ==
+
+'''syntax:''' ''lua_upstream_skip_openssl_default_verify on|off''
+
+'''default:''' ''lua_upstream_skip_openssl_default_verify off''
+
+'''context:''' ''location, location-if''
+
+When using proxy_ssl_verify_by_lua directive, `lua_upstream_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify upstream server certificate.
+
+This directive is turned <code>off</code> by default.
+
+[Back to TOC](#directives)
 
 
 == lua_http10_buffering ==

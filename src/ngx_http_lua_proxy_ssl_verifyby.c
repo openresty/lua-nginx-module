@@ -298,6 +298,17 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 
     r = c->data;
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    if (llcf->upstream_skip_openssl_default_verify == 0) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "proxy_ssl_verify_by_lua: openssl default verify");
+
+        rc = X509_verify_cert(x509_store);
+        if (rc == 0) {
+            return 0;  /* verify failure or error */
+        }
+    }
+
     fc = ngx_http_lua_create_fake_connection(NULL);
     if (fc == NULL) {
         goto failed;

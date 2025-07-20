@@ -1000,3 +1000,94 @@ proxy ssl verify: simple test done
 [error]
 [alert]
 [emerg]
+
+
+
+=== TEST 21: lua_upstream_skip_openssl_default_verify default off
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("lua_upstream_skip_openssl_default_verify default off")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_certificate       ../../cert/test.crt;
+        proxy_ssl_certificate_key   ../../cert/test.key;
+        proxy_ssl_session_reuse     off;
+        proxy_ssl_conf_command      VerifyMode Peer;
+
+        proxy_ssl_verify_by_lua_block {
+            ngx.log(ngx.INFO, "proxy ssl verify by lua is running!")
+        }
+    }
+--- request
+GET /t
+--- error_code: 502
+--- response_body_like: 502 Bad Gateway
+--- error_log eval
+[
+'proxy_ssl_verify_by_lua: openssl default verify',
+qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
+]
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 22: lua_upstream_skip_openssl_default_verify on
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate ../../cert/test2.crt;
+        ssl_certificate_key ../../cert/test2.key;
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("lua_upstream_skip_openssl_default_verify default off")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_certificate       ../../cert/test.crt;
+        proxy_ssl_certificate_key   ../../cert/test.key;
+        proxy_ssl_session_reuse     off;
+        # proxy_ssl_conf_command      VerifyMode Peer;
+        lua_upstream_skip_openssl_default_verify on;
+
+        proxy_ssl_verify_by_lua_block {
+            ngx.log(ngx.INFO, "proxy ssl verify by lua is running!")
+        }
+    }
+--- request
+GET /t
+--- response_body
+lua_upstream_skip_openssl_default_verify default off
+--- error_log
+proxy ssl verify by lua is running!
+--- no_error_log
+proxy_ssl_verify_by_lua: openssl default verify
+[error]
+[alert]

@@ -1190,6 +1190,7 @@ Directives
 * [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 * [lua_ssl_key_log](#lua_ssl_key_log)
 * [lua_ssl_conf_command](#lua_ssl_conf_command)
+* [lua_upstream_skip_openssl_default_verify](#lua_upstream_skip_openssl_default_verify)
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
 * [access_by_lua_no_postpone](#access_by_lua_no_postpone)
@@ -3569,6 +3570,21 @@ Note though that configuring OpenSSL directly with `lua_ssl_conf_command` might 
 This directive was first introduced in the `v0.10.21` release.
 
 
+
+[Back to TOC](#directives)
+
+lua_upstream_skip_openssl_default_verify
+--------------------
+
+**syntax:** *lua_upstream_skip_openssl_default_verify on|off*
+
+**default:** *lua_upstream_skip_openssl_default_verify off*
+
+**context:** *location, location-if*
+
+When using proxy_ssl_verify_by_lua directive, `lua_upstream_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify upstream server certificate.
+
+This directive is turned `off` by default.
 
 [Back to TOC](#directives)
 
