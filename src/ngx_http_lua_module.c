@@ -32,7 +32,11 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
+
+#ifdef HAVE_PROXY_SSL_PATCH
+#include "ngx_http_lua_proxy_ssl_certby.h"
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
+#endif
 
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_headers_out.h"
@@ -695,6 +699,21 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       (void *) ngx_http_lua_ssl_sess_fetch_handler_file },
 
 #if HAVE_LUA_PROXY_SSL_VERIFY
+    /* same context as proxy_pass directive */
+    { ngx_string("proxy_ssl_certificate_by_lua_block"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_proxy_ssl_cert_by_lua_block,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_proxy_ssl_cert_handler_inline },
+
+    { ngx_string("proxy_ssl_certificate_by_lua_file"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_proxy_ssl_cert_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_proxy_ssl_cert_handler_file },
+
     /* same context as proxy_pass directive */
     { ngx_string("proxy_ssl_verify_by_lua_block"),
       NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
@@ -1524,6 +1543,11 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->ssl_crl = { 0, NULL };
      *      conf->ssl_key_log = { 0, NULL };
      *
+     *      conf->proxy_ssl_cert_handler = NULL;
+     *      conf->proxy_ssl_cert_src = { 0, NULL };
+     *      conf->proxy_ssl_cert_chunkname = NULL;
+     *      conf->proxy_ssl_cert_src_key = NULL;
+     *
      *      conf->proxy_ssl_verify_handler = NULL;
      *      conf->proxy_ssl_verify_src = { 0, NULL };
      *      conf->proxy_ssl_verify_chunkname = NULL;
@@ -1563,6 +1587,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->ssl_conf_commands = NGX_CONF_UNSET_PTR;
 #endif
 #ifdef HAVE_PROXY_SSL_PATCH
+    conf->proxy_ssl_cert_src_ref = LUA_REFNIL;
     conf->proxy_ssl_verify_src_ref = LUA_REFNIL;
     conf->upstream_skip_openssl_default_verify = NGX_CONF_UNSET;
 #endif
@@ -1669,6 +1694,20 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 #endif
 
 #if HAVE_LUA_PROXY_SSL_VERIFY
+    if (conf->proxy_ssl_cert_src.len == 0) {
+        conf->proxy_ssl_cert_src = prev->proxy_ssl_cert_src;
+        conf->proxy_ssl_cert_handler = prev->proxy_ssl_cert_handler;
+        conf->proxy_ssl_cert_src_ref = prev->proxy_ssl_cert_src_ref;
+        conf->proxy_ssl_cert_src_key = prev->proxy_ssl_cert_src_key;
+        conf->proxy_ssl_cert_chunkname = prev->proxy_ssl_cert_chunkname;
+    }
+
+    if (conf->proxy_ssl_cert_src.len) {
+        if (ngx_http_lua_proxy_ssl_cert_set_callback(cf) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
     if (conf->proxy_ssl_verify_src.len == 0) {
         conf->proxy_ssl_verify_src = prev->proxy_ssl_verify_src;
         conf->proxy_ssl_verify_handler = prev->proxy_ssl_verify_handler;

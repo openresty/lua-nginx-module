@@ -38,6 +38,7 @@
                                 | NGX_HTTP_LUA_CONTEXT_PRECONTENT            \
                                 | NGX_HTTP_LUA_CONTEXT_CONTENT               \
                                 | NGX_HTTP_LUA_CONTEXT_TIMER                 \
+                                | NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT        \
                                 | NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY      \
                                 | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
                                 | NGX_HTTP_LUA_CONTEXT_SSL_CERT              \
@@ -60,6 +61,8 @@
      : (c) == NGX_HTTP_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_EXIT_WORKER ? "exit_worker_by_lua*"       \
      : (c) == NGX_HTTP_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"             \
+     : (c) == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT ?                          \
+                                             "proxy_ssl_certificate_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY ?                        \
                                                  "proxy_ssl_verify_by_lua*"  \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO ?                        \
