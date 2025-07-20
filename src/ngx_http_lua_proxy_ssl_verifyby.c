@@ -712,6 +712,15 @@ ngx_http_lua_ffi_ssl_get_verify_result(ngx_http_request_t *r, char **err)
 }
 
 
+void
+ngx_http_lua_ffi_ssl_free_verify_cert(void *cdata)
+{
+    X509  *cert = cdata;
+
+    X509_free(cert);
+}
+
+
 void *
 ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
 {
@@ -746,6 +755,11 @@ ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
     x509_store = cctx->x509_store;
 
     x509 = X509_STORE_CTX_get0_cert(x509_store);
+
+    if (!X509_up_ref(x509)) {
+        *err = "get verify result failed";
+        return NULL;
+    }
 
     return x509;
 #else
