@@ -353,8 +353,8 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 
     dd("setting cctx");
 
-    if (SSL_set_ex_data(c->ssl->connection, ngx_http_lua_ssl_ctx_index, cctx)
-        == 0)
+    if (SSL_set_ex_data(c->ssl->connection, ngx_http_lua_ssl_ctx_index,
+                        cctx) == 0)
     {
         ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_ex_data() failed");
         goto failed;
