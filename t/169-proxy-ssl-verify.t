@@ -496,7 +496,7 @@ should never reached here
         proxy_ssl_certificate_key     ../../cert/mtls_client.key;
         proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
         proxy_ssl_session_reuse       off;
-	proxy_ssl_conf_command        VerifyMode Peer;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             error("bad bad bad")
