@@ -132,8 +132,8 @@ GET /t
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
         server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -147,10 +147,13 @@ GET /t
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
 
         proxy_ssl_verify_by_lua_block {
             ngx.log(ngx.INFO, "proxy ssl verify by lua is running!")
@@ -172,10 +175,9 @@ proxy ssl verify by lua is running!
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -189,10 +191,13 @@ proxy ssl verify by lua is running!
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
 
         proxy_ssl_verify_by_lua_block {
             local begin = ngx.now()
@@ -216,10 +221,9 @@ qr/elapsed in proxy ssl verify by lua: 0.(?:09|1\d)\d+,/,
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -233,10 +237,13 @@ qr/elapsed in proxy ssl verify by lua: 0.(?:09|1\d)\d+,/,
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
 
         proxy_ssl_verify_by_lua_block {
             local function f()
@@ -265,10 +272,9 @@ my timer run!
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -282,10 +288,13 @@ my timer run!
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
 
         proxy_ssl_verify_by_lua_block {
             ngx.exit(0)
@@ -310,10 +319,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -327,11 +335,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.exit(ngx.ERROR)
@@ -341,7 +352,6 @@ should never reached here
 --- request
 GET /t
 --- error_code: 502
---- response_body_like: 502 Bad Gateway
 --- error_log eval
 [
 'lua exit with code -1',
@@ -360,10 +370,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -377,10 +386,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.sleep(0.001)
@@ -407,10 +420,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -424,11 +436,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.sleep(0.001)
@@ -440,7 +455,6 @@ should never reached here
 --- request
 GET /t
 --- error_code: 502
---- response_body_like: 502 Bad Gateway
 --- error_log eval
 [
 'lua exit with code -1',
@@ -459,10 +473,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -476,11 +489,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+	proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             error("bad bad bad")
@@ -490,10 +506,9 @@ should never reached here
 --- request
 GET /t
 --- error_code: 502
---- response_body_like: 502 Bad Gateway
 --- error_log eval
 [
-'runtime error: proxy_ssl_verify_by_lua(nginx.conf:63):2: bad bad bad',
+'runtime error: proxy_ssl_verify_by_lua(nginx.conf:65):2: bad bad bad',
 'proxy_ssl_verify_by_lua: handler return value: 500, cert verify callback exit code: 0',
 qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 ]
@@ -508,10 +523,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -525,11 +539,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.sleep(0.001)
@@ -540,10 +557,9 @@ should never reached here
 --- request
 GET /t
 --- error_code: 502
---- response_body_like: 502 Bad Gateway
 --- error_log eval
 [
-'runtime error: proxy_ssl_verify_by_lua(nginx.conf:63):3: bad bad bad',
+'runtime error: proxy_ssl_verify_by_lua(nginx.conf:65):3: bad bad bad',
 'proxy_ssl_verify_by_lua: cert verify callback exit code: 0',
 qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 ]
@@ -558,10 +574,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -575,10 +590,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             print("get_phase: ", ngx.get_phase())
@@ -600,10 +619,9 @@ get_phase: proxy_ssl_verify
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -617,11 +635,14 @@ get_phase: proxy_ssl_verify
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.location.capture("/foo")
@@ -630,10 +651,9 @@ get_phase: proxy_ssl_verify
 --- request
 GET /t
 --- error_code: 502
---- response_body_like: 502 Bad Gateway
 --- error_log eval
 [
-'proxy_ssl_verify_by_lua(nginx.conf:63):2: API disabled in the context of proxy_ssl_verify_by_lua*',
+'proxy_ssl_verify_by_lua(nginx.conf:65):2: API disabled in the context of proxy_ssl_verify_by_lua*',
 'proxy_ssl_verify_by_lua: handler return value: 500, cert verify callback exit code: 0',
 qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 ]
@@ -646,10 +666,9 @@ qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -667,11 +686,14 @@ print("proxy ssl verify by lua is running!")
 
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_file html/a.lua;
     }
@@ -691,10 +713,9 @@ a.lua:1: proxy ssl verify by lua is running!
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -708,10 +729,14 @@ a.lua:1: proxy ssl verify by lua is running!
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
@@ -754,10 +779,9 @@ co yield: 2
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -771,10 +795,14 @@ co yield: 2
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             local function f()
@@ -819,10 +847,9 @@ uthread: done
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -836,10 +863,14 @@ uthread: done
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             local function f()
@@ -887,10 +918,9 @@ uthread: failed to kill: already waited or killed
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -904,10 +934,14 @@ uthread: failed to kill: already waited or killed
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.exit(ngx.OK)
@@ -935,10 +969,9 @@ should never reached here
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -952,10 +985,14 @@ should never reached here
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             print("proxy ssl verify: simple test start")
@@ -1007,10 +1044,9 @@ proxy ssl verify: simple test done
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -1024,11 +1060,14 @@ proxy ssl verify: simple test done
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
 
         proxy_ssl_verify_by_lua_block {
             ngx.log(ngx.INFO, "proxy ssl verify by lua is running!")
@@ -1036,13 +1075,8 @@ proxy ssl verify: simple test done
     }
 --- request
 GET /t
---- error_code: 502
---- response_body_like: 502 Bad Gateway
---- error_log eval
-[
-'proxy_ssl_verify_by_lua: openssl default verify',
-qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
-]
+--- error_log
+proxy_ssl_verify_by_lua: openssl default verify
 --- no_error_log
 [error]
 [alert]
@@ -1053,10 +1087,9 @@ qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
-        server_name   test.com;
 
-        ssl_certificate ../../cert/test2.crt;
-        ssl_certificate_key ../../cert/test2.key;
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
 
         location / {
             default_type 'text/plain';
@@ -1070,11 +1103,15 @@ qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
     }
 --- config
     location /t {
-        proxy_pass                  https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
-        proxy_ssl_certificate       ../../cert/test.crt;
-        proxy_ssl_certificate_key   ../../cert/test.key;
-        proxy_ssl_session_reuse     off;
-        # proxy_ssl_conf_command      VerifyMode Peer;
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_ssl_conf_command        VerifyMode Peer;
+
         lua_upstream_skip_openssl_default_verify on;
 
         proxy_ssl_verify_by_lua_block {
