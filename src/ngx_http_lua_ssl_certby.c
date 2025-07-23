@@ -1705,9 +1705,15 @@ failed:
 
 
 ngx_ssl_conn_t *
-ngx_http_lua_ffi_get_req_ssl_pointer(ngx_http_request_t *r)
+ngx_http_lua_ffi_get_req_ssl_pointer(ngx_http_request_t *r, const char **err)
 {
     if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NULL;
+    }
+
+    if (r->connection->ssl->connection == NULL) {
+        *err = "bad ssl connection";
         return NULL;
     }
 
