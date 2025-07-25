@@ -870,4 +870,40 @@ ngx_http_lua_ffi_ssl_set_ciphers(ngx_http_request_t *r,
 }
 
 
+int
+ngx_http_lua_ffi_ssl_set_ciphersuites(ngx_http_request_t *r,
+    const char *ciphersuites, int prefer_server_ciphers, char **err)
+{
+    ngx_ssl_conn_t    *ssl_conn;
+
+    *err = "OK";
+    if (ciphersuites == NULL) {
+        *err = "bad ciphersuites";
+        return NGX_ERROR;
+    }
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    if (SSL_set_ciphersuites(ssl_conn, ciphersuites) == 0) {
+        *err = "failed to set ciphersuites";
+        return NGX_ERROR;
+    }
+
+    if (prefer_server_ciphers) {
+        SSL_set_options(ssl_conn, SSL_OP_CIPHER_SERVER_PREFERENCE);
+    }
+
+    return NGX_OK;
+}
+
+
 #endif /* NGX_HTTP_SSL */
