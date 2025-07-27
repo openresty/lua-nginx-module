@@ -12,7 +12,7 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
 } elsif ($openssl_version =~ m/BoringSSL/) {
     $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
-    plan tests => repeat_each() * (blocks() * 6 - 8);
+    plan tests => repeat_each() * (blocks() * 6 - 6);
 } else {
     plan tests => repeat_each() * (blocks() * 5 - 5);
     $ENV{TEST_NGINX_USE_OPENSSL} = 1;
@@ -2074,7 +2074,3 @@ without_filter:\[.*\]
 with_filter:\[.*\]
 --- error_log chomp
 TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(128) Mac=AEAD"
-
-
-
-

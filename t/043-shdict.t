@@ -158,7 +158,7 @@ hello
         content_by_lua '
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32, 0.01)
-            ngx.location.capture("/sleep/0.01")
+            ngx.location.capture("/sleep/0.011")
             ngx.say(dogs:get("foo"))
         ';
     }
@@ -1131,7 +1131,7 @@ nil nil
         content_by_lua '
             local dogs = ngx.shared.dogs
             dogs:set("foo", 32, 0.01, 255)
-            ngx.location.capture("/sleep/0.01")
+            ngx.location.capture("/sleep/0.011")
             local res, flags = dogs:get("foo")
             ngx.say("res = ", res, ", flags = ", flags)
         ';
