@@ -64,8 +64,8 @@ Version
 =======
 
 This document describes ngx_lua
-[v0.10.25](https://github.com/openresty/lua-nginx-module/tags), which was released
-on 19 June 2023.
+[v0.10.28](https://github.com/openresty/lua-nginx-module/tags), which was released
+on 17 Jan, 2025.
 
 Videos
 ======
@@ -308,6 +308,7 @@ Nginx Compatibility
 
 The latest version of this module is compatible with the following versions of Nginx:
 
+* 1.27.x  (last tested: 1.27.1)
 * 1.25.x  (last tested: 1.25.1)
 * 1.21.x  (last tested: 1.21.4)
 * 1.19.x  (last tested: 1.19.3)
