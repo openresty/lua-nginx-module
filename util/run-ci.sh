@@ -67,30 +67,30 @@ function download_deps()
        wget -P download-cache https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VER/openssl-$OPENSSL_VER.tar.gz
     fi
 
-    git_download clone https://github.com/openresty/test-nginx.git
-    git_download clone https://github.com/openresty/openresty.git ../openresty
-    git_download clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
-    git_download clone https://github.com/openresty/openresty-devel-utils.git
-    git_download clone https://github.com/openresty/mockeagain.git
-    git_download clone https://github.com/openresty/lua-cjson.git lua-cjson
-    git_download clone https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
-    git_download clone https://github.com/openresty/echo-nginx-module.git ../echo-nginx-module
-    git_download clone https://github.com/openresty/nginx-eval-module.git ../nginx-eval-module
-    git_download clone https://github.com/simpl/ngx_devel_kit.git ../ndk-nginx-module
-    git_download clone https://github.com/FRiCKLE/ngx_coolkit.git ../coolkit-nginx-module
-    git_download clone https://github.com/openresty/headers-more-nginx-module.git ../headers-more-nginx-module
-    git_download clone https://github.com/openresty/drizzle-nginx-module.git ../drizzle-nginx-module
-    git_download clone https://github.com/openresty/set-misc-nginx-module.git ../set-misc-nginx-module
-    git_download clone https://github.com/openresty/memc-nginx-module.git ../memc-nginx-module
-    git_download clone https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
-    git_download clone https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
-    git_download clone https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
-    git_download clone https://github.com/openresty/lua-resty-core.git ../lua-resty-core
-    git_download clone https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
-    git_download clone https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
-    git_download clone https://github.com/openresty/lua-resty-string.git ../lua-resty-string
-    git_download clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
-    git_download clone -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
+    git_download https://github.com/openresty/test-nginx.git
+    git_download https://github.com/openresty/openresty.git ../openresty
+    git_download https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
+    git_download https://github.com/openresty/openresty-devel-utils.git
+    git_download https://github.com/openresty/mockeagain.git
+    git_download https://github.com/openresty/lua-cjson.git lua-cjson
+    git_download https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
+    git_download https://github.com/openresty/echo-nginx-module.git ../echo-nginx-module
+    git_download https://github.com/openresty/nginx-eval-module.git ../nginx-eval-module
+    git_download https://github.com/simpl/ngx_devel_kit.git ../ndk-nginx-module
+    git_download https://github.com/FRiCKLE/ngx_coolkit.git ../coolkit-nginx-module
+    git_download https://github.com/openresty/headers-more-nginx-module.git ../headers-more-nginx-module
+    git_download https://github.com/openresty/drizzle-nginx-module.git ../drizzle-nginx-module
+    git_download https://github.com/openresty/set-misc-nginx-module.git ../set-misc-nginx-module
+    git_download https://github.com/openresty/memc-nginx-module.git ../memc-nginx-module
+    git_download https://github.com/openresty/rds-json-nginx-module.git ../rds-json-nginx-module
+    git_download https://github.com/openresty/srcache-nginx-module.git ../srcache-nginx-module
+    git_download https://github.com/openresty/redis2-nginx-module.git ../redis2-nginx-module
+    git_download https://github.com/openresty/lua-resty-core.git ../lua-resty-core
+    git_download https://github.com/openresty/lua-resty-lrucache.git ../lua-resty-lrucache
+    git_download https://github.com/openresty/lua-resty-mysql.git ../lua-resty-mysql
+    git_download https://github.com/openresty/lua-resty-string.git ../lua-resty-string
+    git_download https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
+    git_download -b v2.1-agentzh https://github.com/openresty/luajit2.git luajit2
 }
 
 function make_deps()
