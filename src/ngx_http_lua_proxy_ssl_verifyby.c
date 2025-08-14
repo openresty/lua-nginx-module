@@ -42,34 +42,20 @@ ngx_http_lua_proxy_ssl_verify_set_callback(ngx_conf_t *cf)
 
 #else
 
-    ngx_flag_t           proxy_pass_ssl = 0;
-    ngx_pool_cleanup_t  *cln;
-    ngx_ssl_t           *ssl;
-    void                *plcf;
+    void                      *plcf;
+    ngx_http_upstream_conf_t  *ucf;
+    ngx_ssl_t                 *ssl;
 
     /*
      * Nginx doesn't export ngx_http_proxy_loc_conf_t, so we can't directly
-     * get plcf here, and we also don't want to change ngx_http_proxy_module's
-     * code organization, since that it means to add a header file to Nginx.
-     * I know it's a bit clumsy here, anyway the solution is good enough
+     * get plcf here, but the first member of plcf is ngx_http_upstream_conf_t
      */
-    for (cln = cf->pool->cleanup; cln; cln = cln->next) {
-        if (cln->handler != ngx_ssl_cleanup_ctx) {
-            continue;
-        }
+    plcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_proxy_module);
+    ucf = plcf;
 
-        ssl = cln->data;
+    ssl = ucf->ssl;
 
-        plcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_proxy_module);
-        if (plcf == ngx_ssl_get_server_conf(ssl->ctx)) {
-            /* here we make sure that ssl is plcf->upstream.ssl */
-            proxy_pass_ssl = 1;
-
-            break;
-        }
-    }
-
-    if (!proxy_pass_ssl) {
+    if (!ssl->ctx) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "proxy_ssl_verify_by_lua* "
                       "should be used with proxy_pass https url");
 
