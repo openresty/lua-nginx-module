@@ -244,6 +244,7 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
     ngx_pool_cleanup_t              *cln;
     ngx_http_core_loc_conf_t        *clcf;
     ngx_http_lua_loc_conf_t         *llcf;
+    ngx_http_lua_ctx_t              *ctx;
     ngx_http_lua_ssl_ctx_t          *cctx;
     ngx_http_core_srv_conf_t        *cscf;
     ngx_ssl_conn_t                  *ssl_conn;
@@ -308,6 +309,14 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
      * already been changed, we need to get correct location configs
      */
     fr->loc_conf = r->loc_conf;
+    /*
+     * so that we can use ngx.ctx to pass data from downstream phases to
+     * upstream phases if there is any
+     */
+    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
+    if (ctx) {
+        ngx_http_set_ctx(fr, ctx, ngx_http_lua_module);
+    }
 
     fc->log->file = c->log->file;
     fc->log->log_level = c->log->log_level;
