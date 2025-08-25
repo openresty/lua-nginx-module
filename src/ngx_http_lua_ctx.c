@@ -123,8 +123,7 @@ ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
     }
 
 #if (NGX_HTTP_SSL)
-    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY
-                        | NGX_HTTP_LUA_CONTEXT_SSL_CERT
+    if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE))
