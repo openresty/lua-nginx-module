@@ -16,7 +16,7 @@
 
 typedef struct {
     ngx_connection_t        *connection; /* original true connection */
-    ngx_http_request_t      *request;    /* fake request */
+    ngx_http_request_t      *request;
     ngx_pool_cleanup_pt     *cleanup;
 
     ngx_ssl_session_t       *session;    /* return value for openssl's
@@ -25,6 +25,7 @@ typedef struct {
     ngx_str_t                session_id;
 
     X509_STORE_CTX          *x509_store;
+    ngx_pool_t              *pool;
 
     int                      exit_code;  /* exit code for openssl's
                                             set_client_hello_cb or
@@ -35,6 +36,8 @@ typedef struct {
                                            request ctx data in lua
                                            registry */
 
+    /* same size as count field of ngx_http_request_t */
+    unsigned                 original_request_count:16;
     unsigned                 done:1;
     unsigned                 aborted:1;
 
