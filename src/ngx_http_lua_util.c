@@ -1682,9 +1682,11 @@ no_parent:
                 NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
+#ifdef HAVE_PROXY_SSL_PATCH
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY) {
         return NGX_OK;
     }
+#endif
 
     if (ctx->entered_content_phase
         && r->connection->fd != (ngx_socket_t) -1)
@@ -2441,9 +2443,11 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         return ctx->exit_code;
     }
 
+#ifdef HAVE_PROXY_SSL_PATCH
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY) {
         return ctx->exit_code;
     }
+#endif
 
 #if 1
     if (!r->header_sent
@@ -3681,9 +3685,11 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 {
     ngx_http_lua_ctx_t              *ctx;
 #if (NGX_HTTP_SSL)
+#ifdef HAVE_PROXY_SSL_PATCH
     ngx_http_upstream_t             *u;
     ngx_connection_t                *c;
     ngx_http_lua_ssl_ctx_t          *cctx;
+#endif
 #endif
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
@@ -3692,6 +3698,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
     }
 
 #if (NGX_HTTP_SSL)
+#ifdef HAVE_PROXY_SSL_PATCH
     u = r->upstream;
     if (u) {
         c = u->peer.connection;
@@ -3714,6 +3721,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
             }
         }
     }
+#endif
 #endif
 
     if (r->connection->fd != (ngx_socket_t) -1) {

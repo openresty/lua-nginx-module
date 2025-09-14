@@ -16,9 +16,11 @@
 #include "ngx_http_lua_util.h"
 #include "ngx_http_ssl_module.h"
 #include "ngx_http_lua_contentby.h"
-#include "ngx_http_lua_proxy_ssl_verifyby.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_ssl.h"
+
+#ifdef HAVE_PROXY_SSL_PATCH
+#include "ngx_http_lua_proxy_ssl_verifyby.h"
 
 
 static void ngx_http_lua_proxy_ssl_verify_done(void *data);
@@ -708,4 +710,42 @@ ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
 #endif
 }
 
+
+#else  /* HAVE_PROXY_SSL_PATCH */
+
+
+int
+ngx_http_lua_ffi_ssl_set_verify_result(ngx_http_request_t *r,
+    int verify_result, char **err)
+{
+    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
+
+    return NGX_ERROR;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_get_verify_result(ngx_http_request_t *r, char **err)
+{
+    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
+
+    return NGX_ERROR;
+}
+
+
+void
+ngx_http_lua_ffi_ssl_free_verify_cert(void *cdata)
+{
+}
+
+
+void *
+ngx_http_lua_ffi_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
+{
+    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
+
+    return NULL;
+}
+
+#endif /* HAVE_PROXY_SSL_PATCH */
 #endif /* NGX_HTTP_SSL */

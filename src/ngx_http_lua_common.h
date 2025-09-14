@@ -148,7 +148,10 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER        0x00002000
 #define NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO   0x00004000
 #define NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE     0x00008000
+
+#ifdef HAVE_PROXY_SSL_PATCH
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY   0x00010000
+#endif
 
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -390,12 +393,15 @@ struct ngx_http_lua_loc_conf_s {
     ngx_array_t            *ssl_conf_commands;
 #endif
 
+#ifdef HAVE_PROXY_SSL_PATCH
     ngx_http_lua_loc_conf_handler_pt       proxy_ssl_verify_handler;
     ngx_str_t                              proxy_ssl_verify_src;
     u_char                                *proxy_ssl_verify_src_key;
     u_char                                *proxy_ssl_verify_chunkname;
     int                                    proxy_ssl_verify_src_ref;
     ngx_flag_t                             upstream_skip_openssl_default_verify;
+#endif
+
 #endif
 
     ngx_flag_t              force_read_body; /* whether force request body to
