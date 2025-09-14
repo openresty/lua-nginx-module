@@ -242,7 +242,6 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
     ngx_pool_cleanup_t              *cln;
     ngx_http_lua_loc_conf_t         *llcf;
     ngx_http_lua_ssl_ctx_t          *cctx;
-    ngx_http_core_srv_conf_t        *cscf;
     ngx_ssl_conn_t                  *ssl_conn;
 
     ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
@@ -326,15 +325,6 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "loading proxy ssl verify by lua";
-
-    if (llcf->proxy_ssl_verify_handler == NULL) {
-        cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
-        ngx_log_error(NGX_LOG_ALERT, c->log, 0,
-                      "no proxy_ssl_verify_by_lua* defined in "
-                      "server %V", &cscf->server_name);
-
-        goto failed;
-    }
 
     rc = llcf->proxy_ssl_verify_handler(r, llcf, L);
 
