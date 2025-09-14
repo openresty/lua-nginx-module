@@ -15,7 +15,7 @@ if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
 } elsif ($ENV{TEST_NGINX_USE_HTTP3}) {
     plan tests => repeat_each() * (blocks() * 6 + 6);
 } else {
-    plan tests => repeat_each() * (blocks() * 6 + 10);
+    plan tests => repeat_each() * (blocks() * 5 + 10);
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
