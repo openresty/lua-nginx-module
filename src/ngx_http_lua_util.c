@@ -4574,7 +4574,7 @@ ngx_http_lua_ffi_bypass_if_checks(ngx_http_request_t *r)
 }
 
 
-#if (NGX_HTTP_V3)
+#if (HAVE_QUIC_SSL_LUA_YIELD_PATCH && NGX_HTTP_V3)
 void
 ngx_http_lua_resume_quic_ssl_handshake(ngx_connection_t *c)
 {
