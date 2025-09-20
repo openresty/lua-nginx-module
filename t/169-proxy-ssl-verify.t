@@ -1224,3 +1224,109 @@ proxy_ssl_verify_by_lua: cert verify callback aborted
 --- no_error_log
 [alert]
 --- wait: 0.5
+
+
+
+=== TEST 25: cosocket
+--- http_config
+    server {
+        listen *:80;
+        server_name test.com;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {
+                ngx.sleep(0.1)
+
+                ngx.status = 201
+                ngx.say("foo")
+                ngx.exit(201)
+            }
+            more_clear_headers Date;
+        }
+    }
+
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("simple logging return")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+
+        proxy_ssl_verify_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("127.0.0.1", "80")
+                if not ok then
+                    ngx.log(ngx.ERR, "failed to connect: ", err)
+                    return
+                end
+
+                ngx.log(ngx.INFO, "connected: ", ok)
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.log(ngx.ERR, "failed to send http request: ", err)
+                    return
+                end
+
+                ngx.log(ngx.INFO, "sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.log(ngx.ERR, "failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.log(ngx.INFO, "received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.log(ngx.INFO, "close: ", ok, " ", err)
+            end -- do
+            -- collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body
+simple logging return
+--- error_log
+connected: 1
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: openresty
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received:
+received: foo
+close: 1 nil
+--- no_error_log
+[error]
+[alert]
