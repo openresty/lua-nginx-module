@@ -1177,3 +1177,50 @@ greeting: I am from rewrite phase
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 24: upstream connection aborted
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate ../../cert/mtls_server.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("hello world")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+--- config
+    location /t {
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_verify              on;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+        proxy_connect_timeout         100ms;
+
+        proxy_ssl_verify_by_lua_block {
+            ngx.sleep(0.2)
+        }
+    }
+--- request
+GET /t
+--- error_code: 504
+--- response_body_like: 504 Gateway Time-out
+--- error_log
+upstream timed out (110: Connection timed out) while loading proxy ssl verify by lua
+proxy_ssl_verify_by_lua: cert verify callback aborted
+--- no_error_log
+[alert]
+--- wait: 0.5
