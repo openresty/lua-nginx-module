@@ -191,7 +191,6 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_http_lua_srv_conf_t         *lscf;
     ngx_http_core_loc_conf_t        *clcf;
     ngx_http_lua_ssl_ctx_t          *cctx;
-    ngx_http_core_srv_conf_t        *cscf;
 
     c = ngx_ssl_get_connection(ssl_conn);
 
@@ -289,16 +288,6 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
     c->log->action = "loading SSL client hello by lua";
-
-    if (lscf->srv.ssl_client_hello_handler == NULL) {
-        cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
-
-        ngx_log_error(NGX_LOG_ALERT, c->log, 0,
-                      "no ssl_client_hello_by_lua* defined in "
-                      "server %V", &cscf->server_name);
-
-        goto failed;
-    }
 
     rc = lscf->srv.ssl_client_hello_handler(r, lscf, L);
 
