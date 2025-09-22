@@ -370,9 +370,11 @@ ngx_http_lua_ssl_client_hello_done(void *data)
 
     ngx_post_event(c->write, &ngx_posted_events);
 
-#if (NGX_HTTP_V3) && defined(SSL_ERROR_WANT_CLIENT_HELLO_CB)
-#   if (NGX_QUIC_OPENSSL_COMPAT)
+#if (HAVE_QUIC_SSL_LUA_YIELD_PATCH && NGX_HTTP_V3)
+#   if defined(SSL_ERROR_WANT_CLIENT_HELLO_CB)
+#       if (NGX_QUIC_OPENSSL_COMPAT)
     ngx_http_lua_resume_quic_ssl_handshake(c);
+#       endif
 #   endif
 #endif
 }

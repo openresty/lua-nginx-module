@@ -267,7 +267,7 @@ ngx_addr_t *ngx_http_lua_parse_addr(lua_State *L, u_char *text, size_t len);
 
 size_t ngx_http_lua_escape_log(u_char *dst, u_char *src, size_t size);
 
-#if (NGX_HTTP_V3)
+#if (HAVE_QUIC_SSL_LUA_YIELD_PATCH && NGX_HTTP_V3)
 void ngx_http_lua_resume_quic_ssl_handshake(ngx_connection_t *c);
 #endif
 

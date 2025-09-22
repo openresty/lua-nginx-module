@@ -87,7 +87,7 @@ install:
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
-  - git clone https://github.com/openresty/openresty.git ../openresty
+  - git clone https://github.com/openresty/openresty.git
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
   - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/mockeagain.git
