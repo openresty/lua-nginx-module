@@ -31,6 +31,11 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
+
+#ifdef HAVE_PROXY_SSL_PATCH
+#include "ngx_http_lua_proxy_ssl_verifyby.h"
+#endif
+
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_headers_out.h"
 #if !(NGX_WIN32)
@@ -659,6 +664,30 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_SRV_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_ssl_sess_fetch_handler_file },
+
+#ifdef HAVE_PROXY_SSL_PATCH
+    /* same context as proxy_pass directive */
+    { ngx_string("proxy_ssl_verify_by_lua_block"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_proxy_ssl_verify_by_lua_block,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_proxy_ssl_verify_handler_inline },
+
+    { ngx_string("proxy_ssl_verify_by_lua_file"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_proxy_ssl_verify_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_proxy_ssl_verify_handler_file },
+
+    { ngx_string("lua_upstream_skip_openssl_default_verify"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_lua_loc_conf_t, upstream_skip_openssl_default_verify),
+      NULL },
+#endif
 
     { ngx_string("lua_ssl_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
@@ -1446,6 +1475,11 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->ssl_trusted_certificate = { 0, NULL };
      *      conf->ssl_crl = { 0, NULL };
      *      conf->ssl_key_log = { 0, NULL };
+     *
+     *      conf->proxy_ssl_verify_handler = NULL;
+     *      conf->proxy_ssl_verify_src = { 0, NULL };
+     *      conf->proxy_ssl_verify_chunkname = NULL;
+     *      conf->proxy_ssl_verify_src_key = NULL;
      */
 
     conf->force_read_body    = NGX_CONF_UNSET;
@@ -1478,6 +1512,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
     conf->ssl_certificate_keys = NGX_CONF_UNSET_PTR;
 #if (nginx_version >= 1019004)
     conf->ssl_conf_commands = NGX_CONF_UNSET_PTR;
+#endif
+#ifdef HAVE_PROXY_SSL_PATCH
+    conf->proxy_ssl_verify_src_ref = LUA_REFNIL;
+    conf->upstream_skip_openssl_default_verify = NGX_CONF_UNSET;
 #endif
 #endif
 
@@ -1571,6 +1609,25 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 #if (nginx_version >= 1019004)
     ngx_conf_merge_ptr_value(conf->ssl_conf_commands, prev->ssl_conf_commands,
                              NULL);
+#endif
+
+#ifdef HAVE_PROXY_SSL_PATCH
+    if (conf->proxy_ssl_verify_src.len == 0) {
+        conf->proxy_ssl_verify_src = prev->proxy_ssl_verify_src;
+        conf->proxy_ssl_verify_handler = prev->proxy_ssl_verify_handler;
+        conf->proxy_ssl_verify_src_ref = prev->proxy_ssl_verify_src_ref;
+        conf->proxy_ssl_verify_src_key = prev->proxy_ssl_verify_src_key;
+        conf->proxy_ssl_verify_chunkname = prev->proxy_ssl_verify_chunkname;
+    }
+
+    if (conf->proxy_ssl_verify_src.len) {
+        if (ngx_http_lua_proxy_ssl_verify_set_callback(cf) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    ngx_conf_merge_value(conf->upstream_skip_openssl_default_verify,
+                         prev->upstream_skip_openssl_default_verify, 0);
 #endif
 
     if (ngx_http_lua_set_ssl(cf, conf) != NGX_OK) {
