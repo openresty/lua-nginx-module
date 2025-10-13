@@ -46,10 +46,12 @@ env:
     - LUAJIT_LIB=$LUAJIT_PREFIX/lib
     - LUAJIT_INC=$LUAJIT_PREFIX/include/luajit-2.1
     - LUA_INCLUDE_DIR=$LUAJIT_INC
-    - PCRE2_PREFIX=/usr/local/openresty/pcre2
+    #- PCRE2_PREFIX=/usr/local/openresty/pcre2
+    - PCRE2_PREFIX=/opt/pcre2
     - PCRE2_LIB=$PCRE2_PREFIX/lib
     - PCRE2_INC=$PCRE2_PREFIX/include
-    - OPENSSL_PREFIX=/usr/local/openresty/openssl3
+    #- OPENSSL_PREFIX=/usr/local/openresty/openssl3
+    - OPENSSL_PREFIX=/opt/openssl3
     - OPENSSL_LIB=$OPENSSL_PREFIX/lib
     - OPENSSL_INC=$OPENSSL_PREFIX/include
     - LIBDRIZZLE_PREFIX=/opt/drizzle
@@ -60,10 +62,10 @@ env:
     - TEST_NGINX_SLEEP=0.006
     - MALLOC_PERTURB_=9
   jobs:
-    - NGINX_VERSION=1.27.1 OPENSSL_VER=3.5.0 OPENSSL_PATCH_VER=3.5.0 TEST_NGINX_TIMEOUT=5 PCRE2_VER=10.45
-    - NGINX_VERSION=1.27.1 OPENSSL_VER=3.5.0 OPENSSL_PATCH_VER=3.5.0 TEST_NGINX_TIMEOUT=5 PCRE2_VER=10.45 TEST_NGINX_USE_HTTP2=1
-    - NGINX_VERSION=1.27.1 OPENSSL_VER=3.5.0 OPENSSL_PATCH_VER=3.5.0 TEST_NGINX_USE_HTTP3=1 TEST_NGINX_QUIC_IDLE_TIMEOUT=3 PCRE2_VER=10.45
-    - NGINX_VERSION=1.27.1 BORINGSSL=1 TEST_NGINX_USE_HTTP3=1 TEST_NGINX_QUIC_IDLE_TIMEOUT=3 PCRE2_VER=10.45
+    - NGINX_VERSION=1.29.2 OPENSSL_VER=3.5.4 OPENSSL_PATCH_VER=3.5.4 TEST_NGINX_TIMEOUT=5 PCRE2_VER=10.46
+    - NGINX_VERSION=1.29.2 OPENSSL_VER=3.5.4 OPENSSL_PATCH_VER=3.5.4 TEST_NGINX_TIMEOUT=5 PCRE2_VER=10.46 TEST_NGINX_USE_HTTP2=1
+    - NGINX_VERSION=1.29.2 OPENSSL_VER=3.5.4 OPENSSL_PATCH_VER=3.5.4 TEST_NGINX_USE_HTTP3=1 TEST_NGINX_QUIC_IDLE_TIMEOUT=3 PCRE2_VER=10.46
+    - NGINX_VERSION=1.29.2 BORINGSSL=1 TEST_NGINX_USE_HTTP3=1 TEST_NGINX_QUIC_IDLE_TIMEOUT=3 PCRE2_VER=10.46
 
 services:
   - memcached
@@ -82,8 +84,8 @@ before_install:
 
 install:
   - if [ ! -f download-cache/drizzle7-$DRIZZLE_VER.tar.gz ]; then wget -P download-cache https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/drizzle7-$DRIZZLE_VER.tar.gz; fi
-  #- if [ -n "$PCRE2_VER" ] && [ ! -f download-cache/pcre2-$PCRE2_VER.tar.gz ]; then wget -P download-cache https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz; fi
-  #- if [ -n "$OPENSSL_VER" ] && [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VER/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
+  - if [ -n "$PCRE2_VER" ] && [ ! -f download-cache/pcre2-$PCRE2_VER.tar.gz ]; then wget -P download-cache https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VER}/pcre2-${PCRE2_VER}.tar.gz; fi
+  - if [ -n "$OPENSSL_VER" ] && [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VER/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
   - wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
   - git clone https://github.com/openresty/test-nginx.git
@@ -135,8 +137,8 @@ script:
   - sudo make install-libdrizzle-1.0 > build.log 2>&1 || (cat build.log && exit 1)
   - cd ../mockeagain/ && make CC=$CC -j$JOBS && cd ..
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
-  #- if [ -n "$PCRE2_VER" ]; then tar zxf download-cache/pcre2-$PCRE2_VER.tar.gz; cd pcre2-$PCRE2_VER/; ./configure --prefix=$PCRE2_PREFIX --enable-jit --enable-utf > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
-  #- if [ -n "$OPENSSL_VER" ]; then tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz; cd openssl-$OPENSSL_VER/; patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch; ./config shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX --libdir=lib -DPURIFY > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
+  - if [ -n "$PCRE2_VER" ]; then tar zxf download-cache/pcre2-$PCRE2_VER.tar.gz; cd pcre2-$PCRE2_VER/; ./configure --prefix=$PCRE2_PREFIX --enable-jit --enable-utf > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
+  - if [ -n "$OPENSSL_VER" ]; then tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz; cd openssl-$OPENSSL_VER/; patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch; ./config shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX --libdir=lib -DPURIFY > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
   - if [ -n "$BORINGSSL" ]; then sudo rm -fr /usr/local/openresty/openssl3/ && sudo mkdir -p /usr/local/openresty/openssl3 && sudo tar -C /usr/local/openresty/openssl3 -xf boringssl-20230902-x64-focal.tar.gz --strip-components=1; fi
   - export NGX_BUILD_CC=$CC
   - sh util/build-without-ssl.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
