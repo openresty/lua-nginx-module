@@ -9,7 +9,7 @@ log_level('debug');
 repeat_each(3);
 
 # NB: the shutdown_error_log block is independent from repeat times
-plan tests => repeat_each() * (blocks() * 2 + 33) + 1;
+plan tests => repeat_each() * (blocks() * 2 + 33);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -1269,6 +1269,8 @@ qr/\[emerg\] \d+#\d+: unexpected "A" in/
 
 
 === TEST 47: cosocket does not exit on worker_shutdown_timeout
+This test must enable master process
+--- SKIP
 --- main_config
 worker_shutdown_timeout 1;
 --- config
@@ -1316,7 +1318,6 @@ if ($ENV{TEST_NGINX_USE_HTTP3}) {
 
 $expr;
 --- timeout: 1.2
---- skip_eval: 2:$ENV{TEST_NGINX_USE_HTTP3}
 
 
 

@@ -193,6 +193,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_http_lua_ssl_ctx_t          *cctx;
     ngx_http_core_srv_conf_t        *cscf;
 
+
     c = ngx_ssl_get_connection(ssl_conn);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -219,6 +220,15 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     }
 
     dd("first time");
+
+#if (nginx_version > 1029000)
+    /* see commit 0373fe5d98c1515640 for more details */
+    rc = ngx_ssl_client_hello_callback(ssl_conn, al, arg);
+
+    if (rc == 0) {
+        return rc;
+    }
+#endif
 
 #if (nginx_version < 1017009)
     ngx_reusable_connection(c, 0);
