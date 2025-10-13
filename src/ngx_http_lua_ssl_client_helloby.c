@@ -193,7 +193,6 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_http_lua_ssl_ctx_t          *cctx;
     ngx_http_core_srv_conf_t        *cscf;
 
-
     c = ngx_ssl_get_connection(ssl_conn);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,

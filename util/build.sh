@@ -67,6 +67,6 @@ time ngx-build $force $version \
           --with-http_dav_module \
           --with-select_module \
           --with-poll_module \
-                $opts \
-                --with-debug
+          $opts \
+          --with-debug
 
