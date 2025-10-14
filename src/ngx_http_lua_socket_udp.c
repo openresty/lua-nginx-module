@@ -1481,7 +1481,6 @@ ngx_http_lua_udp_connect(ngx_http_lua_udp_connection_t *uc, ngx_addr_t *local)
 #endif
 
     if (local != NULL) {
-        fprintf(stderr, "=== have local address\n");
         if (bind(s, local->sockaddr, local->socklen) == -1) {
             ngx_log_error(NGX_LOG_CRIT, &uc->log, ngx_socket_errno,
                           "bind(%V) failed", &local->name);

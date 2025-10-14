@@ -390,9 +390,11 @@ ngx_http_lua_ssl_cert_done(void *data)
 
     ngx_post_event(c->write, &ngx_posted_events);
 
-#if (NGX_HTTP_V3) && OPENSSL_VERSION_NUMBER >= 0x1000205fL
-#   if (NGX_QUIC_OPENSSL_COMPAT)
+#if (HAVE_QUIC_SSL_LUA_YIELD_PATCH && NGX_HTTP_V3)
+#   if OPENSSL_VERSION_NUMBER >= 0x1000205fL
+#       if (NGX_QUIC_OPENSSL_COMPAT)
     ngx_http_lua_resume_quic_ssl_handshake(c);
+#       endif
 #   endif
 #endif
 }

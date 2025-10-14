@@ -2882,6 +2882,8 @@ patches to the standard Nginx core:
 
 <https://openresty.org/en/nginx-ssl-patches.html>
 
+**Note for HTTP/3 (QUIC) users**: When using this directive with HTTP/3 connections, certain yield operations may fail if the QUIC SSL Lua yield patch is not applied to your OpenSSL installation. OpenResty packages include this patch by default, but if you are building lua-nginx-module separately, you may need to apply the patch manually to ensure proper yield/resume functionality for HTTP/3 connections in SSL Lua phases. The patch can be found at: [nginx-1.27.1-quic_ssl_lua_yield.patch](https://github.com/openresty/openresty/blob/master/patches/nginx/1.27.1/nginx-1.27.1-quic_ssl_lua_yield.patch)
+
 This directive was first introduced in the `v0.10.21` release.
 
 [Back to TOC](#directives)
@@ -2898,6 +2900,8 @@ ssl_client_hello_by_lua_file
 Equivalent to [ssl_client_hello_by_lua_block](#ssl_client_hello_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
 
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+**Note for HTTP/3 (QUIC) users**: When using this directive with HTTP/3 connections, certain yield operations may fail if the QUIC SSL Lua yield patch is not applied to your OpenSSL installation. OpenResty packages include this patch by default, but if you are building lua-nginx-module separately, you may need to apply the patch manually to ensure proper yield/resume functionality for HTTP/3 connections in SSL Lua phases. The patch can be found at: [nginx-1.27.1-quic_ssl_lua_yield.patch](https://github.com/openresty/openresty/blob/master/patches/nginx/1.27.1/nginx-1.27.1-quic_ssl_lua_yield.patch)
 
 This directive was first introduced in the `v0.10.21` release.
 
@@ -2992,6 +2996,8 @@ patches to the standard Nginx core:
 
 <https://openresty.org/en/nginx-ssl-patches.html>
 
+**Note for HTTP/3 (QUIC) users**: When using this directive with HTTP/3 connections, certain yield operations may fail if the QUIC SSL Lua yield patch is not applied to your OpenSSL installation. OpenResty packages include this patch by default, but if you are building lua-nginx-module separately, you may need to apply the patch manually to ensure proper yield/resume functionality for HTTP/3 connections in SSL Lua phases. The patch can be found at: [nginx-1.27.1-quic_ssl_lua_yield.patch](https://github.com/openresty/openresty/blob/master/patches/nginx/1.27.1/nginx-1.27.1-quic_ssl_lua_yield.patch)
+
 This directive was first introduced in the `v0.10.0` release.
 
 [Back to TOC](#directives)
@@ -3008,6 +3014,8 @@ ssl_certificate_by_lua_file
 Equivalent to [ssl_certificate_by_lua_block](#ssl_certificate_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
 
 When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+**Note for HTTP/3 (QUIC) users**: When using this directive with HTTP/3 connections, certain yield operations may fail if the QUIC SSL Lua yield patch is not applied to your OpenSSL installation. OpenResty packages include this patch by default, but if you are building lua-nginx-module separately, you may need to apply the patch manually to ensure proper yield/resume functionality for HTTP/3 connections in SSL Lua phases. The patch can be found at: [nginx-1.27.1-quic_ssl_lua_yield.patch](https://github.com/openresty/openresty/blob/master/patches/nginx/1.27.1/nginx-1.27.1-quic_ssl_lua_yield.patch)
 
 This directive was first introduced in the `v0.10.0` release.
 
