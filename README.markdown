@@ -3239,6 +3239,8 @@ Note that, unlike the relations between the [ssl_certificate](https://nginx.org/
 
 Please refer to corresponding test case file and [ngx.ssl.proxysslcert](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslcert.md) for more details.
 
+Note also that, it has the same condition as the [proxy_ssl_certificate](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_ssl_certificate) directive for [proxy_ssl_certificate_by_lua*](#proxy_ssl_certificate_by_lua_block) to work, that is the upstream server should enable verification of client certificates.
+
 This directive requires OpenSSL 1.0.2e or greater.
 
 [Back to TOC](#directives)
