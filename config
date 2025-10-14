@@ -296,6 +296,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl_session_storeby.c \
             $ngx_addon_dir/src/ngx_http_lua_ssl_session_fetchby.c \
             $ngx_addon_dir/src/ngx_http_lua_ssl.c \
+            $ngx_addon_dir/src/ngx_http_lua_proxy_ssl_verifyby.c \
             $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.c \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.c \
             $ngx_addon_dir/src/ngx_http_lua_pipe.c \
@@ -359,6 +360,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_ssl_session_storeby.h \
             $ngx_addon_dir/src/ngx_http_lua_ssl_session_fetchby.h \
             $ngx_addon_dir/src/ngx_http_lua_ssl.h \
+            $ngx_addon_dir/src/ngx_http_lua_proxy_ssl_verifyby.h \
             $ngx_addon_dir/src/ngx_http_lua_log_ringbuf.h \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.h \
             $ngx_addon_dir/src/ngx_http_lua_pipe.h \
