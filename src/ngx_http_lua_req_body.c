@@ -100,6 +100,11 @@ ngx_http_lua_ngx_req_read_body(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
+    if (ctx->waiting_more_body) {
+        return luaL_error(L, "attempt to read request body "
+                          "in multiple threads");
+    }
+
     ngx_http_lua_check_context(L, ctx, NGX_HTTP_LUA_CONTEXT_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE
                                | NGX_HTTP_LUA_CONTEXT_ACCESS

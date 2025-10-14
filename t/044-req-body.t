@@ -1774,3 +1774,24 @@ content length: 5
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 53: call read_body() multiple times
+--- config
+    location = /test {
+        content_by_lua '
+            ngx.req.read_body()
+            ngx.req.read_body()
+            ngx.req.read_body()
+            ngx.say(ngx.var.request_body)
+        ';
+    }
+--- request
+POST /test
+hello, world
+--- response_body
+hello, world
+--- no_error_log
+[error]
+[alert]

@@ -9,7 +9,7 @@ log_level('debug');
 repeat_each(3);
 
 # NB: the shutdown_error_log block is independent from repeat times
-plan tests => repeat_each() * (blocks() * 2 + 33);
+plan tests => repeat_each() * (blocks() * 2 + 35);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -1397,3 +1397,155 @@ If-Match: 1
 --- error_code: 200
 --- response_body eval
 qr/\Ahello\z/
+
+
+
+=== TEST 51: nginx crash when reading request body in two thread
+--- config
+   server_tokens off;
+   location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+        content_by_lua_block {
+            local ip = "127.0.0.1"
+            local port = ngx.var.port
+
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:bind(ip)
+            if not ok then
+                ngx.say("failed to bind", err)
+                return
+            end
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local bytes, err = sock:send("POST /foo HTTP/1.1\r\nHost: localhost\r\nConnection: keepalive\r\nContent-Length: 10000000\r\n")
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+            local body = string.rep("a", 10000000)
+            sock:send(body)
+
+            local reader = sock:receiveuntil("got-the-end")
+            local data, err = reader()
+            if not data then
+                ngx.say("failed to receive response body: ", err)
+                return
+            end
+
+            ngx.say("done")
+        }
+    }
+
+    location /foo {
+        access_by_lua_block {
+            local ngx = ngx
+            local socket = ngx.socket
+
+            local function parent_task()
+                ngx.req.read_body()
+                local tcp = socket.tcp()
+                -- coredump at this line
+                local ok, err = tcp:connect("127.0.0.1", 8090)
+                if not ok then
+                    return
+                end
+                tcp:close()
+            end
+
+            local function child_task()
+                ngx.req.read_body()
+                return
+            end
+
+            local function main()
+                local co = ngx.thread.spawn(child_task)
+                parent_task()
+
+                local ok, err = ngx.thread.wait(co)
+                if not ok then
+                    ngx.log(ngx.ERR, "wait err ", err)
+                end
+            end
+
+            main()
+        }
+
+        content_by_lua_block {
+            ngx.print("got-the-end")
+        }
+    }
+--- log_level: info
+--- request
+GET /t
+--- response_body
+connected: 1
+failed to receive response body: closed
+--- no_error_log
+[error]
+
+
+
+=== TEST 52: nginx crash when reading request body in two thread
+--- config
+   server_tokens off;
+
+    location /t {
+        access_by_lua_block {
+            local ngx = ngx
+            local socket = ngx.socket
+
+            local function parent_task()
+                ngx.req.read_body()
+                local tcp = socket.tcp()
+                -- coredump at this line
+                local ok, err = tcp:connect("127.0.0.1", 8090)
+                if not ok then
+                    return
+                end
+                tcp:close()
+            end
+
+            local function child_task()
+                ngx.req.read_body()
+                return
+            end
+
+            local function main()
+                local co = ngx.thread.spawn(child_task)
+                parent_task()
+
+                local ok, err = ngx.thread.wait(co)
+                if not ok then
+                    ngx.log(ngx.ERR, "wait err ", err)
+                end
+            end
+
+            main()
+        }
+
+        content_by_lua_block {
+            ngx.print("got-the-end")
+        }
+    }
+--- log_level: info
+--- raw_request eval
+my $body_size = 1 * 1024 * 1024; # 10MB
+my $body = "a" x $body_size;
+my $req = "POST /t HTTP/1.1\r\n" .
+          "Host: localhost\r\n" .
+          "Content-Length: $body_size\r\n" .
+          "\r\n" .
+          $body;
+$req;
+--- error_code: 500
+--- response_body_like eval
+qr/500 Internal Server Error/
+--- error_log eval
+qr/attempt to read request body in multiple threads/
