@@ -339,7 +339,8 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "proxy_ssl_verify_by_lua: handler return value: %i, "
-                       "cert verify callback exit code: %d", rc, cctx->exit_code);
+                       "cert verify callback exit code: %d", rc,
+                       cctx->exit_code);
 
         c->log->action = "proxy pass SSL handshaking";
         return cctx->exit_code;
