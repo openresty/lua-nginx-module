@@ -62,7 +62,7 @@ ngx_http_lua_proxy_ssl_verify_set_callback(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-#if (!defined SSL_ERROR_WANT_RETRY_VERIFY \
+#if (!defined SSL_ERROR_WANT_RETRY_VERIFY                                    \
      || OPENSSL_VERSION_NUMBER < 0x30000020L)
 
     ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "OpenSSL too old to support "
@@ -150,7 +150,7 @@ char *
 ngx_http_lua_proxy_ssl_verify_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-#if (!defined SSL_ERROR_WANT_RETRY_VERIFY \
+#if (!defined SSL_ERROR_WANT_RETRY_VERIFY                                    \
      || OPENSSL_VERSION_NUMBER < 0x30000020L)
 
     /* SSL_set_retry_verify() was added in OpenSSL 3.0.2 */
@@ -371,6 +371,7 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
     return SSL_set_retry_verify(ssl_conn);
 
 failed:
+
     if (cctx && cctx->pool) {
         ngx_destroy_pool(cctx->pool);
     }

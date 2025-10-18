@@ -1682,6 +1682,7 @@ no_parent:
                 NGX_ERROR : NGX_HTTP_INTERNAL_SERVER_ERROR;
 
 done:
+
 #ifdef HAVE_PROXY_SSL_PATCH
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY) {
         return NGX_OK;
