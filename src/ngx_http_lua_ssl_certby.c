@@ -392,7 +392,7 @@ ngx_http_lua_ssl_cert_done(void *data)
 
 #if (HAVE_QUIC_SSL_LUA_YIELD_PATCH && NGX_HTTP_V3)
 #   if OPENSSL_VERSION_NUMBER >= 0x1000205fL
-#       if (NGX_QUIC_OPENSSL_COMPAT)
+#       if (NGX_QUIC_OPENSSL_COMPAT || NGX_QUIC_OPENSSL_API)
     ngx_http_lua_resume_quic_ssl_handshake(c);
 #       endif
 #   endif
