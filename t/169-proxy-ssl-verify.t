@@ -1230,7 +1230,7 @@ proxy_ssl_verify_by_lua: cert verify callback aborted
 === TEST 25: cosocket
 --- http_config
     server {
-        listen *:80;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
         server_name test.com;
 
         server_tokens off;
@@ -1279,7 +1279,7 @@ proxy_ssl_verify_by_lua: cert verify callback aborted
                 local sock = ngx.socket.tcp()
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", "80")
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.log(ngx.ERR, "failed to connect: ", err)
                     return
