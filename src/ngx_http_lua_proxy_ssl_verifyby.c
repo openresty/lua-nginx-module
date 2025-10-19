@@ -265,14 +265,14 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 #if defined(LIBRESSL_VERSION_NUMBER)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                  "LibreSSL does not support by proxy_ssl_verify_by_lua*");
+        "LibreSSL does not support by proxy_ssl_verify_by_lua*");
 
     return 1;
 
 #elif defined(OPENSSL_IS_BORINGSSL)
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                  "BoringSSL does not support by proxy_ssl_verify_by_lua*");
+        "BoringSSL does not support by proxy_ssl_verify_by_lua*");
 
     return 1;
 
