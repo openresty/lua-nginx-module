@@ -8,14 +8,19 @@ repeat_each(3);
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
-if ($openssl_version =~ m/built with OpenSSL (0\S*|1\.0\S*|1\.1\.0\S*)/) {
-    plan(skip_all => "too old OpenSSL, need 1.1.1, was $1");
+if ($openssl_version =~ m/built with OpenSSL (\d+)\.(\d+)\.(\d+)/) {
+    my ($major, $minor, $patch) = ($1, $2, $3);
+
+    if ($major < 3 || ($major == 3 && $minor == 0 && $patch < 2)) {
+        plan(skip_all => "too old OpenSSL, need >= 3.0.2, was " .
+            "$major.$minor.$patch");
+    } else {
+        plan tests => repeat_each() * (blocks() * 5 + 19);
+    }
 } elsif ($openssl_version =~ m/running with BoringSSL/) {
     plan(skip_all => "does not support BoringSSL");
-} elsif ($ENV{TEST_NGINX_USE_HTTP3}) {
-    plan tests => repeat_each() * (blocks() * 6 + 6);
 } else {
-    plan tests => repeat_each() * (blocks() * 5 + 10);
+    die "unknown SSL";
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
@@ -1230,7 +1235,7 @@ proxy_ssl_verify_by_lua: cert verify callback aborted
 === TEST 25: cosocket
 --- http_config
     server {
-        listen *:80;
+        listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
         server_name test.com;
 
         server_tokens off;
@@ -1279,7 +1284,7 @@ proxy_ssl_verify_by_lua: cert verify callback aborted
                 local sock = ngx.socket.tcp()
                 sock:settimeout(2000)
 
-                local ok, err = sock:connect("127.0.0.1", "80")
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_RAND_PORT_1)
                 if not ok then
                     ngx.log(ngx.ERR, "failed to connect: ", err)
                     return
@@ -1320,7 +1325,7 @@ simple logging return
 connected: 1
 sent http request: 56 bytes.
 received: HTTP/1.1 201 Created
-received: Server: openresty
+received: Server: nginx
 received: Content-Type: text/plain
 received: Content-Length: 4
 received: Connection: close
