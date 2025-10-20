@@ -14,13 +14,13 @@ if ($openssl_version =~ m/built with OpenSSL (\d+)\.(\d+)\.(\d+)/) {
     if ($major < 3 || ($major == 3 && $minor == 0 && $patch < 2)) {
         plan(skip_all => "too old OpenSSL, need >= 3.0.2, was " .
             "$major.$minor.$patch");
+    } else {
+        plan tests => repeat_each() * (blocks() * 5 + 19);
     }
 } elsif ($openssl_version =~ m/running with BoringSSL/) {
     plan(skip_all => "does not support BoringSSL");
-} elsif ($ENV{TEST_NGINX_USE_HTTP3}) {
-    plan tests => repeat_each() * (blocks() * 6 + 6);
 } else {
-    plan tests => repeat_each() * (blocks() * 5 + 10);
+    die "unknown SSL";
 }
 
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
