@@ -23,8 +23,10 @@
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
 
 
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x30000020uL)
 static void ngx_http_lua_proxy_ssl_verify_done(void *data);
 static void ngx_http_lua_proxy_ssl_verify_aborted(void *data);
+#endif
 static ngx_int_t ngx_http_lua_proxy_ssl_verify_by_chunk(lua_State *L,
     ngx_http_request_t *r);
 
@@ -275,6 +277,12 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
         "BoringSSL does not support by proxy_ssl_verify_by_lua*");
 
     return 1;
+#elif defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x30000020uL)
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+        "OpenSSL(< 3.0.2) does not support by proxy_ssl_verify_by_lua*");
+
+    return 1;
 
 #else
 
@@ -423,6 +431,7 @@ failed:
 }
 
 
+#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x30000020uL)
 static void
 ngx_http_lua_proxy_ssl_verify_done(void *data)
 {
@@ -482,6 +491,7 @@ ngx_http_lua_proxy_ssl_verify_aborted(void *data)
         cctx->pool = NULL;
     }
 }
+#endif
 
 
 static ngx_int_t
