@@ -9,7 +9,7 @@ log_level('debug');
 repeat_each(3);
 
 # NB: the shutdown_error_log block is independent from repeat times
-plan tests => repeat_each() * (blocks() * 2 + 33);
+plan tests => repeat_each() * (blocks() * 2 + 41);
 
 our $HtmlDir = html_dir;
 #warn $html_dir;
@@ -1397,3 +1397,61 @@ If-Match: 1
 --- error_code: 200
 --- response_body eval
 qr/\Ahello\z/
+
+
+
+=== TEST 51: subrequest cycle problem in rewrite_by_lua_file
+--- http_config
+    lua_code_cache off;
+--- config
+    set $main "foo";
+    set $sub "bar";
+    location = /main {
+        rewrite_by_lua_file html/main.lua;
+        echo $main;
+    }
+
+    location = /sub {
+        rewrite_by_lua_file html/sub.lua;
+        echo $sub;
+    }
+--- user_files
+>>> main.lua
+local res = ngx.location.capture("/sub")
+ngx.var.main = "main " .. res.body
+>>> sub.lua
+ngx.var.sub = "sub"
+
+--- pipelined_requests eval
+["GET /sub", "GET /main"]
+--- response_body eval
+["sub\n", "main sub\n\n"]
+--- no_error_log
+[error]
+
+
+
+=== TEST 52: subrequest cycle problem in content_by_lua_file
+--- http_config
+    lua_code_cache off;
+--- config
+    location = /main {
+        content_by_lua_file html/main.lua;
+    }
+
+    location = /sub {
+        content_by_lua_file html/sub.lua;
+    }
+--- user_files
+>>> main.lua
+local res = ngx.location.capture("/sub")
+ngx.print("main " .. res.body)
+>>> sub.lua
+ngx.print("sub")
+
+--- pipelined_requests eval
+["GET /sub", "GET /main"]
+--- response_body eval
+["sub", "main sub"]
+--- no_error_log
+[error]

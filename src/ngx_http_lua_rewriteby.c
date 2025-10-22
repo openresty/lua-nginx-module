@@ -177,6 +177,10 @@ ngx_http_lua_rewrite_handler_inline(ngx_http_request_t *r)
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
     L = ngx_http_lua_get_lua_vm(r, NULL);
 
+    if (!llcf->enable_code_cache) {
+        llcf->rewrite_src_ref = LUA_REFNIL;
+    }
+
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
                                        llcf->rewrite_src.value.data,
@@ -216,6 +220,10 @@ ngx_http_lua_rewrite_handler_file(ngx_http_request_t *r)
     }
 
     L = ngx_http_lua_get_lua_vm(r, NULL);
+
+    if (!llcf->enable_code_cache) {
+        llcf->rewrite_src_ref = LUA_REFNIL;
+    }
 
     /*  load Lua script file (w/ cache)        sp = 1 */
     rc = ngx_http_lua_cache_loadfile(r->connection->log, L, script_path,
