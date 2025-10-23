@@ -8156,7 +8156,7 @@ tcpsock:getfd
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Get the file describer of the current tcp socket.
+Get the file descriptor of the current tcp socket.
 
 This method was first introduced in the `v0.10.29` release.
 
