@@ -3046,3 +3046,141 @@ SSL reused session
 [error]
 [alert]
 --- timeout: 10
+
+
+
+=== TEST 36: sslhandshake (ALPN, h2)
+--- skip_openssl: 8: < 1.1.1
+--- http_config
+    server {
+        listen              $TEST_NGINX_SERVER_SSL_PORT ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        http2 on;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_SSL_PORT)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com", nil, nil, {"h2"})
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+connected: 1
+ssl handshake: cdata
+close: 1 nil
+
+--- log_level: debug
+--- error_log
+SSL ALPN supported by client: h2
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 10
+
+
+
+=== TEST 37: sslhandshake (ALPN, h2, http/1.1, my-proto)
+--- skip_openssl: 8: < 1.1.1
+--- http_config
+    server {
+        listen              $TEST_NGINX_SERVER_SSL_PORT ssl;
+        server_name         test.com;
+        ssl_certificate     $TEST_NGINX_CERT_DIR/cert/test.crt;
+        ssl_certificate_key $TEST_NGINX_CERT_DIR/cert/test.key;
+        ssl_protocols       TLSv1.3;
+
+        http2 on;
+
+        location / {
+            content_by_lua_block {
+                ngx.exit(200)
+            }
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_protocols TLSv1.3;
+
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
+
+            do
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_SSL_PORT)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local session, err = sock:sslhandshake(nil, "test.com", nil, nil, {"h2", "http/1.1", "my-proto"})
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(session))
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        }
+    }
+--- request
+GET /t
+--- response_body_like
+connected: 1
+ssl handshake: cdata
+close: 1 nil
+
+--- log_level: debug
+--- error_log
+SSL ALPN supported by client: h2
+SSL ALPN supported by client: http/1.1
+SSL ALPN supported by client: my-proto
+--- no_error_log
+SSL reused session
+[error]
+[alert]
+--- timeout: 10
