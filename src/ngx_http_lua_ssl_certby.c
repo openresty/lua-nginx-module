@@ -217,7 +217,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
 
         if (cctx->done) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                           "lua_certificate_by_lua: cert cb exit code: %d",
+                           "ssl_certificate_by_lua: cert cb exit code: %d",
                            cctx->exit_code);
 
             dd("lua ssl cert done, finally");
@@ -319,7 +319,7 @@ ngx_http_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
         }
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "lua_certificate_by_lua: handler return value: %i, "
+                       "ssl_certificate_by_lua: handler return value: %i, "
                        "cert cb exit code: %d", rc, cctx->exit_code);
 
         c->log->action = "SSL handshaking";
@@ -413,7 +413,7 @@ ngx_http_lua_ssl_cert_aborted(void *data)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cctx->connection->log, 0,
-                   "lua_certificate_by_lua: cert cb aborted");
+                   "ssl_certificate_by_lua: cert cb aborted");
 
     cctx->aborted = 1;
     cctx->request->connection->ssl = NULL;
