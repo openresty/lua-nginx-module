@@ -1843,23 +1843,28 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 #endif
     }
 
-#if (defined TLSEXT_TYPE_application_layer_protocol_negotiation)
-    if (alpn->len > 255) {
-        *errmsg = "too large ALPN list";
-        return NGX_ERROR;
-    }
+    if (alpn != NULL && alpn->data != NULL) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua ssl ALPN: \"%V\"", alpn);
 
-    if (SSL_set_alpn_protos(c->ssl->connection,
-                            alpn->data,
-                            (unsigned int) (alpn->len)) != 0)
-    {
-        *errmsg = "SSL_set_alpn_protos failed";
-        return NGX_ERROR;
-    }
+#if (defined TLSEXT_TYPE_application_layer_protocol_negotiation)
+        if (alpn->len > 255) {
+            *errmsg = "too large ALPN list";
+            return NGX_ERROR;
+        }
+
+        if (SSL_set_alpn_protos(c->ssl->connection,
+                                alpn->data,
+                                (unsigned int) (alpn->len)) != 0)
+        {
+            *errmsg = "SSL_set_alpn_protos failed";
+            return NGX_ERROR;
+        }
 #else
-    *errmsg = "no ALPN support";
-    return NGX_ERROR;
+        *errmsg = "no ALPN support";
+        return NGX_ERROR;
 #endif
+    }
 
     if (server_name == NULL || server_name->len == 0) {
         u->ssl_name.len = 0;
