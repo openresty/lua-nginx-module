@@ -2183,9 +2183,9 @@ foo: foo%0Axx:bar\r\nfoo: bar%0Dxxx:foo\r\n
 hi
 --- no_error_log
 [alert]
---- error_log
-my Content-Length: 8589934591
-upstream prematurely closed connection while sending to client
+--- error_log eval
+[ "my Content-Length: 8589934591",
+qr/upstream prematurely closed connection while sending to client|upstream prematurely closed connection while reading upstream/]
 
 
 

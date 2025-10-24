@@ -955,6 +955,7 @@ GET /t
 [alert]
 --- error_log
 say failed: nginx output filter error
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 
@@ -983,6 +984,7 @@ GET /t
 [alert]
 --- error_log
 print failed: nginx output filter error
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 
@@ -1042,6 +1044,7 @@ GET /t
 [alert]
 --- error_log
 flush succeeded
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 
@@ -1072,3 +1075,4 @@ GET /t
 eof succeeded
 --- error_log
 eof failed: nginx output filter error
+--- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)

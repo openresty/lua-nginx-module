@@ -977,6 +977,7 @@ GET /t
 msg: 1: received: hello
 --- no_error_log
 [error]
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
 
 
 

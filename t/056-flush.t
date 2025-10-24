@@ -43,6 +43,7 @@ hiya
 [error]
 --- error_log
 lua reuse free buf chain, but reallocate memory because 5 >= 0
+--- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 

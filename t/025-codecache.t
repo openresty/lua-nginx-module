@@ -855,6 +855,7 @@ qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 "decrementing the reference count for Lua VM: 2",
 "decrementing the reference count for Lua VM: 1",
 ]
+--- skip_eval: 11:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 
@@ -1120,6 +1121,7 @@ qq{lua tcp socket keepalive create connection pool for key "127.0.0.1:$ENV{TEST_
 qr/\[alert\] \S+ lua_code_cache is off; this will hurt performance/,
 qr/\blua tcp socket keepalive: free connection pool [0-9A-F]+ for "127.0.0.1:/,
 ]
+--- skip_eval: 7:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 

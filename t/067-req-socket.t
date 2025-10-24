@@ -529,6 +529,7 @@ Expect: 100-Continue
 \breceived: hello\b.*?\breceived:  worl\b
 --- no_error_log
 [error]
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 
 
@@ -1176,6 +1177,7 @@ GET /t
 received: received: abc
 --- no_error_log
 [error]
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
 
 
 

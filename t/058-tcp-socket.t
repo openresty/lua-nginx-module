@@ -3993,6 +3993,7 @@ hello world
 [error]
 --- error_log
 lua tcp socket read any
+--- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
 
 
 
@@ -4147,6 +4148,7 @@ hello world
 [error]
 --- error_log
 lua tcp socket calling receiveany() method to read at most 128 bytes
+--- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
 
 
 
@@ -4222,6 +4224,7 @@ orld
 [error]
 --- error_log
 lua tcp socket calling receiveany() method to read at most 7 bytes
+--- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
 
 
 

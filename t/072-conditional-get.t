@@ -88,3 +88,4 @@ delete thread 1
 say failed: nginx output filter error
 --- no_error_log
 [error]
+--- skip_eval: 5:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)

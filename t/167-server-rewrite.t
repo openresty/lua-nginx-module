@@ -468,6 +468,7 @@ GET /lua
 failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:25):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
+--- skip_eval: 2:$ENV{TEST_NGINX_USE_HUP}
 
 
 

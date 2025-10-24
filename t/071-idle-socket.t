@@ -431,3 +431,4 @@ failed to set keepalive: unread data in buffer
 }
 --- no_error_log
 [error]
+--- skip_eval: 3:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
