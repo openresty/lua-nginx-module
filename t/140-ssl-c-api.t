@@ -9,7 +9,7 @@ my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
 
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
-    plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
+    plan(skip_all => "too old OpenSSL, need >= 1.0.2e, was $1");
 } elsif ($openssl_version =~ m/BoringSSL/) {
     $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
     plan tests => repeat_each() * (blocks() * 6 - 6);
