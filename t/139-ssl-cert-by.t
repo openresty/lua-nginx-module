@@ -12,7 +12,7 @@ if ($openssl_version =~ m/BoringSSL/) {
 }
 
 if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
-    plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
+    plan(skip_all => "too old OpenSSL, need >= 1.0.2e, was $1");
 } else {
     plan tests => repeat_each() * (blocks() * 6 + 4);
 }
