@@ -151,6 +151,7 @@ typedef struct {
 
 #ifdef HAVE_PROXY_SSL_PATCH
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY   0x00010000
+#define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT     0x00020000
 #endif
 
 
@@ -394,6 +395,12 @@ struct ngx_http_lua_loc_conf_s {
 #endif
 
 #ifdef HAVE_PROXY_SSL_PATCH
+    ngx_http_lua_loc_conf_handler_pt       proxy_ssl_cert_handler;
+    ngx_str_t                              proxy_ssl_cert_src;
+    u_char                                *proxy_ssl_cert_src_key;
+    u_char                                *proxy_ssl_cert_chunkname;
+    int                                    proxy_ssl_cert_src_ref;
+
     ngx_http_lua_loc_conf_handler_pt       proxy_ssl_verify_handler;
     ngx_str_t                              proxy_ssl_verify_src;
     u_char                                *proxy_ssl_verify_src_key;
