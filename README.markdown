@@ -3182,7 +3182,7 @@ This directive runs user Lua code when Nginx is about to post-process the SSL se
 
 It is particularly useful to parse upstream server certificate and do some custom operations in pure lua.
 
-The [ngx.ssl.proxysslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslverify.md) Lua modules provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
+The [ngx.ssl.proxysslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslverify.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme)
 library are particularly useful in this context.
 
 Below is a trivial example using the
@@ -3217,7 +3217,7 @@ at the same time:
 ```
 
 See more information in the [ngx.ssl.proxysslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/proxysslverify.md)
-Lua modules' official documentation.
+Lua module's official documentation.
 
 Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
 [ngx.exit](#ngxexit) call with an error code like `ngx.ERROR`.
@@ -3225,8 +3225,6 @@ Uncaught Lua exceptions in the user Lua code immediately abort the current SSL s
 This Lua code execution context *does* support yielding, so Lua APIs that may yield
 (like cosockets, sleeping, and "light threads")
 are enabled in this context
-
-Note, `ngx.ctx` in proxy_ssl_verify_by_lua_block is belonging to upstream connection, not downstream connection, so it's different from `ngx.ctx` in contexts like ssl_certificate_by_lua etc.
 
 This directive requires OpenSSL 3.0.2 or greater.
 
