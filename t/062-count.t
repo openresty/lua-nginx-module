@@ -284,7 +284,7 @@ n = 7
 --- request
 GET /test
 --- response_body
-n = 22
+n = 24
 --- no_error_log
 [error]
 
