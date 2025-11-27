@@ -9,8 +9,9 @@
 #endif
 #include "ddebug.h"
 
-
 #if (NGX_HTTP_SSL)
+
+#include "ngx_http_lua_ssl.h"
 
 
 int ngx_http_lua_ssl_ctx_index = -1;
@@ -43,6 +44,38 @@ ngx_http_lua_ssl_init(ngx_log_t *log)
     }
 
     return NGX_OK;
+}
+
+
+ngx_ssl_conn_t *
+ngx_http_lua_ffi_get_upstream_ssl_pointer(ngx_http_request_t *r,
+    const char **err)
+{
+    ngx_connection_t  *c;
+
+    if (r == NULL) {
+        *err = "bad request";
+        return NULL;
+    }
+
+    if (r->upstream == NULL) {
+        *err = "bad upstream";
+        return NULL;
+    }
+
+    if (r->upstream->peer.connection == NULL) {
+        *err = "bad peer connection";
+        return NULL;
+    }
+
+    c = r->upstream->peer.connection;
+
+    if (c->ssl == NULL || c->ssl->connection == NULL) {
+        *err = "not ssl connection";
+        return NULL;
+    }
+
+    return c->ssl->connection;
 }
 
 
