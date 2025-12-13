@@ -183,6 +183,8 @@ enum {
     NGX_HTTP_LUA_SOCKOPT_TCP_NODELAY,
     NGX_HTTP_LUA_SOCKOPT_SNDBUF,
     NGX_HTTP_LUA_SOCKOPT_RCVBUF,
+    NGX_HTTP_LUA_SOCKOPT_KEEPINTVL,
+    NGX_HTTP_LUA_SOCKOPT_KEEPCNT,
 };
 
 
@@ -6637,6 +6639,16 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
         rc = getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) val, &len);
         break;
 
+#if (NGX_HAVE_KEEPALIVE_TUNABLE)
+    case NGX_HTTP_LUA_SOCKOPT_KEEPINTVL:
+        rc = getsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, (void *) val, &len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_KEEPCNT:
+        rc = getsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, (void *) val, &len);
+        break;
+#endif
+
     case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
         rc = getsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *) val, &len);
         break;
@@ -6694,6 +6706,18 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
         rc = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
                         (const void *) &val, len);
         break;
+
+#if (NGX_HAVE_KEEPALIVE_TUNABLE)
+    case NGX_HTTP_LUA_SOCKOPT_KEEPINTVL:
+        rc = setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
+                        (const void *) &val, len);
+        break;
+
+    case NGX_HTTP_LUA_SOCKOPT_KEEPCNT:
+        rc = setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
+                        (const void *) &val, len);
+        break;
+#endif
 
     case NGX_HTTP_LUA_SOCKOPT_REUSEADDR:
         rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
