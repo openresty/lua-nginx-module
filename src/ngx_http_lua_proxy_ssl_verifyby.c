@@ -10,7 +10,6 @@
 
 #if (NGX_HTTP_SSL)
 
-
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_util.h"
@@ -18,15 +17,13 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_ssl.h"
-
-#ifdef HAVE_PROXY_SSL_PATCH
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
 
 
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x30000020uL)
+#if HAVE_LUA_PROXY_SSL_VERIFY
+
 static void ngx_http_lua_proxy_ssl_verify_done(void *data);
 static void ngx_http_lua_proxy_ssl_verify_aborted(void *data);
-#endif
 static ngx_int_t ngx_http_lua_proxy_ssl_verify_by_chunk(lua_State *L,
     ngx_http_request_t *r);
 
@@ -34,23 +31,6 @@ static ngx_int_t ngx_http_lua_proxy_ssl_verify_by_chunk(lua_State *L,
 ngx_int_t
 ngx_http_lua_proxy_ssl_verify_set_callback(ngx_conf_t *cf)
 {
-
-#if defined(LIBRESSL_VERSION_NUMBER)
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "LibreSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return NGX_ERROR;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "BoringSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return NGX_ERROR;
-
-#else
-
     void                      *plcf;
     ngx_http_upstream_conf_t  *ucf;
     ngx_ssl_t                 *ssl;
@@ -71,24 +51,10 @@ ngx_http_lua_proxy_ssl_verify_set_callback(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-#if (!defined SSL_ERROR_WANT_RETRY_VERIFY                                    \
-     || OPENSSL_VERSION_NUMBER < 0x30000020L)
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "OpenSSL too old to support "
-                  "proxy_ssl_verify_by_lua*");
-
-    return NGX_ERROR;
-
-#else
-
     SSL_CTX_set_cert_verify_callback(ssl->ctx,
                                      ngx_http_lua_proxy_ssl_verify_handler,
                                      NULL);
     return NGX_OK;
-
-#endif
-
-#endif
 }
 
 
@@ -159,34 +125,6 @@ char *
 ngx_http_lua_proxy_ssl_verify_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "LibreSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return NGX_CONF_ERROR;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "BoringSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return NGX_CONF_ERROR;
-
-#else
-
-#if (!defined SSL_ERROR_WANT_RETRY_VERIFY                                    \
-     || OPENSSL_VERSION_NUMBER < 0x30000020L)
-
-    /* SSL_set_retry_verify() was added in OpenSSL 3.0.2 */
-    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                  "at least OpenSSL 3.0.2 required but found "
-                  OPENSSL_VERSION_TEXT);
-
-    return NGX_CONF_ERROR;
-
-#else
-
     size_t                       chunkname_len;
     u_char                      *chunkname;
     u_char                      *cache_key = NULL;
@@ -254,58 +192,12 @@ ngx_http_lua_proxy_ssl_verify_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     llcf->proxy_ssl_verify_src_key = cache_key;
 
     return NGX_CONF_OK;
-
-#endif  /* SSL_ERROR_WANT_RETRY_VERIFY */
-
-#endif
 }
 
 
 int
 ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
-    ngx_connection_t                *c;
-
-    c = ngx_ssl_get_connection(ssl_conn);  /* upstream connection */
-    ngx_ssl_conn_t                  *ssl_conn;
-
-    ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
-                                          SSL_get_ex_data_X509_STORE_CTX_idx());
-    ngx_log_error(NGX_LOG_INFO, c->log, 0,
-        "LibreSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return 1;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-    ngx_connection_t                *c;
-    ngx_ssl_conn_t                  *ssl_conn;
-
-    ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
-                                          SSL_get_ex_data_X509_STORE_CTX_idx());
-    c = ngx_ssl_get_connection(ssl_conn);  /* upstream connection */
-
-
-    ngx_log_error(NGX_LOG_INFO, c->log, 0,
-        "BoringSSL does not support by proxy_ssl_verify_by_lua*");
-
-    return 1;
-#elif defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER < 0x30000020uL)
-
-    ngx_connection_t                *c;
-    ngx_ssl_conn_t                  *ssl_conn;
-
-    ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
-                                          SSL_get_ex_data_X509_STORE_CTX_idx());
-    c = ngx_ssl_get_connection(ssl_conn);  /* upstream connection */
-
-    ngx_log_error(NGX_LOG_INFO, c->log, 0,
-        "OpenSSL(< 3.0.2) does not support by proxy_ssl_verify_by_lua*");
-
-    return 1;
-
-#else
-
     lua_State                       *L;
     ngx_int_t                        rc;
     ngx_connection_t                *c;
@@ -446,12 +338,9 @@ failed:
     }
 
     return 0;  /* verify failure or error */
-
-#endif
 }
 
 
-#if defined(OPENSSL_VERSION_NUMBER) && (OPENSSL_VERSION_NUMBER >= 0x30000020uL)
 static void
 ngx_http_lua_proxy_ssl_verify_done(void *data)
 {
@@ -511,7 +400,6 @@ ngx_http_lua_proxy_ssl_verify_aborted(void *data)
         cctx->pool = NULL;
     }
 }
-#endif
 
 
 static ngx_int_t
@@ -626,21 +514,6 @@ int
 ngx_http_lua_ffi_proxy_ssl_set_verify_result(ngx_http_request_t *r,
     int verify_result, char **err)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
-
-    *err = "LibreSSL does not support this function";
-
-    return NGX_ERROR;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-
-    *err = "BoringSSL does not support this function";
-
-    return NGX_ERROR;
-
-#else
-
-#ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_http_upstream_t             *u;
     ngx_ssl_conn_t                  *ssl_conn;
     ngx_connection_t                *c;
@@ -680,34 +553,12 @@ ngx_http_lua_ffi_proxy_ssl_set_verify_result(ngx_http_request_t *r,
     X509_STORE_CTX_set_error(x509_store, verify_result);
 
     return NGX_OK;
-#else
-    *err = "OpenSSL too old to support this function";
-
-    return NGX_ERROR;
-#endif
-
-#endif
 }
 
 
 int
 ngx_http_lua_ffi_proxy_ssl_get_verify_result(ngx_http_request_t *r, char **err)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
-
-    *err = "LibreSSL does not support this function";
-
-    return NGX_ERROR;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-
-    *err = "BoringSSL does not support this function";
-
-    return NGX_ERROR;
-
-#else
-
-#ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_http_upstream_t             *u;
     ngx_ssl_conn_t                  *ssl_conn;
     ngx_connection_t                *c;
@@ -745,13 +596,6 @@ ngx_http_lua_ffi_proxy_ssl_get_verify_result(ngx_http_request_t *r, char **err)
     x509_store = cctx->x509_store;
 
     return X509_STORE_CTX_get_error(x509_store);
-#else
-    *err = "OpenSSL too old to support this function";
-
-    return NGX_ERROR;
-#endif
-
-#endif
 }
 
 
@@ -767,21 +611,6 @@ ngx_http_lua_ffi_proxy_ssl_free_verify_cert(void *cdata)
 void *
 ngx_http_lua_ffi_proxy_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
-
-    *err = "LibreSSL does not support this function";
-
-    return NGX_ERROR;
-
-#elif defined(OPENSSL_IS_BORINGSSL)
-
-    *err = "BoringSSL does not support this function";
-
-    return NGX_ERROR;
-
-#else
-
-#ifdef SSL_ERROR_WANT_RETRY_VERIFY
     ngx_http_upstream_t             *u;
     ngx_ssl_conn_t                  *ssl_conn;
     ngx_connection_t                *c;
@@ -827,51 +656,7 @@ ngx_http_lua_ffi_proxy_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
     }
 
     return x509;
-#else
-    *err = "OpenSSL too old to support this function";
-
-    return NULL;
-#endif
-
-#endif
 }
 
-
-#else  /* HAVE_PROXY_SSL_PATCH */
-
-
-int
-ngx_http_lua_ffi_proxy_ssl_set_verify_result(ngx_http_request_t *r,
-    int verify_result, char **err)
-{
-    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
-
-    return NGX_ERROR;
-}
-
-
-int
-ngx_http_lua_ffi_proxy_ssl_get_verify_result(ngx_http_request_t *r, char **err)
-{
-    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
-
-    return NGX_ERROR;
-}
-
-
-void
-ngx_http_lua_ffi_proxy_ssl_free_verify_cert(void *cdata)
-{
-}
-
-
-void *
-ngx_http_lua_ffi_proxy_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
-{
-    *err = "Does not have HAVE_PROXY_SSL_PATCH to support this function";
-
-    return NULL;
-}
-
-#endif /* HAVE_PROXY_SSL_PATCH */
+#endif /* HAVE_LUA_PROXY_SSL_VERIFY */
 #endif /* NGX_HTTP_SSL */

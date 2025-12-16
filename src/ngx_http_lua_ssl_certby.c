@@ -38,7 +38,9 @@ static ngx_int_t ngx_http_lua_ssl_cert_by_chunk(lua_State *L,
     ngx_http_request_t *r);
 
 #ifndef OPENSSL_IS_BORINGSSL
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER > 0x101010afL
 static int ngx_http_lua_is_grease_cipher(uint16_t cipher_id);
+#endif
 #endif
 
 
@@ -457,6 +459,7 @@ ngx_http_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
 
 
 #ifndef OPENSSL_IS_BORINGSSL
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER > 0x101010afL
 static int
 ngx_http_lua_is_grease_cipher(uint16_t cipher_id)
 {
@@ -465,6 +468,7 @@ ngx_http_lua_is_grease_cipher(uint16_t cipher_id)
     /* Check if both bytes follow ?A pattern and high nibbles match */
     return (cipher_id & 0x0F0F) == 0x0A0A;
 }
+#endif
 #endif
 
 

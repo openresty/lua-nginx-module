@@ -259,7 +259,7 @@ n = 10
 POST /test
 hello world
 --- response_body
-n = 7
+n = 9
 --- no_error_log
 [error]
 --- skip_eval: 3: $ENV{TEST_NGINX_USE_HTTP3}
@@ -503,7 +503,7 @@ n = 7
                     n = n + 1
                 end
 
-                local ok, err = sock:send("HTTP/1.1 200 OK\\r\\nContent-Length: 6\\r\\n\\r\\nn = "..n.."\\n")
+                local ok, err = sock:send("HTTP/1.1 200 OK\\r\\nContent-Length: 7\\r\\n\\r\\nn = "..n.."\\n")
                 if not ok then
                     ngx.log(ngx.ERR, "failed to send: ", err)
                     return
@@ -513,7 +513,7 @@ n = 7
 --- request
 GET /test
 --- response_body
-n = 8
+n = 10
 --- no_error_log
 [error]
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}

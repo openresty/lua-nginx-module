@@ -31,15 +31,16 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
-
-#ifdef HAVE_PROXY_SSL_PATCH
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
-#endif
 
 #include "ngx_http_lua_headers.h"
 #include "ngx_http_lua_headers_out.h"
 #if !(NGX_WIN32)
 #include "ngx_http_lua_pipe.h"
+#endif
+
+#if !defined(OPENSSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER > 0x101010afL
+#define HAVE_SSL_KEY_LOG 1
 #endif
 
 
@@ -59,11 +60,13 @@ static ngx_int_t ngx_http_lua_merge_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *conf, ngx_http_lua_loc_conf_t *prev);
 static ngx_int_t ngx_http_lua_set_ssl(ngx_conf_t *cf,
     ngx_http_lua_loc_conf_t *llcf);
+#ifdef HAVE_SSL_KEY_LOG
 static void key_log_callback(const ngx_ssl_conn_t *ssl_conn,
     const char *line);
 static void ngx_http_lua_ssl_cleanup_key_log(void *data);
 static ngx_int_t ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl,
     ngx_str_t *file);
+#endif
 #if (nginx_version >= 1019004)
 static char *ngx_http_lua_ssl_conf_command_check(ngx_conf_t *cf, void *post,
     void *data);
@@ -665,7 +668,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_ssl_sess_fetch_handler_file },
 
-#ifdef HAVE_PROXY_SSL_PATCH
+#if HAVE_LUA_PROXY_SSL_VERIFY
     /* same context as proxy_pass directive */
     { ngx_string("proxy_ssl_verify_by_lua_block"),
       NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
@@ -1611,7 +1614,7 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                              NULL);
 #endif
 
-#ifdef HAVE_PROXY_SSL_PATCH
+#if HAVE_LUA_PROXY_SSL_VERIFY
     if (conf->proxy_ssl_verify_src.len == 0) {
         conf->proxy_ssl_verify_src = prev->proxy_ssl_verify_src;
         conf->proxy_ssl_verify_handler = prev->proxy_ssl_verify_handler;
@@ -1795,11 +1798,13 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
         return NGX_ERROR;
     }
 
+#ifdef HAVE_SSL_KEY_LOG
     if (ngx_http_lua_ssl_key_log(cf, llcf->ssl, &llcf->ssl_key_log)
         != NGX_OK)
     {
         return NGX_ERROR;
     }
+#endif
 
 #if (nginx_version >= 1019004)
     if (ngx_ssl_conf_commands(cf, llcf->ssl, llcf->ssl_conf_commands)
@@ -1813,6 +1818,7 @@ ngx_http_lua_set_ssl(ngx_conf_t *cf, ngx_http_lua_loc_conf_t *llcf)
 }
 
 
+#ifdef HAVE_SSL_KEY_LOG
 static void
 key_log_callback(const ngx_ssl_conn_t *ssl_conn, const char *line)
 {
@@ -1906,6 +1912,7 @@ ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
 
     return NGX_OK;
 }
+#endif
 
 
 #if (nginx_version >= 1019004)
