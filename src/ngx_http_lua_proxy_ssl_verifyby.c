@@ -272,7 +272,7 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
 
     ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
                                           SSL_get_ex_data_X509_STORE_CTX_idx());
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+    ngx_log_error(NGX_LOG_INFO, c->log, 0,
         "LibreSSL does not support by proxy_ssl_verify_by_lua*");
 
     return 1;
@@ -286,7 +286,7 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
     c = ngx_ssl_get_connection(ssl_conn);  /* upstream connection */
 
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+    ngx_log_error(NGX_LOG_INFO, c->log, 0,
         "BoringSSL does not support by proxy_ssl_verify_by_lua*");
 
     return 1;
@@ -299,7 +299,7 @@ ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
                                           SSL_get_ex_data_X509_STORE_CTX_idx());
     c = ngx_ssl_get_connection(ssl_conn);  /* upstream connection */
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+    ngx_log_error(NGX_LOG_INFO, c->log, 0,
         "OpenSSL(< 3.0.2) does not support by proxy_ssl_verify_by_lua*");
 
     return 1;

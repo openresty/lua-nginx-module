@@ -864,7 +864,11 @@ ngx_http_lua_ffi_req_shared_ssl_ciphers(ngx_http_request_t *r,
     *err = "BoringSSL is not supported for SSL cipher operations";
     return NGX_ERROR;
 
+#elif OPENSSL_VERSION_NUMBER < 0x101010afL
+    *err = "OpenSSL < 1.1.1a is not supported for SSL cipher operations";
+    return NGX_ERROR;
 #else
+
     ngx_ssl_conn_t         *ssl_conn;
     STACK_OF(SSL_CIPHER)   *sk, *ck;
     int                     sn, cn, i, n;
