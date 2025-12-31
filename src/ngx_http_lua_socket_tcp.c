@@ -1674,6 +1674,42 @@ ngx_http_lua_socket_tcp_check_busy(ngx_http_request_t *r,
 
 
 int
+ngx_http_lua_socket_tcp_get_ssl_session(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t **sess,
+    const char **errmsg)
+{
+    ngx_connection_t                      *c;
+    ngx_ssl_session_t                     *ssl_session;
+
+    *sess = NULL;
+    if (u == NULL
+        || u->peer.connection == NULL
+        || (u->read_closed && u->write_closed))
+    {
+        *errmsg = "closed";
+        return NGX_ERROR;
+    }
+
+    c = u->peer.connection;
+    ssl_session = ngx_ssl_get_session(c);
+    if (ssl_session == NULL) {
+        *errmsg = "no session";
+        return NGX_ERROR;
+    }
+
+    if (!SSL_SESSION_is_resumable(ssl_session)) {
+        ngx_ssl_free_session(ssl_session);
+        *errmsg = "not resumable";
+        return NGX_ERROR;
+    }
+
+    *sess = ssl_session;
+
+    return NGX_OK;
+}
+
+
+int
 ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t *sess,
     int enable_session_reuse, ngx_str_t *server_name, int verify,

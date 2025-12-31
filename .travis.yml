@@ -30,7 +30,6 @@ addons:
       - wget
       - libbrotli1
       - lsb-release
-      - wget
       - gnupg
       - ca-certificates
 
