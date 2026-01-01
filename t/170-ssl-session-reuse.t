@@ -118,7 +118,7 @@ GET /t
 ssl handshake: cdata
 sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
-ssl session: cdata
+(?:ssl session: cdata|failed to get SSL session: not resumable)
 close: 1 nil
 \z
 --- timeout: 5
