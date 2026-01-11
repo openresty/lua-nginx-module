@@ -1491,6 +1491,61 @@ switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.con
 
 This directive requires the [https://github.com/simplresty/ngx_devel_kit ngx_devel_kit] module.
 
+== precontent_by_lua_block ==
+
+'''syntax:''' ''precontent_by_lua_block { lua-script }''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''pre-content tail''
+
+Acts as a precontent phase handler and executes Lua code string specified in <code>{ <lua-script }</code> for every request.
+The Lua code may make [[#Nginx API for Lua|API calls]] and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
+
+Note that this handler always runs *after* the standard [[HttpMirrorModule]] and [[HttpTryFilesModule]]. For example:
+
+<geshi lang="nginx">
+    location /images/ {
+        try_files $uri /images/default.gif;
+        precontent_by_lua_block {
+            ngx.log(ngx.NOTICE, "file found")
+        }
+    }
+
+    location = /images/default.gif {
+        expires 30s;
+        precontent_by_lua_block {
+            ngx.log(ngx.NOTICE, "file not found, use default.gif instead")
+        }
+    }
+</geshi>
+
+That is, if a request for /images/foo.jpg comes in and the file does not exist, the request will be internally redirected to /images/default.gif before [[#precontent_by_lua_block|precontent_by_lua_block]], and then the [[#precontent_by_lua_block|precontent_by_lua_block]] in new location will run and log "file not found, use default.gif instead".
+
+You can use [[#precontent_by_lua_block|precontent_by_lua_block]] to perform some preparatory functions after the access phase handler but before the proxy or other content handler. Especially some functions that cannot be performed in [[#balancer_by_lua_block|balancer_by_lua_block]].
+
+You can use the [[#precontent_by_lua_no_postpone|precontent_by_lua_no_postpone]] directive to control when to run this handler inside the "precontent" request-processing phase of Nginx.
+
+== precontent_by_lua_file ==
+
+'''syntax:''' ''precontent_by_lua_file <path-to-lua-script-file>''
+
+'''context:''' ''http, server, location, location if''
+
+'''phase:''' ''precontent tail''
+
+Equivalent to [[#precontent_by_lua_block|precontent_by_lua_block]], except that the file specified by <code><path-to-lua-script-file></code> contains the Lua code, or, as from the <code>v0.5.0rc32</code> release, the [[#LuaJIT bytecode support|LuaJIT bytecode]] to be executed.
+
+Nginx variables can be used in the <code><path-to-lua-script-file></code> string to provide flexibility. This however carries some risks and is not ordinarily recommended.
+
+When a relative path like <code>foo/bar.lua</code> is given, they will be turned into the absolute path relative to the <code>server prefix</code> path determined by the <code>-p PATH</code> command-line option while starting the Nginx server.
+
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached
+and the Nginx config must be reloaded each time the Lua source file is modified.
+The Lua code cache can be temporarily disabled during development by switching [[#lua_code_cache|lua_code_cache]] <code>off</code> in <code>nginx.conf</code> to avoid repeatedly reloading Nginx.
+
+Nginx variables are supported in the file path for dynamic dispatch just as in [[#content_by_lua_file|content_by_lua_file]].
+
 == content_by_lua ==
 
 '''syntax:''' ''content_by_lua <lua-script-str>''
@@ -3016,6 +3071,16 @@ This directive was first introduced in the <code>v0.5.0rc29</code> release.
 Controls whether or not to disable postponing [[#access_by_lua|access_by_lua*]] directives to run at the end of the <code>access</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>access</code> phase.
 
 This directive was first introduced in the <code>v0.9.20</code> release.
+
+== precontent_by_lua_no_postpone ==
+
+'''syntax:''' ''precontent_by_lua_no_postpone on|off''
+
+'''default:''' ''precontent_by_lua_no_postpone off''
+
+'''context:''' ''http''
+
+Controls whether or not to disable postponing [[#precontent_by_lua_block|precontent_by_lua_block*]] directives to run at the end of the <code>precontent</code> request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the <code>precontent</code> phase.
 
 == lua_transform_underscores_in_response_headers ==
 

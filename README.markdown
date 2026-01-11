@@ -1140,6 +1140,8 @@ Directives
 * [set_by_lua](#set_by_lua)
 * [set_by_lua_block](#set_by_lua_block)
 * [set_by_lua_file](#set_by_lua_file)
+* [precontent_by_lua_block](#precontent_by_lua_block)
+* [precontent_by_lua_file](#precontent_by_lua_file)
 * [content_by_lua](#content_by_lua)
 * [content_by_lua_block](#content_by_lua_block)
 * [content_by_lua_file](#content_by_lua_file)
@@ -1196,6 +1198,7 @@ Directives
 * [lua_http10_buffering](#lua_http10_buffering)
 * [rewrite_by_lua_no_postpone](#rewrite_by_lua_no_postpone)
 * [access_by_lua_no_postpone](#access_by_lua_no_postpone)
+* [precontent_by_lua_no_postpone](#precontent_by_lua_no_postpone)
 * [lua_transform_underscores_in_response_headers](#lua_transform_underscores_in_response_headers)
 * [lua_check_client_abort](#lua_check_client_abort)
 * [lua_max_pending_timers](#lua_max_pending_timers)
@@ -1839,6 +1842,70 @@ The Lua code cache can be temporarily disabled during development by
 switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
 This directive requires the [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit) module.
+
+[Back to TOC](#directives)
+
+precontent_by_lua_block
+--------------------
+
+**syntax:** *precontent_by_lua_block { lua-script }*
+
+**context:** *http, server, location, location if*
+
+**phase:** *precontent tail*
+
+Acts as a precontent phase handler and executes Lua code string specified in `{ <lua-script }` for every request.
+The Lua code may make [API calls](#nginx-api-for-lua) and is executed as a new spawned coroutine in an independent global environment (i.e. a sandbox).
+
+Note that this handler always runs *after* the standard [ngx_http_mirror_module](https://nginx.org/en/docs/http/ngx_http_mirror_module.html) and [ngx_http_try_files_module](https://nginx.org/en/docs/http/ngx_http_core_module.html#try_files). For example:
+
+```nginx
+ location /images/ {
+     try_files $uri /images/default.gif;
+     precontent_by_lua_block {
+        ngx.log(ngx.NOTICE, "file found")
+     }
+ }
+
+ location = /images/default.gif {
+     expires 30s;
+     precontent_by_lua_block {
+        ngx.log(ngx.NOTICE, "file not found, use default.gif instead")
+     }
+ }
+```
+
+That is, if a request for /images/foo.jpg comes in and the file does not exist, the request will be internally redirected to /images/default.gif before [precontent_by_lua_block](#precontent_by_lua_block), and then the [precontent_by_lua_block](#precontent_by_lua_block) in new location will run and log "file not found, use default.gif instead".
+
+You can use [precontent_by_lua_block](#precontent_by_lua_block) to perform some preparatory functions after the access phase handler but before the proxy or other content handler. Especially some functions that cannot be performed in [balancer_by_lua_block](#balancer_by_lua_block).
+
+you can use the [precontent_by_lua_no_postpone](#precontent_by_lua_no_postpone) directive to control when to run this handler inside the "precontent" request-processing phase
+of Nginx.
+
+[Back to TOC](#directives)
+
+precontent_by_lua_file
+-------------------
+
+**syntax:** *precontent_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *http, server, location, location if*
+
+**phase:** *precontent tail*
+
+Equivalent to [precontent_by_lua_block](#precontent_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
+
+Nginx variables can be used in the `<path-to-lua-script-file>` string to provide flexibility. This however carries some risks and is not ordinarily recommended.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+When the Lua code cache is turned on (by default), the user code is loaded once at the first request and cached
+and the Nginx config must be reloaded each time the Lua source file is modified.
+The Lua code cache can be temporarily disabled during development by switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid repeatedly reloading Nginx.
+
+Nginx variables are supported in the file path for dynamic dispatch just as in [content_by_lua_file](#content_by_lua_file).
+
+But be very careful about malicious user inputs and always carefully validate or filter out the user-supplied path components.
 
 [Back to TOC](#directives)
 
@@ -2710,7 +2777,7 @@ directive.
 This Lua code execution context does not support yielding, so Lua APIs that may yield
 (like cosockets and "light threads") are disabled in this context. One can usually work
 around this limitation by doing such operations in an earlier phase handler (like
-[access_by_lua*](#access_by_lua)) and passing along the result into this context
+[precontent_by_lua*](#precontent_by_lua_block)) and passing along the result into this context
 via the [ngx.ctx](#ngxctx) table.
 
 This directive was first introduced in the `v0.10.0` release.
@@ -3644,6 +3711,19 @@ access_by_lua_no_postpone
 Controls whether or not to disable postponing [access_by_lua*](#access_by_lua) directives to run at the end of the `access` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `access` phase.
 
 This directive was first introduced in the `v0.9.20` release.
+
+[Back to TOC](#directives)
+
+precontent_by_lua_no_postpone
+-------------------------
+
+**syntax:** *precontent_by_lua_no_postpone on|off*
+
+**default:** *precontent_by_lua_no_postpone off*
+
+**context:** *http*
+
+Controls whether or not to disable postponing [precontent_by_lua*](#precontent_by_lua_block) directives to run at the end of the `precontent` request-processing phase. By default, this directive is turned off and the Lua code is postponed to run at the end of the `precontent` phase.
 
 [Back to TOC](#directives)
 
