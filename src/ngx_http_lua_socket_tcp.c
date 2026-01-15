@@ -2130,6 +2130,62 @@ ngx_http_lua_ffi_ssl_free_session(ngx_ssl_session_t *sess)
 }
 
 
+int
+ngx_http_lua_ffi_socket_tcp_get_ssl_pointer(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_conn_t **pssl,
+    const char **errmsg)
+{
+    ngx_connection_t                      *c;
+
+    *pssl = NULL;
+    if (u == NULL
+        || u->peer.connection == NULL
+        || (u->read_closed && u->write_closed))
+    {
+        *errmsg = "closed";
+        return NGX_ERROR;
+    }
+
+    c = u->peer.connection;
+    if (c == NULL || c->ssl == NULL || c->ssl->connection == NULL) {
+        *errmsg = "no ssl connection";
+        return NGX_ERROR;
+    }
+
+    *pssl = c->ssl->connection;
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_get_ssl_ctx(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, SSL_CTX **pctx,
+    const char **errmsg)
+{
+    ngx_connection_t                      *c;
+
+    *pctx = NULL;
+    if (u == NULL
+        || u->peer.connection == NULL
+        || (u->read_closed && u->write_closed))
+    {
+        *errmsg = "closed";
+        return NGX_ERROR;
+    }
+
+    c = u->peer.connection;
+    if (c == NULL || c->ssl == NULL || c->ssl->session_ctx == NULL) {
+        *errmsg = "no ssl context";
+        return NGX_ERROR;
+    }
+
+    *pctx = c->ssl->session_ctx;
+
+    return NGX_OK;
+}
+
+
 #endif  /* NGX_HTTP_SSL */
 
 
