@@ -460,7 +460,7 @@ worker: 5
 --- request
 GET /test
 --- response_body
-n = 18
+n = 20
 --- no_error_log
 [error]
 
