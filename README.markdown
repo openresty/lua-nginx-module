@@ -3899,6 +3899,9 @@ Nginx API for Lua
 * [tcpsock:setoption](#tcpsocksetoption)
 * [tcpsock:setkeepalive](#tcpsocksetkeepalive)
 * [tcpsock:getreusedtimes](#tcpsockgetreusedtimes)
+* [tcpsock:getsslpointer](#tcpsockgetsslpointer)
+* [tcpsock:getsslctx](#tcpsockgetsslctx)
+* [tcpsock:getsslsession](#tcpsockgetsslsession)
 * [ngx.socket.connect](#ngxsocketconnect)
 * [ngx.get_phase](#ngxget_phase)
 * [ngx.thread.spawn](#ngxthreadspawn)
@@ -7962,6 +7965,9 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [receiveuntil](#tcpsockreceiveuntil)
 * [setkeepalive](#tcpsocksetkeepalive)
 * [getreusedtimes](#tcpsockgetreusedtimes)
+* [tcpsock:getsslpointer](#tcpsockgetsslpointer)
+* [tcpsock:getsslctx](#tcpsockgetsslctx)
+* [tcpsock:getsslsession](#tcpsockgetsslsession)
 
 It is intended to be compatible with the TCP API of the [LuaSocket](http://w3.impa.br/~diego/software/luasocket/tcp.html) library but is 100% nonblocking out of the box. Also, we introduce some new APIs to provide more functionalities.
 
@@ -8230,6 +8236,51 @@ For connections that have already done SSL/TLS handshake, this method returns
 immediately.
 
 This method was first introduced in the `v0.9.11` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:getsslpointer
+--------------------
+
+**syntax:** *sslpointer, err = tcpsock:getsslpointer()*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Retrieves the underlying SSL pointer (SSL_CTX structure) of the cosocket connection.
+
+This method provides access to the raw OpenSSL SSL pointer, which is useful when third-party modules or FFI code need to perform low-level SSL operations directly on the connection. This enables cross-module operations and advanced SSL manipulations that are not exposed through the standard cosocket API.
+
+On success, returns the SSL pointer as a light userdata that can be passed to C functions via FFI. On failure, returns `nil` and a string describing the error.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:getsslctx
+--------------------
+
+**syntax:** *sslctx, err = tcpsock:getsslctx()*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Retrieves the underlying SSL pointer (SSL_CTX structure) of the cosocket connection.
+
+This method provides access to the raw OpenSSL SSL pointer, which is useful when third-party modules or FFI code need to perform low-level SSL operations directly on the connection. This enables cross-module operations and advanced SSL manipulations that are not exposed through the standard cosocket API.
+
+On success, returns the SSL pointer as a light userdata that can be passed to C functions via FFI. On failure, returns `nil` and a string describing the error.
+
+[Back to TOC](#nginx-api-for-lua)
+
+tcpsock:getsslsession
+-----------------------
+
+**syntax:** *session, err = tcpsock:getsslsession()*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Retrieves the SSL session object from the cosocket connection for session resumption purposes.
+
+While `tcpsock:sslhandshake()` also returns an SSL session, the server may not have sent the session resumption ticket to the client yet at that point, making the session non-reusable. By calling `getsslsession` after the request completes, you can obtain an SSL session that is more likely to be reusable for future connections. This session can then be passed to subsequent `sslhandshake()` calls to enable SSL session resumption, which reduces handshake overhead and improves connection performance.
+
+On success, returns the SSL session as a light userdata. On failure, returns `nil` and a string describing the error.
 
 [Back to TOC](#nginx-api-for-lua)
 
