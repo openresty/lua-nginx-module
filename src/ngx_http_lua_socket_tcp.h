@@ -21,6 +21,13 @@
 #define NGX_HTTP_LUA_SOCKET_FT_CLIENTABORT   0x0080
 #define NGX_HTTP_LUA_SOCKET_FT_SSL           0x0100
 
+/* max cosocket host length, just for logging,
+ * length greater are omitted
+ */
+#ifndef COSOCKET_HOST_LEN
+#define COSOCKET_HOST_LEN  32
+#endif
+
 
 typedef struct ngx_http_lua_socket_tcp_upstream_s
         ngx_http_lua_socket_tcp_upstream_t;
@@ -117,6 +124,11 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *write_co_ctx;
 
     ngx_uint_t                       reused;
+    struct sockaddr_storage          sockaddr;
+    socklen_t                        socklen;
+
+    ngx_log_t                        log;
+    char                             host[COSOCKET_HOST_LEN];
 
 #if (NGX_HTTP_SSL)
     ngx_str_t                        ssl_name;
@@ -174,6 +186,7 @@ typedef struct {
 
     socklen_t                        socklen;
     struct sockaddr_storage          sockaddr;
+    char                             host[COSOCKET_HOST_LEN];
 
     ngx_uint_t                       reused;
 

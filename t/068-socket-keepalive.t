@@ -2031,7 +2031,7 @@ continue to handle cosocket
 --- request
 GET /t
 --- error_log
-lua tcp socket connect timed out, when connecting to
+lua tcp socket connect timed out, upstream: 127.0.0.2:12345(127.0.0.2)
 --- response_body
 timeout
 ok
@@ -2651,7 +2651,7 @@ connected in uthread
 ok
 --- error_log
 queue connect operation for connection pool "test"
-lua tcp socket connect timed out, when connecting to
+lua tcp socket connect timed out, upstream: 127.0.0.2:12345(127.0.0.2)
 
 
 

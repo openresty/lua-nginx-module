@@ -124,6 +124,46 @@ ngx_http_lua_inject_socket_udp_api(ngx_log_t *log, lua_State *L)
 }
 
 
+static u_char *
+ngx_http_lua_socket_udp_log_error(ngx_log_t *log, u_char *buf, size_t len)
+{
+    u_char                 *p;
+    ngx_http_request_t     *r;
+
+    ngx_http_lua_udp_connection_t       *uc;
+    ngx_http_lua_socket_udp_upstream_t  *u;
+
+    u = log->data;
+    if (u->port == 0) {
+        p = ngx_snprintf(buf, len, ", upstream: %V", &u->host);
+
+    } else {
+        p = ngx_snprintf(buf, len, ", upstream: %V:%d", &u->host, u->port);
+    }
+
+    len -= p - buf;
+    uc = &u->udp_connection;
+    if (uc->sockaddr != NULL) {
+        int    addr_text_len;
+        u_char addr_text[NGX_UNIX_ADDRSTRLEN];
+
+        buf = p;
+        addr_text_len = ngx_sock_ntop(uc->sockaddr, uc->socklen,
+                                      addr_text, NGX_UNIX_ADDRSTRLEN, 0);
+        p = ngx_snprintf(buf, len, "(%*s)", addr_text_len, addr_text);
+
+        len -= p - buf;
+    }
+
+    r = u->request;
+    if (r != NULL) {
+        return r->connection->log->handler(r->connection->log, p, len);
+    }
+
+    return p;
+}
+
+
 static int
 ngx_http_lua_socket_udp(lua_State *L)
 {
@@ -284,6 +324,11 @@ ngx_http_lua_socket_udp_setpeername(lua_State *L)
     uc = &u->udp_connection;
 
     uc->log = *r->connection->log;
+    uc->log.data = u;
+    uc->log.handler = ngx_http_lua_socket_udp_log_error;
+
+    u->host = host;
+    u->port = port;
 
     dd("lua peer connection log: %p", &uc->log);
 
@@ -670,7 +715,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
     c->read->resolver = 0;
 
     c->pool = r->pool;
-    c->log = r->connection->log;
+    c->log = &uc->log;
     c->read->log = c->log;
     c->write->log = c->log;
 
@@ -819,7 +864,14 @@ ngx_http_lua_socket_udp_send(lua_State *L)
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_t  *log;
+
+            log = r->connection->log;
+            if (u != NULL && u->udp_connection.connection != NULL) {
+                log = &u->udp_connection.log;
+            }
+
+            ngx_log_error(NGX_LOG_ERR, log, 0,
                           "attempt to send data on a closed socket: u:%p, c:%p",
                           u, u ? u->udp_connection.connection : NULL);
         }
@@ -997,7 +1049,14 @@ ngx_http_lua_socket_udp_receive(lua_State *L)
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_t  *log;
+
+            log = r->connection->log;
+            if (u != NULL && u->udp_connection.connection != NULL) {
+                log = &u->udp_connection.log;
+            }
+
+            ngx_log_error(NGX_LOG_ERR, log, 0,
                           "attempt to receive data on a closed socket: u:%p, "
                           "c:%p", u, u ? u->udp_connection.connection : NULL);
         }
@@ -1265,7 +1324,7 @@ ngx_http_lua_socket_udp_read_handler(ngx_http_request_t *r,
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_error(NGX_LOG_ERR, &u->udp_connection.log, 0,
                           "lua udp socket read timed out");
         }
 

@@ -48,6 +48,8 @@ struct ngx_http_lua_socket_udp_upstream_s {
 
     ngx_http_upstream_resolved_t    *resolved;
 
+    ngx_str_t                        host;
+    in_port_t                        port;
     ngx_uint_t                       ft_type;
     ngx_err_t                        socket_errno;
     size_t                           received; /* for receive */

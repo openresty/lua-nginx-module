@@ -428,6 +428,46 @@ ngx_http_lua_inject_req_socket_api(lua_State *L)
 }
 
 
+static u_char *
+ngx_http_lua_socket_tcp_log_error(ngx_log_t *log, u_char *buf, size_t len)
+{
+    u_char                 *p;
+    in_port_t               port;
+    ngx_http_request_t     *r;
+
+    ngx_http_lua_socket_tcp_upstream_t  *u;
+
+    u = log->data;
+    port = ngx_inet_get_port((struct sockaddr *) &u->sockaddr);
+    if (port == 0) {
+        p = ngx_snprintf(buf, len, ", upstream: %s", u->host);
+
+    } else {
+        p = ngx_snprintf(buf, len, ", upstream: %s:%ud",
+                         u->host, port);
+    }
+
+    len -= p - buf;
+    if (u->peer.sockaddr != NULL) {
+        int    addr_text_len;
+        u_char addr_text[NGX_UNIX_ADDRSTRLEN];
+
+        buf = p;
+        addr_text_len = ngx_sock_ntop(u->peer.sockaddr, u->peer.socklen,
+                                      addr_text, NGX_UNIX_ADDRSTRLEN, 0);
+        p = ngx_snprintf(buf, len, "(%*s)", addr_text_len, addr_text);
+        len -= p - buf;
+    }
+
+    r = u->request;
+    if (r != NULL) {
+        return r->connection->log->handler(r->connection->log, p, len);
+    }
+
+    return p;
+}
+
+
 static int
 ngx_http_lua_socket_tcp(lua_State *L)
 {
@@ -685,6 +725,9 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
     url.default_port = port;
     url.no_resolve = 1;
 
+    u->log.data = u;
+    u->log.handler = ngx_http_lua_socket_tcp_log_error;
+
     coctx = ctx->cur_co_ctx;
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
@@ -723,11 +766,27 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
         u->resolved->sockaddr = url.addrs[0].sockaddr;
         u->resolved->socklen = url.addrs[0].socklen;
         u->resolved->naddrs = 1;
-        u->resolved->host = url.addrs[0].name;
+        if (url.family == AF_UNIX) {
+            u->resolved->host = url.addrs[0].name;
+
+        } else {
+            u->resolved->host = url.host;
+        }
 
     } else {
-        u->resolved->host = host;
+        u->resolved->host = url.host;
         u->resolved->port = url.default_port;
+    }
+
+    if (u->resolved->host.len < sizeof(u->host)) {
+        ngx_memcpy(u->host, u->resolved->host.data, u->resolved->host.len);
+
+    } else {
+        ngx_memcpy(u->host, u->resolved->host.data, sizeof(u->host) - 4);
+        u->host[sizeof(u->host) - 4] = '.';
+        u->host[sizeof(u->host) - 3] = '.';
+        u->host[sizeof(u->host) - 2] = '.';
+        u->host[sizeof(u->host) - 1] = '\0';
     }
 
     if (u->resolved->sockaddr) {
@@ -1161,10 +1220,22 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
     u->request = r; /* set the controlling request */
 
     u->conf = llcf;
+    if (len < sizeof(u->host)) {
+        ngx_memcpy(u->host, p, len);
+        u->host[len] = '\0';
 
+    } else {
+        ngx_memcpy(u->host, p, sizeof(u->host) - 4);
+        u->host[sizeof(u->host) - 4] = '.';
+        u->host[sizeof(u->host) - 3] = '.';
+        u->host[sizeof(u->host) - 2] = '.';
+        u->host[sizeof(u->host) - 1] = '\0';
+    }
+
+    u->log = *r->connection->log;
     pc = &u->peer;
-
-    pc->log = r->connection->log;
+    pc->sockaddr = (struct sockaddr *) &u->sockaddr;
+    pc->log = &u->log;
     pc->log_error = NGX_ERROR_ERR;
 
     dd("lua peer connection log: %p", pc->log);
@@ -1336,10 +1407,7 @@ ngx_http_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     socklen = ur->addrs[i].socklen;
 
-    sockaddr = ngx_palloc(r->pool, socklen);
-    if (sockaddr == NULL) {
-        goto nomem;
-    }
+    sockaddr = (struct sockaddr *) &u->sockaddr;
 
     ngx_memcpy(sockaddr, ur->addrs[i].sockaddr, socklen);
 
@@ -1476,6 +1544,7 @@ ngx_http_lua_socket_resolve_retval_handler(ngx_http_request_t *r,
         pc->sockaddr = ur->sockaddr;
         pc->socklen = ur->socklen;
         pc->name = &ur->host;
+        ngx_memcpy(&u->sockaddr, ur->sockaddr, ur->socklen);
 
     } else {
         lua_pushnil(L);
@@ -2011,7 +2080,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
 
                 llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
                 if (llcf->log_socket_errors) {
-                    ngx_log_error(NGX_LOG_ERR, dc->log, 0, "lua ssl "
+                    ngx_log_error(NGX_LOG_ERR, u->peer.log, 0, "lua ssl "
                                   "certificate verify error: (%d: %s)",
                                   rc, u->error_ret);
                 }
@@ -2028,7 +2097,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
 
                 llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
                 if (llcf->log_socket_errors) {
-                    ngx_log_error(NGX_LOG_ERR, dc->log, 0, "lua ssl "
+                    ngx_log_error(NGX_LOG_ERR, u->peer.log, 0, "lua ssl "
                                   "certificate does not match host \"%V\"",
                                   &u->ssl_name);
                 }
@@ -2409,7 +2478,14 @@ ngx_http_lua_socket_tcp_receiveany(lua_State *L)
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_t  *log;
+
+            log = r->connection->log;
+            if (u != NULL && u->peer.connection != NULL) {
+                log = u->peer.log;
+            }
+
+            ngx_log_error(NGX_LOG_ERR, log, 0,
                           "attempt to receive data on a closed socket: u:%p, "
                           "c:%p, ft:%d eof:%d",
                           u, u ? u->peer.connection : NULL,
@@ -2485,7 +2561,14 @@ ngx_http_lua_socket_tcp_receive(lua_State *L)
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_t  *log;
+
+            log = r->connection->log;
+            if (u != NULL && u->peer.connection != NULL) {
+                log = u->peer.log;
+            }
+
+            ngx_log_error(NGX_LOG_ERR, log, 0,
                           "attempt to receive data on a closed socket: u:%p, "
                           "c:%p, ft:%d eof:%d",
                           u, u ? u->peer.connection : NULL,
@@ -3065,7 +3148,14 @@ ngx_http_lua_socket_tcp_send(lua_State *L)
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_t  *log;
+
+            log = r->connection->log;
+            if (u != NULL && u->peer.connection != NULL) {
+                log = u->peer.log;
+            }
+
+            ngx_log_error(NGX_LOG_ERR, log, 0,
                           "attempt to send data on a closed socket: u:%p, "
                           "c:%p, ft:%d eof:%d",
                           u, u ? u->peer.connection : NULL,
@@ -3582,7 +3672,7 @@ ngx_http_lua_socket_read_handler(ngx_http_request_t *r,
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_error(NGX_LOG_ERR, u->peer.log, 0,
                           "lua tcp socket read timed out");
         }
 
@@ -3619,7 +3709,7 @@ ngx_http_lua_socket_send_handler(ngx_http_request_t *r,
         llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
         if (llcf->log_socket_errors) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_error(NGX_LOG_ERR, u->peer.log, 0,
                           "lua tcp socket write timed out");
         }
 
@@ -3980,10 +4070,8 @@ ngx_http_lua_socket_connected_handler(ngx_http_request_t *r,
 
         if (llcf->log_socket_errors) {
             ngx_http_lua_socket_init_peer_connection_addr_text(&u->peer);
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "lua tcp socket connect timed out,"
-                          " when connecting to %V:%ud",
-                          &c->addr_text, ngx_inet_get_port(u->peer.sockaddr));
+            ngx_log_error(NGX_LOG_ERR, u->peer.log, 0,
+                          "lua tcp socket connect timed out");
         }
 
         ngx_http_lua_socket_handle_conn_error(r, u,
@@ -4193,7 +4281,7 @@ ngx_http_lua_socket_tcp_conn_op_timeout_handler(ngx_event_t *ev)
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
     if (llcf->log_socket_errors) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+        ngx_log_error(NGX_LOG_ERR, u->peer.log, 0,
                       "lua tcp socket queued connect timed out,"
                       " when trying to connect to %V:%ud",
                       &conn_op_ctx->host, conn_op_ctx->port);
@@ -5723,6 +5811,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
 
     item->socklen = pc->socklen;
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
+    ngx_memcpy(item->host, u->host, sizeof(u->host));
     item->reused = u->reused;
     item->udata_queue = u->udata_queue;
     u->udata_queue = NULL;
@@ -5800,7 +5889,12 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
 
         pc->connection = c;
         pc->cached = 1;
+        pc->socklen = item->socklen;
+        ngx_memcpy(&u->sockaddr, &item->sockaddr, item->socklen);
+        ngx_memcpy(u->host, item->host, sizeof(item->host));
 
+        u->log.handler = ngx_http_lua_socket_tcp_log_error;
+        u->log.data = u;
         u->reused = item->reused + 1;
         u->udata_queue = item->udata_queue;
         item->udata_queue = NULL;
