@@ -212,7 +212,7 @@ ngx_http_lua_proxy_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
         }
 
         chunkname = ngx_http_lua_gen_chunk_name(cf,
-                                    "proxy_ssl_certificate_by_lua",
+                                                "proxy_ssl_certificate_by_lua",
                                     sizeof("proxy_ssl_certificate_by_lua") - 1,
                                     &chunkname_len);
         if (chunkname == NULL) {
@@ -355,6 +355,7 @@ ngx_http_lua_proxy_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
     return -1;
 
 failed:
+
     if (cctx && cctx->pool) {
         ngx_destroy_pool(cctx->pool);
     }

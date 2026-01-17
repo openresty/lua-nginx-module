@@ -1686,7 +1686,8 @@ done:
 
 #ifdef HAVE_PROXY_SSL_PATCH
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT
-        || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY) {
+        || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY)
+    {
         return NGX_OK;
     }
 #endif
@@ -2448,7 +2449,8 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
 
 #ifdef HAVE_PROXY_SSL_PATCH
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT
-        || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY) {
+        || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY)
+    {
         return ctx->exit_code;
     }
 #endif

@@ -450,7 +450,7 @@ struct ngx_http_lua_loc_conf_s {
                                                 inline script/script
                                                 file path */
 
-    u_char                  *precontent_src_key; /* cached key for 
+    u_char                  *precontent_src_key; /* cached key for
                                                     precontent_src */
     int                      precontent_src_ref;
 
