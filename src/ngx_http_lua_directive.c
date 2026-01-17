@@ -824,7 +824,6 @@ ngx_http_lua_precontent_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     size_t                       chunkname_len;
     u_char                      *cache_key = NULL, *chunkname;
     ngx_str_t                   *value;
-    ngx_http_core_loc_conf_t    *clcf;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_lua_loc_conf_t     *llcf = conf;
 
@@ -842,9 +841,6 @@ ngx_http_lua_precontent_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     value = cf->args->elts;
-
-    dd("value[0]: %.*s", (int) value[0].len, value[0].data);
-    dd("value[1]: %.*s", (int) value[1].len, value[1].data);
 
     if (value[1].len == 0) {
         /*  Oops...Invalid location conf */

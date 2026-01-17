@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) Xiaozhe Wang (chaoslawful)
+ * Copyright (C) Hanada <im@hanada.info>
  * Copyright (C) Yichun Zhang (agentzh)
  */
 
@@ -50,12 +50,6 @@ ngx_http_lua_precontent_handler(ngx_http_request_t *r)
 
         dd("ph cur: %d, ph next: %d", (int) r->phase_handler,
            (int) (cur_ph->next - 2));
-
-#if 0
-        if (cur_ph == last_ph) {
-            dd("XXX our handler is already the last precontent phase handler");
-        }
-#endif
 
         if (cur_ph < last_ph) {
             dd("swapping the contents of cur_ph and last_ph...");
