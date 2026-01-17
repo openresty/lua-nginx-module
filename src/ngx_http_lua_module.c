@@ -13,6 +13,7 @@
 
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_capturefilter.h"
+#include "ngx_http_lua_precontentby.h"
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_server_rewriteby.h"
 #include "ngx_http_lua_rewriteby.h"
@@ -363,6 +364,31 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_access_handler_inline },
+
+    /* precontent_by_lua_block { <inline script> } */
+    { ngx_string("precontent_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_precontent_by_lua_block,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_precontent_handler_inline },
+
+    /* precontent_by_file filename; */
+    { ngx_string("precontent_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_http_lua_precontent_by_lua,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_precontent_handler_file },
+
+    { ngx_string("precontent_by_lua_no_postpone"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, postponed_to_precontent_phase_end),
+      NULL },
 
     /* content_by_lua "<inline script>" */
     { ngx_string("content_by_lua"),
@@ -840,6 +866,10 @@ ngx_http_lua_init(ngx_conf_t *cf)
         lmcf->postponed_to_access_phase_end = 0;
     }
 
+    if (lmcf->postponed_to_precontent_phase_end == NGX_CONF_UNSET) {
+        lmcf->postponed_to_precontent_phase_end = 0;
+    }
+
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     if (lmcf->requires_server_rewrite) {
@@ -868,6 +898,15 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
 
         *h = ngx_http_lua_access_handler;
+    }
+
+    if (lmcf->requires_precontent) {
+        h = ngx_array_push(&cmcf->phases[NGX_HTTP_PRECONTENT_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_http_lua_precontent_handler;
     }
 
     dd("requires log: %d", (int) lmcf->requires_log);
@@ -1103,6 +1142,7 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 #endif
     lmcf->postponed_to_rewrite_phase_end = NGX_CONF_UNSET;
     lmcf->postponed_to_access_phase_end = NGX_CONF_UNSET;
+    lmcf->postponed_to_precontent_phase_end = NGX_CONF_UNSET;
 
     lmcf->set_sa_restart = NGX_CONF_UNSET;
 
@@ -1452,6 +1492,11 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
      *      conf->rewrite_handler = NULL;
      *      conf->rewrite_chunkname = NULL;
      *
+     *      conf->precontent_src = {{ 0, NULL }, NULL, NULL, NULL};
+     *      conf->precontent_src_key = NULL;
+     *      conf->precontent_handler = NULL;
+     *      conf->precontent_chunkname = NULL;
+     * 
      *      conf->content_src = {{ 0, NULL }, NULL, NULL, NULL};
      *      conf->content_src_key = NULL;
      *      conf->content_handler = NULL;
@@ -1504,6 +1549,7 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 
     conf->rewrite_src_ref = LUA_REFNIL;
     conf->access_src_ref = LUA_REFNIL;
+    conf->precontent_src_ref = LUA_REFNIL;
     conf->content_src_ref = LUA_REFNIL;
     conf->header_filter_src_ref = LUA_REFNIL;
     conf->body_filter_src_ref = LUA_REFNIL;
@@ -1546,6 +1592,14 @@ ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->access_src_ref = prev->access_src_ref;
         conf->access_src_key = prev->access_src_key;
         conf->access_chunkname = prev->access_chunkname;
+    }
+
+    if (conf->precontent_src.value.len == 0) {
+        conf->precontent_src = prev->precontent_src;
+        conf->precontent_handler = prev->precontent_handler;
+        conf->precontent_src_ref = prev->precontent_src_ref;
+        conf->precontent_src_key = prev->precontent_src_key;
+        conf->precontent_chunkname = prev->precontent_chunkname;
     }
 
     if (conf->content_src.value.len == 0) {

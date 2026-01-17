@@ -148,10 +148,8 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_EXIT_WORKER        0x00002000
 #define NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO   0x00004000
 #define NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE     0x00008000
-
-#ifdef HAVE_PROXY_SSL_PATCH
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY   0x00010000
-#endif
+#define NGX_HTTP_LUA_CONTEXT_PRECONTENT         0x00020000
 
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
@@ -254,6 +252,7 @@ struct ngx_http_lua_main_conf_s {
 
     ngx_flag_t           postponed_to_rewrite_phase_end;
     ngx_flag_t           postponed_to_access_phase_end;
+    ngx_flag_t           postponed_to_precontent_phase_end;
 
     ngx_http_lua_main_conf_handler_pt    init_handler;
     ngx_str_t                            init_src;
@@ -322,6 +321,7 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_shm:1;
     unsigned             requires_capture_log:1;
     unsigned             requires_server_rewrite:1;
+    unsigned             requires_precontent:1;
 };
 
 
@@ -414,6 +414,7 @@ struct ngx_http_lua_loc_conf_s {
 
     ngx_http_handler_pt     rewrite_handler;
     ngx_http_handler_pt     access_handler;
+    ngx_http_handler_pt     precontent_handler;
     ngx_http_handler_pt     content_handler;
     ngx_http_handler_pt     log_handler;
     ngx_http_handler_pt     header_filter_handler;
@@ -438,13 +439,22 @@ struct ngx_http_lua_loc_conf_s {
     u_char                  *access_src_key; /* cached key for access_src */
     int                      access_src_ref;
 
+    u_char                  *precontent_chunkname;
+    ngx_http_complex_value_t precontent_src;    /*  precontent_by_lua
+                                                inline script/script
+                                                file path */
+
+    u_char                  *precontent_src_key; /* cached key for 
+                                                    precontent_src */
+    int                      precontent_src_ref;
+
     u_char                  *content_chunkname;
     ngx_http_complex_value_t content_src;    /*  content_by_lua
                                                 inline script/script
                                                 file path */
 
-    u_char                 *content_src_key; /* cached key for content_src */
-    int                     content_src_ref;
+    u_char                  *content_src_key; /* cached key for content_src */
+    int                      content_src_ref;
 
 
     u_char                      *log_chunkname;
@@ -683,6 +693,7 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         entered_server_rewrite_phase:1;
     unsigned         entered_rewrite_phase:1;
     unsigned         entered_access_phase:1;
+    unsigned         entered_precontent_phase:1;
     unsigned         entered_content_phase:1;
 
     unsigned         buffering:1; /* HTTP 1.0 response body buffering flag */

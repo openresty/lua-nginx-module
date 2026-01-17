@@ -221,3 +221,18 @@ GET /lua
 server_rewrite
 --- no_error_log
 [error]
+
+
+
+=== TEST 13: precontent_by_lua_block in http
+--- config
+    location /lua {
+        precontent_by_lua_block {
+            ngx.say(ngx.get_phase())
+            ngx.exit(200)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+precontent
