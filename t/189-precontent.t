@@ -19,7 +19,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 10);
+plan tests => repeat_each() * (blocks() * 3 + 6);
 
 #log_level("info");
 #no_long_string();
@@ -32,7 +32,7 @@ __DATA__
 --- config
     location /lua {
         precontent_by_lua_block {
-            ngx.log(ngx.ERR, "precontent_by_lua_block executed")
+            ngx.log(ngx.INFO, "precontent_by_lua_block executed")
         }
         content_by_lua_block {
             ngx.say("content phase executed")
@@ -53,7 +53,7 @@ precontent_by_lua_block executed
 --- config
     location /lua {
         precontent_by_lua_block {
-            ngx.log(ngx.ERR, "precontent phase executed")
+            ngx.log(ngx.INFO, "precontent phase executed")
             ngx.exit(ngx.OK)
         }
         content_by_lua_block {
@@ -96,7 +96,7 @@ GET /lua
             ngx.req.read_body()
             local body = ngx.req.get_body_data()
             if body then
-                ngx.log(ngx.ERR, "precontent got body: " .. body)
+                ngx.log(ngx.INFO, "precontent got body: " .. body)
             end
         }
         content_by_lua_block {
@@ -128,7 +128,7 @@ precontent got body: hello world
 --- request
 GET /lua
 --- response_body
-ctx from precontent: set in precontent
+var from precontent: set in precontent
 --- no_error_log
 [error]
 
@@ -144,7 +144,7 @@ ctx from precontent: set in precontent
     }
 --- user_files
 >>> test.lua
-ngx.log(ngx.ERR, "precontent_by_lua_file executed")
+ngx.log(ngx.INFO, "precontent_by_lua_file executed")
 --- request
 GET /lua
 --- response_body
@@ -160,7 +160,7 @@ precontent_by_lua_file executed
 --- config
     location /main {
         precontent_by_lua_block {
-            ngx.log(ngx.ERR, "precontent phase - is_subrequest: ", ngx.is_subrequest)
+            ngx.log(ngx.INFO, "precontent phase - is_subrequest: ", ngx.is_subrequest)
         }
         content_by_lua_block {
             local res = ngx.location.capture("/sub")
@@ -188,7 +188,7 @@ precontent phase - is_subrequest: false
 --- config
     location /phase {
         precontent_by_lua_block {
-            ngx.log(ngx.ERR, "current phase: ", ngx.get_phase())
+            ngx.log(ngx.INFO, "current phase: ", ngx.get_phase())
         }
         content_by_lua_block {
             ngx.say("content phase")
@@ -258,7 +258,7 @@ Args in content: modified=1&test=2
 GET /lua
 --- ignore_response
 --- error_log
-failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
+failed to load inlined Lua code: precontent_by_lua(nginx.conf:41):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
 --- skip_eval: 2:$ENV{TEST_NGINX_USE_HUP}
@@ -303,5 +303,61 @@ GET /override
 --- response_body
 Server level: not executed
 Location level: location_specific
+--- no_error_log
+[error]
+
+
+
+=== TEST 14: sleep
+--- config
+    location /lua {
+        precontent_by_lua_block {
+            ngx.sleep(0.001)
+            ngx.log(ngx.INFO, "precontent_by_lua_block executed")
+        }
+        content_by_lua_block {
+            ngx.say("content phase executed")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+content phase executed
+--- error_log
+precontent_by_lua_block executed
+--- no_error_log
+[error]
+
+
+
+=== TEST 15: cosocket
+--- config
+    location /lua {
+        precontent_by_lua_block {
+            local sock, err = ngx.socket.tcp()
+            if not sock then
+                ngx.log(ngx.ERR, "Failed to create sock: ", err)
+                return
+            end
+
+            local ok
+            ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.log(ngx.ERR, "Failed to connect to google: ", err)
+            end
+            sock:close()
+
+            ngx.log(ngx.INFO, "precontent_by_lua_block executed")
+        }
+        content_by_lua_block {
+            ngx.say("content phase executed")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+content phase executed
+--- error_log
+precontent_by_lua_block executed
 --- no_error_log
 [error]
