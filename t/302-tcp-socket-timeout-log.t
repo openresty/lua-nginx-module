@@ -25,7 +25,11 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+if (defined $ENV{TEST_NGINX_SKIP_COSOCKET_LOG_TEST}) {
+    plan(skip_all => "Remove TEST_NGINX_SKIP_COSOCKET_LOG_TEST to enable this test");
+} else {
+    plan tests => repeat_each() * (blocks() * 3);
+}
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 

@@ -4,7 +4,11 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (3 * blocks());
+if (defined $ENV{TEST_NGINX_SKIP_COSOCKET_LOG_TEST}) {
+    plan(skip_all => "Remove TEST_NGINX_SKIP_COSOCKET_LOG_TEST to enable this test");
+} else {
+    plan tests => repeat_each() * (3 * blocks());
+}
 
 our $HtmlDir = html_dir;
 
