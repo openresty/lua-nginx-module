@@ -24,6 +24,25 @@
 #include <lauxlib.h>
 
 
+
+#if (NGX_HTTP_SSL)
+#ifdef HAVE_PROXY_SSL_PATCH
+
+#if defined(LIBRESSL_VERSION_NUMBER)
+#define HAVE_LUA_PROXY_SSL  0
+#elif defined(OPENSSL_IS_BORINGSSL)
+#define  HAVE_LUA_PROXY_SSL 0
+#elif defined(SSL_ERROR_WANT_RETRY_VERIFY) &&                                \
+    OPENSSL_VERSION_NUMBER >= 0x30000020uL
+#define  HAVE_LUA_PROXY_SSL 1
+#else
+#define  HAVE_LUA_PROXY_SSL 0
+#endif
+
+#endif /* HAVE_PROXY_SSL_PATCH */
+#endif /* NGX_HTTP_SSL */
+
+
 #if defined(NDK) && NDK
 #include <ndk.h>
 
@@ -393,13 +412,15 @@ struct ngx_http_lua_loc_conf_s {
     ngx_array_t            *ssl_conf_commands;
 #endif
 
-#ifdef HAVE_PROXY_SSL_PATCH
+#if HAVE_LUA_PROXY_SSL
     ngx_http_lua_loc_conf_handler_pt       proxy_ssl_cert_handler;
     ngx_str_t                              proxy_ssl_cert_src;
     u_char                                *proxy_ssl_cert_src_key;
     u_char                                *proxy_ssl_cert_chunkname;
     int                                    proxy_ssl_cert_src_ref;
+#endif
 
+#if HAVE_LUA_PROXY_SSL
     ngx_http_lua_loc_conf_handler_pt       proxy_ssl_verify_handler;
     ngx_str_t                              proxy_ssl_verify_src;
     u_char                                *proxy_ssl_verify_src_key;

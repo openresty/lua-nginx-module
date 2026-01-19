@@ -10,18 +10,7 @@
 
 
 #if (NGX_HTTP_SSL)
-#ifdef HAVE_PROXY_SSL_PATCH
-
-#if defined(LIBRESSL_VERSION_NUMBER)
-#define  HAVE_PROXY_SSL_PATCH 0
-#elif defined(OPENSSL_IS_BORINGSSL)
-#define  HAVE_PROXY_SSL_PATCH 0
-#elif defined(SSL_ERROR_WANT_RETRY_VERIFY) &&                                \
-    OPENSSL_VERSION_NUMBER >= 0x30000020uL
-#define  HAVE_PROXY_SSL_PATCH 1
-#else
-#define  HAVE_PROXY_SSL_PATCH 0
-#endif
+#if HAVE_LUA_PROXY_SSL
 
 
 /* do not introduce ngx_http_proxy_module to pollute ngx_http_lua_module.c */
@@ -44,7 +33,7 @@ int ngx_http_lua_proxy_ssl_verify_handler(X509_STORE_CTX *x509_store,
 
 ngx_int_t ngx_http_lua_proxy_ssl_verify_set_callback(ngx_conf_t *cf);
 
-#endif  /* HAVE_PROXY_SSL_PATCH */
+#endif  /* HAVE_LUA_PROXY_SSL */
 #endif  /* NGX_HTTP_SSL */
 
 
