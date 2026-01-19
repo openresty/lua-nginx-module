@@ -10,6 +10,7 @@
 
 #if (NGX_HTTP_SSL)
 
+
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_util.h"
@@ -19,8 +20,8 @@
 #include "ngx_http_lua_ssl.h"
 #include "ngx_http_lua_proxy_ssl_certby.h"
 
-#if HAVE_LUA_PROXY_SSL
 
+#if HAVE_LUA_PROXY_SSL
 
 static void ngx_http_lua_proxy_ssl_cert_done(void *data);
 static void ngx_http_lua_proxy_ssl_cert_aborted(void *data);

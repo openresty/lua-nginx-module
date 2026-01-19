@@ -389,8 +389,6 @@ ngx_http_lua_ffi_exit(ngx_http_request_t *r, int status, u_char *err,
                                        | NGX_HTTP_LUA_CONTEXT_BALANCER
 #if HAVE_LUA_PROXY_SSL
                                        | NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT
-#endif
-#if HAVE_LUA_PROXY_SSL
                                        | NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY
 #endif
                                        | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO

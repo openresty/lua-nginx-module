@@ -418,9 +418,7 @@ struct ngx_http_lua_loc_conf_s {
     u_char                                *proxy_ssl_cert_src_key;
     u_char                                *proxy_ssl_cert_chunkname;
     int                                    proxy_ssl_cert_src_ref;
-#endif
 
-#if HAVE_LUA_PROXY_SSL
     ngx_http_lua_loc_conf_handler_pt       proxy_ssl_verify_handler;
     ngx_str_t                              proxy_ssl_verify_src;
     u_char                                *proxy_ssl_verify_src_key;
