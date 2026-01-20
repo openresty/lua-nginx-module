@@ -26,6 +26,9 @@
 
 
 #if (NGX_HTTP_SSL)
+/* introduce OPENSSL_IS_BORINGSSL and LIBRESSL_VERSION_NUMBER */
+#include <openssl/ssl.h>
+
 #ifdef HAVE_PROXY_SSL_PATCH
 
 #if defined(LIBRESSL_VERSION_NUMBER)
