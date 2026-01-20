@@ -137,7 +137,7 @@ script:
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
   #- if [ -n "$PCRE2_VER" ]; then tar zxf download-cache/pcre2-$PCRE2_VER.tar.gz; cd pcre2-$PCRE2_VER/; ./configure --prefix=$PCRE2_PREFIX --enable-jit --enable-utf > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
   #- if [ -n "$OPENSSL_VER" ]; then tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz; cd openssl-$OPENSSL_VER/; patch -p1 < ../../openresty/patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch; ./config shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX --libdir=lib -DPURIFY > build.log 2>&1 || (cat build.log && exit 1); make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1); sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1); cd ..; fi
-  - if [ -n "$BORINGSSL" ]; then sudo rm -fr /usr/local/openresty/openssl3/ && sudo mkdir -p /usr/local/openresty/openssl3 && sudo tar -C /usr/local/openresty/openssl3 -xf boringssl-20230902-x64-focal.tar.gz --strip-components=1; fi
+  - if [ -n "$BORINGSSL" ]; then sudo rm -fr $OPENSSL_PREFIX && sudo mkdir -p $OPENSSL_PREFIX  && sudo tar -C $OPENSSL_PREFIX -xf boringssl-20230902-x64-focal.tar.gz --strip-components=1; fi
   - export NGX_BUILD_CC=$CC
   - sh util/build-without-ssl.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - sh util/build-with-dd.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
