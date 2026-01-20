@@ -1684,7 +1684,7 @@ no_parent:
 
 done:
 
-#ifdef HAVE_LUA_PROXY_SSL
+#if HAVE_LUA_PROXY_SSL
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT
         || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY)
     {
@@ -2447,7 +2447,7 @@ ngx_http_lua_handle_exit(lua_State *L, ngx_http_request_t *r,
         return ctx->exit_code;
     }
 
-#ifdef HAVE_LUA_PROXY_SSL
+#if HAVE_LUA_PROXY_SSL
     if (ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT
         || ctx->context == NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY)
     {
@@ -3691,7 +3691,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 {
     ngx_http_lua_ctx_t              *ctx;
 #if (NGX_HTTP_SSL)
-#ifdef HAVE_LUA_PROXY_SSL
+#if HAVE_LUA_PROXY_SSL
     ngx_http_upstream_t             *u;
     ngx_connection_t                *c;
     ngx_http_lua_ssl_ctx_t          *cctx;
