@@ -3704,7 +3704,7 @@ ngx_http_lua_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
     }
 
 #if (NGX_HTTP_SSL)
-#ifdef HAVE_LUA_PROXY_SSL
+#if HAVE_LUA_PROXY_SSL
     u = r->upstream;
     if (u) {
         c = u->peer.connection;
