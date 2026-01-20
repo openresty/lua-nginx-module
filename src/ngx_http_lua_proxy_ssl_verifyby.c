@@ -5,11 +5,12 @@
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
+
 #include "ddebug.h"
+#include "ngx_http_lua_proxy_ssl_verifyby.h"
 
 
-#if (NGX_HTTP_SSL)
-
+#if HAVE_LUA_PROXY_SSL
 #include "ngx_http_lua_cache.h"
 #include "ngx_http_lua_initworkerby.h"
 #include "ngx_http_lua_util.h"
@@ -17,10 +18,7 @@
 #include "ngx_http_lua_contentby.h"
 #include "ngx_http_lua_directive.h"
 #include "ngx_http_lua_ssl.h"
-#include "ngx_http_lua_proxy_ssl_verifyby.h"
 
-
-#if HAVE_LUA_PROXY_SSL
 
 static void ngx_http_lua_proxy_ssl_verify_done(void *data);
 static void ngx_http_lua_proxy_ssl_verify_aborted(void *data);
@@ -659,4 +657,3 @@ ngx_http_lua_ffi_proxy_ssl_get_verify_cert(ngx_http_request_t *r, char **err)
 }
 
 #endif /* HAVE_LUA_PROXY_SSL */
-#endif /* NGX_HTTP_SSL */
