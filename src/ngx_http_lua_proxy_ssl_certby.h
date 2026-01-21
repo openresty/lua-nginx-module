@@ -8,9 +8,7 @@
 
 #include "ngx_http_lua_common.h"
 
-
-#if (NGX_HTTP_SSL)
-#ifdef HAVE_PROXY_SSL_PATCH
+#if HAVE_LUA_PROXY_SSL
 
 /* do not introduce ngx_http_proxy_module to pollute ngx_http_lua_module.c */
 extern ngx_module_t  ngx_http_proxy_module;
@@ -31,8 +29,7 @@ int ngx_http_lua_proxy_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data);
 
 ngx_int_t ngx_http_lua_proxy_ssl_cert_set_callback(ngx_conf_t *cf);
 
-#endif  /* HAVE_PROXY_SSL_PATCH */
-#endif  /* NGX_HTTP_SSL */
+#endif  /* HAVE_LUA_PROXY_SSL */
 
 
 #endif /* _NGX_HTTP_LUA_PROXY_SSL_CERTBY_H_INCLUDED_ */
