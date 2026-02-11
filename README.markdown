@@ -8368,7 +8368,7 @@ This method was first introduced in the `v0.10.22` release.
 tcpsock:sslhandshake
 --------------------
 
-**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?)*
+**syntax:** *session, err = tcpsock:sslhandshake(reused_session?, server_name?, ssl_verify?, send_status_req?, alpn?)*
 
 **context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
@@ -8403,6 +8403,10 @@ to validate the server name in the server certificate.
 
 The optional `send_status_req` argument takes a boolean that controls whether to send
 the OCSP status request in the SSL handshake request (which is for requesting OCSP stapling).
+
+The optional `alpn` argument specifies the Application-Layer Protocol Negotiation (ALPN)
+extension value to be sent during the SSL handshake. It accepts a Lua table where each
+element is a string representing a protocol name. For example: `{ "h2", "http/1.1" }`.
 
 For connections that have already done SSL/TLS handshake, this method returns
 immediately.
