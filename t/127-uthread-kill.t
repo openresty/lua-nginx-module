@@ -12,6 +12,7 @@ plan tests => repeat_each() * (blocks() * 5 + 1);
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
+$ENV{TEST_NGINX_REDIS_PORT} ||= '6379';
 
 #no_shuffle();
 no_long_string();
@@ -505,3 +506,112 @@ thread created: zombie
 [alert]
 lua tcp socket abort resolver
 --- error_log
+
+=== TEST 10: phantom uthreads-- via killed uthread with live child coroutine
+When a user thread internally uses coroutine.resume() to run a child
+coroutine that does cosocket I/O, and the parent uthread is then killed
+via ngx.thread.kill(), the child's socket I/O is NOT cancelled (because
+cleanup_pending_operation on the parent's co_ctx is a no-op -- the parent
+yielded for coroutine.resume, not for I/O, so cleanup is NULL).
+
+When the child later completes, user_co_done walks up to the killed
+parent's co_ctx, finds is_uthread=1, and does uthreads-- even though
+del_thread returns early (co_ref already LUA_NOREF). This phantom
+decrement causes uthreads to underflow when finalize_threads runs
+during the access->content phase transition.
+--- config
+    location = /t {
+        rewrite_by_lua_block {
+            ngx.ctx._rewrite = true
+        }
+
+        access_by_lua_block {
+            local redis_port = $TEST_NGINX_REDIS_PORT
+
+            -- Phase 1: simulate DNS resolution with thread.spawn + wait + kill
+            -- (like thread_process_dns_query in resolver.lua)
+            local dns_threads = {}
+
+            -- T1: fast DNS query (PING, completes immediately)
+            dns_threads[1] = ngx.thread.spawn(function()
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+                local ok, err = sock:connect("127.0.0.1", redis_port)
+                if not ok then return nil, err end
+                sock:send("PING\r\n")
+                local line = sock:receive()
+                sock:setkeepalive()
+                return line
+            end)
+
+            -- T2: uses coroutine.resume internally with FAST I/O.
+            -- The child coroutine does a fast Redis PING so its response
+            -- arrives in the same epoll batch as T1's response.
+            -- When T2 is killed, the child's socket is NOT cleaned up
+            -- because T2 yielded for coroutine.resume (cleanup=NULL),
+            -- not for socket I/O. The child's event then fires AFTER
+            -- T2 is killed but BEFORE finalize_threads runs.
+            dns_threads[2] = ngx.thread.spawn(function()
+                local child = coroutine.create(function()
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(2000)
+                    local ok, err = sock:connect("127.0.0.1", redis_port)
+                    if not ok then return nil, err end
+                    sock:send("PING\r\n")
+                    local line = sock:receive()
+                    sock:setkeepalive()
+                    return line
+                end)
+
+                local ok, res = coroutine.resume(child)
+                return res
+            end)
+
+            -- wait_any pattern: wait for first result
+            local ok, res = ngx.thread.wait(dns_threads[1], dns_threads[2])
+
+            -- kill remaining (T2's child socket is still alive!)
+            for _, t in ipairs(dns_threads) do
+                ngx.thread.kill(t)
+            end
+
+            -- Phase 2: simulate probe thread spawning
+            -- (like run_batch_probe_targets in edge_probe)
+            local probe_threads = {}
+            for i = 1, 10 do
+                probe_threads[i] = ngx.thread.spawn(function(idx)
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(2000)
+                    local ok, err = sock:connect("127.0.0.1", redis_port)
+                    if not ok then return nil, err end
+                    sock:send("PING\r\n")
+                    local line = sock:receive()
+                    sock:setkeepalive()
+                    return line
+                end, i)
+            end
+
+            local ok_count = 0
+            for i = 1, #probe_threads do
+                local ok, res, err = ngx.thread.wait(probe_threads[i])
+                if ok and res then
+                    ok_count = ok_count + 1
+                end
+            end
+
+            ngx.ctx.ok_count = ok_count
+        }
+
+        content_by_lua_block {
+            -- reset_ctx -> finalize_threads runs here.
+            -- Without the fix, the phantom uthreads-- from the killed T2's
+            -- child completing causes uthreads underflow.
+            ngx.say("ok_count=", ngx.ctx.ok_count)
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok_count=10
+--- no_error_log
+[error]
