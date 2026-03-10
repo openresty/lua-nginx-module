@@ -1783,7 +1783,7 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t *sess,
     int enable_session_reuse, ngx_str_t *server_name, int verify,
     int ocsp_status_req, STACK_OF(X509) *chain, EVP_PKEY *pkey,
-    const char **errmsg)
+    ngx_str_t *alpn, const char **errmsg)
 {
     ngx_int_t                rc, i;
     ngx_connection_t        *c;
@@ -1946,6 +1946,29 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
 #else
         *errmsg = "no OCSP support";
+        return NGX_ERROR;
+#endif
+    }
+
+    if (alpn != NULL && alpn->data != NULL) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "lua ssl ALPN: \"%V\"", alpn);
+
+#if (defined TLSEXT_TYPE_application_layer_protocol_negotiation)
+        if (alpn->len > 255) {
+            *errmsg = "too large ALPN list";
+            return NGX_ERROR;
+        }
+
+        if (SSL_set_alpn_protos(c->ssl->connection,
+                                alpn->data,
+                                (unsigned int) (alpn->len)) != 0)
+        {
+            *errmsg = "SSL_set_alpn_protos failed";
+            return NGX_ERROR;
+        }
+#else
+        *errmsg = "no ALPN support";
         return NGX_ERROR;
 #endif
     }
