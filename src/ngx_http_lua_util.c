@@ -1467,7 +1467,7 @@ user_co_done:
                 }
 
                 if (ctx->cur_co_ctx->is_uthread
-                    && ctx->cur_co_ctx->co_ref != LUA_NOREF)
+                    && ctx->cur_co_ctx->co_ref != LUA_NOREF) {
                     ngx_http_lua_del_thread(r, L, ctx, ctx->cur_co_ctx);
                     ctx->uthreads--;
                 }
