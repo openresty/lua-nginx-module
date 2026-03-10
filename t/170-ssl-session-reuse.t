@@ -140,6 +140,8 @@ close: 1 nil
         }
     }
 --- config
+    # fixme: getsslsession doesn't work with BoringSSL TLSv1.3 case, temporarily disable TLSv1.3 for this test.
+    lua_ssl_protocols TLSv1.2;
     resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /t {
         content_by_lua_block {
