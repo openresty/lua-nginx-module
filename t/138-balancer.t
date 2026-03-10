@@ -735,4 +735,4 @@ qr/502 Bad Gateway/
 --- no_error_log
 [error]
 --- error_log eval
-qr/SSL_do_handshake.*routines::tlsv1 alert no application protocol:SSL alert number 120\) while SSL handshaking to upstream/
+qr/SSL_do_handshake.*(?:no application protocol|NO_APPLICATION_PROTOCOL).*SSL alert number 120\) while SSL handshaking to upstream/
