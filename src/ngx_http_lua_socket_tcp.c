@@ -1087,6 +1087,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         if (lua_isfunction(L, -1)) {
             on_push_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
         } else {
             if (!lua_isnil(L, -1)) {
                 msg = lua_pushfstring(L, "bad \"on_push\" option type: %s",
@@ -4555,6 +4556,7 @@ ngx_http_lua_socket_tcp_finalize(ngx_http_request_t *r,
         if (L != NULL) {
             luaL_unref(L, LUA_REGISTRYINDEX, u->on_push_cb_ref);
         }
+
         u->on_push_cb_ref = LUA_NOREF;
     }
 
@@ -5773,6 +5775,7 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
             if (evict_L != NULL) {
                 luaL_unref(evict_L, LUA_REGISTRYINDEX, item->on_push_cb_ref);
             }
+
             item->on_push_cb_ref = LUA_NOREF;
         }
 
@@ -6072,6 +6075,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
                     lua_pop(L, 2);
                     goto close;
                 }
+
                 nsent += w;
             }
         }
@@ -6100,6 +6104,7 @@ close:
         if (close_L != NULL) {
             luaL_unref(close_L, LUA_REGISTRYINDEX, item->on_push_cb_ref);
         }
+
         item->on_push_cb_ref = LUA_NOREF;
     }
 
@@ -6160,6 +6165,7 @@ ngx_http_lua_socket_shutdown_pool_helper(ngx_http_lua_socket_pool_t *spool)
             if (close_L != NULL) {
                 luaL_unref(close_L, LUA_REGISTRYINDEX, item->on_push_cb_ref);
             }
+
             item->on_push_cb_ref = LUA_NOREF;
         }
 
