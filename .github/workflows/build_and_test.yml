@@ -36,10 +36,6 @@ jobs:
             TEST_NGINX_QUIC_IDLE_TIMEOUT: "3"
 
     services:
-      memcached:
-        image: memcached:1.6-alpine
-        ports:
-          - 11211:11211
       redis:
         image: redis:7-alpine
         ports:
@@ -162,6 +158,11 @@ jobs:
       - name: Install curl-h3
         run: sudo tar -C / -xf curl-h3-x64-focal.tar.gz
 
+      - name: Start memcached (native, for UDP support)
+        run: |
+          sudo apt-get install -y --no-install-recommends memcached
+          sudo service memcached start
+
       - name: Set up MySQL test database
         run: |
           mysql -h 127.0.0.1 -P 3306 -uroot \
@@ -227,12 +228,21 @@ jobs:
           lines=$(wc -l check.txt | awk '{print $1}')
           if [ "$lines" -gt 5 ]; then cat check.txt; exit 1; fi
 
+      - name: Set matrix-specific test env vars
+        run: |
+          # Only export vars that have actual values — Perl's defined() treats
+          # empty strings as defined, which would cause false positives in tests
+          # like t/103-req-http-ver.t that branch on defined $ENV{TEST_NGINX_USE_HTTP3}.
+          [ -n "${{ matrix.TEST_NGINX_TIMEOUT }}" ] \
+            && echo "TEST_NGINX_TIMEOUT=${{ matrix.TEST_NGINX_TIMEOUT }}" >> $GITHUB_ENV || true
+          [ -n "${{ matrix.TEST_NGINX_USE_HTTP2 }}" ] \
+            && echo "TEST_NGINX_USE_HTTP2=${{ matrix.TEST_NGINX_USE_HTTP2 }}" >> $GITHUB_ENV || true
+          [ -n "${{ matrix.TEST_NGINX_USE_HTTP3 }}" ] \
+            && echo "TEST_NGINX_USE_HTTP3=${{ matrix.TEST_NGINX_USE_HTTP3 }}" >> $GITHUB_ENV || true
+          [ -n "${{ matrix.TEST_NGINX_QUIC_IDLE_TIMEOUT }}" ] \
+            && echo "TEST_NGINX_QUIC_IDLE_TIMEOUT=${{ matrix.TEST_NGINX_QUIC_IDLE_TIMEOUT }}" >> $GITHUB_ENV || true
+
       - name: Run tests
-        env:
-          TEST_NGINX_TIMEOUT:          ${{ matrix.TEST_NGINX_TIMEOUT }}
-          TEST_NGINX_USE_HTTP2:        ${{ matrix.TEST_NGINX_USE_HTTP2 }}
-          TEST_NGINX_USE_HTTP3:        ${{ matrix.TEST_NGINX_USE_HTTP3 }}
-          TEST_NGINX_QUIC_IDLE_TIMEOUT: ${{ matrix.TEST_NGINX_QUIC_IDLE_TIMEOUT }}
         run: |
           export LD_LIBRARY_PATH=$LUAJIT_LIB:$PWD/mockeagain:$LD_LIBRARY_PATH
           export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl-h3/bin:$PATH
