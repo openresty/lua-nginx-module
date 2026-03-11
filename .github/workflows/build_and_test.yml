@@ -94,8 +94,8 @@ jobs:
 
       - name: Add OpenResty apt repository
         run: |
-          wget -qO - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
-          echo "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main" \
+          wget -qO- https://openresty.org/package/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/openresty.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] https://openresty.org/package/ubuntu $(lsb_release -sc) main" \
             | sudo tee /etc/apt/sources.list.d/openresty.list
           sudo apt-get update -q
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
