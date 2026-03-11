@@ -6042,7 +6042,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
 
         rbuf[0] = buf[0];
 
-        /* read the available data into a stack buffer; no request pool needed */
+        /* read the available data into a stack buffer */
         nread = c->recv(c, rbuf + 1, sizeof(rbuf) - 1);
         if (nread <= 0) {
             goto close;
