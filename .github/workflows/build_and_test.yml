@@ -161,9 +161,12 @@ jobs:
       - name: Start memcached (native, UDP enabled)
         run: |
           sudo apt-get install -y --no-install-recommends memcached
+          sudo systemctl stop memcached
           # Ubuntu's default /etc/memcached.conf has "-U 0" which disables UDP.
           # Start manually with UDP on port 11211 so udp-socket tests pass.
-          memcached -d -u nobody -l 127.0.0.1 -p 11211 -U 11211 -m 64
+          memcached -d -l 127.0.0.1 -p 11211 -U 11211 -m 64
+          sudo ss -lntup | grep 11211
+
 
       - name: Set up MySQL test database
         run: |
