@@ -6028,11 +6028,10 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
     item = c->data;
 
     if (n > 0 && item->on_push_cb_ref != LUA_NOREF) {
-        char        rbuf[4096];
-        ssize_t     nread;
-        lua_State  *L;
-        int         close_conn;
-        int         nret;
+        unsigned char rbuf[4096];
+        ssize_t       nread;
+        lua_State     *L;
+        int           close_conn;
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ev->log, 0,
                        "lua tcp socket keepalive: data received, calling cb");
@@ -6052,7 +6051,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
         }
 
         lua_rawgeti(L, LUA_REGISTRYINDEX, item->on_push_cb_ref);
-        lua_pushlstring(L, rbuf, (size_t) nread);
+        lua_pushlstring(L, (const char *) rbuf, (size_t) nread);
 
         /* callback(data) -> reply:string|nil, close:bool */
         if (lua_pcall(L, 1, 2, 0) != LUA_OK) {
@@ -6070,7 +6069,10 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
             ssize_t     nsent = 0;
 
             while ((size_t) nsent < slen) {
-                ssize_t w = c->send(c, sdata + nsent, slen - nsent, 0);
+                ssize_t w = c->send(c,
+                                    (u_char *) (sdata + nsent),
+                                    slen - nsent);
+
                 if (w <= 0) {
                     lua_pop(L, 2);
                     goto close;
