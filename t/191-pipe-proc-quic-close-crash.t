@@ -1,0 +1,101 @@
+# vim:set ft= ts=4 sw=4 et fdm=marker:
+#
+# Regression test for use-after-free crash in ngx_http_lua_pipe_resume_read_stdout_handler.
+#
+# Root cause: pool cleanup runs in LIFO order.  pipe_proc_destroy (registered
+# when the pipe is spawned, i.e. *later*) therefore runs *before*
+# request_cleanup_handler (registered at Lua handler init time).
+# pipe_proc_destroy calls pipe_proc_finalize → ngx_http_lua_pipe_close_helper,
+# which, when a read is in progress, posts the event rather than calling
+# ngx_close_connection, leaving the read-timeout timer live.  It then sets
+# proc->pipe = NULL.  When request_cleanup_handler runs next it sees
+# proc->pipe == NULL and returns early, so the timer is never cancelled.
+# After ngx_destroy_pool(r->pool) frees wait_co_ctx, the timer fires and
+# dereferences the dangling pointer → SIGSEGV.
+#
+# Trigger path (QUIC-specific):
+#   QUIC connection close
+#   → ngx_quic_close_streams → sc->read->handler (no-op without lua_check_client_abort)
+#   → ngx_http_free_request → ngx_destroy_pool(r->pool)
+#   → LIFO pool cleanups: pipe_proc_destroy first, request_cleanup_handler second
+#   → timer remains live; pool freed; timer fires → SIGSEGV
+#
+# Fix (ngx_http_lua_ffi_pipe_proc_destroy): after pipe_proc_finalize, call
+# ngx_close_connection on any pipe ctx whose connection is still open.
+# ngx_close_connection removes both the read-timeout timer (ngx_del_timer)
+# and any already-posted event (ngx_delete_posted_event), preventing the UAF.
+#
+# Timing:
+#   pipe stdout read timeout : 1 s  (timer armed 1 s after request lands)
+#   curl --max-time           : 0.5 s  (QUIC connection closed while timer live)
+#   --- wait                  : 2 s  (covers remaining ~0.5 s + safety margin)
+
+
+BEGIN {
+    if (!$ENV{TEST_NGINX_USE_HTTP3}) {
+        $SkipReason = "TEST_NGINX_USE_HTTP3 is not set";
+    } else {
+        my $nginx = $ENV{TEST_NGINX_BINARY} || 'nginx';
+        my $v     = eval { `$nginx -V 2>&1` } // '';
+
+        if ($v !~ /--with-http_v3_module/) {
+            $SkipReason = "requires nginx built with --with-http_v3_module";
+        }
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
+
+master_on();   # master process needed to detect/survive worker crash
+workers(1);
+
+repeat_each(1);
+
+# 1 subtest per block: the --- no_error_log [alert] check.
+# (--- ignore_response suppresses the default status-code subtest.)
+plan tests => repeat_each() * blocks();
+
+log_level('info');
+no_long_string();
+
+add_block_preprocessor(sub {
+    my $block = shift;
+
+    my $http_config = $block->http_config || '';
+    $http_config .= <<'_EOC_';
+    lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
+
+    init_by_lua_block {
+        require "resty.core"
+    }
+_EOC_
+    $block->set_value("http_config", $http_config);
+});
+
+run_tests();
+
+__DATA__
+
+=== TEST 1: pipe read timer must not fire after pool is freed on QUIC connection close
+--- config
+    location = /t {
+        content_by_lua_block {
+            -- Spawn a long-lived child; stdout will never produce output.
+            -- set_timeouts(write_timeout, stdout_timeout, stderr_timeout, wait_timeout)
+            local proc = require("ngx.pipe").spawn({"sleep", "100"})
+            proc:set_timeouts(nil, 1000)  -- 1 s stdout read timeout
+
+            -- This call yields and arms a 1 s timer.
+            -- The test client closes the QUIC connection before the timer fires,
+            -- triggering the LIFO pool-cleanup use-after-free (without the fix).
+            proc:stdout_read_line()
+        }
+    }
+--- request
+GET /t
+--- timeout: 0.5
+--- wait: 2
+--- ignore_response
+--- curl_error eval: qr/\(28\)/
+--- no_error_log
+[alert]
