@@ -1200,6 +1200,40 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
     }
 
     ngx_http_lua_pipe_proc_finalize(proc);
+
+    /*
+     * pipe_proc_finalize → ngx_http_lua_pipe_close_helper may leave pipe
+     * connections open with active timers/posted events when there are
+     * pending I/O operations (handler != dummy_handler).  Close them now
+     * before destroying the pool.
+     *
+     * Without this, when pool cleanup LIFO ordering causes pipe_proc_destroy
+     * to run before request_cleanup_handler (e.g. QUIC connection close path:
+     * ngx_quic_close_streams → ngx_http_free_request → ngx_destroy_pool),
+     * request_cleanup sees proc->pipe == NULL and returns early, leaving the
+     * timer live.  The timer then fires after the request pool is freed,
+     * accessing a dangling wait_co_ctx pointer → SIGSEGV.
+     *
+     * ngx_close_connection handles everything: timers (ngx_del_timer),
+     * posted events (ngx_delete_posted_event), epoll removal, fd close,
+     * and connection recycling.
+     */
+
+    if (pipe->stdout_ctx && pipe->stdout_ctx->c) {
+        ngx_close_connection(pipe->stdout_ctx->c);
+        pipe->stdout_ctx->c = NULL;
+    }
+
+    if (pipe->stderr_ctx && pipe->stderr_ctx->c) {
+        ngx_close_connection(pipe->stderr_ctx->c);
+        pipe->stderr_ctx->c = NULL;
+    }
+
+    if (pipe->stdin_ctx && pipe->stdin_ctx->c) {
+        ngx_close_connection(pipe->stdin_ctx->c);
+        pipe->stdin_ctx->c = NULL;
+    }
+
     ngx_destroy_pool(pipe->pool);
     proc->pipe = NULL;
 }
@@ -2495,13 +2529,20 @@ ngx_http_lua_pipe_proc_read_stdout_cleanup(void *data)
                    "lua pipe proc read stdout cleanup");
 
     proc = wait_co_ctx->data;
+
+    wait_co_ctx->cleanup = NULL;
+
+    if (proc->pipe == NULL) {
+        /* pipe_proc_destroy already ran (LIFO pool cleanup) and cancelled
+         * timers/connections; nothing left to clean up here. */
+        return;
+    }
+
     c = proc->pipe->stdout_ctx->c;
     if (c) {
         rev = c->read;
         ngx_http_lua_pipe_clear_event(rev);
     }
-
-    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2517,13 +2558,18 @@ ngx_http_lua_pipe_proc_read_stderr_cleanup(void *data)
                    "lua pipe proc read stderr cleanup");
 
     proc = wait_co_ctx->data;
+
+    wait_co_ctx->cleanup = NULL;
+
+    if (proc->pipe == NULL) {
+        return;
+    }
+
     c = proc->pipe->stderr_ctx->c;
     if (c) {
         rev = c->read;
         ngx_http_lua_pipe_clear_event(rev);
     }
-
-    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2539,13 +2585,18 @@ ngx_http_lua_pipe_proc_write_cleanup(void *data)
                    "lua pipe proc write cleanup");
 
     proc = wait_co_ctx->data;
+
+    wait_co_ctx->cleanup = NULL;
+
+    if (proc->pipe == NULL) {
+        return;
+    }
+
     c = proc->pipe->stdin_ctx->c;
     if (c) {
         wev = c->write;
         ngx_http_lua_pipe_clear_event(wev);
     }
-
-    wait_co_ctx->cleanup = NULL;
 }
 
 
@@ -2561,13 +2612,18 @@ ngx_http_lua_pipe_proc_wait_cleanup(void *data)
                    "lua pipe proc wait cleanup");
 
     proc = wait_co_ctx->data;
+
+    wait_co_ctx->cleanup = NULL;
+
+    if (proc->pipe == NULL) {
+        return;
+    }
+
     node = proc->pipe->node;
     pipe_node = (ngx_http_lua_pipe_node_t *) &node->color;
     pipe_node->wait_co_ctx = NULL;
 
     ngx_http_lua_pipe_clear_event(&wait_co_ctx->sleep);
-
-    wait_co_ctx->cleanup = NULL;
 }
 
 
