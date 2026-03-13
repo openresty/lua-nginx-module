@@ -54,12 +54,6 @@ BEGIN {
 
     if ($v !~ /--with-http_v3_module/) {
         $SkipReason = "requires nginx built with --with-http_v3_module";
-
-    } elsif (!-f $ENV{TEST_NGINX_HTTP3_CRT} || !-f $ENV{TEST_NGINX_HTTP3_KEY}) {
-        $SkipReason =
-            "requires TEST_NGINX_HTTP3_CRT / TEST_NGINX_HTTP3_KEY cert files "
-            . "(run util/build-and-test.sh --http3 once to generate them)";
-
     } else {
         # Enable global HTTP3 mode so Test::Nginx::Util injects ssl_certificate
         # into the server block and makes curl use --http3-only for all tests.
