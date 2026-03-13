@@ -1202,17 +1202,17 @@ ngx_http_lua_ffi_pipe_proc_destroy(ngx_http_lua_ffi_pipe_proc_t *proc)
     ngx_http_lua_pipe_proc_finalize(proc);
 
     /*
-     * pipe_proc_finalize → ngx_http_lua_pipe_close_helper may leave pipe
+     * pipe_proc_finalize -> ngx_http_lua_pipe_close_helper may leave pipe
      * connections open with active timers/posted events when there are
      * pending I/O operations (handler != dummy_handler).  Close them now
      * before destroying the pool.
      *
      * Without this, when pool cleanup LIFO ordering causes pipe_proc_destroy
      * to run before request_cleanup_handler (e.g. QUIC connection close path:
-     * ngx_quic_close_streams → ngx_http_free_request → ngx_destroy_pool),
+     * ngx_quic_close_streams -> ngx_http_free_request -> ngx_destroy_pool),
      * request_cleanup sees proc->pipe == NULL and returns early, leaving the
      * timer live.  The timer then fires after the request pool is freed,
-     * accessing a dangling wait_co_ctx pointer → SIGSEGV.
+     * accessing a dangling wait_co_ctx pointer -> SIGSEGV.
      *
      * ngx_close_connection handles everything: timers (ngx_del_timer),
      * posted events (ngx_delete_posted_event), epoll removal, fd close,
