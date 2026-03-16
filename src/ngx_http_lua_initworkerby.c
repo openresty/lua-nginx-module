@@ -115,6 +115,18 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 
     ngx_memcpy(fake_cycle, cycle, sizeof(ngx_cycle_t));
 
+    /*
+     * nginx clears cycle->old_cycle after ngx_init_cycle() completes.
+     * Since nginx 1.29.2, ngx_ssl_cache_fetch() accesses old_cycle->conf_ctx
+     * without a NULL guard, so we must ensure old_cycle is non-NULL to avoid
+     * a NULL dereference when merge_loc_conf triggers ngx_ssl_trusted_certificate.
+     * Pointing to the current cycle is safe: the SSL cache is shared via
+     * conf_ctx, so cert lookups will still find previously loaded entries.
+     */
+    if (fake_cycle->old_cycle == NULL) {
+        fake_cycle->old_cycle = cycle;
+    }
+
     ngx_queue_init(&fake_cycle->reusable_connections_queue);
 
     if (ngx_array_init(&fake_cycle->listening, cycle->pool,
