@@ -698,6 +698,7 @@ hello world: HTTP/2.0
 --- no_error_log
 [error]
 [crit]
+--- skip_nginx: 4: < 1.29.4
 
 
 
@@ -736,3 +737,4 @@ qr/502 Bad Gateway/
 [error]
 --- error_log eval
 qr/SSL_do_handshake.*(?:no application protocol|NO_APPLICATION_PROTOCOL).*SSL alert number 120\) while SSL handshaking to upstream/
+--- skip_nginx: 4: < 1.29.4

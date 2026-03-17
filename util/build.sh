@@ -37,7 +37,7 @@ time ngx-build $force $version \
           --with-http_ssl_module \
           --add-module=$root/../ndk-nginx-module \
           --add-module=$root/../set-misc-nginx-module \
-          --with-ld-opt="-L$PCRE2_LIB -L$OPENSSL_LIB -Wl,-rpath,$PCRE2_LIB:$LIBDRIZZLE_LIB:$OPENSSL_LIB" \
+          --with-ld-opt="-L$PCRE2_LIB -L$OPENSSL_LIB -L$LUAJIT_LIB -Wl,-rpath,$PCRE2_LIB:$LIBDRIZZLE_LIB:$OPENSSL_LIB:$LUAJIT_LIB" \
           --without-mail_pop3_module \
           --without-mail_imap_module \
           --with-http_image_filter_module \
