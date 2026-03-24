@@ -2616,6 +2616,11 @@ ngx_http_lua_pipe_proc_wait_cleanup(void *data)
     wait_co_ctx->cleanup = NULL;
 
     if (proc->pipe == NULL) {
+        /* pipe_proc_destroy already ran (LIFO pool cleanup) and closed
+         * connections, but wait uses wait_co_ctx->sleep (a standalone event,
+         * not tied to any connection), so ngx_close_connection in
+         * pipe_proc_destroy cannot cancel it.  Clear it here. */
+        ngx_http_lua_pipe_clear_event(&wait_co_ctx->sleep);
         return;
     }
 
