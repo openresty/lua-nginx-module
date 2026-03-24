@@ -80,7 +80,7 @@ static ngx_http_lua_set_header_t  ngx_http_lua_set_handlers[] = {
 
     { ngx_string("WWW-Authenticate"),
                  offsetof(ngx_http_headers_out_t, www_authenticate),
-                 ngx_http_set_builtin_header },
+                 ngx_http_set_builtin_multi_header },
 
     { ngx_string("Expires"),
                  offsetof(ngx_http_headers_out_t, expires),
