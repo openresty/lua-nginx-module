@@ -99,3 +99,30 @@ GET /t
 --- curl_error eval: qr/\(28\)/
 --- no_error_log
 [alert]
+
+
+=== TEST 2: pipe wait timer must not fire after pool is freed on QUIC connection close
+--- config
+    location = /t {
+        content_by_lua_block {
+            local proc = require("ngx.pipe").spawn({"sleep", "100"})
+            -- set_timeouts(write_timeout, stdout_timeout, stderr_timeout, wait_timeout)
+            proc:set_timeouts(nil, nil, nil, 1000)  -- 1 s wait timeout
+
+            -- This call yields and arms a 1 s timer on wait_co_ctx->sleep.
+            -- Unlike stdout/stderr read timers (tied to a connection),
+            -- the wait timer is a standalone ngx_event_t, so
+            -- ngx_close_connection in pipe_proc_destroy cannot cancel it.
+            -- Without the fix in wait_cleanup, the timer fires after pool
+            -- is freed → SIGSEGV in ngx_http_lua_pipe_resume_wait_handler.
+            proc:wait()
+        }
+    }
+--- request
+GET /t
+--- timeout: 0.5
+--- wait: 2
+--- ignore_response
+--- curl_error eval: qr/\(28\)/
+--- no_error_log
+[alert]
