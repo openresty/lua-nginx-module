@@ -12,7 +12,7 @@ if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
     plan(skip_all => "too old OpenSSL, need >= 1.0.2e, was $1");
 } elsif ($openssl_version =~ m/BoringSSL/) {
     $ENV{TEST_NGINX_USE_BORINGSSL} = 1;
-    plan tests => repeat_each() * (blocks() * 6 - 6);
+    plan tests => repeat_each() * (blocks() * 6 - 8);
 } else {
     plan tests => repeat_each() * (blocks() * 5 - 5);
     $ENV{TEST_NGINX_USE_OPENSSL} = 1;
@@ -79,6 +79,12 @@ ffi.cdef[[
 
     int ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
         unsigned char *out, size_t *outlen, char **err);
+
+    int ngx_http_lua_ffi_ssl_server_random(ngx_http_request_t *r,
+        const unsigned char *out, size_t *outlen, char **err);
+
+    int ngx_http_lua_ffi_ssl_session_master_key(ngx_http_request_t *r,
+        const unsigned char *out, size_t *outlen, char **err);
 
     int ngx_http_lua_ffi_req_shared_ssl_ciphers(void *r, uint16_t *ciphers,
         uint16_t *nciphers, int filter_grease, char **err);
@@ -2074,3 +2080,298 @@ without_filter:\[.*\]
 with_filter:\[.*\]
 --- error_log chomp
 TLSv1.2, cipher: "ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(128) Mac=AEAD"
+
+
+
+=== TEST 20: get server random
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {
+                collectgarbage()
+
+                local ffi = require "ffi"
+                require "defines"
+
+                local errmsg = ffi.new("char *[1]")
+
+                local r = require "resty.core.base" .get_request()
+                if r == nil then
+                    ngx.log(ngx.ERR, "no request found")
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+
+                -- test server random length
+                local out = ffi.new("unsigned char[?]", 0)
+                local sizep = ffi.new("size_t[1]", 0)
+
+                local rc = ffi.C.ngx_http_lua_ffi_ssl_server_random(r, out, sizep, errmsg)
+                if rc ~= 0 then
+                    ngx.log(ngx.ERR, "failed to get server random length: ",
+                            ffi.string(errmsg[0]))
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+
+                if tonumber(sizep[0]) ~= 32 then
+                    ngx.log(ngx.ERR, "server random length does not equal 32")
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+
+                -- test server random value
+                out = ffi.new("unsigned char[?]", 50)
+                sizep = ffi.new("size_t[1]", 50)
+
+                rc = ffi.C.ngx_http_lua_ffi_ssl_server_random(r, out, sizep, errmsg)
+                if rc ~= 0 then
+                    ngx.log(ngx.ERR, "failed to get server random: ",
+                            ffi.string(errmsg[0]))
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+
+                local init_v = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+                if ffi.string(out, sizep[0]) == init_v then
+                    ngx.log(ngx.ERR, "maybe the server random value is incorrect")
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+
+                ngx.status = 201 ngx.say("foo") ngx.exit(201)
+            }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+
+                sock:settimeout(2000)
+
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+
+                ngx.say("connected: ", ok)
+
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+
+                ngx.say("ssl handshake: ", type(sess))
+
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+
+                ngx.say("sent http request: ", bytes, " bytes.")
+
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+
+                    ngx.say("received: ", line)
+                end
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: cdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+
+--- error_log
+lua ssl server name: "test.com"
+
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 21: get session master key
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+ 
+        ssl_protocols TLSv1.2;
+ 
+        ssl_certificate ../../cert/test.crt;
+        ssl_certificate_key ../../cert/test.key;
+ 
+        server_tokens off;
+        location /foo {
+            default_type 'text/plain';
+            content_by_lua_block {
+                collectgarbage()
+ 
+                local ffi = require "ffi"
+                require "defines"
+ 
+                local errmsg = ffi.new("char *[1]")
+ 
+                local r = require "resty.core.base" .get_request()
+                if r == nil then
+                    ngx.log(ngx.ERR, "no request found")
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+ 
+                -- test session master key length
+                local out = ffi.new("unsigned char[?]", 0)
+                local sizep = ffi.new("size_t[1]", 0)
+ 
+                local rc = ffi.C.ngx_http_lua_ffi_ssl_session_master_key(r, out, sizep, errmsg)
+                if rc ~= 0 then
+                    ngx.log(ngx.ERR, "failed to get session master key length: ",
+                            ffi.string(errmsg[0]))
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+ 
+                if tonumber(sizep[0]) ~= 48 then
+                    ngx.log(ngx.ERR, "session master key length does not equal 48, got: ",
+                            tonumber(sizep[0]))
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+ 
+                -- test session master key value
+                out = ffi.new("unsigned char[?]", 64)
+                sizep = ffi.new("size_t[1]", 64)
+ 
+                rc = ffi.C.ngx_http_lua_ffi_ssl_session_master_key(r, out, sizep, errmsg)
+                if rc ~= 0 then
+                    ngx.log(ngx.ERR, "failed to get session master key: ",
+                            ffi.string(errmsg[0]))
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+ 
+                local init_v = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+                if ffi.string(out, sizep[0]) == init_v then
+                    ngx.log(ngx.ERR, "maybe the session master key value is incorrect")
+                    ngx.status = 201 ngx.say("foo") ngx.exit(201)
+                    return
+                end
+ 
+                ngx.status = 201 ngx.say("foo") ngx.exit(201)
+            }
+            more_clear_headers Date;
+        }
+    }
+--- config
+    server_tokens off;
+    lua_ssl_trusted_certificate ../../cert/test.crt;
+ 
+    location /t {
+        content_by_lua_block {
+            do
+                local sock = ngx.socket.tcp()
+ 
+                sock:settimeout(2000)
+ 
+                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
+ 
+                ngx.say("connected: ", ok)
+ 
+                local sess, err = sock:sslhandshake(nil, "test.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
+ 
+                ngx.say("ssl handshake: ", type(sess))
+ 
+                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
+ 
+                ngx.say("sent http request: ", bytes, " bytes.")
+ 
+                while true do
+                    local line, err = sock:receive()
+                    if not line then
+                        -- ngx.say("failed to receive response status line: ", err)
+                        break
+                    end
+ 
+                    ngx.say("received: ", line)
+                end
+ 
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            -- collectgarbage()
+        }
+    }
+ 
+--- request
+GET /t
+--- response_body
+connected: 1
+ssl handshake: cdata
+sent http request: 56 bytes.
+received: HTTP/1.1 201 Created
+received: Server: nginx
+received: Content-Type: text/plain
+received: Content-Length: 4
+received: Connection: close
+received: 
+received: foo
+close: 1 nil
+ 
+--- error_log
+lua ssl server name: "test.com"
+ 
+--- no_error_log
+[error]
+[alert]

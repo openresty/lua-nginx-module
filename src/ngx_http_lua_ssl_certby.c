@@ -1754,4 +1754,54 @@ ngx_http_lua_ffi_ssl_client_random(ngx_http_request_t *r,
 }
 
 
+int
+ngx_http_lua_ffi_ssl_server_random(ngx_http_request_t *r,
+    unsigned char *out, size_t *outlen, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    *outlen = SSL_get_server_random(ssl_conn, out, *outlen);
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_ssl_session_master_key(ngx_http_request_t *r,
+    unsigned char *out, size_t *outlen, char **err)
+{
+    ngx_ssl_conn_t          *ssl_conn;
+    SSL_SESSION             *sess;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    sess = SSL_get0_session(ssl_conn);
+
+
+    *outlen = SSL_SESSION_get_master_key(sess, out, *outlen);
+
+    return NGX_OK;
+}
+
+
 #endif /* NGX_HTTP_SSL */
