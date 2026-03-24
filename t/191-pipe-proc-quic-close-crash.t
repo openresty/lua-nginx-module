@@ -101,6 +101,7 @@ GET /t
 [alert]
 
 
+
 === TEST 2: pipe wait timer must not fire after pool is freed on QUIC connection close
 --- config
     location = /t {
