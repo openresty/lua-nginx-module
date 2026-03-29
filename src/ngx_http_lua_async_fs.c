@@ -50,12 +50,14 @@ typedef struct {
 typedef struct {
     ngx_uint_t               op;
 
-    u_char                  *path;       /* malloc'd copy */
+    /* open params */
+    u_char                  *path;
     int                      flags;
     int                      create_mode;
 
+    /* read/write params */
     ngx_fd_t                 fd;
-    u_char                  *buf;        /* malloc'd */
+    u_char                  *buf;
     size_t                   size;
     off_t                    offset;
 
@@ -939,6 +941,7 @@ ngx_http_lua_fs_file_tostring(lua_State *L)
 
     if (file->ref == NULL || file->ref->closed) {
         lua_pushliteral(L, "file (closed)");
+
     } else {
         lua_pushfstring(L, "file (fd=%d)", file->ref->fd);
     }
