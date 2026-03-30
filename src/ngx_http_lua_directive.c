@@ -1976,6 +1976,12 @@ ngx_http_lua_conf_read_lua_token(ngx_conf_t *cf,
             b->last = b->pos + n;
             start = b->start;
 
+#if (nginx_version >= 1009002)
+            if (dump) {
+                dump->last = ngx_cpymem(dump->last, b->start + len, size);
+            }
+#endif
+
             continue;
         }
 
