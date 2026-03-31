@@ -6432,7 +6432,7 @@ It accepts the following values (defaults to `2`):
 `?`, 0x00 ~ 0x1F, 0x7F ~ 0xFF will be escaped.
 * `2`: escape `str` as a URI component. All characters except
 alphabetic characters, digits, `-`, `.`, `_`,
-`~` will be encoded as `%XX`.
+`~`, `!`, `'`, `(`, `)`, `*` will be encoded as `%XX`.
 
 [Back to TOC](#nginx-api-for-lua)
 
