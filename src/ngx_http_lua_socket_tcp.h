@@ -123,6 +123,8 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_http_lua_co_ctx_t           *read_co_ctx;
     ngx_http_lua_co_ctx_t           *write_co_ctx;
 
+    int                              on_push_cb_ref;
+
     ngx_uint_t                       reused;
     struct sockaddr_storage          sockaddr;
     socklen_t                        socklen;
@@ -189,6 +191,7 @@ typedef struct {
     char                             host[COSOCKET_HOST_LEN];
 
     ngx_uint_t                       reused;
+    int                              on_push_cb_ref;
 
     ngx_http_lua_socket_udata_queue_t   *udata_queue;
 } ngx_http_lua_socket_pool_item_t;
