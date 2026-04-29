@@ -1939,6 +1939,16 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
     u->ssl_verify = verify;
 
+    if (u->ssl_trusted_store) {
+        if (SSL_set1_verify_cert_store(ssl_conn, u->ssl_trusted_store) == 0) {
+            ERR_clear_error();
+            *errmsg = "SSL_set1_verify_cert_store() failed";
+            return NGX_ERROR;
+        }
+
+        u->ssl_trusted_store = NULL;
+    }
+
     if (ocsp_status_req) {
 #ifdef NGX_HTTP_LUA_USE_OCSP
         SSL_set_tlsext_status_type(c->ssl->connection,
@@ -2250,6 +2260,35 @@ ngx_http_lua_ffi_socket_tcp_get_ssl_ctx(ngx_http_request_t *r,
     }
 
     *pctx = c->ssl->session_ctx;
+
+    return NGX_OK;
+}
+
+
+int
+ngx_http_lua_ffi_socket_tcp_settrustedstore(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u, void *store, const char **errmsg)
+{
+    if (u == NULL
+        || u->peer.connection == NULL
+        || u->read_closed
+        || u->write_closed)
+    {
+        *errmsg = "closed";
+        return NGX_ERROR;
+    }
+
+    if (u->request != r) {
+        *errmsg = "bad request";
+        return NGX_ERROR;
+    }
+
+    if (store == NULL) {
+        *errmsg = "no trusted store";
+        return NGX_ERROR;
+    }
+
+    u->ssl_trusted_store = store;
 
     return NGX_OK;
 }

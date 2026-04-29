@@ -4060,6 +4060,7 @@ Nginx API for Lua
 * [tcpsock:connect](#tcpsockconnect)
 * [tcpsock:getfd](#getfd)
 * [tcpsock:setclientcert](#tcpsocksetclientcert)
+* [tcpsock:settrustedstore](#tcpsocksettrustedstore)
 * [tcpsock:sslhandshake](#tcpsocksslhandshake)
 * [tcpsock:send](#tcpsocksend)
 * [tcpsock:receive](#tcpsockreceive)
@@ -8126,6 +8127,7 @@ Creates and returns a TCP or stream-oriented unix domain socket object (also kno
 * [bind](#tcpsockbind)
 * [connect](#tcpsockconnect)
 * [setclientcert](#tcpsocksetclientcert)
+* [settrustedstore](#tcpsocksettrustedstore)
 * [sslhandshake](#tcpsocksslhandshake)
 * [send](#tcpsocksend)
 * [receive](#tcpsockreceive)
@@ -8365,6 +8367,36 @@ This method was first introduced in the `v0.10.22` release.
 
 [Back to TOC](#nginx-api-for-lua)
 
+tcpsock:settrustedstore
+-----------------------
+
+**syntax:** *ok, err = tcpsock:settrustedstore(x509_store)*
+
+**context:** *rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, ngx.timer.&#42;*
+
+Set an X509 trusted certificate store on the TCP socket object. The store will be used by the
+[tcpsock:sslhandshake](#tcpsocksslhandshake) method to verify the remote server's certificate, in
+place of the CAs configured by the [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate)
+directive. This is useful when the set of trusted CAs is determined at request time, for example
+when talking to per-tenant upstreams whose CAs are not known at configuration time.
+
+* `x509_store` specifies an `X509_STORE *` cdata object that will be used during the SSL/TLS
+  handshake. Such an object can be built using the
+  [resty.openssl.x509.store](https://github.com/fffonion/lua-resty-openssl) library or directly via
+  raw OpenSSL FFI bindings.
+
+If `x509_store` is `nil`, this method will clear any previously set trusted store on the cosocket
+object.
+
+The TCP connection must already be established before calling this method.
+
+The trusted store only takes effect when the next [tcpsock:sslhandshake](#tcpsocksslhandshake)
+call is made with `ssl_verify` set to `true`; with verification off, the store is ignored. The
+store is consumed once per handshake and is not retained across handshakes, so callers wishing to
+apply it to a subsequent handshake on the same cosocket must call this method again.
+
+[Back to TOC](#nginx-api-for-lua)
+
 tcpsock:sslhandshake
 --------------------
 
@@ -8394,7 +8426,10 @@ the remote.
 The optional `ssl_verify` argument takes a Lua boolean value to
 control whether to perform SSL verification. When set to `true`, the server
 certificate will be verified according to the CA certificates specified by
-the [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate) directive.
+the [lua_ssl_trusted_certificate](#lua_ssl_trusted_certificate) directive,
+or, if [tcpsock:settrustedstore](#tcpsocksettrustedstore) has been called on
+this cosocket, by the X509 store supplied there (which takes precedence for
+this handshake).
 You may also need to adjust the [lua_ssl_verify_depth](#lua_ssl_verify_depth)
 directive to control how deep we should follow along the certificate chain.
 Also, when the `ssl_verify` argument is true and the
