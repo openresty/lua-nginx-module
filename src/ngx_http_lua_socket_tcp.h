@@ -135,6 +135,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     ngx_ssl_session_t               *ssl_session_ret;
     const char                      *error_ret;
     int                              openssl_error_code_ret;
+    X509_STORE                      *ssl_trusted_store;
 #endif
 
     ngx_chain_t                     *busy_bufs;
