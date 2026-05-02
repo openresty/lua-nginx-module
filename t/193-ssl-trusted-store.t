@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3);
+plan tests => repeat_each() * (blocks() * 6);
 
 log_level 'debug';
 
@@ -317,6 +317,7 @@ GET /t
 --- response_body
 settrustedstore: nil closed
 --- no_error_log
+[noexist]
 [alert]
 [crit]
 [emerg]
@@ -347,6 +348,7 @@ GET /t
 --- response_body
 settrustedstore: nil no trusted store
 --- no_error_log
+[noexist]
 [alert]
 [crit]
 [emerg]
