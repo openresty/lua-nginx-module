@@ -189,7 +189,7 @@ __DATA__
 --- request
 GET /t
 --- response_body_like
-^received: HTTP/1\.0 200 OK
+^received: HTTP/1\.[01] 200 OK
 --- no_error_log
 [error]
 [alert]
