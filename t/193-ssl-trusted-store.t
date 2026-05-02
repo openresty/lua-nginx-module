@@ -346,7 +346,7 @@ settrustedstore: nil closed
 --- request
 GET /t
 --- response_body
-settrustedstore: nil no trusted store
+settrustedstore: true nil
 --- no_error_log
 [noexist]
 [alert]

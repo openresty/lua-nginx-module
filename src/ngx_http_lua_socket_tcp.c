@@ -2283,11 +2283,6 @@ ngx_http_lua_ffi_socket_tcp_settrustedstore(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (store == NULL) {
-        *errmsg = "no trusted store";
-        return NGX_ERROR;
-    }
-
     u->ssl_trusted_store = store;
 
     return NGX_OK;
