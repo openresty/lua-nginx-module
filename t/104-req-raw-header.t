@@ -17,7 +17,7 @@ use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 15);
+plan tests => repeat_each() * (blocks() * 3 + 19);
 
 #no_diff();
 no_long_string();
@@ -1059,3 +1059,31 @@ GET /t
 OK
 --- no_error_log
 [error]
+
+
+
+=== TEST 36: works in log_by_lua
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.say("OK")
+        }
+
+        log_by_lua_block {
+            ngx.log(ngx.WARN, "http_version: ", ngx.req.http_version())
+            ngx.log(ngx.WARN, "raw header: ", ngx.req.raw_header())
+        }
+    }
+--- request
+GET /t
+--- more_headers
+Foo: bar
+--- ignore_response_body
+--- no_error_log
+[error]
+--- error_log
+http_version: 1.1
+raw header: GET /t HTTP/1.1
+Host: localhost
+Connection: close
+Foo: bar

@@ -5150,7 +5150,7 @@ ngx.req.http_version
 
 **syntax:** *num = ngx.req.http_version()*
 
-**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;*
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, log_by_lua&#42;*
 
 Returns the HTTP version number for the current request as a Lua number.
 
@@ -5165,7 +5165,7 @@ ngx.req.raw_header
 
 **syntax:** *str = ngx.req.raw_header(no_request_line?)*
 
-**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;*
+**context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, log_by_lua&#42;*
 
 Returns the original raw HTTP protocol header received by the Nginx server.
 
