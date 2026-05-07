@@ -6137,6 +6137,18 @@ ngx_http_lua_socket_tcp_upstream_destroy(lua_State *L)
         return 0;
     }
 
+    /*
+     * During worker shutdown the Lua VM is closed by the cycle pool
+     * cleanup; by then the event timer rbtree may already have been
+     * partially torn down by sibling finalizers. Calling ngx_del_timer
+     * from here corrupts the rbtree. The cycle pool is about to
+     * disappear and the kernel reclaims fds, so the cleanup is not
+     * needed at this point.
+     */
+    if (ngx_terminate || ngx_exiting) {
+        return 0;
+    }
+
     if (u->cleanup) {
         ngx_http_lua_socket_tcp_cleanup(u); /* it will clear u->cleanup */
     }
@@ -6155,6 +6167,10 @@ ngx_http_lua_socket_downstream_destroy(lua_State *L)
     u = lua_touserdata(L, 1);
     if (u == NULL) {
         dd("u is NULL");
+        return 0;
+    }
+
+    if (ngx_terminate || ngx_exiting) {
         return 0;
     }
 
