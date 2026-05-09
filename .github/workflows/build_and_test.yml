@@ -184,6 +184,28 @@ jobs:
           sudo ip route add prohibit 0.0.0.1/32
           sudo sysctl -w kernel.pid_max=10000
 
+      - name: Start local DNS cache (dnsmasq)
+        run: |
+          sudo apt-get install -y --no-install-recommends dnsmasq
+          # Stop any pre-installed dnsmasq instance from the package's default unit.
+          sudo systemctl stop dnsmasq 2>/dev/null || true
+          # --no-resolv: ignore /etc/resolv.conf (which on ubuntu-latest points at
+          #   systemd-resolved on 127.0.0.53 and would loop back to ourselves on
+          #   port 53 if we ever bound there).
+          # Bind to 5353 to avoid colliding with systemd-resolved.
+          sudo dnsmasq --port=5353 \
+                       --listen-address=127.0.0.1 \
+                       --bind-interfaces \
+                       --no-resolv --no-hosts \
+                       --server=8.8.4.4 --server=8.8.8.8 --server=1.1.1.1 \
+                       --cache-size=1000 \
+                       --pid-file=/tmp/dnsmasq.pid
+          # Warm the cache for all external hostnames the test suite resolves.
+          for h in openresty.org www.openresty.org agentzh.org sregex.org \
+                   www.google.com google-public-dns-a.google.com; do
+            dig +short +tries=3 +time=2 @127.0.0.1 -p 5353 "$h" || true
+          done
+
       - name: Build LuaJIT
         run: |
           cd luajit2
@@ -254,9 +276,8 @@ jobs:
           export LD_PRELOAD=$PWD/mockeagain/mockeagain.so
           export TEST_NGINX_HTTP3_CRT=$PWD/t/cert/http3/http3.crt
           export TEST_NGINX_HTTP3_KEY=$PWD/t/cert/http3/http3.key
-          export TEST_NGINX_RESOLVER=8.8.4.4
-          dig +short myip.opendns.com @resolver1.opendns.com || exit 0
-          dig +short @$TEST_NGINX_RESOLVER openresty.org || exit 0
-          dig +short @$TEST_NGINX_RESOLVER agentzh.org || exit 0
+          export TEST_NGINX_OPENRESTY_ORG_IP=$(dig +short @127.0.0.1 -p 5353 openresty.org | head -n1)
+          dig +short @127.0.0.1 -p 5353 openresty.org || true
+          dig +short @127.0.0.1 -p 5353 agentzh.org || true
           python3 ./util/nc_server.py &
           /usr/bin/env perl $(command -v prove) -I. -Itest-nginx/inc -Itest-nginx/lib -r t/
