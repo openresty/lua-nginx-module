@@ -202,13 +202,10 @@ ngx_http_lua_free_task_ctx(ngx_http_lua_task_ctx_t *ctx)
     /* clean Lua stack */
     vm = ctx->vm;
 
-    /* call collectgarbage("collect") */
     lua_settop(vm, 0);
-    lua_getglobal(vm, "collectgarbage");
-    lua_pushstring(vm, "collect");
-    lua_pcall(vm, 1, 1, 0);
 
-    lua_settop(vm, 0);
+    /* force a full garbage-collection cycle */
+    lua_gc(L, LUA_GCCOLLECT, 0);
 }
 
 
