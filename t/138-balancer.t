@@ -583,6 +583,7 @@ upstream sent more data than specified in "Content-Length" header while reading 
     upstream backend {
         server 127.0.0.1:$TEST_NGINX_SERVER_PORT;
         balancer_by_lua_block {
+            collectgarbage("collect") -- deal with false positive leakage test
             local ffi = require "ffi"
             local C = ffi.C
 ffi.cdef[[

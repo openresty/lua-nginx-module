@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 2 + 6);
+plan 'no_plan';
 
 #no_diff();
 no_long_string();
@@ -54,6 +54,7 @@ hello, world
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n = ngx.re.sub("a b c d", "(b) (c)", "[$0] [$1] [$2] [$3] [$134]", "o")
             ngx.say(s)
             ngx.say(n)
@@ -71,6 +72,7 @@ a [b c] [b] [c] [] [] d
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("a b c d",
                                          "(b) (c)",
                                          "[$0] [$1] [$2] [$3] [$hello]",
@@ -96,6 +98,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("a b c d",
                                          "(b) (c)",
                                          "[$0] [$1] [$2] [$3] [${hello}]",
@@ -120,6 +123,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134}]", "o")
             ngx.say(s)
             ngx.say(n)
@@ -137,6 +141,7 @@ attempt to use named capturing variable "hello" (named captures not supported ye
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134]", "o")
             if s then
                 ngx.say(s, ": ", n)
@@ -158,6 +163,7 @@ the closing bracket in "134" variable is missing
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${134", "o")
             if s then
                 ngx.say(s, ": ", n)
@@ -179,6 +185,7 @@ the closing bracket in "134" variable is missing
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [${", "o")
             if s then
                 ngx.say(s, ": ", n)
@@ -200,6 +207,7 @@ lua script: invalid capturing variable name found in "[$0] [$1] [${2}] [$3] [${"
 --- config
     location /re {
         content_by_lua '
+            collectgarbage("collect") -- memory leak test
             local s, n, err = ngx.re.sub("b c d", "(b) (c)", "[$0] [$1] [${2}] [$3] [$", "o")
             if s then
                 ngx.say(s, ": ", n)

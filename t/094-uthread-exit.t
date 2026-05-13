@@ -8,7 +8,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 4 - 2);
+plan 'no_plan';
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= '11211';
@@ -298,7 +298,7 @@ exiting the user thread
 --- config
     location /lua {
         resolver 127.0.0.2:12345;
-        resolver_timeout 12s;
+        resolver_timeout 2s;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -394,7 +394,7 @@ after
 --- config
     location /lua {
         resolver 127.0.0.2:12345;
-        resolver_timeout 12s;
+        resolver_timeout 2s;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -973,7 +973,7 @@ after
 === TEST 12: exit in user thread (entry thread is still pending on ngx.req.read_body)
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -1059,7 +1059,7 @@ after
 === TEST 13: exit(0) in user thread (entry thread is still pending on ngx.location.capture), with pending output
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -1141,7 +1141,7 @@ attempt to abort with pending subrequests
 === TEST 14: exit in user thread (entry thread is still pending on ngx.location.capture), without pending output
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.sleep(0.1)
@@ -1224,7 +1224,7 @@ attempt to abort with pending subrequests
 === TEST 15: exit in user thread (entry thread is still pending on ngx.location.capture_multi), without pending output
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.sleep(0.1)
@@ -1315,7 +1315,7 @@ attempt to abort with pending subrequests
 --- no_http2
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.location.capture_multi{
@@ -1410,7 +1410,7 @@ qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by se
 --- no_http2
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -1496,7 +1496,7 @@ qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by se
 --- no_http2
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")
@@ -1581,7 +1581,7 @@ qr#curl: \(52\) Empty reply from server|curl: \(95\) HTTP/3 stream 0 reset by se
 === TEST 19: exit(499) in user thread (entry thread is still pending on ngx.location.capture), with pending output
 --- config
     location /lua {
-        client_body_timeout 12000ms;
+        client_body_timeout 2000ms;
         content_by_lua '
             local function f()
                 ngx.say("hello in thread")

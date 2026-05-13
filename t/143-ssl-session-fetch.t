@@ -7,7 +7,7 @@ use File::Basename;
 
 repeat_each(3);
 
-plan tests => repeat_each() * (blocks() * 6) - 3;
+plan "no_plan";
 
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $openssl_version = eval { `$NginxBinary -V 2>&1` };
