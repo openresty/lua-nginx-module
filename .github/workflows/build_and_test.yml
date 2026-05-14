@@ -15,22 +15,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "nginx 1.29.8 + OpenSSL"
-            NGINX_VERSION: "1.29.8"
+          - name: "nginx 1.31.0 + OpenSSL"
+            NGINX_VERSION: "1.31.0"
             TEST_NGINX_TIMEOUT: "5"
 
-          - name: "nginx 1.29.8 + OpenSSL + HTTP/2"
-            NGINX_VERSION: "1.29.8"
+          - name: "nginx 1.31.0 + OpenSSL + HTTP/2"
+            NGINX_VERSION: "1.31.0"
             TEST_NGINX_TIMEOUT: "5"
             TEST_NGINX_USE_HTTP2: "1"
 
-          - name: "nginx 1.29.8 + OpenSSL + HTTP/3"
-            NGINX_VERSION: "1.29.8"
+          - name: "nginx 1.31.0 + OpenSSL + HTTP/3"
+            NGINX_VERSION: "1.31.0"
             TEST_NGINX_USE_HTTP3: "1"
             TEST_NGINX_QUIC_IDLE_TIMEOUT: "3"
 
-          - name: "nginx 1.29.8 + BoringSSL + HTTP/3"
-            NGINX_VERSION: "1.29.8"
+          - name: "nginx 1.31.0 + BoringSSL + HTTP/3"
+            NGINX_VERSION: "1.31.0"
             BORINGSSL: "1"
             TEST_NGINX_USE_HTTP3: "1"
             TEST_NGINX_QUIC_IDLE_TIMEOUT: "3"
