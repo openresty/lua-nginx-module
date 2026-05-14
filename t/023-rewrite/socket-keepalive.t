@@ -792,6 +792,7 @@ qr/lua tcp socket connection pool size: 25\b/]
     }
 
     location /foo {
+        keepalive_timeout 60s;
         echo foo;
     }
 

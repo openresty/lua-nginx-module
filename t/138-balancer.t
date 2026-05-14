@@ -735,7 +735,7 @@ GET /t
 --- response_body eval
 qr/502 Bad Gateway/
 --- no_error_log
-[error]
+[crit]
 --- error_log eval
-qr/SSL_do_handshake.*(?:no application protocol|NO_APPLICATION_PROTOCOL).*SSL alert number 120\) while SSL handshaking to upstream/
+qr/SSL_do_handshake.*(?:no application protocol|NO_APPLICATION_PROTOCOL).*alert number 120\) while SSL handshaking to upstream/
 --- skip_nginx: 4: < 1.29.4
