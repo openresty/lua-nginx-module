@@ -319,61 +319,39 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
 
     headers = (ngx_table_elt_t **) ((char *) &r->headers_out + hv->offset);
 
-    if (hv->no_override) {
-        for (h = *headers; h; h = h->next) {
-            if (!h->hash) {
-                h->value = *value;
-                h->hash = hv->hash;
-                return NGX_OK;
-            }
-        }
-
-        goto create;
-    }
-
-    /* override old values (if any) */
-
-    if (*headers) {
-        for (h = (*headers)->next; h; h = h->next) {
+    for (h = *headers; h; h = h->next) {
+        if (!hv->no_override) {
             h->hash = 0;
             h->value.len = 0;
         }
+    }
 
-        h = *headers;
-
+    if (h->hash == 0) {
+        // update the last element if possible
         h->value = *value;
-
-        if (value->len == 0) {
-            h->hash = 0;
-
-        } else {
+        if (value->len != 0) {
             h->hash = hv->hash;
         }
 
-        return NGX_OK;
-    }
-
-create:
-
-    for (ph = headers; *ph; ph = &(*ph)->next) { /* void */ }
-
-    ho = ngx_list_push(&r->headers_out.headers);
-    if (ho == NULL) {
-        return NGX_ERROR;
-    }
-
-    ho->value = *value;
-
-    if (value->len == 0) {
-        ho->hash = 0;
-
     } else {
-        ho->hash = hv->hash;
-    }
+        ho = ngx_list_push(&r->headers_out.headers);
+        if (ho == NULL) {
+            return NGX_ERROR;
+        }
 
-    ho->key = hv->key;
-    ho->next = NULL;
-    *ph = ho;
+        ho->value = *value;
+
+        if (value->len == 0) {
+            ho->hash = 0;
+
+        } else {
+            ho->hash = hv->hash;
+        }
+
+        ho->key = hv->key;
+        ho->next = NULL;
+        h->next = ho;
+    }
 
     return NGX_OK;
 #else
