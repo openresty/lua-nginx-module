@@ -4203,6 +4203,12 @@ ngx_http_lua_socket_tcp_finalize_read_part(ngx_http_request_t *r,
         ngx_memzero(&u->buffer, sizeof(ngx_buf_t));
     }
 
+    /* mirror tcp_finalize: detach cp so its __gc is safe */
+    if (u->input_filter_ctx != NULL && u->input_filter_ctx != u) {
+        ((ngx_http_lua_socket_compiled_pattern_t *)
+         u->input_filter_ctx)->upstream = NULL;
+    }
+
     if (u->raw_downstream || u->body_downstream) {
         if (r->connection->read->timer_set) {
             ngx_del_timer(r->connection->read);
