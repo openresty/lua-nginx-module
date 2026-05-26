@@ -14,7 +14,7 @@ use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 9);
+plan tests => repeat_each() * (blocks() * 3 + 11);
 
 our $HtmlDir = html_dir;
 
@@ -1206,3 +1206,68 @@ qr/\Agot the request socket
 \z/ms
 --- no_error_log
 [error]
+
+
+
+=== TEST 20: receiveuntil compiled-pattern GC after aborted multipart body (GH #2503)
+--- config
+    location = /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.say("connect failed: ", err)
+                return
+            end
+            local req = "POST /upload HTTP/1.1\r\n"
+                     .. "Host: 127.0.0.1\r\n"
+                     .. "Content-Type: multipart/form-data; "
+                     .. "boundary=----------GFioQpMK0vv2\r\n"
+                     .. "Content-Length: 1048576\r\n"
+                     .. "Connection: close\r\n\r\n"
+                     .. "------"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("send failed: ", err)
+                return
+            end
+            ngx.sleep(0.2)
+            sock:close()
+            ngx.sleep(0.5)
+            ngx.say("ok")
+        }
+    }
+
+    location = /upload {
+        content_by_lua_block {
+            local BOUNDARY = "----------GFioQpMK0vv2"
+            local sock, err = ngx.req.socket()
+            if not sock then
+                ngx.log(ngx.ERR, "no req socket: ", err)
+                return
+            end
+            sock:settimeout(2000)
+            local iter = sock:receiveuntil("--" .. BOUNDARY)
+            while true do
+                local data, e = iter(1)
+                if not data then
+                    ngx.log(ngx.WARN, "iter err: ", e)
+                    break
+                end
+            end
+            iter = nil
+            collectgarbage("collect")
+            collectgarbage("collect")
+            ngx.log(ngx.WARN, "receiveuntil gc done, no crash")
+        }
+    }
+--- request
+GET /t
+--- response_body
+ok
+--- error_log
+receiveuntil gc done, no crash
+--- no_error_log
+[alert]
+[emerg]
+--- skip_eval: 5:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} ne "")
