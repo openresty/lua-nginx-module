@@ -8,7 +8,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 79);
+plan tests => repeat_each() * (blocks() * 3 + 83);
 
 #no_diff();
 no_long_string();
@@ -2272,5 +2272,104 @@ qr/^(a|A)ge: \d\r\n/ms
 GET /test
 --- response_body
 Hello World
+--- no_error_log
+[error]
+
+
+
+=== TEST 98: override WWW-Authenticate from upstream in header_filter_by_lua
+--- config
+    location /main {
+        proxy_pass http://127.0.0.1:$server_port/upstream;
+        header_filter_by_lua_block {
+            ngx.header["WWW-Authenticate"] = "Bearer realm=\"new\""
+        }
+    }
+
+    location = /upstream {
+        content_by_lua_block {
+            ngx.header["WWW-Authenticate"] = "Basic realm=\"old\""
+            ngx.status = 401
+            ngx.say("unauth")
+        }
+    }
+--- request
+GET /main
+--- error_code: 401
+--- response_headers
+WWW-Authenticate: Bearer realm="new"
+--- response_body
+unauth
+--- no_error_log
+[error]
+
+
+
+=== TEST 99: override WWW-Authenticate set earlier in the same phase
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.header["WWW-Authenticate"] = "Basic realm=\"old\""
+            ngx.header["WWW-Authenticate"] = "Bearer realm=\"new\""
+            ngx.status = 401
+            ngx.say("unauth")
+        }
+    }
+--- request
+GET /t
+--- error_code: 401
+--- response_headers
+WWW-Authenticate: Bearer realm="new"
+--- response_body
+unauth
+--- no_error_log
+[error]
+
+
+
+=== TEST 100: set WWW-Authenticate to table value (multi-value)
+--- config
+    location /t {
+        content_by_lua_block {
+            ngx.header["WWW-Authenticate"] = { "Basic realm=\"a\"", "Bearer realm=\"b\"" }
+            ngx.status = 401
+            ngx.say("unauth")
+        }
+    }
+--- request
+GET /t
+--- error_code: 401
+--- raw_response_headers_like eval
+qr/WWW-Authenticate: Basic realm="a"\r\nWWW-Authenticate: Bearer realm="b"\r\n/
+--- response_body
+unauth
+--- no_error_log
+[error]
+
+
+
+=== TEST 101: clear WWW-Authenticate from upstream in header_filter_by_lua
+--- config
+    location /main {
+        proxy_pass http://127.0.0.1:$server_port/upstream;
+        header_filter_by_lua_block {
+            ngx.header["WWW-Authenticate"] = nil
+        }
+    }
+
+    location = /upstream {
+        content_by_lua_block {
+            ngx.header["WWW-Authenticate"] = "Basic realm=\"old\""
+            ngx.status = 401
+            ngx.say("unauth")
+        }
+    }
+--- request
+GET /main
+--- error_code: 401
+--- response_headers
+!WWW-Authenticate
+--- response_body
+unauth
 --- no_error_log
 [error]

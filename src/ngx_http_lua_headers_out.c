@@ -316,6 +316,9 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
 {
 #if defined(nginx_version) && nginx_version >= 1023000
     ngx_table_elt_t  **headers, *h, *ho, **ph;
+    ngx_list_part_t   *part;
+    ngx_uint_t         i;
+    unsigned           matched;
 
     headers = (ngx_table_elt_t **) ((char *) &r->headers_out + hv->offset);
 
@@ -353,6 +356,52 @@ ngx_http_set_builtin_multi_header(ngx_http_request_t *r,
         return NGX_OK;
     }
 
+    /* The builtin pointer (e.g. r->headers_out.www_authenticate) may be NULL
+     * even when a matching header is already present in r->headers_out.headers
+     * (for example, WWW-Authenticate copied from upstream by
+     * ngx_http_upstream_copy_header_line with offset 0). Walk the list to
+     * overwrite the first match and clear the rest, then repoint *headers so
+     * subsequent multi-header semantics keep working. */
+
+    matched = 0;
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash != 0
+            && h[i].key.len == hv->key.len
+            && ngx_strncasecmp(hv->key.data, h[i].key.data, h[i].key.len) == 0)
+        {
+            if (matched || value->len == 0) {
+                h[i].hash = 0;
+                h[i].value.len = 0;
+                matched = 1;
+
+            } else {
+                h[i].value = *value;
+                h[i].hash = hv->hash;
+                h[i].next = NULL;
+                *headers = &h[i];
+                matched = 1;
+            }
+        }
+    }
+
+    if (matched) {
+        return NGX_OK;
+    }
+
 create:
 
     for (ph = headers; *ph; ph = &(*ph)->next) { /* void */ }
@@ -378,8 +427,10 @@ create:
     return NGX_OK;
 #else
     ngx_array_t      *pa;
-    ngx_table_elt_t  *ho, **ph;
+    ngx_table_elt_t  *h, *ho, **ph;
+    ngx_list_part_t  *part;
     ngx_uint_t        i;
+    unsigned          matched;
 
     pa = (ngx_array_t *) ((char *) &r->headers_out + hv->offset);
 
@@ -422,6 +473,56 @@ create:
             ph[0]->hash = hv->hash;
         }
 
+        return NGX_OK;
+    }
+
+    /* The builtin array may be empty even when a matching header already
+     * exists in r->headers_out.headers (e.g. WWW-Authenticate copied from
+     * upstream by ngx_http_upstream_copy_header_line with offset 0). Walk
+     * the list to overwrite the first match and clear the rest. */
+
+    matched = 0;
+    part = &r->headers_out.headers.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash != 0
+            && h[i].key.len == hv->key.len
+            && ngx_strncasecmp(hv->key.data, h[i].key.data, h[i].key.len) == 0)
+        {
+            if (matched || value->len == 0) {
+                h[i].hash = 0;
+                h[i].value.len = 0;
+                matched = 1;
+
+            } else {
+                h[i].value = *value;
+                h[i].hash = hv->hash;
+
+                ph = ngx_array_push(pa);
+                if (ph == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *ph = &h[i];
+
+                matched = 1;
+            }
+        }
+    }
+
+    if (matched) {
         return NGX_OK;
     }
 
