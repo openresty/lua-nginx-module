@@ -6901,11 +6901,11 @@ ngx_http_lua_ffi_socket_tcp_getoption(ngx_http_lua_socket_tcp_upstream_t *u,
         break;
 
     case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
-        rc = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len);
+        rc = getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len);
         break;
 
     case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
-        rc = getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) val, &len);
+        rc = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) val, &len);
         break;
 
     default:
@@ -6973,12 +6973,12 @@ ngx_http_lua_ffi_socket_tcp_setoption(ngx_http_lua_socket_tcp_upstream_t *u,
         break;
 
     case NGX_HTTP_LUA_SOCKOPT_SNDBUF:
-        rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
+        rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
                         (const void *) &val, len);
         break;
 
     case NGX_HTTP_LUA_SOCKOPT_RCVBUF:
-        rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
+        rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                         (const void *) &val, len);
         break;
 
