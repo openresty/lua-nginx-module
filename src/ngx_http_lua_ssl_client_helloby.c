@@ -712,10 +712,14 @@ ngx_http_lua_ffi_ssl_get_client_hello_ext_present(ngx_http_request_t *r,
     }
 
     *extensions = ngx_palloc(r->connection->pool, sizeof(int) * ext_len);
-    if (*extensions != NULL) {
-        ngx_memcpy(*extensions, ext_out, sizeof(int) * ext_len);
-        *extensions_len = ext_len;
+    if (*extensions == NULL) {
+        OPENSSL_free(ext_out);
+        *err = "no memory";
+        return NGX_ERROR;
     }
+
+    ngx_memcpy(*extensions, ext_out, sizeof(int) * ext_len);
+    *extensions_len = ext_len;
 
     OPENSSL_free(ext_out);
     return NGX_OK;
