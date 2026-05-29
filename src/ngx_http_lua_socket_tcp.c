@@ -2283,6 +2283,14 @@ ngx_http_lua_ffi_socket_tcp_settrustedstore(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+    if (u->peer.connection->ssl
+        && u->peer.connection->ssl->handshaked)
+    {
+        *errmsg = "ssl handshake already done; trusted store cannot be "
+                  "changed on an established TLS connection";
+        return NGX_ERROR;
+    }
+
     u->ssl_trusted_store = store;
 
     return NGX_OK;
