@@ -607,6 +607,7 @@ ngx_http_lua_ffi_ssl_set_serialized_session(ngx_http_request_t *r,
 
     cctx = ngx_http_lua_ssl_get_ctx(c->ssl->connection);
     if (cctx == NULL) {
+        ngx_ssl_free_session(session);
         *err = "bad lua context";
         return NGX_ERROR;
     }
