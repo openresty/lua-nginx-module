@@ -29,17 +29,25 @@ double
 ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r)
 {
 #if (defined freenginx && nginx_version >= 1029000)
+    ngx_time_t               start;
     ngx_time_t              *tp;
+    ngx_msec_t               elapsed;
 
+    /* ngx_timeofday() returns a pointer to nginx's globally cached time;
+     * mutating it would corrupt every other read of the current time
+     * within this worker tick. Copy it locally instead. */
     tp = ngx_timeofday();
-    tp->sec -= (ngx_current_msec - r->start_time) / 1000;
-    tp->msec -= (ngx_current_msec - r->start_time) % 1000;
-    if (tp->msec > NGX_MAX_INT_T_VALUE) {
-        tp->msec += 1000;
-        tp->sec -= 1;
+    start = *tp;
+
+    elapsed = ngx_current_msec - r->start_time;
+    start.sec -= elapsed / 1000;
+    start.msec -= elapsed % 1000;
+    if (start.msec > NGX_MAX_INT_T_VALUE) {
+        start.msec += 1000;
+        start.sec -= 1;
     }
 
-    return tp->sec + tp->msec / 1000.0;
+    return start.sec + start.msec / 1000.0;
 #else
     return r->start_sec + r->start_msec / 1000.0;
 #endif
