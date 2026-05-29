@@ -352,3 +352,68 @@ settrustedstore: true nil
 [alert]
 [crit]
 [emerg]
+
+
+
+=== TEST 6: settrustedstore is rejected after the TLS handshake has completed
+--- http_config eval: $::tls_http_config
+--- config eval
+"
+    location /t {
+        content_by_lua_block {
+            local f = assert(io.open('$::HtmlDir/mtls_ca.crt'))
+            local ca_pem = f:read('*a')
+            f:close()
+
+            local store1 = assert(load_store_from_pem(ca_pem))
+
+            local sock = ngx.socket.tcp()
+            assert(sock:connect('unix:$::HtmlDir/tls.sock'))
+
+            assert(settrustedstore(sock, store1))
+
+            local sess, err = sock:sslhandshake(nil, 'example.com', true)
+            if not sess then
+                ngx.say('failed to do SSL handshake: ', err)
+                return
+            end
+
+            -- second settrustedstore on an already-handshaked cosocket
+            -- must fail with a clear error rather than silently no-op.
+            local f2 = assert(io.open('$::HtmlDir/unrelated_ca.crt'))
+            local ca_pem2 = f2:read('*a')
+            f2:close()
+            local store2 = assert(load_store_from_pem(ca_pem2))
+
+            local ok, err = settrustedstore(sock, store2)
+            ngx.say('settrustedstore after handshake: ', ok, ' ', err)
+
+            -- connection must still be usable after the rejected call.
+            local bytes, err = sock:send('GET / HTTP/1.0\\r\\nHost: example.com\\r\\n\\r\\n')
+            if not bytes then
+                ngx.say('failed to send: ', err)
+                return
+            end
+
+            local line, err = sock:receive('*l')
+            if not line then
+                ngx.say('failed to receive: ', err)
+                return
+            end
+
+            ngx.say('received: ', line)
+            sock:close()
+        }
+    }
+"
+--- user_files eval: $::tls_user_files
+--- request
+GET /t
+--- response_body_like
+^settrustedstore after handshake: nil ssl handshake already done; trusted store cannot be changed on an established TLS connection
+received: HTTP/1\.[01] 200 OK$
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]
