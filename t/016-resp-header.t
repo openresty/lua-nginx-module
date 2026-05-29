@@ -2340,7 +2340,7 @@ unauth
 GET /t
 --- error_code: 401
 --- raw_response_headers_like eval
-qr/WWW-Authenticate: Basic realm="a"\r\nWWW-Authenticate: Bearer realm="b"\r\n/
+qr/WWW-Authenticate: Basic realm="a"\r\nWWW-Authenticate: Bearer realm="b"\r\n/i
 --- response_body
 unauth
 --- no_error_log
