@@ -2035,7 +2035,7 @@ new_ssl_name:
 
     ngx_http_lua_ssl_handshake_handler(c);
 
-    if (rc == NGX_ERROR) {
+    if (rc == NGX_ERROR || u->error_ret != NULL) {
         *errmsg = u->error_ret;
         return NGX_ERROR;
     }
