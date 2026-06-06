@@ -87,11 +87,19 @@ ngx_http_lua_thread_task_alloc(size_t size)
 }
 
 
+/*
+ * free a task allocated by ngx_http_lua_thread_task_alloc().
+ *
+ * the argument is the task ctx (i.e. task->ctx), since that is what the
+ * thread-pool handlers hold; the ngx_thread_task_t sits immediately before
+ * it in the same allocation, so recover it before freeing.
+ */
 static void
-ngx_http_lua_thread_task_free(void *ctx)
+ngx_http_lua_thread_task_ctx_free(ngx_http_lua_worker_thread_ctx_t *tctx)
 {
-    ngx_thread_task_t *task = ctx;
-    ngx_free(task - 1);
+    ngx_thread_task_t  *task = (ngx_thread_task_t *) tctx - 1;
+
+    ngx_free(task);
 }
 
 
@@ -126,8 +134,6 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
             ngx_free(ctx);
             return NULL;
         }
-
-        worker_thread_vm_count++;
 
         ctx->vm = vm;
 
@@ -180,6 +186,10 @@ ngx_http_lua_get_task_ctx(lua_State *L, ngx_http_request_t *r)
             ngx_free(ctx);
             return NULL;
         }
+
+        /* the vm is fully initialized; count it only now so the pool size is
+         * not permanently consumed by failed initializations */
+        worker_thread_vm_count++;
 
     } else {
         ctx = ctxpool->next;
@@ -432,7 +442,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
     ctx->cur_co_ctx->cleanup = NULL;
 
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
-    ngx_http_lua_thread_task_free(worker_thread_ctx);
+    ngx_http_lua_thread_task_ctx_free(worker_thread_ctx);
 
     /* resume the caller coroutine */
 
@@ -451,7 +461,7 @@ ngx_http_lua_worker_thread_event_handler(ngx_event_t *ev)
 failed:
 
     ngx_http_lua_free_task_ctx(worker_thread_ctx->ctx);
-    ngx_http_lua_thread_task_free(worker_thread_ctx);
+    ngx_http_lua_thread_task_ctx_free(worker_thread_ctx);
     return;
 }
 
@@ -620,8 +630,13 @@ ngx_http_lua_run_worker_thread(lua_State *L)
     task->event.data = worker_thread_ctx;
 
     if (ngx_thread_task_post(thread_pool, task) != NGX_OK) {
+        /* the task was never posted: drop the cleanup handler that points at
+         * worker_thread_ctx so it cannot fire on freed memory */
+        ctx->cur_co_ctx->cleanup = NULL;
+        ctx->cur_co_ctx->data = NULL;
+
         ngx_http_lua_free_task_ctx(tctx);
-        ngx_http_lua_thread_task_free(task);
+        ngx_http_lua_thread_task_ctx_free(worker_thread_ctx);
         lua_pushboolean(L, 0);
         lua_pushstring(L, "ngx_thread_task_post failed");
         return 2;
