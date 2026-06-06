@@ -125,7 +125,7 @@ ngx_http_lua_ngx_req_set_uri_args(lua_State *L)
             args.len = len + 2 * escape;
             args.data = ngx_palloc(r->pool, args.len);
             if (args.data == NULL) {
-                return NGX_ERROR;
+                return luaL_error(L, "no memory");
             }
 
             ngx_http_lua_escape_args(args.data, p, len);

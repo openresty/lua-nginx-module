@@ -70,7 +70,7 @@ ngx_http_lua_ngx_req_set_uri(lua_State *L)
         buf_len = ngx_http_lua_escape_log(NULL, p, len) + 1;
         buf = ngx_palloc(r->pool, buf_len);
         if (buf == NULL) {
-            return NGX_ERROR;
+            return luaL_error(L, "no memory");
         }
 
         ngx_http_lua_escape_log(buf, p, len);
