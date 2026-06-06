@@ -316,7 +316,7 @@ failed:
 
     rc->err.len = ngx_snprintf(rc->err.data, rc->err.len, p, &rc->pattern, n)
                   - rc->err.data;
-    return NGX_OK;
+    return NGX_ERROR;
 }
 #endif
 
