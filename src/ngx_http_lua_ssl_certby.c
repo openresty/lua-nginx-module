@@ -1676,6 +1676,9 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *client_certs,
 
             /* clean subject name list, and set it for send to client */
             SSL_set_client_CA_list(ssl_conn, name_chain);
+
+            /* ssl_conn now owns name_chain; avoid freeing it on error paths */
+            name_chain = NULL;
         }
 
         if (trusted_chain != NULL) {
