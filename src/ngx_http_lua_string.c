@@ -96,7 +96,7 @@ ngx_http_lua_ngx_quote_sql_str(lua_State *L)
     *p++ = '\'';
 
     if (p != dst + dlen) {
-        return NGX_ERROR;
+        return luaL_error(L, "internal error: quote_sql_str buffer mismatch");
     }
 
     lua_pushlstring(L, (char *) dst, p - dst);
