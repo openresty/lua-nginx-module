@@ -16,7 +16,7 @@ log_level('info');
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 9 + 2);
+plan tests => repeat_each() * 44;
 
 #no_diff();
 no_long_string();
@@ -218,3 +218,93 @@ Fast parent completed
 --- no_error_log
 [alert]
 [crit]
+[emerg]
+[error]
+--- no_shutdown_error_log
+[alert]
+[crit]
+[emerg]
+[error]
+
+
+
+=== TEST 5: HTTP/2 slow client with slice cache subrequests
+--- http_config
+    send_timeout 1s;
+    proxy_cache_path conf/slice-cache levels=1:2 keys_zone=SLICES:10m inactive=10m max_size=20m;
+
+--- user_files
+>>> curl-slow.conf
+limit-rate = "1k"
+output = "/dev/null"
+
+--- config
+    location = /slice {
+        slice 1k;
+        proxy_cache SLICES;
+        proxy_cache_key "$uri $slice_range";
+        proxy_set_header Range $slice_range;
+        proxy_cache_valid 200 206 1h;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/origin_slice;
+    }
+
+    location = /origin_slice {
+        content_by_lua_block {
+            local total = 8 * 1024 * 1024
+            local range = ngx.var.http_range
+            local first, last = 0, total - 1
+
+            if range then
+                local m, err = ngx.re.match(range, [[bytes=(\d+)-(\d*)]], "jo")
+                if not m then
+                    ngx.log(ngx.ERR, "bad range header: ", range, ", err: ", err)
+                    ngx.status = 416
+                    return
+                end
+
+                first = tonumber(m[1])
+                if m[2] and m[2] ~= "" then
+                    last = tonumber(m[2])
+                end
+            end
+
+            if first >= total then
+                ngx.status = 416
+                return
+            end
+
+            if last >= total then
+                last = total - 1
+            end
+
+            local len = last - first + 1
+            if range then
+                ngx.status = ngx.HTTP_PARTIAL_CONTENT
+                ngx.header["Content-Range"] =
+                    string.format("bytes %d-%d/%d", first, last, total)
+            end
+
+            ngx.header["Accept-Ranges"] = "bytes"
+            ngx.header["Content-Length"] = len
+            ngx.print(string.rep("x", len))
+        }
+    }
+
+--- http2
+--- request
+GET /slice
+--- timeout: 4
+--- abort
+--- ignore_response
+--- curl_options: --config=t/servroot/html/curl-slow.conf
+--- curl_error: (28) Operation timed out
+--- no_error_log
+[alert]
+[crit]
+[emerg]
+[error]
+--- no_shutdown_error_log
+[alert]
+[crit]
+[emerg]
+[error]

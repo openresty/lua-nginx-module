@@ -19,6 +19,7 @@ time ngx-build $force $version \
             --with-cc-opt="-DNGX_LUA_USE_ASSERT -I$PCRE2_INC -I$OPENSSL_INC -DDDEBUG=1" \
             --with-http_v2_module \
             --with-http_v3_module \
+            --with-http_slice_module \
             --with-http_realip_module \
             --with-http_ssl_module \
             --add-module=$root/../ndk-nginx-module \
