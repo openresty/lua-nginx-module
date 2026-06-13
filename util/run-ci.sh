@@ -68,7 +68,10 @@ function download_deps()
     fi
 
     git_download https://github.com/openresty/test-nginx.git
-    git_download https://github.com/openresty/openresty.git ../openresty
+    #git_download https://github.com/openresty/openresty.git ../openresty
+    git clone --depth=1 \
+      --branch fix-http2-lua-subreq-error-wakeup-for-1131 \
+      https://github.com/tzssangglass/openresty.git ../openresty
     git_download https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
     git_download https://github.com/openresty/openresty-devel-utils.git
     git_download https://github.com/openresty/mockeagain.git
