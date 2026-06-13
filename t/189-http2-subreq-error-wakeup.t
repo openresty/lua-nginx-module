@@ -11,15 +11,26 @@
 use Test::Nginx::Socket::Lua;
 use Cwd qw(abs_path realpath);
 use File::Basename;
+use File::Path qw(rmtree);
 
 log_level('info');
 
+my $nginx = $ENV{TEST_NGINX_BINARY} || 'nginx';
+my $nginx_v = eval { `$nginx -V 2>&1` } // '';
+our $HasHttpSlice = $nginx_v =~ /--with-http_slice_module/;
+
 repeat_each(2);
 
-plan tests => repeat_each() * 44;
+plan tests => repeat_each() * 48;
 
 #no_diff();
+no_shuffle();
 no_long_string();
+
+my $slice_cache_dir = "/tmp/lua-nginx-module-slice-cache-" . server_port();
+rmtree($slice_cache_dir);
+add_cleanup_handler(sub { rmtree($slice_cache_dir) });
+
 run_tests();
 
 __DATA__
@@ -228,76 +239,81 @@ Fast parent completed
 
 
 
-=== TEST 5: HTTP/2 slow client with slice cache subrequests
+=== TEST 5: warm slice cache for HTTP/2 slow client
+--- skip_eval: 4: !$::HasHttpSlice
 --- http_config
-    send_timeout 1s;
-    proxy_cache_path conf/slice-cache levels=1:2 keys_zone=SLICES:10m inactive=10m max_size=20m;
+    send_timeout 5s;
+    proxy_cache_path /tmp/lua-nginx-module-slice-cache-$TEST_NGINX_SERVER_PORT levels=1:2 keys_zone=SLICES:10m inactive=10m max_size=20m;
 
---- user_files
->>> curl-slow.conf
-limit-rate = "1k"
-output = "/dev/null"
+--- user_files eval
+">>> origin/big.bin\n" . ("x" x (10 * 1024 * 1024))
 
 --- config
-    location = /slice {
-        slice 1k;
+    location = /slice-big.bin {
+        slice 1m;
         proxy_cache SLICES;
         proxy_cache_key "$uri $slice_range";
         proxy_set_header Range $slice_range;
         proxy_cache_valid 200 206 1h;
-        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/origin_slice;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/origin/big.bin;
     }
 
-    location = /origin_slice {
-        content_by_lua_block {
-            local total = 8 * 1024 * 1024
-            local range = ngx.var.http_range
-            local first, last = 0, total - 1
-
-            if range then
-                local m, err = ngx.re.match(range, [[bytes=(\d+)-(\d*)]], "jo")
-                if not m then
-                    ngx.log(ngx.ERR, "bad range header: ", range, ", err: ", err)
-                    ngx.status = 416
-                    return
-                end
-
-                first = tonumber(m[1])
-                if m[2] and m[2] ~= "" then
-                    last = tonumber(m[2])
-                end
-            end
-
-            if first >= total then
-                ngx.status = 416
-                return
-            end
-
-            if last >= total then
-                last = total - 1
-            end
-
-            local len = last - first + 1
-            if range then
-                ngx.status = ngx.HTTP_PARTIAL_CONTENT
-                ngx.header["Content-Range"] =
-                    string.format("bytes %d-%d/%d", first, last, total)
-            end
-
-            ngx.header["Accept-Ranges"] = "bytes"
-            ngx.header["Content-Length"] = len
-            ngx.print(string.rep("x", len))
-        }
+    location /origin/ {
+        root $TEST_NGINX_SERVER_ROOT/html;
     }
 
 --- http2
 --- request
-GET /slice
---- timeout: 4
---- abort
+GET /slice-big.bin
+--- ignore_response
+--- no_error_log
+[alert]
+[crit]
+[emerg]
+[error]
+--- no_shutdown_error_log
+[alert]
+[crit]
+[emerg]
+[error]
+
+
+
+=== TEST 6: HTTP/2 slow client with warmed slice cache
+--- skip_eval: 4: !$::HasHttpSlice
+--- http_config
+    send_timeout 5s;
+    proxy_cache_path /tmp/lua-nginx-module-slice-cache-$TEST_NGINX_SERVER_PORT levels=1:2 keys_zone=SLICES:10m inactive=10m max_size=20m;
+
+--- user_files eval
+">>> origin/big.bin\n" . ("x" x (10 * 1024 * 1024)) . "\n" .
+">>> curl-slow.conf\n" .
+"limit-rate = \"50k\"\n" .
+"max-time = 8\n" .
+"output = \"/dev/null\"\n"
+
+--- config
+    location = /slice-big.bin {
+        slice 1m;
+        proxy_cache SLICES;
+        proxy_cache_key "$uri $slice_range";
+        proxy_set_header Range $slice_range;
+        proxy_cache_valid 200 206 1h;
+        proxy_pass http://127.0.0.1:$TEST_NGINX_SERVER_PORT/origin/big.bin;
+    }
+
+    location /origin/ {
+        root $TEST_NGINX_SERVER_ROOT/html;
+    }
+
+--- http2
+--- request
+GET /slice-big.bin
+--- timeout: 12
 --- ignore_response
 --- curl_options: --config=t/servroot/html/curl-slow.conf
---- curl_error: (28) Operation timed out
+--- curl_error eval: qr/\((28|92)\)/
+--- wait: 6
 --- no_error_log
 [alert]
 [crit]
