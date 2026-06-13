@@ -117,10 +117,7 @@ jobs:
       - name: Clone dependency repositories
         run: |
           # Sibling repos — build scripts reference them via $root/../<name>
-          # git clone --depth=1 https://github.com/openresty/openresty.git             ../openresty
-          git clone --depth=1 \
-            --branch fix-http2-lua-subreq-error-wakeup-for-1131 \
-            https://github.com/tzssangglass/openresty.git ../openresty
+          git clone --depth=1 https://github.com/openresty/openresty.git             ../openresty
           git clone --depth=1 https://github.com/openresty/no-pool-nginx.git         ../no-pool-nginx
           git clone --depth=1 https://github.com/openresty/lua-upstream-nginx-module.git ../lua-upstream-nginx-module
           git clone --depth=1 https://github.com/openresty/echo-nginx-module.git         ../echo-nginx-module
