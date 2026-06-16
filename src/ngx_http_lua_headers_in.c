@@ -768,6 +768,22 @@ ngx_http_lua_set_input_header(ngx_http_request_t *r, ngx_str_t key,
         return NGX_OK;
     }
 
+    /*
+     * In a subrequest, r->headers_in is a shallow struct copy of the parent
+     * request's headers_in (see ngx_http_subrequest()). When the parent's
+     * header list fits in a single part, the copied "last" pointer still
+     * references the parent's part (&parent->headers_in.headers.part) rather
+     * than this request's own part. Mutating such a list (e.g. removing
+     * Content-Length in a mirror subrequest) would otherwise trip the list
+     * integrity check in the header helpers. Restore the single-part
+     * invariant: when there is only one part, "last" must point at it.
+     */
+    if (r->headers_in.headers.part.next == NULL
+        && r->headers_in.headers.last != &r->headers_in.headers.part)
+    {
+        r->headers_in.headers.last = &r->headers_in.headers.part;
+    }
+
     return hv.handler(r, &hv, &value);
 }
 
