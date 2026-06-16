@@ -609,6 +609,10 @@ ngx_http_lua_ngx_location_capture_multi(lua_State *L)
             return luaL_error(L, "failed to issue subrequest: %d", (int) rc);
         }
 
+ #if (NGX_HTTP_OPENRESTY_LUA_SUBREQUEST)
+        sr->lua_subrequest = 1;
+ #endif
+
         ngx_http_lua_init_ctx(sr, sr_ctx);
 
         sr_ctx->capture = 1;
