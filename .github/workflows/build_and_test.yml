@@ -153,10 +153,12 @@ jobs:
               https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/drizzle7-$DRIZZLE_VER.tar.gz
           fi
           wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/boringssl-20230902-x64-focal.tar.gz
-          wget https://github.com/openresty/openresty-deps-prebuild/releases/download/v20230902/curl-h3-x64-focal.tar.gz
+          wget https://github.com/stunnel/static-curl/releases/download/8.20.0/curl-linux-x86_64-glibc-8.20.0.tar.xz
 
-      - name: Install curl-h3
-        run: sudo tar -C / -xf curl-h3-x64-focal.tar.gz
+      - name: Install HTTP/3-capable curl
+        run: |
+          sudo mkdir -p /opt/curl/bin
+          sudo tar -C /opt/curl/bin -xf curl-linux-x86_64-glibc-8.20.0.tar.xz curl
 
       - name: Start memcached (native, UDP enabled)
         run: |
@@ -239,7 +241,7 @@ jobs:
       - name: Build nginx
         run: |
           export LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
-          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl-h3/bin:$PATH
+          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
           export NGX_BUILD_CC=$CC
           sh util/build-without-ssl.sh ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
           sh util/build-with-dd.sh     ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
@@ -250,7 +252,7 @@ jobs:
 
       - name: Run releng check
         run: |
-          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl-h3/bin:$PATH
+          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
           ngx-releng > check.txt || true
           lines=$(wc -l check.txt | awk '{print $1}')
           if [ "$lines" -gt 5 ]; then cat check.txt; exit 1; fi
@@ -272,7 +274,7 @@ jobs:
       - name: Run tests
         run: |
           export LD_LIBRARY_PATH=$LUAJIT_LIB:$PWD/mockeagain:$LD_LIBRARY_PATH
-          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl-h3/bin:$PATH
+          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
           export LD_PRELOAD=$PWD/mockeagain/mockeagain.so
           export TEST_NGINX_HTTP3_CRT=$PWD/t/cert/http3/http3.crt
           export TEST_NGINX_HTTP3_KEY=$PWD/t/cert/http3/http3.key
