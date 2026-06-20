@@ -97,30 +97,27 @@ ngx_http_lua_precontent_handler(ngx_http_request_t *r)
             return rc;
         }
 
-        if (rc == NGX_OK) {
-            if (r->header_sent
-                || (r->headers_out.status != 0 && ctx->out != NULL))
-            {
-                dd("header already sent");
+        if (rc == NGX_OK
+            && (r->header_sent
+                || (r->headers_out.status != 0 && ctx->out != NULL)))
+        {
+            dd("header already sent");
 
-                /* response header was already generated in precontent_by_lua*,
-                 * so it is no longer safe to proceed to later phases
-                 * which may generate responses again */
+            /* response header was already generated in precontent_by_lua*,
+             * so it is no longer safe to proceed to later phases
+             * which may generate responses again */
 
-                if (!ctx->eof) {
-                    dd("eof not yet sent");
+            if (!ctx->eof) {
+                dd("eof not yet sent");
 
-                    rc = ngx_http_lua_send_chain_link(r, ctx, NULL
-                                                     /* indicate last_buf */);
-                    if (rc == NGX_ERROR || rc > NGX_OK) {
-                        return rc;
-                    }
+                rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                                  /* indicate last_buf */);
+                if (rc == NGX_ERROR || rc > NGX_OK) {
+                    return rc;
                 }
-
-                return NGX_HTTP_OK;
             }
 
-            return NGX_OK;
+            return NGX_HTTP_OK;
         }
 
         return NGX_DECLINED;
@@ -373,32 +370,28 @@ ngx_http_lua_precontent_by_chunk(lua_State *L, ngx_http_request_t *r)
         }
     }
 
-#if 1
-    if (rc == NGX_OK) {
-        if (r->header_sent || (r->headers_out.status != 0 && ctx->out != NULL))
-        {
-            dd("header already sent");
+    if (rc == NGX_OK
+        && (r->header_sent
+            || (r->headers_out.status != 0 && ctx->out != NULL)))
+    {
+        dd("header already sent");
 
-            /* response header was already generated in precontent_by_lua*,
-             * so it is no longer safe to proceed to later phases
-             * which may generate responses again */
+        /* response header was already generated in precontent_by_lua*,
+         * so it is no longer safe to proceed to later phases
+         * which may generate responses again */
 
-            if (!ctx->eof) {
-                dd("eof not yet sent");
+        if (!ctx->eof) {
+            dd("eof not yet sent");
 
-                rc = ngx_http_lua_send_chain_link(r, ctx, NULL
-                                                  /* indicate last_buf */);
-                if (rc == NGX_ERROR || rc > NGX_OK) {
-                    return rc;
-                }
+            rc = ngx_http_lua_send_chain_link(r, ctx, NULL
+                                              /* indicate last_buf */);
+            if (rc == NGX_ERROR || rc > NGX_OK) {
+                return rc;
             }
-
-            return NGX_HTTP_OK;
         }
 
-        return NGX_OK;
+        return NGX_HTTP_OK;
     }
-#endif
 
     return NGX_DECLINED;
 }

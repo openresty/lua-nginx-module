@@ -19,7 +19,7 @@ our $StapScript = $t::StapThread::StapScript;
 
 repeat_each(2);
 
-plan tests => repeat_each() * (blocks() * 3 + 6);
+plan tests => repeat_each() * (blocks() * 3 + 8);
 
 #log_level("info");
 #no_long_string();
@@ -359,5 +359,66 @@ GET /lua
 content phase executed
 --- error_log
 precontent_by_lua_block executed
+--- no_error_log
+[error]
+
+
+
+=== TEST 16: no postpone continues to later precontent handlers
+--- http_config
+    precontent_by_lua_no_postpone on;
+--- config
+    location /lua {
+        precontent_by_lua_block {
+            ngx.log(ngx.INFO, "precontent_by_lua_block executed")
+        }
+        try_files /not-found @fallback;
+        content_by_lua_block {
+            ngx.say("original location")
+        }
+    }
+
+    location @fallback {
+        content_by_lua_block {
+            ngx.say("fallback location")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+fallback location
+--- error_log
+precontent_by_lua_block executed
+--- no_error_log
+[error]
+
+
+
+=== TEST 17: no postpone continues after yielding
+--- http_config
+    precontent_by_lua_no_postpone on;
+--- config
+    location /lua {
+        precontent_by_lua_block {
+            ngx.sleep(0.001)
+            ngx.log(ngx.INFO, "precontent_by_lua_block resumed")
+        }
+        try_files /not-found @fallback;
+        content_by_lua_block {
+            ngx.say("original location")
+        }
+    }
+
+    location @fallback {
+        content_by_lua_block {
+            ngx.say("fallback location")
+        }
+    }
+--- request
+GET /lua
+--- response_body
+fallback location
+--- error_log
+precontent_by_lua_block resumed
 --- no_error_log
 [error]
