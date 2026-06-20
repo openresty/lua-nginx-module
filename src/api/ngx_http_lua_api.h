@@ -19,7 +19,7 @@
 /* Public API for other Nginx modules */
 
 
-#define ngx_http_lua_version  10031
+#define ngx_http_lua_version  10032
 #define NGX_HTTP_LUA_EXPORT_CO_CTX_CLEANUP 1
 
 
