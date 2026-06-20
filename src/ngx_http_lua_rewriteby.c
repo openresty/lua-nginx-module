@@ -64,10 +64,10 @@ ngx_http_lua_rewrite_handler(ngx_http_request_t *r)
         if (cur_ph < last_ph) {
             dd("swapping the contents of cur_ph and last_ph...");
 
-            tmp      = *cur_ph;
+            tmp = *cur_ph;
 
-            memmove(cur_ph, cur_ph + 1,
-                    (last_ph - cur_ph) * sizeof (ngx_http_phase_handler_t));
+            ngx_memmove(cur_ph, cur_ph + 1,
+                        (last_ph - cur_ph) * sizeof(ngx_http_phase_handler_t));
 
             *last_ph = tmp;
 

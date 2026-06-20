@@ -56,8 +56,8 @@ ngx_http_lua_precontent_handler(ngx_http_request_t *r)
 
             tmp = *cur_ph;
 
-            memmove(cur_ph, cur_ph + 1,
-                    (last_ph - cur_ph) * sizeof (ngx_http_phase_handler_t));
+            ngx_memmove(cur_ph, cur_ph + 1,
+                        (last_ph - cur_ph) * sizeof(ngx_http_phase_handler_t));
 
             *last_ph = tmp;
 
