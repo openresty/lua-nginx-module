@@ -3437,7 +3437,7 @@ qr/test completed/,
 GET /t
 --- ignore_response
 --- curl_error eval
-qr/Connection time/
+qr/Failed to connect to .* port .* after .* ms: Could not connect to server/
 --- grep_error_log eval: qr/(client hello: cosocket test start|client hello: received memc reply: VERSION|client hello: cosocket test done|cert by: test start)/
 --- grep_error_log_out eval
 [

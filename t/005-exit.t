@@ -783,7 +783,7 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
-curl: (95) HTTP/3 stream 0 reset by server
+curl: (95) HTTP/3 stream 0 reset by server (error 0x102 INTERNAL_ERROR)
 
 
 
@@ -802,8 +802,7 @@ GET /t
 --- no_error_log
 [error]
 --- curl_error
-curl: (95) HTTP/3 stream 0 reset by server
-
+curl: (95) HTTP/3 stream 0 reset by server (error 0x102 INTERNAL_ERROR)
 
 
 === TEST 29: refuses NGX_AGAIN
