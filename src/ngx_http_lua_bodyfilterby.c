@@ -241,7 +241,7 @@ ngx_http_lua_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_http_lua_loc_conf_t     *llcf;
     ngx_http_lua_ctx_t          *ctx;
     ngx_int_t                    rc;
-    uint16_t                     old_context;
+    uint32_t                     old_context;
     ngx_pool_cleanup_t          *cln;
     ngx_chain_t                 *out;
     ngx_chain_t                 *cl, *ln;
