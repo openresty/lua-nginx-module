@@ -25,6 +25,49 @@
 static int ngx_http_lua_uthread_spawn(lua_State *L);
 static int ngx_http_lua_uthread_wait(lua_State *L);
 static int ngx_http_lua_uthread_kill(lua_State *L);
+static void ngx_http_lua_uthread_cleanup_descendants(ngx_http_lua_ctx_t *ctx,
+    ngx_http_lua_co_ctx_t *parent);
+
+
+static void
+ngx_http_lua_uthread_cleanup_descendants(ngx_http_lua_ctx_t *ctx,
+    ngx_http_lua_co_ctx_t *parent)
+{
+    ngx_uint_t                i;
+    ngx_list_part_t         *part;
+    ngx_http_lua_co_ctx_t   *coctx, *cur;
+
+    if (ctx->user_co_ctx == NULL) {
+        return;
+    }
+
+    part = &ctx->user_co_ctx->part;
+    coctx = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            coctx = part->elts;
+            i = 0;
+        }
+
+        if (&coctx[i] == parent || coctx[i].is_uthread) {
+            continue;
+        }
+
+        for (cur = coctx[i].parent_co_ctx; cur; cur = cur->parent_co_ctx) {
+            if (cur == parent) {
+                ngx_http_lua_cleanup_pending_operation(&coctx[i]);
+                break;
+            }
+        }
+    }
+}
 
 
 void
@@ -264,6 +307,7 @@ ngx_http_lua_uthread_kill(lua_State *L)
 
     default:
         ngx_http_lua_cleanup_pending_operation(sub_coctx);
+        ngx_http_lua_uthread_cleanup_descendants(ctx, sub_coctx);
         ngx_http_lua_del_thread(r, L, ctx, sub_coctx);
         ctx->uthreads--;
 

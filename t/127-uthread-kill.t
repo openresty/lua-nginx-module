@@ -617,3 +617,122 @@ GET /t
 ok_count=10
 --- no_error_log
 [error]
+
+
+
+=== TEST 11: kill uthread with child coroutine pending cosocket read after GC
+--- config
+    lua_socket_log_errors off;
+
+    location = /slow-body {
+        content_by_lua_block {
+            local body = string.rep("x", 8192)
+
+            ngx.header["Content-Type"] = "text/plain"
+            ngx.header["Content-Length"] = #body
+
+            ngx.print(body:sub(1, 64))
+            ngx.flush(true)
+            ngx.sleep(0.2)
+            ngx.print(body:sub(65))
+        }
+    }
+
+    location = /t {
+        access_by_lua_block {
+            local port = tonumber(ngx.var.server_port)
+            local pinned_sockets = {}
+            local slow_read_pending = false
+
+            local function read_content_length(sock)
+                local line, err = sock:receive("*l")
+                if not line then
+                    return nil, err
+                end
+
+                local content_length
+                while true do
+                    line, err = sock:receive("*l")
+                    if not line then
+                        return nil, err
+                    end
+
+                    if line == "" then
+                        return content_length
+                    end
+
+                    local name, value = line:match("^([^:]+):%s*(.*)$")
+                    if name and name:lower() == "content-length" then
+                        content_length = tonumber(value)
+                    end
+                end
+            end
+
+            local fast = ngx.thread.spawn(function()
+                for _ = 1, 1000 do
+                    if slow_read_pending then
+                        break
+                    end
+                    ngx.sleep(0.001)
+                end
+
+                return "ok"
+            end)
+
+            local slow = ngx.thread.spawn(function()
+                local child = coroutine.create(function()
+                    local sock = ngx.socket.tcp()
+                    pinned_sockets[#pinned_sockets + 1] = sock
+
+                    sock:settimeout(10000)
+                    local ok, err = sock:connect("127.0.0.1", port)
+                    if not ok then
+                        return nil, err
+                    end
+
+                    ok, err = sock:send("GET /slow-body HTTP/1.1\r\nHost: localhost\r\n\r\n")
+                    if not ok then
+                        return nil, err
+                    end
+
+                    local content_length
+                    content_length, err = read_content_length(sock)
+                    if not content_length then
+                        return nil, err
+                    end
+
+                    slow_read_pending = true
+                    return sock:receive(content_length)
+                end)
+
+                local ok, body, err = coroutine.resume(child)
+                if not ok then
+                    return nil, body
+                end
+
+                return body, err
+            end)
+
+            ngx.thread.wait(fast, slow)
+            ngx.thread.kill(fast)
+            ngx.thread.kill(slow)
+
+            fast = nil
+            slow = nil
+            collectgarbage("collect")
+            collectgarbage("collect")
+
+            ngx.sleep(0.3)
+
+            ngx.say("survived pinned=", #pinned_sockets)
+        }
+
+        content_by_lua_block {
+        }
+    }
+--- request
+GET /t
+--- response_body
+survived pinned=1
+--- no_error_log
+[alert]
