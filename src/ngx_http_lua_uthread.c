@@ -33,9 +33,9 @@ static void
 ngx_http_lua_uthread_cleanup_descendants(ngx_http_lua_ctx_t *ctx,
     ngx_http_lua_co_ctx_t *parent)
 {
-    ngx_uint_t                i;
-    ngx_list_part_t         *part;
-    ngx_http_lua_co_ctx_t   *coctx, *cur;
+    ngx_uint_t                       i;
+    ngx_list_part_t                 *part;
+    ngx_http_lua_co_ctx_t           *coctx, *cur;
 
     if (ctx->user_co_ctx == NULL) {
         return;
