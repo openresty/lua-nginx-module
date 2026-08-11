@@ -41,8 +41,7 @@ hello, world
 hiya
 --- no_error_log
 [error]
---- error_log
-lua reuse free buf chain, but reallocate memory because 5 >= 0
+[alert]
 --- skip_eval: 4:defined($ENV{MOCKEAGAIN}) && ($ENV{MOCKEAGAIN} =~ /w/)
 
 

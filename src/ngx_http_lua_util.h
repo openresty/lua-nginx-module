@@ -487,16 +487,28 @@ ngx_http_lua_cleanup_pending_operation(ngx_http_lua_co_ctx_t *coctx)
 
 
 static ngx_inline ngx_chain_t *
-ngx_http_lua_get_flush_chain(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+ngx_http_lua_get_flush_chain(ngx_http_request_t *r)
 {
     ngx_chain_t  *cl;
 
-    cl = ngx_http_lua_chain_get_free_buf(r->connection->log, r->pool,
-                                         &ctx->free_bufs, 0);
+    /*
+     * The flush buf is deliberately NOT taken from ctx->free_bufs and
+     * deliberately carries no tag. It is size 0 and ngx_buf_special(), so the
+     * write filter keeps it queued. If tagged, ngx_chain_update_chains() would
+     * return it to ctx->free_bufs, and reusing it from there memzeros the
+     * flush flag away, resulting in "zero size buf in writer t:1 r:0 f:0".
+     */
+    cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
         return NULL;
     }
 
+    cl->buf = ngx_calloc_buf(r->pool);
+    if (cl->buf == NULL) {
+        return NULL;
+    }
+
+    cl->next = NULL;
     cl->buf->flush = 1;
 
     return cl;

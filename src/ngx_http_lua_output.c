@@ -548,7 +548,7 @@ ngx_http_lua_ngx_flush(lua_State *L)
     }
 #endif
 
-    cl = ngx_http_lua_get_flush_chain(r, ctx);
+    cl = ngx_http_lua_get_flush_chain(r);
     if (cl == NULL) {
         return luaL_error(L, "no memory");
     }

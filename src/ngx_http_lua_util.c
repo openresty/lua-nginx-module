@@ -1917,7 +1917,7 @@ ngx_http_lua_flush_pending_output(ngx_http_request_t *r,
         rc = ngx_http_lua_output_filter(r, NULL);
 
     } else {
-        cl = ngx_http_lua_get_flush_chain(r, ctx);
+        cl = ngx_http_lua_get_flush_chain(r);
         if (cl == NULL) {
             return NGX_ERROR;
         }
