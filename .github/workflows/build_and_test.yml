@@ -75,7 +75,7 @@ jobs:
       MALLOC_PERTURB_: "9"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install system packages
         run: |
@@ -102,7 +102,7 @@ jobs:
             openresty-pcre2 openresty-openssl3 openresty-pcre2-dev openresty-openssl3-dev
 
       - name: Cache download directory
-        uses: actions/cache@v4
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: download-cache
           key: download-cache-${{ runner.os }}-drizzle-${{ env.DRIZZLE_VER }}
