@@ -7,80 +7,69 @@ ngx_feature_run=no
 ngx_feature_incs=
 ngx_feature_test=
 
+check_luajit_lib() {
+    luajit_name=$1
+    luajit_desc=$2
+    luajit_inc=$3
+    luajit_lib=$4
+    luajit_ld_opt=$5
+
+    ngx_feature_path="$luajit_inc"
+    ngx_lua_opt_I="-I$luajit_inc"
+
+    if [ "$luajit_lib" != "" ]; then
+        ngx_feature="LuaJIT library in $luajit_lib and headers in $luajit_inc ($luajit_desc)"
+        ngx_lua_opt_L="-L$luajit_lib"
+    else
+        ngx_feature="LuaJIT default library and headers in $luajit_inc ($luajit_desc)"
+        ngx_lua_opt_L=
+    fi
+
+    printf "checking for $ngx_feature include directory ..."
+    if test -d "$luajit_inc"; then
+        # Don't set ngx_found here, wait for auto/feature below to set it.
+        echo " found"
+    else
+        echo " not found"
+        ngx_found=no
+        return
+    fi
+
+    ngx_feature_libs="$ngx_lua_opt_L -l$luajit_name $luajit_ld_opt"
+    if [ $NGX_RPATH = YES ]; then
+        ngx_feature_libs="-R$luajit_lib $ngx_feature_libs"
+    fi
+
+    # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
+    SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
+    CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
+    SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
+    NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
+
+    . auto/feature
+
+    # clean up
+    CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+    NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+}
+
 if [ -n "$LUAJIT_INC" -o -n "$LUAJIT_LIB" ]; then
     # explicitly set LuaJIT paths
 
     if [ "$NGX_PLATFORM" = win32 ]; then
-        ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (win32)"
-        ngx_feature_path="$LUAJIT_INC"
-        ngx_lua_opt_I="-I$LUAJIT_INC"
-        ngx_lua_opt_L="-L$LUAJIT_LIB"
-
-        # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
-        SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-        CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
-        SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
-        NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
-
         # LuaJIT's win32 build uses the library file name lua51.dll.
-        ngx_feature_libs="$ngx_lua_opt_L -llua51"
-
-        . auto/feature
-
-        # clean up
-        CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
-        NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+        check_luajit_lib 'lua51' 'win32' "$LUAJIT_INC" "$LUAJIT_LIB" ""
     else
         # attempt to link with -ldl, static linking on Linux requires it.
-        ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env, with -ldl)"
-        ngx_feature_path="$LUAJIT_INC"
-        ngx_lua_opt_I="-I$LUAJIT_INC"
-        ngx_lua_opt_L="-L$LUAJIT_LIB"
-        luajit_ld_opt="-lm -ldl"
-
-        # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
-        SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-        CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
-        SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
-        NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
-
-        if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
-        else
-            ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
-        fi
-
-        . auto/feature
-
-        # clean up
-        CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
-        NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+        check_luajit_lib 'luajit-5.1' \
+          'specified by the LUAJIT_LIB and LUAJIT_INC env, with -ldl' \
+          "$LUAJIT_INC" "$LUAJIT_LIB" "-lm -ldl"
 
         if [ $ngx_found = no ]; then
             # retry without -ldl
-            ngx_feature="LuaJIT library in $LUAJIT_LIB and $LUAJIT_INC (specified by the LUAJIT_LIB and LUAJIT_INC env)"
-            ngx_feature_path="$LUAJIT_INC"
-            ngx_lua_opt_I="-I$LUAJIT_INC"
-            ngx_lua_opt_L="-L$LUAJIT_LIB"
-            luajit_ld_opt="-lm"
-
-            # ensure that -I$LUAJIT_INC and -L$LUAJIT_LIB come first
-            SAVED_CC_TEST_FLAGS="$CC_TEST_FLAGS"
-            CC_TEST_FLAGS="$ngx_lua_opt_I $CC_TEST_FLAGS"
-            SAVED_NGX_TEST_LD_OPT="$NGX_TEST_LD_OPT"
-            NGX_TEST_LD_OPT="$ngx_lua_opt_L $NGX_TEST_LD_OPT"
-
-            if [ $NGX_RPATH = YES ]; then
-                ngx_feature_libs="-R$LUAJIT_LIB $ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
-            else
-                ngx_feature_libs="$ngx_lua_opt_L -lluajit-5.1 $luajit_ld_opt"
-            fi
-
-            . auto/feature
-
-            # clean up
-            CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
-            NGX_TEST_LD_OPT="$SAVED_NGX_TEST_LD_OPT"
+            check_luajit_lib 'luajit-5.1' \
+              'specified by the LUAJIT_LIB and LUAJIT_INC env' \
+              "$LUAJIT_INC" "$LUAJIT_LIB" "-lm"
         fi
     fi
 
@@ -109,48 +98,39 @@ END
         ;;
     esac
 else
-    # auto-discovery
-    if [ $ngx_found = no ]; then
-        # FreeBSD with luajit-2.0 from ports collection
-        ngx_feature="LuaJIT library in /usr/local/"
-        ngx_feature_path="/usr/local/include/luajit-2.0"
-        luajit_ld_opt="-lm"
-        LUAJIT_LIB="/usr/local/lib"
-        if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R/usr/local/lib -L/usr/local/lib -lluajit-5.1 -lm"
-        else
-            ngx_feature_libs="-L/usr/local/lib -lluajit-5.1 -lm"
-        fi
-        . auto/feature
-    fi
+    # LuaJIT library auto-discovery.
+    for luajit_version in '2.1' '2.0'; do
 
-    if [ $ngx_found = no ]; then
-        # Gentoo with LuaJIT-2.0, try with -ldl
-        ngx_feature="LuaJIT library in /usr/"
-        ngx_feature_path="/usr/include/luajit-2.0"
-        luajit_ld_opt="-lm -ldl"
-        LUAJIT_LIB="/usr/lib"
-        if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1 -ldl"
-        else
-            ngx_feature_libs="-L/usr/lib -lm -lluajit-5.1 -ldl"
-        fi
-        . auto/feature
-    fi
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version default auto-discovery with -ldl" \
+        "/usr/include/luajit-$luajit_version" "" "-lm -ldl"
+      if [ $ngx_found = yes ]; then break; fi
 
-    if [ $ngx_found = no ]; then
-        # Gentoo with LuaJIT 2.0
-        ngx_feature="LuaJIT library in /usr/"
-        ngx_feature_path="/usr/include/luajit-2.0"
-        luajit_ld_opt="-lm"
-        LUAJIT_LIB="/usr/lib"
-        if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R/usr/lib -L/usr/lib -lm -lluajit-5.1"
-        else
-            ngx_feature_libs="-L/usr/lib -lm -lluajit-5.1"
-        fi
-        . auto/feature
-    fi
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version default auto-discovery" \
+        "/usr/include/luajit-$luajit_version" "" "-lm"
+      if [ $ngx_found = yes ]; then break; fi
+
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version auto-discovery in /usr/local/ with -ldl" \
+        "/usr/local/include/luajit-$luajit_version" "/usr/local/lib" "-lm -ldl"
+      if [ $ngx_found = yes ]; then break; fi
+
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version auto-discovery in /usr/local/" \
+        "/usr/local/include/luajit-$luajit_version" "/usr/local/lib" "-lm"
+      if [ $ngx_found = yes ]; then break; fi
+
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version auto-discovery in /usr/ with -ldl" \
+        "/usr/include/luajit-$luajit_version" "/usr/lib" "-lm -ldl"
+      if [ $ngx_found = yes ]; then break; fi
+
+      check_luajit_lib 'luajit-5.1' \
+        "luajit-$luajit_version auto-discovery in /usr/" \
+        "/usr/include/luajit-$luajit_version" "/usr/lib" "-lm"
+      if [ $ngx_found = yes ]; then break; fi
+    done
 fi
 
 ngx_module_incs=
