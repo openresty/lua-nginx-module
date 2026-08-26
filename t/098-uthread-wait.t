@@ -1340,3 +1340,54 @@ GET /lua
 at least one coroutine should be specified
 --- no_error_log
 [crit]
+
+
+
+=== TEST 24: wait any uthreads
+--- config
+    location /lua {
+        content_by_lua '
+            local function f(seconds, tag)
+                -- ngx.say("hello in thread")
+                ngx.sleep(seconds)
+                return tag, seconds
+            end
+            local threads_args = {
+                { 1, 't1 wait 1 seconds'},
+                { 0.2, 't2 wait 0.2 seconds'},
+                { 3, 't3 wait 3 seconds'},
+                { 2, 't4 wait 2 seconds'},
+                { 0.5, 't5 wait 0.5 seconds'},
+            }
+            local threads = {}
+            for i, args in ipairs(threads_args) do
+                local t, err = ngx.thread.spawn(f, args[1], args[2])
+                if not t then
+                    ngx.say("failed to spawn thread: ", err)
+                    break
+                end
+                threads[i] = t
+            end
+
+            for i = 1, #threads + 1 do
+                local ok, res = ngx.thread.wait(unpack(threads))
+                if not ok then
+                    ngx.say("failed to run thread: ", res)
+                    break
+                end
+
+                ngx.say(i, ": ", res)
+            end
+        ';
+    }
+--- request
+GET /lua
+--- response_body
+1: t2 wait 0.2 seconds
+2: t5 wait 0.5 seconds
+3: t1 wait 1 seconds
+4: t4 wait 2 seconds
+5: t3 wait 3 seconds
+failed to run thread: already waited or killed
+--- no_error_log
+[error]
