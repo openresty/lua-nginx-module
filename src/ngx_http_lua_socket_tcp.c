@@ -4215,6 +4215,7 @@ ngx_http_lua_socket_tcp_finalize_read_part(ngx_http_request_t *r,
     if (u->input_filter_ctx != NULL && u->input_filter_ctx != u) {
         ((ngx_http_lua_socket_compiled_pattern_t *)
          u->input_filter_ctx)->upstream = NULL;
+        u->input_filter_ctx = NULL;
     }
 
     if (u->raw_downstream || u->body_downstream) {
