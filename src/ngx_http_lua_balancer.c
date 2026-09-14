@@ -1192,7 +1192,9 @@ ngx_http_lua_ffi_balancer_set_more_tries(ngx_http_request_t *r,
     total = bp->total_tries + r->upstream->peer.tries - 1;
 
     if (max_tries && total + count > max_tries) {
-        count = max_tries - total;
+        /* both operands are unsigned: total may already exceed max_tries,
+         * and the subtraction would then wrap instead of reducing count */
+        count = total < max_tries ? (int) (max_tries - total) : 0;
         *err = "reduced tries due to limit";
 
     } else {
