@@ -4211,10 +4211,15 @@ ngx_http_lua_socket_tcp_finalize_read_part(ngx_http_request_t *r,
         ngx_memzero(&u->buffer, sizeof(ngx_buf_t));
     }
 
-    /* mirror tcp_finalize: detach cp so its __gc is safe */
+    /*
+     * mirror tcp_finalize: detach cp so its __gc is safe, and drop our
+     * reference to cp as well, since cp may be freed by the Lua GC before
+     * the socket is finalized.
+     */
     if (u->input_filter_ctx != NULL && u->input_filter_ctx != u) {
         ((ngx_http_lua_socket_compiled_pattern_t *)
          u->input_filter_ctx)->upstream = NULL;
+        u->input_filter_ctx = NULL;
     }
 
     if (u->raw_downstream || u->body_downstream) {
