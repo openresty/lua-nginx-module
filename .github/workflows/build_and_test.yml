@@ -5,6 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -34,6 +35,13 @@ jobs:
             BORINGSSL: "1"
             TEST_NGINX_USE_HTTP3: "1"
             TEST_NGINX_QUIC_IDLE_TIMEOUT: "3"
+
+          - name: "nginx 1.31.6 + OpenSSL + ASan"
+            NGINX_VERSION: "1.31.6"
+            # ASan slows every request down, so allow more time than the
+            # other jobs before a test is called timed out.
+            TEST_NGINX_TIMEOUT: "10"
+            ASAN: "1"
 
     services:
       redis:
@@ -223,8 +231,14 @@ jobs:
       - name: Build LuaJIT
         run: |
           cd luajit2
+          XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2'
+          if [ "${{ matrix.ASAN }}" = "1" ]; then
+            # LuaJIT's own allocator hides use-after-free on Lua objects from
+            # ASan, since the memory is never returned to the C allocator.
+            XCFLAGS="$XCFLAGS -DLUAJIT_USE_SYSMALLOC"
+          fi
           make -j$JOBS CCDEBUG=-g Q= PREFIX=$LUAJIT_PREFIX CC=$CC \
-            XCFLAGS='-DLUA_USE_APICHECK -DLUA_USE_ASSERT -msse4.2' \
+            XCFLAGS="$XCFLAGS" \
             > build.log 2>&1 || (cat build.log && exit 1)
           sudo make install PREFIX=$LUAJIT_PREFIX > build.log 2>&1 || (cat build.log && exit 1)
 
@@ -255,8 +269,11 @@ jobs:
           export LD_LIBRARY_PATH=$LUAJIT_LIB:$LD_LIBRARY_PATH
           export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
           export NGX_BUILD_CC=$CC
-          sh util/build-without-ssl.sh ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
-          sh util/build-with-dd.sh     ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
+          export NGX_BUILD_ASAN="${{ matrix.ASAN }}"
+          if [ "${{ matrix.ASAN }}" != "1" ]; then
+            sh util/build-without-ssl.sh ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
+            sh util/build-with-dd.sh     ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
+          fi
           rm -fr buildroot
           sh util/build.sh             ${{ matrix.NGINX_VERSION }} > build.log 2>&1 || (cat build.log && exit 1)
           nginx -V
@@ -283,7 +300,40 @@ jobs:
           [ -n "${{ matrix.TEST_NGINX_QUIC_IDLE_TIMEOUT }}" ] \
             && echo "TEST_NGINX_QUIC_IDLE_TIMEOUT=${{ matrix.TEST_NGINX_QUIC_IDLE_TIMEOUT }}" >> $GITHUB_ENV || true
 
+      - name: Run tests under ASan
+        if: matrix.ASAN == '1'
+        run: |
+          export LD_LIBRARY_PATH=$LUAJIT_LIB:$PWD/mockeagain:$LD_LIBRARY_PATH
+          export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
+          # The ASan runtime has to come first in the preload list: ASan refuses
+          # to start behind another library, and some test files put mockeagain
+          # there themselves.
+          export LD_PRELOAD=$($CC -print-file-name=libasan.so):$PWD/mockeagain/mockeagain.so
+          export TEST_NGINX_HTTP3_CRT=$PWD/t/cert/http3/http3.crt
+          export TEST_NGINX_HTTP3_KEY=$PWD/t/cert/http3/http3.key
+          # Resolve through the local dnsmasq cache, as the other job does.
+          export TEST_NGINX_RESOLVER=127.0.0.1
+          export TEST_NGINX_OPENRESTY_ORG_IP=$(dig +short @127.0.0.1 openresty.org | head -n1)
+          mkdir -p asan-logs
+          export ASAN_OPTIONS=detect_leaks=0,log_path=$PWD/asan-logs/asan,log_exe_name=true
+          python3 ./util/nc_server.py &
+          # ASan replaces the allocator, so glibc's malloc_trim() has nothing to
+          # give back and t/146-malloc-trim.t sees it return 0 where it expects
+          # 1. Run every other file.
+          find t -name '*.t' ! -name '146-malloc-trim.t' -print0 | sort -z \
+            | xargs -0 /usr/bin/env perl $(command -v prove) -I. -Itest-nginx/inc -Itest-nginx/lib
+
+      - name: Show ASan reports
+        if: matrix.ASAN == '1' && failure()
+        run: |
+          shopt -s nullglob
+          for f in asan-logs/*; do
+            echo "===== $f"
+            cat "$f"
+          done
+
       - name: Run tests
+        if: matrix.ASAN != '1'
         run: |
           export LD_LIBRARY_PATH=$LUAJIT_LIB:$PWD/mockeagain:$LD_LIBRARY_PATH
           export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:/opt/curl/bin:$PATH
