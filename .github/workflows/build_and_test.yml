@@ -192,20 +192,32 @@ jobs:
           # Stop any pre-installed dnsmasq instance from the package's default unit.
           sudo systemctl stop dnsmasq 2>/dev/null || true
           # --no-resolv: ignore /etc/resolv.conf (which on ubuntu-latest points at
-          #   systemd-resolved on 127.0.0.53 and would loop back to ourselves on
-          #   port 53 if we ever bound there).
-          # Bind to 5353 to avoid colliding with systemd-resolved.
-          sudo dnsmasq --port=5353 \
+          #   systemd-resolved on 127.0.0.53), so we never loop back to ourselves.
+          # Listen on 127.0.0.1:53: systemd-resolved's stub owns 127.0.0.53:53
+          #   only, so this address is free, and --bind-interfaces keeps us off
+          #   every other one. The tests can then name the resolver as a bare IP,
+          #   which t/087-udp-socket.t TEST 10 needs: it hands
+          #   $TEST_NGINX_RESOLVER to setpeername() with port 53.
+          # --host-record: --no-hosts keeps /etc/hosts out, and public resolvers
+          #   do not answer "localhost" (RFC 6761 makes it the stub resolver's
+          #   job), so answer it here instead of relying on an outside name.
+          sudo dnsmasq --port=53 \
                        --listen-address=127.0.0.1 \
                        --bind-interfaces \
                        --no-resolv --no-hosts \
+                       --host-record=localhost,127.0.0.1,::1 \
+                       --host-record=trailing-dot.test,127.0.0.1 \
                        --server=8.8.4.4 --server=8.8.8.8 --server=1.1.1.1 \
                        --cache-size=1000 \
                        --pid-file=/tmp/dnsmasq.pid
+          sudo ss -lnupt | grep -q '127\.0\.0\.1:53' \
+            || (echo "ERROR: dnsmasq is not listening on 127.0.0.1:53" >&2; exit 1)
+          # localhost must resolve locally, or the resolver tests fail.
+          dig +short @127.0.0.1 localhost
           # Warm the cache for all external hostnames the test suite resolves.
           for h in openresty.org www.openresty.org agentzh.org sregex.org \
                    www.google.com google-public-dns-a.google.com; do
-            dig +short +tries=3 +time=2 @127.0.0.1 -p 5353 "$h" || true
+            dig +short +tries=3 +time=2 @127.0.0.1 "$h" || true
           done
 
       - name: Build LuaJIT
@@ -278,8 +290,14 @@ jobs:
           export LD_PRELOAD=$PWD/mockeagain/mockeagain.so
           export TEST_NGINX_HTTP3_CRT=$PWD/t/cert/http3/http3.crt
           export TEST_NGINX_HTTP3_KEY=$PWD/t/cert/http3/http3.key
-          export TEST_NGINX_OPENRESTY_ORG_IP=$(dig +short @127.0.0.1 -p 5353 openresty.org | head -n1)
-          dig +short @127.0.0.1 -p 5353 openresty.org || true
-          dig +short @127.0.0.1 -p 5353 agentzh.org || true
+          # Resolve through the local dnsmasq cache. Without this the test files
+          # fall back to their own default of 8.8.8.8, which sends every query
+          # out to a public resolver -- the very thing the cache is here to
+          # avoid -- and which cannot answer "localhost", so t/014-bugs.t TEST 37
+          # and t/058-tcp-socket.t TEST 4 fail.
+          export TEST_NGINX_RESOLVER=127.0.0.1
+          export TEST_NGINX_OPENRESTY_ORG_IP=$(dig +short @127.0.0.1 openresty.org | head -n1)
+          dig +short @127.0.0.1 openresty.org || true
+          dig +short @127.0.0.1 agentzh.org || true
           python3 ./util/nc_server.py &
           /usr/bin/env perl $(command -v prove) -I. -Itest-nginx/inc -Itest-nginx/lib -r t/
