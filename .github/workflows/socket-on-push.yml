@@ -1,0 +1,80 @@
+name: Socket on_push tests
+
+on:
+  push:
+    branches: [test/on-push-tcp, feat/callback-idle-conn]
+  pull_request:
+    paths:
+      - 'src/ngx_http_lua_socket_tcp.*'
+      - 't/190-socket-on-push.t'
+      - 't/lib/socket-on-push.lua'
+      - 't/lib/tcp-push-server.py'
+      - '.github/workflows/socket-on-push.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: nginx ${{ matrix.nginx }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        nginx: ['1.27.1', '1.29.4']
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y build-essential libpcre2-dev zlib1g-dev \
+            libssl-dev cpanminus python3
+          sudo cpanm --notest --mirror https://cpan.metacpan.org --mirror-only \
+            Test::Nginx IPC::Run
+
+      - name: Download sources
+        run: |
+          curl --fail --location --retry 3 \
+            https://openresty.org/download/openresty-1.27.1.2.tar.gz | tar xz
+          curl --fail --location --retry 3 \
+            https://nginx.org/download/nginx-${{ matrix.nginx }}.tar.gz | tar xz
+          git clone --branch v0.1.32 --depth=1 \
+            https://github.com/openresty/lua-resty-core.git lua-resty-core
+
+      - name: Build LuaJIT and nginx with the module under test
+        run: |
+          bundle="$PWD/openresty-1.27.1.2/bundle"
+          prefix="$RUNNER_TEMP/on-push"
+          make -C "$bundle/LuaJIT-2.1-20250117" -j2 PREFIX="$prefix/luajit"
+          make -C "$bundle/LuaJIT-2.1-20250117" install PREFIX="$prefix/luajit"
+          export LUAJIT_LIB="$prefix/luajit/lib"
+          export LUAJIT_INC="$prefix/luajit/include/luajit-2.1"
+          cd nginx-${{ matrix.nginx }}
+          ./configure --prefix="$prefix/nginx" --with-debug \
+            --with-http_ssl_module --with-http_v2_module \
+            --with-ld-opt="-Wl,-rpath,$LUAJIT_LIB" \
+            --add-module="$bundle/ngx_devel_kit-0.3.3" \
+            --add-module="$bundle/echo-nginx-module-0.63" \
+            --add-module="$GITHUB_WORKSPACE"
+          make -j2
+          make install
+          echo "$prefix/nginx/sbin" >> "$GITHUB_PATH"
+          echo "LUA_PATH=$GITHUB_WORKSPACE/lua-resty-core/lib/?.lua;$bundle/lua-resty-lrucache-0.15/lib/?.lua;;" >> "$GITHUB_ENV"
+
+      - name: Run socket push integration and basic Lua regression tests
+        env:
+          TEST_NGINX_TIMEOUT: '10'
+          TEST_NGINX_SLEEP: '0.01'
+        run: |
+          nginx -V
+          prove -v t/190-socket-on-push.t t/000-sanity.t t/002-content.t
+
+      - name: Upload nginx logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nginx-logs-${{ matrix.nginx }}-${{ matrix.os }}
+          path: t/servroot/logs/
