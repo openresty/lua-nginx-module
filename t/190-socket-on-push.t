@@ -18,8 +18,10 @@ our $LuaLib = abs_path('t/lib');
 
 END {
     if ($PushPid) {
+        my $status = $?;
         kill 'TERM', $PushPid;
         close $PushServer;
+        $? = $status;
     }
 }
 
@@ -346,7 +348,10 @@ callbacks: 0
             local received = ""
             sock = t.connect("replace", function(data)
                 received = received .. data
-                return "NEW\r\n", true
+                if received == "PUSH\r\n" then
+                    return "NEW\r\n", true
+                end
+                return nil, true
             end)
             collectgarbage()
             collectgarbage()

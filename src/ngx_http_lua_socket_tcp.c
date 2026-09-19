@@ -5944,6 +5944,11 @@ ngx_http_lua_get_keepalive_peer(ngx_http_request_t *r,
         u->udata_queue = item->udata_queue;
         item->udata_queue = NULL;
 
+        if (item->on_push_cb_ref != LUA_NOREF) {
+            luaL_unref(spool->lua_vm, LUA_REGISTRYINDEX, item->on_push_cb_ref);
+            item->on_push_cb_ref = LUA_NOREF;
+        }
+
 #if 1
         u->write_event_handler = ngx_http_lua_socket_dummy_handler;
         u->read_event_handler = ngx_http_lua_socket_dummy_handler;
@@ -5993,7 +5998,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
     ngx_http_lua_socket_pool_t          *spool;
 
     int                n;
-    unsigned char      buf[1];
+    unsigned char      buf[4096];
     ngx_connection_t  *c;
 
     c = ev->data;
@@ -6014,8 +6019,13 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, ev->log, 0,
                    "lua tcp socket keepalive close handler check stale events");
 
+    item = c->data;
+
+again:
+
     /* consume the possible ssl-layer data implicitly */
-    n = c->recv(c, buf, 1);
+    n = c->recv(c, buf,
+                item->on_push_cb_ref == LUA_NOREF ? 1 : sizeof(buf));
 
     if (n == NGX_AGAIN) {
         /* stale event */
@@ -6027,11 +6037,7 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
         return NGX_OK;
     }
 
-    item = c->data;
-
     if (n > 0 && item->on_push_cb_ref != LUA_NOREF) {
-        unsigned char rbuf[4096];
-        ssize_t       nread;
         lua_State     *L;
         int           close_conn;
 
@@ -6044,18 +6050,10 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
             goto close;
         }
 
-        rbuf[0] = buf[0];
-
-        /* read the available data into a stack buffer */
-        nread = c->recv(c, rbuf + 1, sizeof(rbuf) - 1);
-        if (nread <= 0) {
-            goto close;
-        }
-
         lua_rawgeti(L, LUA_REGISTRYINDEX, item->on_push_cb_ref);
-        lua_pushlstring(L, (const char *) rbuf, (size_t) nread);
+        lua_pushlstring(L, (const char *) buf, (size_t) n);
 
-        /* callback(data) -> reply:string|nil, close:bool */
+        /* callback(data) -> reply:string|nil, keepalive:bool */
         if (lua_pcall(L, 1, 2, 0) != LUA_OK) {
             ngx_log_error(NGX_LOG_ERR, ev->log, 0,
                           "lua tcp socket keepalive callback error: %s",
@@ -6088,10 +6086,8 @@ ngx_http_lua_socket_keepalive_close_handler(ngx_event_t *ev)
         lua_pop(L, 2);
 
         if (!close_conn) {
-            if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
-                goto close;
-            }
-            return NGX_OK;
+            /* Drain all available data before rearming the read event. */
+            goto again;
         }
     }
 
