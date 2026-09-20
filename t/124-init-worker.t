@@ -784,24 +784,23 @@ ok
     GET /t
 --- grep_error_log eval: qr/lua close the global Lua VM \S+ in the cache helper process \d+|lua close the global Lua VM \S+$/
 --- grep_error_log_out eval
-qr/\A(?:lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \1
-lua close the global Lua VM \1 in the cache helper process \d+
-lua close the global Lua VM \1
-|lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \2 in the cache helper process \d+
-lua close the global Lua VM \2
-lua close the global Lua VM \2
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \3 in the cache helper process \d+
-lua close the global Lua VM \3
-lua close the global Lua VM \3 in the cache helper process \d+
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4
-)(?:lua close the global Lua VM [0-9A-F]+
-)*\z/
+do {
+    my $close  = qr/lua close the global Lua VM /;
+    my $helper = qr/${close}[0-9A-F]+ in the cache helper process \d+\n/;
+    my $plain  = qr/${close}[0-9A-F]+\n/;
+    my $suffix = qr/ in the cache helper process \d+/;
+    my $skip   = qr/(?:[^\n]*\n)*?/;
+
+    qr/
+        \A
+        (?= $skip $helper $skip $helper )                # at least 2 helper lines
+        (?! $skip $helper $skip $helper $skip $helper )  # but not a 3rd one
+        (?= $skip $plain  $skip $plain  )                # at least 2 plain lines
+        $close ([0-9A-F]+) (?:$suffix)? \n               # 1st line pins the VM address
+        (?: $close \1 (?:$suffix)? \n )*                 # later lines: same address
+        \z
+    /x;
+}
 --- no_error_log
 [error]
 start privileged agent process
@@ -830,25 +829,23 @@ start privileged agent process
     GET /t
 --- grep_error_log eval: qr/lua close the global Lua VM \S+ in the cache helper process \d+|lua close the global Lua VM \S+$/
 --- grep_error_log_out eval
-qr/\A(?:lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \1
-lua close the global Lua VM \1 in the cache helper process \d+
-lua close the global Lua VM \1
-|lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \2 in the cache helper process \d+
-lua close the global Lua VM \2
-lua close the global Lua VM \2
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \3 in the cache helper process \d+
-lua close the global Lua VM \3
-lua close the global Lua VM \3 in the cache helper process \d+
-)(?:lua close the global Lua VM [0-9A-F]+
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4 
-lua close the global Lua VM \4
-)*\z/
+do {
+    my $close  = qr/lua close the global Lua VM /;
+    my $helper = qr/${close}[0-9A-F]+ in the cache helper process \d+\n/;
+    my $plain  = qr/${close}[0-9A-F]+\n/;
+    my $suffix = qr/ in the cache helper process \d+/;
+    my $skip   = qr/(?:[^\n]*\n)*?/;
+
+    qr/
+        \A
+        (?= $skip $helper $skip $helper )                # at least 2 helper lines
+        (?! $skip $helper $skip $helper $skip $helper )  # but not a 3rd one
+        (?= $skip $plain  $skip $plain  )                # at least 2 plain lines
+        $close ([0-9A-F]+) (?:$suffix)? \n               # 1st line pins the VM address
+        (?: $close \1 (?:$suffix)? \n )*                 # later lines: same address
+        \z
+    /x;
+}
 --- no_error_log
 [error]
 start privileged agent process
@@ -878,24 +875,23 @@ start privileged agent process
     GET /t
 --- grep_error_log eval: qr/lua close the global Lua VM \S+ in the cache helper process \d+|lua close the global Lua VM \S+$/
 --- grep_error_log_out eval
-qr/\A(?:lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \1
-lua close the global Lua VM \1 in the cache helper process \d+
-lua close the global Lua VM \1
-|lua close the global Lua VM ([0-9A-F]+) in the cache helper process \d+
-lua close the global Lua VM \2 in the cache helper process \d+
-lua close the global Lua VM \2
-lua close the global Lua VM \2
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \3 in the cache helper process \d+
-lua close the global Lua VM \3
-lua close the global Lua VM \3 in the cache helper process \d+
-|lua close the global Lua VM ([0-9A-F]+)
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4 in the cache helper process \d+
-lua close the global Lua VM \4
-)(?:lua close the global Lua VM [0-9A-F]+
-)*\z/
+do {
+    my $close  = qr/lua close the global Lua VM /;
+    my $helper = qr/${close}[0-9A-F]+ in the cache helper process \d+\n/;
+    my $plain  = qr/${close}[0-9A-F]+\n/;
+    my $suffix = qr/ in the cache helper process \d+/;
+    my $skip   = qr/(?:[^\n]*\n)*?/;
+
+    qr/
+        \A
+        (?= $skip $helper $skip $helper )                # at least 2 helper lines
+        (?! $skip $helper $skip $helper $skip $helper )  # but not a 3rd one
+        (?= $skip $plain  $skip $plain  )                # at least 2 plain lines
+        $close ([0-9A-F]+) (?:$suffix)? \n               # 1st line pins the VM address
+        (?: $close \1 (?:$suffix)? \n )*                 # later lines: same address
+        \z
+    /x;
+}
 --- error_log eval
 qr/start privileged agent process \d+/
 --- no_error_log
