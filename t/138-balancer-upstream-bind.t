@@ -140,3 +140,36 @@ ok
 --- error_code: 500
 --- error_log
 bind(100.100.100.100) failed (99: Cannot assign requested address)
+
+
+
+=== TEST 5: bind to progressively longer addresses in balancer phase
+--- no_http2
+--- http_config
+    lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
+
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            local balancer = require "ngx.balancer"
+            assert(balancer.bind_to_local_addr("127.0.0.2"))
+            assert(balancer.bind_to_local_addr("127.0.0.200"))
+            assert(balancer.bind_to_local_addr("127.0.0.2"))
+            assert(balancer.set_current_peer("127.0.0.1", ngx.var.server_port))
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend/back;
+    }
+
+    location = /back {
+        echo $remote_addr;
+    }
+
+--- request
+GET /t
+--- response_body
+127.0.0.2
+--- no_error_log
+[error]

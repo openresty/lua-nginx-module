@@ -957,6 +957,7 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
     u_char *errbuf, size_t *errbuf_size)
 {
     u_char                *p;
+    ngx_addr_t            *local;
     ngx_http_lua_ctx_t    *ctx;
     ngx_http_upstream_t   *u;
     ngx_int_t              rc;
@@ -993,25 +994,29 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
 
     bp = (ngx_http_lua_balancer_peer_data_t *) u->peer.data;
 
-    if (bp->local == NULL) {
-        bp->local = ngx_palloc(r->pool, sizeof(ngx_addr_t) + addr_len);
-        if (bp->local == NULL) {
-            p = ngx_snprintf(errbuf, *errbuf_size, "no memory");
-            *errbuf_size = p - errbuf;
-            return NGX_ERROR;
-        }
+    /*
+     * The balancer can change the local address on retries.  Do not reuse an
+     * earlier allocation: its trailing name buffer was sized for the earlier
+     * address and may be shorter than addr_len.
+     */
+    local = ngx_palloc(r->pool, sizeof(ngx_addr_t) + addr_len);
+    if (local == NULL) {
+        p = ngx_snprintf(errbuf, *errbuf_size, "no memory");
+        *errbuf_size = p - errbuf;
+        return NGX_ERROR;
     }
 
-    rc = ngx_parse_addr_port(r->pool, bp->local, (u_char *) addr, addr_len);
+    rc = ngx_parse_addr_port(r->pool, local, (u_char *) addr, addr_len);
     if (rc == NGX_ERROR) {
         p = ngx_snprintf(errbuf, *errbuf_size, "invalid addr %s", addr);
         *errbuf_size = p - errbuf;
         return NGX_ERROR;
     }
 
-    bp->local->name.len = addr_len;
-    bp->local->name.data = (u_char *) (bp->local + 1);
-    ngx_memcpy(bp->local->name.data, addr, addr_len);
+    local->name.len = addr_len;
+    local->name.data = (u_char *) (local + 1);
+    ngx_memcpy(local->name.data, addr, addr_len);
+    bp->local = local;
 
     return NGX_OK;
 }
