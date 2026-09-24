@@ -48,6 +48,7 @@
 #include "ngx_http_lua_log_ringbuf.h"
 #if (NGX_THREADS)
 #include "ngx_http_lua_worker_thread.h"
+#include "ngx_http_lua_async_fs.h"
 #endif
 #if (NGX_HTTP_V3)
 #include <ngx_event_quic.h>
@@ -863,6 +864,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_config_api(L);
 #if (NGX_THREADS)
     ngx_http_lua_inject_worker_thread_api(log, L);
+    ngx_http_lua_inject_async_fs_api(L);
 #endif
 
     lua_getglobal(L, "package"); /* ngx package */
