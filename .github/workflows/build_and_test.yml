@@ -201,6 +201,11 @@ jobs:
           # --host-record: --no-hosts keeps /etc/hosts out, and public resolvers
           #   do not answer "localhost" (RFC 6761 makes it the stub resolver's
           #   job), so answer it here instead of relying on an outside name.
+          # --min-cache-ttl: the names the suite resolves carry a 300s TTL while
+          #   a job runs for ~20 minutes, so without a floor the cache expires
+          #   several times per run and the queries leave the runner again --
+          #   exactly the flakiness the cache is here to remove. 3600 is the
+          #   highest floor dnsmasq accepts.
           sudo dnsmasq --port=53 \
                        --listen-address=127.0.0.1 \
                        --bind-interfaces \
@@ -209,6 +214,7 @@ jobs:
                        --host-record=trailing-dot.test,127.0.0.1 \
                        --server=8.8.4.4 --server=8.8.8.8 --server=1.1.1.1 \
                        --cache-size=1000 \
+                       --min-cache-ttl=3600 \
                        --pid-file=/tmp/dnsmasq.pid
           sudo ss -lnupt | grep -q '127\.0\.0\.1:53' \
             || (echo "ERROR: dnsmasq is not listening on 127.0.0.1:53" >&2; exit 1)
