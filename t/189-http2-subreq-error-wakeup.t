@@ -46,6 +46,7 @@ __DATA__
 --- http2
 --- request
 GET /delay
+--- curl_options: --max-time=0.9
 --- timeout: 1
 --- abort
 --- ignore_response
@@ -100,6 +101,7 @@ Parent request finished, got response from subrequest
 --- http2
 --- request
 GET /outer
+--- curl_options: --max-time=0.9
 --- timeout: 1
 --- abort
 --- ignore_response
@@ -160,6 +162,7 @@ Outer request completed
 --- http2
 --- request
 GET /parallel
+--- curl_options: --max-time=0.9
 --- timeout: 1
 --- abort
 --- ignore_response
