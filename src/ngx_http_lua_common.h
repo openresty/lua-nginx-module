@@ -344,6 +344,10 @@ struct ngx_http_lua_main_conf_s {
     unsigned             requires_capture_log:1;
     unsigned             requires_server_rewrite:1;
     unsigned             requires_precontent:1;
+
+    ngx_msec_t           init_worker_timeout;
+    ngx_queue_t          deferred_timers;
+    ngx_flag_t           init_worker_abort_on_error;
 };
 
 
