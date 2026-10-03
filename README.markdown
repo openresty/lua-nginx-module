@@ -1177,11 +1177,14 @@ Directives
 * [ssl_session_fetch_by_lua_file](#ssl_session_fetch_by_lua_file)
 * [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block)
 * [ssl_session_store_by_lua_file](#ssl_session_store_by_lua_file)
+* [ssl_verify_by_lua_block](#ssl_verify_by_lua_block)
+* [ssl_verify_by_lua_file](#ssl_verify_by_lua_file)
 * [proxy_ssl_certificate_by_lua_block](#proxy_ssl_certificate_by_lua_block)
 * [proxy_ssl_certificate_by_lua_file](#proxy_ssl_certificate_by_lua_file)
 * [proxy_ssl_verify_by_lua_block](#proxy_ssl_verify_by_lua_block)
 * [proxy_ssl_verify_by_lua_file](#proxy_ssl_verify_by_lua_file)
 * [lua_shared_dict](#lua_shared_dict)
+* [lua_skip_openssl_default_verify](#lua_skip_openssl_default_verify)
 * [lua_socket_connect_timeout](#lua_socket_connect_timeout)
 * [lua_socket_send_timeout](#lua_socket_send_timeout)
 * [lua_socket_send_lowat](#lua_socket_send_lowat)
@@ -3241,6 +3244,84 @@ Note that: this directive is only allowed to used in **http context** from the `
 
 [Back to TOC](#directives)
 
+ssl_verify_by_lua_block
+-----------------------
+
+**syntax:** *ssl_verify_by_lua_block { lua-script }*
+
+**context:** *http, server*
+
+**phase:** *right-after-client-certificate-message-was-processed*
+
+This directive runs user Lua code when Nginx is about to post-process the SSL client certificate message for the downstream SSL (https) connections.
+
+It is particularly useful to parse downstream client certificate and do some custom operations in pure lua.
+
+The [ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme) library are particularly useful in this context.
+
+Below is a trivial example using the
+[ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md) module
+at the same time:
+
+```nginx
+
+ server {
+     listen 443 ssl;
+     server_name   test.com;
+     ssl_verify_client on;
+     ssl_certificate /path/to/cert.crt;
+     ssl_certificate_key /path/to/key.key;
+
+     ssl_verify_by_lua_block {
+         local ssl_vfy = require "ngx.ssl.sslverify"
+
+         local cert = ssl_vfy.get_verify_cert()
+
+         -- ocsp to verify cert
+         -- check crl
+
+         ssl_vfy.set_verify_result()
+         ...
+     }
+
+     location /t {
+         proxy_ssl_certificate /path/to/cert.crt;
+         proxy_ssl_certificate_key /path/to/key.key;
+         proxy_pass https://upstream;
+     }
+     ...
+ }
+```
+
+See more information in the [ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md)
+Lua module's official documentation.
+
+Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
+[ngx.exit](#ngxexit) call with an error code like `ngx.ERROR`.
+
+This Lua code execution context *does* support yielding, so Lua APIs that may yield
+(like cosockets, sleeping, and "light threads")
+are enabled in this context
+
+This directive requires OpenSSL 4.1.0 or greater.
+
+[Back to TOC](#directives)
+
+ssl_verify_by_lua_file
+----------------------
+
+**syntax:** *ssl_verify_by_lua_file &lt;path-to-lua-script-file&gt;*
+
+**context:** *http, server*
+
+**phase:** *right-after-client-certificate-message-was-processed*
+
+Equivalent to [ssl_verify_by_lua_block](#ssl_verify_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or, as from the `v0.5.0rc32` release, the [LuaJIT bytecode](#luajit-bytecode-support) to be executed.
+
+When a relative path like `foo/bar.lua` is given, they will be turned into the absolute path relative to the `server prefix` path determined by the `-p PATH` command-line option while starting the Nginx server.
+
+[Back to TOC](#directives)
+
 proxy_ssl_certificate_by_lua_block
 ----------------------------------
 
@@ -3438,6 +3519,21 @@ on actual user data set (some people start with 12KB).
 See [ngx.shared.DICT](#ngxshareddict) for details.
 
 This directive was first introduced in the `v0.3.1rc22` release.
+
+[Back to TOC](#directives)
+
+lua_skip_openssl_default_verify
+-------------------------------
+
+**syntax:** *lua_skip_openssl_default_verify on|off*
+
+**default:** *lua_skip_openssl_default_verify off*
+
+**context:** *http, server*
+
+When using ssl_verify_by_lua directive, `lua_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify downstream client certificate.
+
+This directive is turned `off` by default.
 
 [Back to TOC](#directives)
 
