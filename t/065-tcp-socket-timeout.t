@@ -931,7 +931,7 @@ lua tcp socket read timed out
                     ngx.sleep(0.001)
                 end
 
-                local bytes, err = sock:send("flush_all")
+                local bytes, err = sock:send("get __nil")
                 ngx.say("send: ", bytes, " ", err)
 
                 local ok, err = sock:close()

@@ -64,18 +64,16 @@ done!
 
 
 
-=== TEST 2: flush data from memcached
+=== TEST 2: shared memcached is available
 --- config
-    location /flush {
-        set $memc_cmd flush_all;
+    location /version {
+        set $memc_cmd version;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 --- request
-GET /flush
+GET /version
 --- error_code: 200
---- response_body eval
-"OK\r
-"
+--- response_body_like: ^VERSION [^\r\n]+\r\n$
 --- timeout: 10
 --- no_error_log
 [error]

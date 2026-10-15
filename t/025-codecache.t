@@ -1083,7 +1083,7 @@ function go(port)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -1110,7 +1110,7 @@ GET /t
 --- response_body
 connected: 1, reused: 0
 request sent: 11
-received: OK
+received: END
 --- no_error_log
 [error]
 lua tcp socket keepalive max idle timeout
@@ -1152,7 +1152,7 @@ function go(port)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -1180,7 +1180,7 @@ GET /t
 --- response_body
 connected: 1, reused: 0
 request sent: 11
-received: OK
+received: END
 --- no_error_log
 [error]
 --- error_log eval

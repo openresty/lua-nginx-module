@@ -387,7 +387,7 @@ function go(port)
 
     print("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -437,7 +437,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "http lua close fake http connection",
 qr/go\(\): connected: 1, reused: \d+/,
 "go(): request sent: 11",
-"go(): received: OK",
+"go(): received: END",
 ]
 
 
@@ -514,7 +514,7 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0(?:[^.]|\.00)/,
 
                 print("connected: ", ok)
 
-                local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+                local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
                 local ok, err = udp:send(req)
                 if not ok then
                     fail("failed to send: ", err)
@@ -568,7 +568,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "connected: 1",
-"received 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+"received 13 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}"
 ]
 
 
@@ -664,7 +664,7 @@ function go(port)
 
     print("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -713,7 +713,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "http lua close fake http connection",
 qr/go\(\): connected: 1, reused: \d+/,
 "go(): request sent: 11",
-"go(): received: OK",
+"go(): received: END",
 ]
 
 
@@ -761,7 +761,7 @@ function go(port)
 
     print("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -819,7 +819,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "http lua close fake http connection",
 qr/go\(\): connected: 1, reused: \d+/,
 "go(): request sent: 11",
-"go(): received: OK",
+"go(): received: END",
 ]
 
 
@@ -867,7 +867,7 @@ function go(port)
 
     print("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -932,7 +932,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "http lua close fake http connection",
 qr/go\(\): connected: 1, reused: \d+/,
 "go(): request sent: 11",
-"go(): received: OK",
+"go(): received: END",
 ]
 
 
@@ -981,7 +981,7 @@ function go(port)
 
     print("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -1039,7 +1039,7 @@ qr/\[lua\] .*? my lua timer handler/,
 "http lua close fake http connection",
 qr/go\(\): connected: 1, reused: \d+/,
 "go(): request sent: 11",
-"go(): received: OK",
+"go(): received: END",
 ]
 
 

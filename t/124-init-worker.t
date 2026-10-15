@@ -123,7 +123,7 @@ warn(): timer expired (premature: false; counter: 0)
                 return
             end
 
-            local req = "flush_all\\r\\n"
+            local req = "get __nil\\r\\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -175,7 +175,7 @@ ok
 warn(): created timer: 1
 warn(): timer expired (premature: false)
 warn(): request sent: 11
-warn(): received: OK
+warn(): received: END
 
 --- log_level: debug
 --- error_log
@@ -234,7 +234,7 @@ local function handler(premature)
         return
     end
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -286,7 +286,7 @@ ok
 warn(): created timer: 1
 warn(): timer expired (premature: false)
 warn(): request sent: 11
-warn(): received: OK
+warn(): received: END
 
 --- log_level: debug
 --- error_log

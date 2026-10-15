@@ -915,7 +915,7 @@ hello from g
                     ngx.say("failed to connect: ", err)
                     return
                 end
-                local bytes, err = sock:send("flush_all\\r\\n")
+                local bytes, err = sock:send("get __nil\\r\\n")
                 if not bytes then
                     ngx.say("failed to send query: ", err)
                     return
@@ -950,7 +950,7 @@ delete thread 2
 --- response_body
 before
 after
-received: OK
+received: END
 --- no_error_log
 [error]
 

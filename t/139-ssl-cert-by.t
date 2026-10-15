@@ -355,9 +355,9 @@ my timer run!
                 return
             end
 
-            local bytes, err = sock:send("flush_all\r\n")
+            local bytes, err = sock:send("get __nil\r\n")
             if not bytes then
-                ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
+                ngx.log(ngx.ERR, "failed to send get command: ", err)
                 return
             end
 
@@ -449,7 +449,7 @@ close: 1 nil
 
 --- error_log
 lua ssl server name: "test.com"
-received memc reply: OK
+received memc reply: END
 
 --- no_error_log
 [error]
@@ -2174,10 +2174,10 @@ qr/elapsed in ssl_certificate_by_lua\*: 0\.(?:09|1\d)\d+,/,
                 return
             end
 
-            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local req = "\0\1\0\0\0\1\0\0get __nil\r\n"
             local ok, err = sock:send(req)
             if not ok then
-                ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+                ngx.log(ngx.ERR, "failed to send get to memc: ", err)
                 return
             end
 
@@ -2233,13 +2233,13 @@ ssl handshake: cdata
 --- grep_error_log eval: qr/received memc reply of \d+ bytes/
 --- grep_error_log_out eval
 [
-'received memc reply of 12 bytes
+'received memc reply of 13 bytes
 ',
-'received memc reply of 12 bytes
+'received memc reply of 13 bytes
 ',
-'received memc reply of 12 bytes
+'received memc reply of 13 bytes
 ',
-'received memc reply of 12 bytes
+'received memc reply of 13 bytes
 ',
 ]
 
@@ -2347,9 +2347,9 @@ uthread: failed to kill: already waited or killed
             return
         end
 
-        local bytes, err = sock:send("flush_all\r\n")
+        local bytes, err = sock:send("get __nil\r\n")
         if not bytes then
-            ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
+            ngx.log(ngx.ERR, "failed to send get command: ", err)
             return
         end
 
@@ -2375,10 +2375,10 @@ GET /t
 --- response_body
 test completed
 
---- grep_error_log eval: qr/(ssl certificate: TCP cosocket test start|ssl certificate: received TCP memc reply: OK|ssl certificate: TCP cosocket test done|test completed)/
+--- grep_error_log eval: qr/(ssl certificate: TCP cosocket test start|ssl certificate: received TCP memc reply: END|ssl certificate: TCP cosocket test done|test completed)/
 --- grep_error_log_out
 ssl certificate: TCP cosocket test start
-ssl certificate: received TCP memc reply: OK
+ssl certificate: received TCP memc reply: END
 ssl certificate: TCP cosocket test done
 test completed
 
@@ -2408,10 +2408,10 @@ test completed
             return
         end
 
-        local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+        local req = "\0\1\0\0\0\1\0\0get __nil\r\n"
         local ok, err = sock:send(req)
         if not ok then
-            ngx.log(ngx.ERR, "failed to send flush_all to memc: ", err)
+            ngx.log(ngx.ERR, "failed to send get to memc: ", err)
             return
         end
 
@@ -2441,7 +2441,7 @@ test completed
 --- grep_error_log_out eval
 [
 qr/ssl certificate: UDP cosocket test start/,
-qr/ssl certificate: received UDP memc reply of 12 bytes/,
+qr/ssl certificate: received UDP memc reply of 13 bytes/,
 qr/ssl certificate: UDP cosocket test done/,
 qr/test completed/,
 ]
