@@ -303,6 +303,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.c \
             $ngx_addon_dir/src/ngx_http_lua_pipe.c \
             $ngx_addon_dir/src/ngx_http_lua_worker_thread.c \
+            $ngx_addon_dir/src/ngx_http_lua_async_fs.c \
             "
 
 HTTP_LUA_DEPS=" \
@@ -369,6 +370,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_input_filters.h \
             $ngx_addon_dir/src/ngx_http_lua_pipe.h \
             $ngx_addon_dir/src/ngx_http_lua_worker_thread.h \
+            $ngx_addon_dir/src/ngx_http_lua_async_fs.h \
             "
 
 # ----------------------------------------
