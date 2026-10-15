@@ -123,8 +123,8 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log
-lua udp socket read timed out, upstream: localhost:11211(127.0.0.1)
+--- error_log eval
+"lua udp socket read timed out, upstream: localhost:$ENV{TEST_NGINX_MEMCACHED_PORT}(127.0.0.1)"
 
 
 
@@ -267,8 +267,8 @@ GET /t
 --- response_body
 connected: 1
 failed to receive: timeout
---- error_log
-lua udp socket read timed out, upstream: localhost:11211(127.0.0.1)
+--- error_log eval
+"lua udp socket read timed out, upstream: localhost:$ENV{TEST_NGINX_MEMCACHED_PORT}(127.0.0.1)"
 
 
 

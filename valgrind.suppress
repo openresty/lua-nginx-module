@@ -304,3 +304,15 @@
    fun:ngx_init_cycle
    fun:main
 }
+
+# nginx keeps an aligned interior pointer to its process-wide CRC table.
+# The original malloc address is deliberately not retained (ngx_crc32.c).
+{
+   nginx_crc32_aligned_table
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:ngx_alloc
+   fun:ngx_crc32_table_init
+   fun:main
+}

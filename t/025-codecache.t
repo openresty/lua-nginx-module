@@ -1,5 +1,11 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+BEGIN {
+    # Injected initialization and per-line GC change the cache/ordering or
+    # performance contract asserted here. Keep ASan, use the normal GC policy.
+    delete $ENV{TEST_NGINX_INIT_BY_LUA} if $ENV{TEST_NGINX_GC_STRESS};
+}
+
 use Test::Nginx::Socket::Lua;
 use Cwd qw(abs_path realpath);
 use File::Basename;

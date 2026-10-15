@@ -42,6 +42,24 @@ $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
 $ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 
 worker_connections(1024);
+# Full collections on every Lua line deliberately slow allocation fuzzing.
+if ($ENV{TEST_NGINX_GC_STRESS}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $limit = $block->timeout || 0;
+        $block->set_value('timeout', 180) if $limit < 180;
+    });
+}
+
+# Reloading and reaping instrumented workers can outlast the normal 0.3s wait.
+if ($ENV{TEST_NGINX_USE_VALGRIND}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $wait = $block->wait || 0;
+        $block->set_value('wait', 2) if $wait < 2;
+    });
+}
+
 run_tests();
 
 __DATA__
@@ -474,7 +492,8 @@ lua found 1 pending timers
             local rand = math.random
             local newtimer = ngx.timer.at
             for i = 1, 8191 do
-                local delay = rand(4096)
+                -- Keep all timers pending during instrumented allocation.
+                local delay = 3600 + rand(4096)
                 local ok, err = newtimer(delay, job, false)
                 if not ok then
                     ngx.say("failed to create timer at ", delay, ": ", err)

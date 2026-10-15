@@ -212,8 +212,8 @@ attempt to send data on a closed socket:
     location /t {
         rewrite_by_lua '
             local sock = ngx.socket.tcp()
-            local port = 80
-            local ok, err = sock:connect("agentzh.org", port)
+            local port = $TEST_NGINX_SERVER_PORT
+            local ok, err = sock:connect("localhost", port)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -221,7 +221,7 @@ attempt to send data on a closed socket:
 
             ngx.say("connected: ", ok)
 
-            local req = "GET / HTTP/1.0\\r\\nHost: agentzh.org\\r\\nConnection: close\\r\\n\\r\\n"
+            local req = "GET /foo HTTP/1.0\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
             -- req = "OK"
 
             local bytes, err = sock:send(req)
@@ -251,13 +251,17 @@ attempt to send data on a closed socket:
 
         content_by_lua return;
     }
+    location /foo {
+        content_by_lua 'ngx.say("foo")';
+        more_clear_headers Date;
+    }
 --- request
 GET /t
---- response_body_like
+--- response_body
 connected: 1
-request sent: 56
-first line received: HTTP\/1\.1 200 OK
-second line received: (?:Date|Server): .*?
+request sent: 57
+first line received: HTTP/1.1 200 OK
+second line received: Server: nginx
 --- no_error_log
 [error]
 

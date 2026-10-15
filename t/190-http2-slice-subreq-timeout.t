@@ -18,7 +18,10 @@ BEGIN {
     my $nginx = $ENV{TEST_NGINX_BINARY} || 'nginx';
     my $nginx_version = `$nginx -V 2>&1`;
 
-    if ($? != 0) {
+    if ($ENV{MOCKEAGAIN}) {
+        $SkipReason = "requires bulk transfer before the stalled-client timeout";
+
+    } elsif ($? != 0) {
         $SkipReason = "failed to get nginx version";
 
     } elsif ($nginx_version !~ /--with-http_slice_module/) {

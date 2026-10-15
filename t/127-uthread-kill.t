@@ -197,7 +197,7 @@ lua tcp socket abort resolver
             local ready = false
             local function f()
                 local sock = ngx.socket.tcp()
-                sock:connect("agentzh.org", 80)
+                sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
                 sock:close()
                 ready = true
                 sock:settimeout(10000)
