@@ -39,7 +39,6 @@ ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
 
     lscf = ngx_http_get_module_srv_conf(r, ngx_http_lua_module);
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
-    L = ngx_http_lua_get_lua_vm(r, NULL);
 
     if (lscf->srv.server_rewrite_handler == NULL) {
         dd("no rewrite handler found");
@@ -56,6 +55,10 @@ ngx_http_lua_server_rewrite_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
     }
+
+    /* must be fetched after create_ctx: with "lua_code_cache off" the
+     * per-request VM in ctx->vm_state does not exist until then */
+    L = ngx_http_lua_get_lua_vm(r, ctx);
 
     dd("entered? %d", (int) ctx->entered_server_rewrite_phase);
 
@@ -133,9 +136,15 @@ ngx_http_lua_server_rewrite_handler_inline(ngx_http_request_t *r,
     ngx_http_lua_srv_conf_t *lscf, lua_State *L)
 {
     ngx_int_t                    rc;
+    ngx_http_lua_loc_conf_t     *llcf;
 
     dd("server_rewrite by lua inline");
 
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (!llcf->enable_code_cache) {
+        lscf->srv.server_rewrite_src_ref = LUA_REFNIL;
+    }
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_http_lua_cache_loadbuffer(r->connection->log, L,
@@ -160,6 +169,7 @@ ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r,
     ngx_int_t                        rc;
     u_char                          *script_path;
     ngx_str_t                        eval_src;
+    ngx_http_lua_loc_conf_t         *llcf;
 
 
     if (ngx_http_complex_value(r, &lscf->srv.server_rewrite_src,
@@ -173,6 +183,12 @@ ngx_http_lua_server_rewrite_handler_file(ngx_http_request_t *r,
 
     if (script_path == NULL) {
         return NGX_ERROR;
+    }
+
+    llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+
+    if (!llcf->enable_code_cache) {
+        lscf->srv.server_rewrite_src_ref = LUA_REFNIL;
     }
 
     /*  load Lua script file (w/ cache)        sp = 1 */

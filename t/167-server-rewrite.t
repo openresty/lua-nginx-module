@@ -489,3 +489,88 @@ GET /lua
 failed to load inlined Lua code: server_rewrite_by_lua(nginx.conf:39):2: unexpected symbol near ''for end''
 --- no_error_log
 no_such_error
+
+
+
+=== TEST 21: server_rewrite_by_lua_file honors lua_code_cache off
+--- config
+    lua_code_cache off;
+
+    server_rewrite_by_lua_file html/test.lua;
+
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.ctx.a)
+        }
+    }
+    location /update {
+        content_by_lua '
+            local f = assert(io.open("$TEST_NGINX_SERVER_ROOT/html/test.lua", "w"))
+            f:write("ngx.ctx.a = 101")
+            f:close()
+            ngx.say("updated")
+        ';
+    }
+    location /main {
+        echo_location /lua;
+        echo_location /update;
+        echo_location /lua;
+    }
+--- user_files
+>>> test.lua
+ngx.ctx.a = 32
+--- request
+GET /main
+--- response_body
+32
+updated
+101
+--- no_error_log
+[error]
+
+
+
+=== TEST 22: server_rewrite_by_lua_block can yield when lua_code_cache is off
+--- config
+    lua_code_cache off;
+
+    server_rewrite_by_lua_block {
+        ngx.sleep(0.001)
+        ngx.ctx.a = "resumed"
+    }
+
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.ctx.a)
+        }
+    }
+--- request
+GET /lua
+--- response_body
+resumed
+--- no_error_log
+[error]
+
+
+
+=== TEST 23: server_rewrite_by_lua_file can yield when lua_code_cache is off
+--- config
+    lua_code_cache off;
+
+    server_rewrite_by_lua_file html/sleep.lua;
+
+    location /lua {
+        content_by_lua_block {
+            ngx.say(ngx.ctx.a)
+        }
+    }
+--- user_files
+>>> sleep.lua
+ngx.sleep(0.001)
+ngx.ctx.a = "resumed from file"
+--- request
+GET /lua
+--- response_body
+resumed from file
+--- no_error_log
+[error]
