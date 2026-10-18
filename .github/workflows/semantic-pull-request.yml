@@ -18,13 +18,13 @@ jobs:
         with:
           # Configure which types are allowed.
           # Default: https://github.com/commitizen/conventional-commit-types
-          types: |
-            bugfix # bug fixes
-            change # backward incompatible changes
-            doc # documentation changes including code comments
-            editor # code editor related configurations
-            feature # implementing a new feature
-            optimize # performance optimizations
-            refactor # code refactoring and other code rearrangement
-            style # coding style changes
-            tests # test suite changes
+          types: |-
+            bugfix
+            change
+            doc
+            editor
+            feature
+            optimize
+            refactor
+            style
+            tests

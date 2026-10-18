@@ -884,7 +884,7 @@ ok
 --- config
     location /t {
         resolver $TEST_NGINX_RESOLVER ipv6=off;
-        set $myhost 'localhost.';
+        set $myhost 'trailing-dot.test.';
         proxy_pass http://$myhost:$TEST_NGINX_RAND_PORT_1/t;
     }
 --- request
