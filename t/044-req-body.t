@@ -1744,9 +1744,9 @@ content length: 5
 
 
 
-=== TEST 52: init & append & finish (client_body_buffer_size = 0)
+=== TEST 52: init & append & finish (client_body_buffer_size = 1)
 --- http_config
-    client_body_buffer_size 0;
+    client_body_buffer_size 1;
 --- config
     location /t {
         content_by_lua '

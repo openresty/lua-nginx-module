@@ -8,10 +8,19 @@ BEGIN {
     }
 }
 
+BEGIN {
+    # Injected initialization and per-line GC change the cache/ordering or
+    # performance contract asserted here. Keep ASan, use the normal GC policy.
+    delete $ENV{TEST_NGINX_INIT_BY_LUA} if $ENV{TEST_NGINX_GC_STRESS};
+}
+
 use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ();
 
 use Cwd qw(abs_path realpath);
 use File::Basename;
+use File::Temp ();
+use POSIX ();
+use Time::HiRes ();
 
 repeat_each(2);
 
@@ -65,12 +74,65 @@ our $TestCertificate = read_file("t/cert/test.crt");
 our $TestCertificateKey = read_file("t/cert/test.key");
 our $TestCRL = read_file("t/cert/test.crl");
 
+# The init_by_lua TLS backend must listen before nginx initialization.
+our $InitSocketDir = File::Temp::tempdir('ssl-init-XXXXXX', TMPDIR => 1,
+                                        CLEANUP => 1);
+our $InitSocketPath = "$InitSocketDir/backend.sock";
+$ENV{TEST_NGINX_SSL_INIT_SOCKET} = $InitSocketPath;
+our $VerifySocketPath = "$InitSocketDir/verify.sock";
+$ENV{TEST_NGINX_SSL_VERIFY_SOCKET} = $VerifySocketPath;
+our $VerifyRootCertificate = read_file("t/cert/mtls_ca.crt");
+my @backends;
+for my $args (
+    [$InitSocketPath, 't/cert/test.crt', 't/cert/test.key'],
+    [$VerifySocketPath, 't/cert/mtls_server.crt', 't/cert/mtls_server.key',
+     't/cert/mtls_ca.crt', 't/cert/mtls_ca.key'],
+) {
+    my $pid = fork();
+    defined $pid or die "cannot fork TLS fixture: $!";
+    if ($pid == 0) {
+        Test::More->builder->no_ending(1);
+        exec 'python3', 't/py/ssl_init_server.py', @$args
+             or POSIX::_exit(1);
+    }
+    push @backends, $pid;
+}
+add_cleanup_handler(sub {
+    local $?;
+    for my $pid (@backends) {
+        kill 'TERM', $pid;
+        waitpid $pid, 0;
+    }
+});
+for (1 .. 250) {
+    last if -S $InitSocketPath && -S $VerifySocketPath;
+    Time::HiRes::sleep(0.02);
+}
+-S $InitSocketPath && -S $VerifySocketPath
+    or die "TLS fixtures failed to listen";
+
+# Instrumented runs need more time for external TCP/TLS setup. Local negative
+# tests retain their own deadlines and deterministic certificate chain.
+if ($ENV{TEST_NGINX_USE_VALGRIND} || $ENV{TEST_NGINX_GC_STRESS}
+    || $ENV{MOCKEAGAIN})
+{
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $config = $block->config || '';
+        if ($config =~ /sock:connect\("(?:www\.google\.com|openresty\.org)"/) {
+            $config =~ s/sock:settimeout\(2000\)/sock:settimeout(10000)/g;
+            $block->set_value('config', $config);
+            my $limit = $block->timeout || 0;
+            $block->set_value('timeout', 15) if $limit < 15;
+        }
+    });
+}
+
 run_tests();
 
 __DATA__
 
-=== TEST 1: www.google.com
-access the public network is unstable, need a bigger timeout value.
+=== TEST 1: local TLS backend, no SNI or verify
 --- quic_max_idle_timeout: 3
 --- config
     server_tokens off;
@@ -94,7 +156,7 @@ access the public network is unstable, need a bigger timeout value.
             do
                 local sock = ngx.socket.tcp()
                 sock:settimeout(2000)
-                local ok, err = sock:connect("www.google.com", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_SSL_INIT_SOCKET")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -110,7 +172,7 @@ access the public network is unstable, need a bigger timeout value.
 
                 ngx.say("ssl handshake: ", type(sess))
 
-                local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local req = "GET / HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n"
                 local bytes, err = sock:send(req)
                 if not bytes then
                     ngx.say("failed to send http request: ", err)
@@ -136,13 +198,12 @@ access the public network is unstable, need a bigger timeout value.
 
 --- request
 GET /t
---- response_body_like chop
-\Aconnected: 1
+--- response_body
+connected: 1
 ssl handshake: cdata
-sent http request: 59 bytes.
-received: HTTP/1.1 (?:200 OK|302 Found)
+sent http request: 54 bytes.
+received: HTTP/1.1 200 OK
 close: 1 nil
-\z
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+/
 --- grep_error_log_out eval
 qr/^lua ssl save session: ([0-9A-F]+)
@@ -771,7 +832,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_SSL_VERIFY_SOCKET")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -812,7 +873,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::DSTRootCertificate"
+$::VerifyRootCertificate"
 
 --- request
 GET /t
@@ -850,7 +911,7 @@ SSL reused session
             sock:settimeout(2000)
 
             do
-                local ok, err = sock:connect("openresty.org", 443)
+                local ok, err = sock:connect("unix:$TEST_NGINX_SSL_VERIFY_SOCKET")
                 if not ok then
                     ngx.say("failed to connect: ", err)
                     return
@@ -891,7 +952,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::DSTRootCertificate"
+$::VerifyRootCertificate"
 
 --- request
 GET /t
@@ -3056,3 +3117,55 @@ SSL reused session
 [error]
 [alert]
 --- timeout: 10
+
+
+
+=== TEST 36: local certificate chain succeeds with sufficient verify depth
+--- config
+    lua_ssl_trusted_certificate ../html/trusted.crt;
+    lua_ssl_verify_depth 2;
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(10000)
+            local ok, err = sock:connect("unix:$TEST_NGINX_SSL_VERIFY_SOCKET")
+            if not ok then
+                error(err)
+            end
+
+            local session
+            session, err = sock:sslhandshake(nil, "openresty.org", true)
+            if not session then
+                error(err)
+            end
+
+            local sent
+            sent, err = sock:send("GET / HTTP/1.0\r\nHost: openresty.org\r\n\r\n")
+            if not sent then
+                error(err)
+            end
+
+            local line
+            line, err = sock:receive()
+            if not line then
+                error(err)
+            end
+
+            sock:close()
+            ngx.say(line)
+        }
+    }
+--- user_files eval
+">>> trusted.crt
+$::VerifyRootCertificate"
+--- request
+GET /t
+--- response_body
+HTTP/1.1 200 OK
+--- no_error_log
+[error]
+[crit]
+[alert]
+[emerg]
+SSL reused session
+--- timeout: 15

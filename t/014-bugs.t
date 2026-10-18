@@ -21,6 +21,8 @@ $ENV{TEST_NGINX_REDIS_PORT} ||= 6379;
 #no_long_string();
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+# Isolate keys from other files and concurrent runs of this file.
+$ENV{TEST_NGINX_MEMCACHED_PREFIX} = "lua_nginx_014_bugs_$$";
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 #no_shuffle();
@@ -100,7 +102,8 @@ GET /report/listBidwordPrices4lzExtra.htm?words=123,156,2532
         #set $memc_value 'hello';
         set $memc_value $arg_v;
         set $memc_cmd $arg_c;
-        set $memc_key $arg_k;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:3:$arg_k";
+        set $memc_exptime 600;
         #set $memc_value hello;
 
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;

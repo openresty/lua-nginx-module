@@ -14,6 +14,8 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 3 + 2);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+# Isolate keys from other files and concurrent runs of this file.
+$ENV{TEST_NGINX_MEMCACHED_PREFIX} = "lua_nginx_005_exit_$$";
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 
 our $LuaCpath = $ENV{LUA_CPATH} ||
@@ -138,7 +140,7 @@ GET /api?user=agentz
     location /memc {
         internal;
 
-        set $memc_key $arg_key;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:6:$arg_key";
         set $memc_exptime $arg_exptime;
 
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
@@ -212,7 +214,7 @@ Logged in 56
     location /memc {
         internal;
 
-        set $memc_key $arg_key;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:7:$arg_key";
         set $memc_exptime $arg_exptime;
 
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
@@ -296,7 +298,7 @@ Logged in 56
     location /memc {
         internal;
 
-        set $memc_key $arg_key;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:8:$arg_key";
         set $memc_exptime $arg_exptime;
 
         set_hashed_upstream $backend memc_cluster $arg_key;
@@ -375,7 +377,7 @@ Logged in 56
     location /memc {
         internal;
 
-        set $memc_key $arg_key;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:9:$arg_key";
         set $memc_exptime $arg_exptime;
 
         #set_hashed_upstream $backend memc_cluster $arg_key;

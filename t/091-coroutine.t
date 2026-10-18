@@ -6,7 +6,6 @@ repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 3 + 14);
 
-$ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
 our $StapScript = <<'_EOC_';
 global ids, cur
@@ -159,15 +158,13 @@ cc3: 2
 
 
 === TEST 3: basic coroutine and cosocket
-access the public network is unstable, need a bigger timeout 
 --- quic_max_idle_timeout: 4
 --- config
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /lua {
         content_by_lua '
             local function worker(url)
                 local sock = ngx.socket.tcp()
-                local ok, err = sock:connect(url, 80)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
                 coroutine.yield()
                 if not ok then
                     ngx.say("failed to connect to: ", url, " error: ", err)
@@ -179,9 +176,9 @@ access the public network is unstable, need a bigger timeout
             end
 
             local urls = {
-                "agentzh.org",
-                "openresty.com",
-                "openresty.org"
+                "first",
+                "second",
+                "third"
             }
 
             local ccs = {}
@@ -205,9 +202,9 @@ access the public network is unstable, need a bigger timeout
 --- request
 GET /lua
 --- response_body
-successfully connected to: agentzh.org
-successfully connected to: openresty.com
-successfully connected to: openresty.org
+successfully connected to: first
+successfully connected to: second
+successfully connected to: third
 *** All Done ***
 --- no_error_log
 [error]
@@ -361,12 +358,11 @@ GET /lua
 
 === TEST 7: coroutine wrap and cosocket
 --- config
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /lua {
         content_by_lua '
             local function worker(url)
                 local sock = ngx.socket.tcp()
-                local ok, err = sock:connect(url, 80)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
                 coroutine.yield()
                 if not ok then
                     ngx.say("failed to connect to: ", url, " error: ", err)
@@ -378,9 +374,9 @@ GET /lua
             end
 
             local urls = {
-                "agentzh.org",
-                "openresty.com",
-                "openresty.org"
+                "first",
+                "second",
+                "third"
             }
 
             local cfs = {}
@@ -399,9 +395,9 @@ GET /lua
 --- request
 GET /lua
 --- response_body
-successfully connected to: agentzh.org
-successfully connected to: openresty.com
-successfully connected to: openresty.org
+successfully connected to: first
+successfully connected to: second
+successfully connected to: third
 *** All Done ***
 --- no_error_log
 [error]
@@ -998,12 +994,11 @@ test10
 --- http_config
     init_by_lua 'return';
 --- config
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /lua {
         content_by_lua '
             local function worker(url)
                 local sock = ngx.socket.tcp()
-                local ok, err = sock:connect(url, 80)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
                 coroutine.yield()
                 if not ok then
                     ngx.say("failed to connect to: ", url, " error: ", err)
@@ -1015,7 +1010,7 @@ test10
             end
 
             local urls = {
-                "agentzh.org",
+                "first",
             }
 
             local ccs = {}
@@ -1039,7 +1034,7 @@ test10
 --- request
 GET /lua
 --- response_body
-successfully connected to: agentzh.org
+successfully connected to: first
 *** All Done ***
 --- no_error_log
 [error]
@@ -1052,12 +1047,11 @@ successfully connected to: agentzh.org
     init_by_lua_file html/init.lua;
 
 --- config
-    resolver $TEST_NGINX_RESOLVER ipv6=off;
     location /lua {
         content_by_lua '
             local function worker(url)
                 local sock = ngx.socket.tcp()
-                local ok, err = sock:connect(url, 80)
+                local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_SERVER_PORT)
                 coroutine.yield()
                 if not ok then
                     ngx.say("failed to connect to: ", url, " error: ", err)
@@ -1069,7 +1063,7 @@ successfully connected to: agentzh.org
             end
 
             local urls = {
-                "agentzh.org"
+                "first"
             }
 
             local ccs = {}
@@ -1097,7 +1091,7 @@ return
 --- request
 GET /lua
 --- response_body
-successfully connected to: agentzh.org
+successfully connected to: first
 *** All Done ***
 --- no_error_log
 [error]

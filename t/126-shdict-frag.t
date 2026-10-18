@@ -15,6 +15,15 @@ no_long_string();
 #master_on();
 #workers(2);
 
+# Full collections on every Lua line deliberately slow allocation fuzzing.
+if ($ENV{TEST_NGINX_GC_STRESS}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $limit = $block->timeout || 0;
+        $block->set_value('timeout', 180) if $limit < 180;
+    });
+}
+
 run_tests();
 
 __DATA__
@@ -1236,7 +1245,7 @@ failed to safe set baz: no memory
             local rep = string.rep
 
             math.randomseed(ngx.time())
-            for i = 1, 30000 do
+            for i = 1, tonumber(ngx.var.arg_iterations) do
                 local key = "mylittlekey" .. rand(maxkeyidx)
                 local ok, err = dogs:get(key)
                 if not ok or rand() > 0.6 then
@@ -1256,8 +1265,8 @@ failed to safe set baz: no memory
             collectgarbage()
         ';
     }
---- request
-GET /t
+--- request eval
+"GET /t?iterations=" . ($ENV{TEST_NGINX_GC_STRESS} ? 1000 : 30000)
 --- response_body
 ok
 

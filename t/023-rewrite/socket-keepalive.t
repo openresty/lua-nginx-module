@@ -54,7 +54,7 @@ function go(port)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -81,10 +81,10 @@ GET /t
 --- response_body_like
 ^connected: 1, reused: \d+
 request sent: 11
-received: OK
+received: END
 connected: 1, reused: [1-9]\d*
 request sent: 11
-received: OK
+received: END
 --- no_error_log eval
 ["[error]",
 "lua tcp socket keepalive: free connection pool for "]
@@ -133,7 +133,7 @@ function go(port, keepalive)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -163,10 +163,10 @@ end
 --- response_body_like
 ^connected: 1, reused: \d+
 request sent: 11
-received: OK
+received: END
 connected: 1, reused: [1-9]\d*
 request sent: 11
-received: OK
+received: END
 --- no_error_log
 [error]
 --- error_log eval
@@ -939,7 +939,7 @@ lua tcp socket get keepalive peer: using connection
 >>> t.lua
 local sock, err = ngx.socket.connect("127.0.0.1", ngx.var.port)
 if not sock then ngx.say(err) return end
-sock:send("flush_all\r\n")
+sock:send("get __nil\r\n")
 sock:receive()
 sock:setkeepalive()
 
@@ -989,7 +989,7 @@ function go(port)
         return
     end
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then

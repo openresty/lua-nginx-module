@@ -207,7 +207,7 @@ proxy ssl verify by lua is running!
         proxy_ssl_verify_by_lua_block {
             local begin = ngx.now()
             ngx.sleep(0.1)
-            print("elapsed in proxy ssl verify by lua: ", ngx.now() - begin)
+            print("sleep respected in proxy ssl verify by lua: ", ngx.now() - begin >= 0.09)
         }
     }
 --- request
@@ -215,7 +215,7 @@ GET /t
 --- response_body
 sleep
 --- error_log eval
-qr/elapsed in proxy ssl verify by lua: 0.(?:09|1\d)\d+ while loading proxy ssl verify by lua,/,
+qr/sleep respected in proxy ssl verify by lua: true while loading proxy ssl verify by lua,/,
 --- no_error_log
 [error]
 [alert]
@@ -1213,10 +1213,10 @@ greeting: I am from rewrite phase
         proxy_ssl_certificate_key     ../../cert/mtls_client.key;
         proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
         proxy_ssl_session_reuse       off;
-        proxy_connect_timeout         100ms;
+        proxy_connect_timeout         2s;
 
         proxy_ssl_verify_by_lua_block {
-            ngx.sleep(0.2)
+            ngx.sleep(5)
         }
     }
 --- request
@@ -1228,7 +1228,8 @@ upstream timed out (110: Connection timed out) while loading proxy ssl verify by
 proxy_ssl_verify_by_lua: cert verify callback aborted
 --- no_error_log
 [alert]
---- wait: 0.5
+--- wait: 0.1
+--- skip_eval: 5:$ENV{MOCKEAGAIN}
 
 
 

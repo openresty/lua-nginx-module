@@ -40,7 +40,9 @@ repeat_each(2);
 # ngx_http_slice_module (the `slice` directive would otherwise abort startup).
 my $nginx_bin = $ENV{TEST_NGINX_BINARY} || 'nginx';
 my $nginx_v = `$nginx_bin -V 2>&1`;
-if ($nginx_v !~ /--with-http_slice_module/) {
+if ($ENV{MOCKEAGAIN}) {
+    plan(skip_all => "requires multi-megabyte slice transfers");
+} elsif ($nginx_v !~ /--with-http_slice_module/) {
     plan(skip_all => "nginx built without --with-http_slice_module");
 } else {
     # per repeat: TEST 1 => 7, TEST 2 => 4, TEST 3 => 6
@@ -89,7 +91,8 @@ __DATA__
 GET /slice
 --- response_headers
 Content-Length: 3145728
---- response_body_like: ^A+$
+--- response_body eval
+"A" x (3 * 1024 * 1024)
 --- no_error_log
 [alert]
 [crit]

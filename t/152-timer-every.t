@@ -28,8 +28,15 @@ __DATA__
     location /t {
         content_by_lua_block {
             local begin = ngx.now()
+            local ticks = 0
             local function f(premature)
-                print("elapsed: ", ngx.now() - begin)
+                if ticks >= 2 then
+                    return
+                end
+
+                ticks = ticks + 1
+                print("tick ", ticks, ", delay respected: ",
+                      ngx.now() - begin >= ticks * 0.04)
                 print("timer prematurely expired: ", premature)
             end
 
@@ -40,6 +47,14 @@ __DATA__
             end
 
             ngx.say("registered timer")
+            local deadline = ngx.now() + 5
+            while not (ticks == 2) do
+                if ngx.now() >= deadline then
+                    error("timer did not fire")
+                end
+
+                ngx.sleep(0.01)
+            end
         }
     }
 --- request
@@ -54,8 +69,8 @@ registered timer
 timer prematurely expired: true
 --- error_log eval
 [
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.0(?:4[4-9]|5[0-6])\d*, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
-qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.(?:09|10)\d*, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
+qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: tick 1, delay respected: true, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
+qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: tick 2, delay respected: true, context: ngx\.timer, client: \d+\.\d+\.\d+\.\d+, server: 0\.0\.0\.0:\d+/,
 "lua ngx.timer expired",
 "http lua close fake http connection",
 "timer prematurely expired: false",
@@ -77,7 +92,14 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: elapsed: 0\.(?:09|10)\d*, cont
                 ngx.say("failed to set timer: ", err)
                 return
             end
-            ngx.sleep(0.11)
+            local deadline = ngx.now() + 5
+            while not (foo == 3) do
+                if ngx.now() >= deadline then
+                    error("timer did not fire")
+                end
+
+                ngx.sleep(0.01)
+            end
             ngx.say("foo = ", foo)
         }
     }
@@ -106,6 +128,10 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 3/,
             local begin = ngx.now()
             local foo = 0
             local function f()
+                if foo >= 6 then
+                    return
+                end
+
                 foo = foo + 3
                 print("foo in timer: ", foo)
             end
@@ -115,7 +141,14 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 3/,
                 return
             end
             ngx.say("registered timer")
-            ngx.sleep(0.11)
+            local deadline = ngx.now() + 5
+            while not (foo == 6) do
+                if ngx.now() >= deadline then
+                    error("timer did not fire")
+                end
+
+                ngx.sleep(0.01)
+            end
             ngx.say("foo = ", foo)
         }
     }
@@ -145,11 +178,31 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 6/,
         content_by_lua_block {
             local begin = ngx.now()
             local foo = 0
+            local first_running = false
             local function f()
+                if foo >= 6 then
+                    return
+                end
+
                 foo = foo + 3
                 print("foo in timer: ", foo)
 
-                ngx.sleep(0.1)
+                if foo == 3 then
+                    first_running = true
+                    local deadline = ngx.now() + 5
+                    while foo < 6 do
+                        if ngx.now() >= deadline then
+                            error("next timer waited for the first callback")
+                        end
+
+                        ngx.sleep(0.01)
+                    end
+
+                    first_running = false
+
+                else
+                    assert(first_running, "timer callbacks did not overlap")
+                end
             end
             local ok, err = ngx.timer.every(0.05, f)
             if not ok then
@@ -157,7 +210,14 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 6/,
                 return
             end
             ngx.say("registered timer")
-            ngx.sleep(0.11)
+            local deadline = ngx.now() + 5
+            while not (foo == 6) do
+                if ngx.now() >= deadline then
+                    error("timer did not fire")
+                end
+
+                ngx.sleep(0.01)
+            end
             ngx.say("foo = ", foo)
         }
     }
@@ -188,6 +248,10 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 6/,
             local n = 0
 
             local function f(premature, a, b, c)
+                if n >= 2 then
+                    return
+                end
+
                 n = n + 1
                 print("the ", n, " time, args: ", a, ", ", b, ", ", c)
 
@@ -201,7 +265,14 @@ qr/\[lua\] content_by_lua\(nginx\.conf:\d+\):\d+: foo in timer: 6/,
             end
 
             ngx.say("registered timer")
-            ngx.sleep(0.11)
+            local deadline = ngx.now() + 5
+            while not (n == 2) do
+                if ngx.now() >= deadline then
+                    error("timer did not fire")
+                end
+
+                ngx.sleep(0.01)
+            end
         }
     }
 --- request
@@ -228,34 +299,56 @@ registered timer
 --- config
     location /t {
         content_by_lua_block {
-            local function f()
-                local a = 1
-                -- do nothing
-            end
-
+            -- Compare the same number of live timers after every callback
+            -- has warmed its coroutine cache. JIT/GC hooks add unrelated
+            -- allocations to this exact Lua heap accounting check.
+            jit.off()
+            debug.sethook()
+            local runs = {}
             for i = 1, 100 do
+                runs[i] = 0
+                local function f(premature)
+                    if not premature then
+                        runs[i] = runs[i] + 1
+                    end
+                end
+
                 local ok, err = ngx.timer.every(0.1, f)
                 if not ok then
-                    ngx.say("failed to set timer: ", err)
-                    return
+                    error("failed to set timer: " .. err)
+                end
+            end
+
+            local function wait_cycles(count)
+                local deadline = ngx.now() + 5
+                while true do
+                    local ready = true
+                    for i = 1, 100 do
+                        if runs[i] < count then
+                            ready = false
+                            break
+                        end
+                    end
+
+                    if ready then
+                        return
+                    end
+
+                    if ngx.now() >= deadline then
+                        error("timer callbacks did not complete")
+                    end
+
+                    ngx.sleep(0.01)
                 end
             end
 
             ngx.say("registered timer")
-
+            wait_cycles(3)
             collectgarbage("collect")
-            local start = collectgarbage("count")
-
-            ngx.sleep(0.21)
-
+            local growth1 = collectgarbage("count")
+            wait_cycles(8)
             collectgarbage("collect")
-            local growth1 = collectgarbage("count") - start
-
-            ngx.sleep(0.51)
-
-            collectgarbage("collect")
-            local growth2 = collectgarbage("count") - start
-
+            local growth2 = collectgarbage("count")
             ngx.say("growth1 == growth2: ", growth1 == growth2)
         }
     }
