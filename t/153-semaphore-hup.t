@@ -40,6 +40,7 @@ add_block_preprocessor(sub {
             local sem = semaphore.new()
 
             ngx.log(ngx.ERR, "created semaphore object")
+            ngx.shared.shdict:incr("ready", 1, 0)
 
             local function sem_wait()
 
@@ -73,6 +74,16 @@ add_block_preprocessor(sub {
                 return
             end
 
+            local deadline = ngx.now() + 10
+            while (shdict:get("ready") or 0) < 2 do
+                if ngx.now() >= deadline then
+                    ngx.log(ngx.ERR, "semaphore workers did not become ready")
+                    return
+                end
+
+                ngx.sleep(0.01)
+            end
+
             ngx.log(ngx.ERR, "try to reload nginx")
 
             local f, err = io.open(ngx.config.prefix() .. "/logs/nginx.pid", "r")
@@ -98,6 +109,15 @@ add_block_preprocessor(sub {
 _EOC_
     $block->set_value("http_config", $http_config);
 });
+
+# Reloading and reaping instrumented workers can outlast the normal 0.3s wait.
+if ($ENV{TEST_NGINX_USE_VALGRIND}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $wait = $block->wait || 0;
+        $block->set_value('wait', 2) if $wait < 2;
+    });
+}
 
 run_tests();
 

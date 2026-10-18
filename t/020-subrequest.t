@@ -15,6 +15,8 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 3 + 22);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+# Isolate keys from other files and concurrent runs of this file.
+$ENV{TEST_NGINX_MEMCACHED_PREFIX} = "lua_nginx_020_subrequest_$$";
 $ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
 
 # NB: tcp_listen_port needs to be greater than 10000,
@@ -359,20 +361,21 @@ hello
 
 === TEST 12: POST (with body, memc method)
 --- config
-    location /flush {
-        set $memc_cmd flush_all;
+    location /delete {
+        set $memc_cmd delete;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:12:/memc";
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /memc {
-        set $memc_key $echo_request_uri;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:12:$echo_request_uri";
         set $memc_exptime 600;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /lua {
         content_by_lua '
-            ngx.location.capture("/flush");
+            ngx.location.capture("/delete");
 
             local res = ngx.location.capture("/memc");
             ngx.say("GET: " .. res.status);
@@ -399,21 +402,22 @@ cached: hello
 
 === TEST 13: POST (with body, memc method)
 --- config
-    location /flush {
-        set $memc_cmd flush_all;
+    location /delete {
+        set $memc_cmd delete;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:13:/memc";
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /memc {
         set $memc_cmd "";
-        set $memc_key $echo_request_uri;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:13:$echo_request_uri";
         set $memc_exptime 600;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /lua {
         content_by_lua '
-            ngx.location.capture("/flush",
+            ngx.location.capture("/delete",
                 { share_all_vars = true });
 
             local res = ngx.location.capture("/memc",
@@ -890,7 +894,7 @@ bar
     }
 --- config
     location /memc {
-        set $memc_key some_key;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:32:some_key";
         set $memc_exptime 600;
         memc_pass memc;
     }

@@ -1,5 +1,11 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
+BEGIN {
+    # Injected initialization and per-line GC change the cache/ordering or
+    # performance contract asserted here. Keep ASan, use the normal GC policy.
+    delete $ENV{TEST_NGINX_INIT_BY_LUA} if $ENV{TEST_NGINX_GC_STRESS};
+}
+
 use Test::Nginx::Socket::Lua;
 use Cwd qw(abs_path realpath);
 use File::Basename;
@@ -1083,7 +1089,7 @@ function go(port)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -1110,7 +1116,7 @@ GET /t
 --- response_body
 connected: 1, reused: 0
 request sent: 11
-received: OK
+received: END
 --- no_error_log
 [error]
 lua tcp socket keepalive max idle timeout
@@ -1152,7 +1158,7 @@ function go(port)
 
     ngx.say("connected: ", ok, ", reused: ", sock:getreusedtimes())
 
-    local req = "flush_all\r\n"
+    local req = "get __nil\r\n"
 
     local bytes, err = sock:send(req)
     if not bytes then
@@ -1180,7 +1186,7 @@ GET /t
 --- response_body
 connected: 1, reused: 0
 request sent: 11
-received: OK
+received: END
 --- no_error_log
 [error]
 --- error_log eval

@@ -46,7 +46,7 @@ __DATA__
 
             ngx.say("connected")
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -64,7 +64,7 @@ __DATA__
 --- request
 GET /t
 --- response_body eval
-"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+"connected\nreceived 13 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}"
 --- no_error_log
 [error]
 --- log_level: debug
@@ -98,14 +98,14 @@ lua udp socket receive buffer size: 65536
 
             ngx.say("connected")
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
                 return
             end
 
-            req = "\\0\\2\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            req = "\\0\\2\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -133,10 +133,10 @@ lua udp socket receive buffer size: 65536
 GET /t
 --- response_body_like eval
 "^connected\n"
-."1: received 12 bytes: "
-."\x{00}[\1\2]\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
-."2: received 12 bytes: "
-."\x{00}[\1\2]\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}\$"
+."1: received 13 bytes: "
+."\x{00}[\1\2]\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}"
+."2: received 13 bytes: "
+."\x{00}[\1\2]\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}\$"
 --- no_error_log
 [error]
 
@@ -170,7 +170,7 @@ choose a port greater than 61000 should be less race.
 
             ngx.say("connected")
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -361,7 +361,7 @@ qr/content_by_lua\(nginx\.conf:\d+\):6: bad request/
 
             ngx.say("connected again: ", ok)
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             local ok, err = sock:send(req)
             if not ok then
                 ngx.say("failed to send request: ", err)
@@ -392,7 +392,7 @@ GET /t
 "connected: 1
 connected again: 1
 request sent: 1
-received: \0\1\0\0\0\1\0\0OK\r\n
+received: \0\1\0\0\0\1\0\0END\r\n
 close: 1 nil
 "
 --- no_error_log
@@ -476,7 +476,7 @@ lua udp socket read timed out
 
             ngx.say("connected")
 
-            local req = "\\0\\1\\0\\0\\0\\1\\0\\0flush_all\\r\\n"
+            local req = "\\0\\1\\0\\0\\0\\1\\0\\0get __nil\\r\\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -494,7 +494,7 @@ lua udp socket read timed out
 --- request
 GET /t
 --- response_body eval
-"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+"connected\nreceived 13 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}"
 --- no_error_log
 [error]
 --- log_level: debug
@@ -1254,7 +1254,7 @@ send: fd:\d+ 22 of 22/
 
             ngx.say("connected")
 
-            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local req = "\0\1\0\0\0\1\0\0get __nil\r\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)
@@ -1272,7 +1272,7 @@ send: fd:\d+ 22 of 22/
 --- request
 GET /t
 --- response_body eval
-"connected\nreceived 12 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}OK\x{0d}\x{0a}"
+"connected\nreceived 13 bytes: \x{00}\x{01}\x{00}\x{00}\x{00}\x{01}\x{00}\x{00}END\x{0d}\x{0a}"
 --- no_error_log
 [error]
 --- log_level: debug
@@ -1310,7 +1310,7 @@ lua udp socket receive buffer size: 65536
 
             ngx.say("connected")
 
-            local req = "\0\1\0\0\0\1\0\0flush_all\r\n"
+            local req = "\0\1\0\0\0\1\0\0get __nil\r\n"
             local ok, err = udp:send(req)
             if not ok then
                 ngx.say("failed to send: ", err)

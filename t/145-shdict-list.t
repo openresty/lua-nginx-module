@@ -14,6 +14,15 @@ no_long_string();
 #master_on();
 #workers(2);
 
+# Full collections on every Lua line deliberately slow allocation fuzzing.
+if ($ENV{TEST_NGINX_GC_STRESS}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $limit = $block->timeout || 0;
+        $block->set_value('timeout', 180) if $limit < 180;
+    });
+}
+
 run_tests();
 
 __DATA__
@@ -496,8 +505,8 @@ GET /test
 
 
 === TEST 15: list removed: expired
---- http_config
-    lua_shared_dict dogs 900k;
+--- http_config eval
+"lua_shared_dict dogs " . ($ENV{TEST_NGINX_GC_STRESS} ? "64k" : "900k") . ";";
 --- config
     location = /test {
         content_by_lua_block {
@@ -565,8 +574,8 @@ loop again, max matched: true
 
 
 === TEST 16: list removed: forcibly
---- http_config
-    lua_shared_dict dogs 900k;
+--- http_config eval
+"lua_shared_dict dogs " . ($ENV{TEST_NGINX_GC_STRESS} ? "64k" : "900k") . ";";
 --- config
     location = /test {
         content_by_lua_block {

@@ -125,7 +125,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "flush_all\\r\\n"
+            local req = "get __nil\\r\\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -169,7 +169,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 11
-received: OK
+received: END
 request sent again: 11
 close: 1 nil
 --- no_error_log
@@ -200,7 +200,7 @@ close: 1 nil
 
             ngx.location.capture("/sleep")
 
-            local req = "flush_all\\r\\n"
+            local req = "get __nil\\r\\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send request: ", err)
@@ -253,7 +253,7 @@ close: 1 nil
 
             ngx.say("connected: ", ok)
 
-            local req = "flush_all\\r\\n"
+            local req = "get __nil\\r\\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -291,7 +291,7 @@ GET /t
 --- response_body
 connected: 1
 request sent: 11
-received: OK
+received: END
 close: 1 nil
 --- no_error_log
 [error]
@@ -392,7 +392,7 @@ failed to set keepalive: (?:unread data in buffer|closed|connection in dubious s
 
             ngx.say("connected: ", ok)
 
-            local req = "flush_all\\r\\n"
+            local req = "get __nil\\r\\n"
 
             local bytes, err = sock:send(req)
             if not bytes then
@@ -426,7 +426,7 @@ GET /t
 --- response_body eval
 qq{connected: 1
 request sent: 11
-read: O
+read: E
 failed to set keepalive: unread data in buffer
 }
 --- no_error_log

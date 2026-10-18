@@ -9,6 +9,8 @@ plan tests => blocks() * repeat_each() * 2;
 #$ENV{LUA_PATH} = $ENV{HOME} . '/work/JSON4Lua-0.9.30/json/?.lua';
 $ENV{TEST_NGINX_MYSQL_PORT} ||= 3306;
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+# Isolate keys from other files and concurrent runs of this file.
+$ENV{TEST_NGINX_MEMCACHED_PREFIX} = "lua_nginx_024_access_multi_capture_$$";
 
 no_long_string();
 
@@ -260,7 +262,8 @@ top res2.body = [2 res1.status = 200
         content_by_lua return;
     }
     location ~ '^/[ab]$' {
-        set $memc_key $uri;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:6:$uri";
+        set $memc_exptime 600;
         set $memc_value hello;
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
@@ -318,7 +321,8 @@ res2.body = STORED\r
         content_by_lua return;
     }
     location ~ '^/[abcd]$' {
-        set $memc_key $uri;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:7:$uri";
+        set $memc_exptime 600;
         set $memc_value hello;
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
@@ -371,7 +375,8 @@ res2.body = [2 res1.status = 201
         content_by_lua return;
     }
     location ~ '^/[a-d]$' {
-        set $memc_key $uri;
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:8:$uri";
+        set $memc_exptime 600;
         set $memc_value hello;
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;

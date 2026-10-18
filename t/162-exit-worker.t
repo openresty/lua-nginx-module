@@ -11,6 +11,7 @@ plan tests => repeat_each() * (blocks() * 2 + 1) + 15;
 #log_level("warn");
 no_long_string();
 our $HtmlDir = html_dir;
+$ENV{TEST_NGINX_HTML_DIR} = $HtmlDir;
 
 run_tests();
 
@@ -140,7 +141,7 @@ get val: 100
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
-    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+    proxy_cache_path $TEST_NGINX_HTML_DIR/cache levels=1:2 keys_zone=cache:1m;
 
     init_by_lua_block {
         assert(require "ngx.process".enable_privileged_agent())
@@ -160,11 +161,11 @@ get val: 100
 [error]
 --- shutdown_error_log eval
 [
-qr/cache loader process \d+ exited/,
-qr/cache manager process \d+ exited/,
+qr/cache loader process \d+ exited with code 0/,
+qr/cache manager process \d+ exited with code 0/,
 qr/hello from exit worker by lua, process type: worker/,
 qr/hello from exit worker by lua, process type: privileged agent/,
-qr/privileged agent process \d+ exited/,
+qr/privileged agent process \d+ exited with code 0/,
 ]
 
 
@@ -173,7 +174,7 @@ qr/privileged agent process \d+ exited/,
 --- http_config
     lua_package_path "../lua-resty-core/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
 
-    proxy_cache_path /tmp/cache levels=1:2 keys_zone=cache:1m;
+    proxy_cache_path $TEST_NGINX_HTML_DIR/cache levels=1:2 keys_zone=cache:1m;
 
     exit_worker_by_lua_block {
         local process = require "ngx.process"
@@ -190,8 +191,8 @@ qr/privileged agent process \d+ exited/,
 start privileged agent process
 --- shutdown_error_log eval
 [
-qr/cache loader process \d+ exited/,
-qr/cache manager process \d+ exited/,
+qr/cache loader process \d+ exited with code 0/,
+qr/cache manager process \d+ exited with code 0/,
 qr/hello from exit worker by lua, process type: worker/,
 ]
 

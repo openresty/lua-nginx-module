@@ -7,6 +7,8 @@ repeat_each(2);
 plan tests => repeat_each() * (blocks() * 2 + 8);
 
 $ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
+# Isolate keys from other files and concurrent runs of this file.
+$ENV{TEST_NGINX_MEMCACHED_PREFIX} = "lua_nginx_017_exec_$$";
 
 #no_diff();
 #no_shuffle();
@@ -211,14 +213,16 @@ hello
     }
 
     location /a {
-        set $memc_key 'hello world';
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:11:hello world";
+        set $memc_exptime 600;
         set $memc_value 'hello hello hello world world world';
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location /b {
-        set $memc_key 'hello world';
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:11:hello world";
+        set $memc_exptime 600;
         set $memc_cmd get;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
@@ -267,14 +271,16 @@ hello
     }
 
     location /a {
-        set $memc_key 'hello world';
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:13:hello world";
+        set $memc_exptime 600;
         set $memc_value 'hello hello hello world world world';
         set $memc_cmd set;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }
 
     location @b {
-        set $memc_key 'hello world';
+        set $memc_key "$TEST_NGINX_MEMCACHED_PREFIX:13:hello world";
+        set $memc_exptime 600;
         set $memc_cmd get;
         memc_pass 127.0.0.1:$TEST_NGINX_MEMCACHED_PORT;
     }

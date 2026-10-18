@@ -26,6 +26,15 @@ plan tests => repeat_each() * (blocks() * 8);
 no_long_string();
 
 worker_connections(1024);
+# Reloading and reaping instrumented workers can outlast the normal 0.3s wait.
+if ($ENV{TEST_NGINX_USE_VALGRIND}) {
+    add_block_preprocessor(sub {
+        my $block = shift;
+        my $wait = $block->wait || 0;
+        $block->set_value('wait', 2) if $wait < 2;
+    });
+}
+
 run_tests();
 
 __DATA__
