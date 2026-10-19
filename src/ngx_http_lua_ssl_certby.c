@@ -784,6 +784,148 @@ failed:
 }
 
 
+#if !(defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL       \
+      || OPENSSL_VERSION_NUMBER < 0x30200000L)
+
+static ngx_int_t
+ngx_http_lua_ssl_compress_cert(ngx_ssl_conn_t *ssl_conn, SSL *tmp_conn,
+    int alg, char **err)
+{
+    size_t            len, orig_len;
+    unsigned char    *data = NULL;
+
+    len = SSL_get1_compressed_cert(tmp_conn, alg, &data, &orig_len);
+    if (len == 0) {
+        *err = "SSL_get1_compressed_cert() failed";
+        return NGX_ERROR;
+    }
+
+    if (SSL_set1_compressed_cert(ssl_conn, alg, data, len, orig_len) != 1) {
+        OPENSSL_free(data);
+        *err = "SSL_set1_compressed_cert() failed";
+        return NGX_ERROR;
+    }
+
+    OPENSSL_free(data);
+
+    return NGX_OK;
+}
+
+#endif
+
+
+int
+ngx_http_lua_ffi_ssl_compress_certs(ngx_http_request_t *r, int alg, char **err)
+{
+#if (defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL          \
+     || OPENSSL_VERSION_NUMBER < 0x30200000L)
+
+    *err = "at least OpenSSL 3.2.0 required but found " OPENSSL_VERSION_TEXT;
+    return NGX_ERROR;
+
+#else
+
+    int                i, n;
+    X509              *x509;
+    SSL               *tmp_conn = NULL;
+    STACK_OF(X509)    *chain;
+    ngx_ssl_conn_t    *ssl_conn;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    /*
+     * alg 0 (TLSEXT_comp_cert_none) means "every algorithm enabled in the
+     * library", like the alg argument of SSL_CTX_compress_certs()
+     */
+
+    if (alg < TLSEXT_comp_cert_none || alg >= TLSEXT_comp_cert_limit) {
+        *err = "unknown certificate compression algorithm";
+        return NGX_ERROR;
+    }
+
+    x509 = SSL_get_certificate(ssl_conn);
+    if (x509 == NULL) {
+        *err = "no certificate set on this connection";
+        return NGX_ERROR;
+    }
+
+    /*
+     * OpenSSL pre-compresses certificates only on a connection that has not
+     * started its handshake yet: ssl_get_cert_to_compress() gives up unless
+     * SSL_in_before(), and ssl_certificate_by_lua* runs from the middle of a
+     * handshake. So compress on a throw-away connection holding the same
+     * chain, and hand the result to the live one with
+     * SSL_set1_compressed_cert(), which carries no such restriction.
+     */
+
+    tmp_conn = SSL_new(SSL_get_SSL_CTX(ssl_conn));
+    if (tmp_conn == NULL) {
+        *err = "SSL_new() failed";
+        goto failed;
+    }
+
+    if (SSL_use_certificate(tmp_conn, x509) != 1) {
+        *err = "SSL_use_certificate() failed";
+        goto failed;
+    }
+
+    if (SSL_get0_chain_certs(ssl_conn, &chain) == 1
+        && chain != NULL
+        && SSL_set1_chain(tmp_conn, chain) != 1)
+    {
+        *err = "SSL_set1_chain() failed";
+        goto failed;
+    }
+
+    n = 0;
+
+    for (i = TLSEXT_comp_cert_none + 1; i < TLSEXT_comp_cert_limit; i++) {
+
+        if (alg != TLSEXT_comp_cert_none && i != alg) {
+            continue;
+        }
+
+        if (ngx_http_lua_ssl_compress_cert(ssl_conn, tmp_conn, i, err)
+            == NGX_OK)
+        {
+            n++;
+        }
+    }
+
+    if (n == 0) {
+        /* *err was set by the last attempt */
+        goto failed;
+    }
+
+    SSL_free(tmp_conn);
+
+    ERR_clear_error();
+
+    return NGX_OK;
+
+failed:
+
+    if (tmp_conn) {
+        SSL_free(tmp_conn);
+    }
+
+    ERR_clear_error();
+
+    return NGX_ERROR;
+
+#endif
+}
+
+
 int
 ngx_http_lua_ffi_ssl_raw_server_addr(ngx_http_request_t *r, char **addr,
     size_t *addrlen, int *addrtype, char **err)
