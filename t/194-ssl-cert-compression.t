@@ -34,6 +34,7 @@ if (defined $ssl_major
 # brotli or zstd, and most distribution builds are not. Set
 # TEST_NGINX_CERT_COMP_ALGS=1 when yours is, and TEST 1 then insists on the
 # compression succeeding rather than accepting either outcome.
+# TEST 4 also requires this flag to check the compressed chain on the wire.
 $ENV{TEST_NGINX_CERT_COMP_ALGS} ||= 0;
 
 # ssl_certificate_compression (nginx 1.29.1+) is what lets nginx put the
@@ -481,6 +482,161 @@ close: 1 nil
 $ENV{TEST_NGINX_NO_CERT_COMP}
     ? qr/ssl cert compression: failed: at least OpenSSL 3\.2\.0 required/
     : qr/ssl cert compression: failed: no certificate set on this connection/
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 4: compress the live chain after clearing a configured chain
+--- skip_eval: 5: $ENV{TEST_NGINX_NO_CERT_COMP} || !$ENV{TEST_NGINX_CERT_COMP_ALGS} || !$ENV{TEST_NGINX_CERT_COMP_DIRECTIVE}
+--- user_files eval
+my $read_file = sub {
+    my $name = shift;
+    open my $file, '<', $name or die "cannot open $name: $!";
+    local $/;
+    return <$file>;
+};
+">>> static-chain.crt\n"
+    . $read_file->("t/cert/mtls_server.crt")
+    . $read_file->("t/cert/mtls_ca.crt")
+    . <<'_EOC_';
+>>> chain.lua
+local ffi = require "ffi"
+local ssl = require "ngx.ssl"
+
+ffi.cdef[[
+    int ngx_http_lua_ffi_ssl_compress_certs(void *r, int alg, char **err);
+    void *SSL_get_peer_cert_chain(const SSL *ssl);
+    int OPENSSL_sk_num(const void *stack);
+    void *OPENSSL_sk_value(const void *stack, int i);
+    int X509_cmp(const void *a, const void *b);
+    void SSL_set_msg_callback(SSL *ssl,
+        void (*cb)(int write_p, int version, int content_type,
+                   const void *buf, size_t len, SSL *ssl, void *arg));
+]]
+
+local _M = {}
+
+local function read_file(name)
+    local file = assert(io.open(name, "rb"))
+    local data = file:read("*a")
+    file:close()
+    return data
+end
+
+
+local function cert_message(write_p, version, content_type, buf, len)
+    if write_p == 1 and content_type == 22 and len > 0
+       and ffi.cast("const unsigned char *", buf)[0] == 25
+    then
+        ngx.log(ngx.WARN, "compressed certificate sent")
+    end
+end
+
+
+local message_cb = ffi.cast([[void (*)(int, int, int, const void *,
+                                      size_t, SSL *, void *)]], cert_message)
+
+
+local function cert_data(with_chain)
+    if with_chain then
+        return read_file("t/cert/mtls_server.crt")
+               .. read_file("t/cert/mtls_ca.crt"),
+               read_file("t/cert/mtls_server.key")
+    end
+
+    return read_file("t/cert/test.crt"), read_file("t/cert/test.key")
+end
+
+
+function _M.set_cert()
+    local pem, key = cert_data(ssl.server_name() == "with-chain")
+    assert(ssl.clear_certs())
+    assert(ssl.set_der_cert(assert(ssl.cert_pem_to_der(pem))))
+    assert(ssl.set_der_priv_key(assert(ssl.priv_key_pem_to_der(key))))
+
+    local errmsg = ffi.new("char *[1]")
+    local r = require "resty.core.base" .get_request()
+    local rc = ffi.C.ngx_http_lua_ffi_ssl_compress_certs(r, 0, errmsg)
+    if rc ~= 0 then
+        error(ffi.string(errmsg[0]))
+    end
+
+    local conn = assert(ssl.get_req_ssl_pointer())
+    ffi.C.SSL_set_msg_callback(conn, message_cb)
+end
+
+
+function _M.check_chain(with_chain)
+    local sock = ngx.socket.tcp()
+    sock:settimeout(2000)
+    assert(sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock"))
+    local name = with_chain and "with-chain" or "leaf-only"
+    assert(sock:sslhandshake(false, name, false))
+
+    local conn = assert(sock:getsslpointer())
+    local chain = ffi.C.SSL_get_peer_cert_chain(conn)
+    assert(chain ~= nil)
+    local count = ffi.C.OPENSSL_sk_num(chain)
+    local pem = cert_data(with_chain)
+    local expected = assert(ssl.parse_pem_cert(pem))
+    local matches = count == ffi.C.OPENSSL_sk_num(expected)
+    for i = 0, count - 1 do
+        local cert = ffi.C.OPENSSL_sk_value(chain, i)
+        local expected_cert = ffi.C.OPENSSL_sk_value(expected, i)
+        if expected_cert == nil
+           or ffi.C.X509_cmp(cert, expected_cert) ~= 0
+        then
+            matches = false
+        end
+    end
+
+    ngx.say(name, " certificates: ", count)
+    ngx.say(name, " matches: ", matches)
+    assert(sock:close())
+end
+
+return _M
+_EOC_
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        ssl_protocols TLSv1.3;
+        ssl_certificate $TEST_NGINX_HTML_DIR/static-chain.crt;
+        ssl_certificate_key ../../cert/mtls_server.key;
+        ssl_certificate_compression on;
+
+        ssl_certificate_by_lua_block {
+            require "chain" .set_cert()
+        }
+
+        location / {
+            return 200;
+        }
+    }
+--- config
+    lua_ssl_protocols TLSv1.3;
+    lua_ssl_conf_command Options RxCertificateCompression;
+
+    location /t {
+        content_by_lua_block {
+            local chain = require "chain"
+            chain.check_chain(false)
+            chain.check_chain(true)
+        }
+    }
+--- request
+GET /t
+--- response_body
+leaf-only certificates: 1
+leaf-only matches: true
+with-chain certificates: 2
+with-chain matches: true
+--- grep_error_log: compressed certificate sent
+--- grep_error_log_out
+compressed certificate sent
+compressed certificate sent
 --- no_error_log
 [error]
 [alert]

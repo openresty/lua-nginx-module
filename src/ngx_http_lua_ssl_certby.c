@@ -878,10 +878,14 @@ ngx_http_lua_ffi_ssl_compress_certs(ngx_http_request_t *r, int alg, char **err)
         goto failed;
     }
 
-    if (SSL_get0_chain_certs(ssl_conn, &chain) == 1
-        && chain != NULL
-        && SSL_set1_chain(tmp_conn, chain) != 1)
-    {
+    if (SSL_get0_chain_certs(ssl_conn, &chain) != 1) {
+        *err = "SSL_get0_chain_certs() failed";
+        goto failed;
+    }
+
+    /* Also clear the inherited chain when the live connection has none. */
+
+    if (SSL_set1_chain(tmp_conn, chain) != 1) {
         *err = "SSL_set1_chain() failed";
         goto failed;
     }
