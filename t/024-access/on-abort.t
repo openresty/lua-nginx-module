@@ -372,7 +372,7 @@ delete thread 1
 $
 --- timeout: 0.2
 --- abort
---- wait: 0.2
+--- wait: 1
 --- ignore_response
 --- no_error_log
 [error]
