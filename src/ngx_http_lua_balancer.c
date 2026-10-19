@@ -660,7 +660,7 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
             ngx_queue_insert_head(&lscf->balancer.cache, q);
             hash = ngx_http_lua_balancer_calc_hash(host,
                                                    bp->sockaddr, bp->socklen,
-                                                   bp->local);
+                                                   pc->local);
             item->hash = hash;
             hash %= lscf->balancer.bucket_cnt;
             ngx_queue_insert_head(&lscf->balancer.buckets[hash], &item->hnode);

@@ -6,7 +6,7 @@ use Cwd qw(cwd);
 log_level('info');
 repeat_each(1);
 
-plan tests => repeat_each() * (blocks() * 6 - 1);
+plan tests => repeat_each() * (blocks() * 6 + 5);
 
 my $pwd = cwd();
 
@@ -214,3 +214,45 @@ qr/\A\Q$first\E(?:\Q$extra\E)?\z/
 --- no_error_log
 retry storm guard
 [alert]
+
+
+
+=== TEST 3: reuse keepalive connections per proxy_bind address
+proxy_bind sets the local address of the upstream connection, while
+balancer.bind_to_local_addr() is not called.
+--- http_config eval
+# Since nginx version 1.29.7, the "keepalive" directive is enabled by
+# default and its cache takes the connections before the Lua pool sees them.
+my $keepalive = $Test::Nginx::Util::NginxVersion >= 1.029007 ?
+                "keepalive 0;" : "";
+
+qq{
+    upstream backend {
+        server 0.0.0.1;
+        $keepalive
+        balancer_by_lua_block {
+            local b = require "ngx.balancer"
+            assert(b.set_current_peer("127.0.0.1", \$TEST_NGINX_RAND_PORT_1))
+            assert(b.enable_keepalive())
+        }
+    }
+
+    server {
+        listen 127.0.0.1:\$TEST_NGINX_RAND_PORT_1;
+        return 200 "\$remote_addr \$connection_requests";
+    }
+}
+--- config
+    location = /t {
+        proxy_bind $arg_bind;
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+    }
+--- request eval
+["GET /t?bind=127.0.0.1", "GET /t?bind=127.0.0.2",
+ "GET /t?bind=127.0.0.1", "GET /t?bind=127.0.0.2"]
+--- response_body eval
+["127.0.0.1 1", "127.0.0.2 1", "127.0.0.1 2", "127.0.0.2 2"]
+--- no_error_log
+[error]
