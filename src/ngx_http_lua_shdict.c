@@ -507,7 +507,7 @@ ngx_http_lua_shdict_flush_expired_helper(lua_State *L, int tail_only)
                 break;
             }
 
-        } else if (tail_only) {
+        } else if (tail_only && sd->expires != 0) {
             break;
         }
 

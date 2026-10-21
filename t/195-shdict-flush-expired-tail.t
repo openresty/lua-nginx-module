@@ -54,7 +54,7 @@ nil
 --- no_error_log
 [error]
 
-=== TEST 3: permanent tail blocks expired items
+=== TEST 3: permanent tail is skipped
 --- http_config
     lua_shared_dict dogs 1m;
 --- config
@@ -73,9 +73,9 @@ nil
 --- request
 GET /test
 --- response_body
-0
-0
 1
+0
+0
 1
 --- no_error_log
 [error]
@@ -114,7 +114,7 @@ nil
     location = /test {
         content_by_lua_block {
             local d = ngx.shared.dogs
-            assert(d:set("blocker", 1))
+            assert(d:set("blocker", 1, 60))
             assert(d:set("expired", 2, 0.01))
             assert(d:get("blocker") == 1)
             ngx.sleep(0.03)
@@ -190,7 +190,7 @@ true
     location = /test {
         content_by_lua_block {
             local d = ngx.shared.dogs
-            assert(d:set("first", 1))
+            assert(d:set("first", 1, 60))
             assert(d:set("second", 2))
             assert(d:expire("second", 0.01))
             ngx.say(d:flush_expired_tail(10))
@@ -252,7 +252,7 @@ false
     location = /test {
         content_by_lua_block {
             local d = ngx.shared.dogs
-            assert(d:set("blocker", 1))
+            assert(d:set("blocker", 1, 60))
             for i = 1, 3 do assert(d:set(i, i, 0.01)) end
             ngx.sleep(0.03)
             ngx.say(d:flush_expired_tail(10))
@@ -270,5 +270,38 @@ GET /test
 2
 0
 1
+--- no_error_log
+[error]
+
+=== TEST 11: permanent items between expired items do not consume the limit
+--- http_config
+    lua_shared_dict dogs 1m;
+--- config
+    location = /test {
+        content_by_lua_block {
+            local d = ngx.shared.dogs
+            assert(d:set("permanent1", 1))
+            assert(d:set("expired1", 2, 0.01))
+            assert(d:set("permanent2", 3))
+            assert(d:set("expired2", 4, 0.01))
+            assert(d:set("expired3", 5, 0.01))
+            ngx.sleep(0.03)
+            ngx.say(d:flush_expired_tail(2))
+            ngx.say(d:get_stale("expired3"))
+            ngx.say(d:flush_expired_tail(2))
+            ngx.say(d:get("permanent1"))
+            ngx.say(d:get("permanent2"))
+            ngx.say(d:flush_expired_tail(2))
+        }
+    }
+--- request
+GET /test
+--- response_body
+2
+5niltrue
+1
+1
+3
+0
 --- no_error_log
 [error]

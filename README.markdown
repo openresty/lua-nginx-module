@@ -7823,15 +7823,15 @@ ngx.shared.DICT.flush_expired_tail
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
 
-Frees consecutive expired items starting at the least recently used end of the dictionary's LRU queue. Stops at the first unexpired item (including an item without an expiration), after freeing `max_count` items, or when the queue is empty. Returns the number of items freed.
+Scans from the least recently used end of the dictionary's LRU queue, freeing expired items and skipping items without an expiration. Stops at the first item with an expiration time in the future, after freeing `max_count` items, or when the queue ends. Returns the number of items freed.
 
 The required `max_count` argument must be a positive integer no greater than the maximum C `int` value (normally 2147483647). Zero does not mean unlimited.
 
 The expiration check and removal are atomic with respect to other shared dictionary operations. This method does not move surviving items in the LRU queue.
 
-Unlike [flush_expired](#ngxshareddictflush_expired), this method does not scan past unexpired items. Expired items behind such an item may remain indefinitely; applications needing to reclaim those items should also arrange another cleanup mechanism, such as occasional calls to `flush_expired`.
+Unlike [flush_expired](#ngxshareddictflush_expired), this method does not scan past an item with an expiration time in the future. Expired items behind such an item may remain indefinitely; applications needing to reclaim those items should also arrange another cleanup mechanism, such as occasional calls to `flush_expired`.
 
-This method bounds the number of dictionary items inspected, not elapsed time. Removing an expired list also frees all its elements while holding the dictionary lock; one list counts as one item towards `max_count`.
+The limit bounds the number of items freed, not the number inspected or elapsed time. Skipping items without an expiration can require scanning the entire dictionary. Removing an expired list also frees all its elements while holding the dictionary lock; one list counts as one item towards `max_count`.
 
 [Back to TOC](#nginx-api-for-lua)
 
