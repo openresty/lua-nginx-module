@@ -21,6 +21,9 @@ static ngx_int_t ngx_http_lua_shdict_lookup(ngx_shm_zone_t *shm_zone,
     ngx_uint_t hash, u_char *kdata, size_t klen,
     ngx_http_lua_shdict_node_t **sdp);
 static int ngx_http_lua_shdict_flush_expired(lua_State *L);
+static int ngx_http_lua_shdict_flush_expired_tail(lua_State *L);
+static int ngx_http_lua_shdict_flush_expired_helper(lua_State *L,
+    int tail_only);
 static int ngx_http_lua_shdict_get_keys(lua_State *L);
 static int ngx_http_lua_shdict_lpush(lua_State *L);
 static int ngx_http_lua_shdict_rpush(lua_State *L);
@@ -317,7 +320,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
         lua_createtable(L, 0, lmcf->shdict_zones->nelts /* nrec */);
                 /* ngx.shared */
 
-        lua_createtable(L, 0 /* narr */, 22 /* nrec */); /* shared mt */
+        lua_createtable(L, 0 /* narr */, 23 /* nrec */); /* shared mt */
 
         lua_pushcfunction(L, ngx_http_lua_shdict_lpush);
         lua_setfield(L, -2, "lpush");
@@ -336,6 +339,9 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired);
         lua_setfield(L, -2, "flush_expired");
+
+        lua_pushcfunction(L, ngx_http_lua_shdict_flush_expired_tail);
+        lua_setfield(L, -2, "flush_expired_tail");
 
         lua_pushcfunction(L, ngx_http_lua_shdict_get_keys);
         lua_setfield(L, -2, "get_keys");
@@ -394,6 +400,20 @@ ngx_http_lua_shdict_get_zone(lua_State *L, int index)
 static int
 ngx_http_lua_shdict_flush_expired(lua_State *L)
 {
+    return ngx_http_lua_shdict_flush_expired_helper(L, 0);
+}
+
+
+static int
+ngx_http_lua_shdict_flush_expired_tail(lua_State *L)
+{
+    return ngx_http_lua_shdict_flush_expired_helper(L, 1);
+}
+
+
+static int
+ngx_http_lua_shdict_flush_expired_helper(lua_State *L, int tail_only)
+{
     ngx_queue_t                     *q, *prev, *list_queue, *lq;
     ngx_http_lua_shdict_node_t      *sd;
     ngx_http_lua_shdict_ctx_t       *ctx;
@@ -404,9 +424,14 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
     ngx_rbtree_node_t               *node;
     uint64_t                         now;
     int                              n;
+    lua_Number                       limit;
     ngx_http_lua_shdict_list_node_t *lnode;
 
     n = lua_gettop(L);
+
+    if (tail_only && n != 2) {
+        return luaL_error(L, "expecting 2 arguments, but saw %d", n);
+    }
 
     if (n != 1 && n != 2) {
         return luaL_error(L, "expecting 1 or 2 argument(s), but saw %d", n);
@@ -419,7 +444,16 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
         return luaL_error(L, "bad user data for the ngx_shm_zone_t pointer");
     }
 
-    if (n == 2) {
+    if (tail_only) {
+        limit = luaL_checknumber(L, 2);
+        if (!(limit >= 1 && limit <= INT_MAX) || limit != (int) limit) {
+            return luaL_argerror(L, 2,
+                                 "positive integer within int range expected");
+        }
+
+        attempts = (int) limit;
+
+    } else if (n == 2) {
         attempts = luaL_checkint(L, 2);
     }
 
@@ -472,6 +506,9 @@ ngx_http_lua_shdict_flush_expired(lua_State *L)
             if (attempts && freed == attempts) {
                 break;
             }
+
+        } else if (tail_only) {
+            break;
         }
 
         q = prev;
