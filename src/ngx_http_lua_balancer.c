@@ -16,24 +16,40 @@
 #include "ngx_http_lua_directive.h"
 
 #define NGX_BALANCER_DEF_HOST_LEN  32
+
+/*
+ * the idle connections of one pool key, so that reusing, counting and
+ * evicting within a pool never has to scan the other cached connections
+ */
 typedef struct {
-    ngx_queue_t                    queue;
-    ngx_queue_t                    hnode;
+    ngx_queue_t                    hnode;  /* in buckets, or free_pools */
+    ngx_queue_t                    items;  /* most recently used first */
+    ngx_uint_t                     count;
     ngx_uint_t                     hash;
-    ngx_http_lua_srv_conf_t       *lscf;
-    ngx_connection_t              *connection;
-    socklen_t                      socklen;
-    ngx_sockaddr_t                 sockaddr;
-    ngx_sockaddr_t                 local_sockaddr;
-    ngx_str_t                      host;
+} ngx_http_lua_balancer_ka_pool_t;
+
+
+typedef struct {
+    ngx_queue_t                        queue;
+    ngx_queue_t                        pnode;  /* in pool->items */
+    ngx_http_lua_balancer_ka_pool_t   *pool;
+    ngx_uint_t                         hash;
+    ngx_http_lua_srv_conf_t           *lscf;
+    ngx_connection_t                  *connection;
+    socklen_t                          socklen;
+    ngx_sockaddr_t                     sockaddr;
+    ngx_sockaddr_t                     local_sockaddr;
+    ngx_str_t                          host;
     /* try to avoid allocating memory from the connection pool */
-    u_char                         host_data[NGX_BALANCER_DEF_HOST_LEN];
+    u_char                             host_data[NGX_BALANCER_DEF_HOST_LEN];
 } ngx_http_lua_balancer_ka_item_t; /*balancer keepalive item*/
 
 
 struct ngx_http_lua_balancer_peer_data_s {
     ngx_uint_t                          keepalive_requests;
     ngx_msec_t                          keepalive_timeout;
+    /* max idle connections cached per pool, 0 means no per-pool limit */
+    ngx_uint_t                          keepalive_pool_size;
 
     void                               *data;
 
@@ -96,6 +112,17 @@ static ngx_connection_t *ngx_http_lua_balancer_get_cached_item(
     ngx_http_lua_srv_conf_t *lscf, ngx_peer_connection_t *pc, ngx_str_t *name);
 static ngx_uint_t ngx_http_lua_balancer_calc_hash(ngx_str_t *name,
     struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static ngx_int_t ngx_http_lua_balancer_item_match(
+    ngx_http_lua_balancer_ka_item_t *item, ngx_uint_t hash, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static ngx_http_lua_balancer_ka_pool_t *ngx_http_lua_balancer_find_pool(
+    ngx_http_lua_srv_conf_t *lscf, ngx_uint_t hash, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static void ngx_http_lua_balancer_attach_item(ngx_http_lua_srv_conf_t *lscf,
+    ngx_http_lua_balancer_ka_item_t *item, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static void ngx_http_lua_balancer_detach_item(
+    ngx_http_lua_balancer_ka_item_t *item);
 
 
 static struct sockaddr  *ngx_http_lua_balancer_default_server_sockaddr;
@@ -291,6 +318,7 @@ ngx_http_lua_balancer_init(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
     ngx_queue_t                          *buckets;
     ngx_http_lua_srv_conf_t              *lscf;
     ngx_http_lua_balancer_ka_item_t      *cached;
+    ngx_http_lua_balancer_ka_pool_t      *pools;
 
     lscf = ngx_http_conf_upstream_srv_conf(us, ngx_http_lua_module);
 
@@ -319,6 +347,24 @@ ngx_http_lua_balancer_init(ngx_conf_t *cf, ngx_http_upstream_srv_conf_t *us)
     for (i = 0; i < lscf->balancer.max_cached; i++) {
         ngx_queue_insert_head(&lscf->balancer.free, &cached[i].queue);
         cached[i].lscf = lscf;
+    }
+
+    /*
+     * a pool exists only while it holds idle connections, so there can
+     * never be more pools than cache items
+     */
+
+    pools = ngx_pcalloc(cf->pool,
+                        sizeof(ngx_http_lua_balancer_ka_pool_t)
+                        * lscf->balancer.max_cached);
+    if (pools == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_queue_init(&lscf->balancer.free_pools);
+
+    for (i = 0; i < lscf->balancer.max_cached; i++) {
+        ngx_queue_insert_head(&lscf->balancer.free_pools, &pools[i].hnode);
     }
 
     bucket_cnt = lscf->balancer.max_cached / 2;
@@ -430,6 +476,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     bp->more_tries = 0;
     bp->keepalive_requests = 0;
     bp->keepalive_timeout = 0;
+    bp->keepalive_pool_size = 0;
     bp->keepalive = 0;
     bp->total_tries++;
 
@@ -583,6 +630,7 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
     ngx_connection_t                           *c;
     ngx_http_upstream_t                        *u;
     ngx_http_lua_balancer_ka_item_t            *item;
+    ngx_http_lua_balancer_ka_pool_t            *pool;
     ngx_http_lua_balancer_peer_data_t          *bp = data;
     ngx_http_lua_srv_conf_t                    *lscf = bp->conf;
 
@@ -633,13 +681,50 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
                 goto invalid;
             }
 
-            if (ngx_queue_empty(&lscf->balancer.free)) {
+            host = &bp->host;
+            hash = ngx_http_lua_balancer_calc_hash(host,
+                                                   bp->sockaddr, bp->socklen,
+                                                   pc->local);
+
+            pool = NULL;
+
+            if (bp->keepalive_pool_size) {
+                pool = ngx_http_lua_balancer_find_pool(lscf, hash, host,
+                                                       bp->sockaddr,
+                                                       bp->socklen,
+                                                       pc->local);
+            }
+
+            if (pool != NULL && pool->count >= bp->keepalive_pool_size) {
+                /*
+                 * the pool already holds pool_size idle connections: evict
+                 * its least recently used one instead of pushing out the
+                 * idle connections of other pools
+                 */
+
+                item = ngx_queue_data(ngx_queue_last(&pool->items),
+                                      ngx_http_lua_balancer_ka_item_t, pnode);
+
+                ngx_log_debug4(NGX_LOG_DEBUG_HTTP, pc->log, 0,
+                               "lua balancer: keepalive pool full, "
+                               "evicting connection %p, pool size: %ui, "
+                               "host: %V, name: %V",
+                               item->connection, bp->keepalive_pool_size,
+                               bp->addr_text, host);
+
+                q = &item->queue;
+                ngx_queue_remove(q);
+                ngx_http_lua_balancer_detach_item(item);
+
+                ngx_http_lua_balancer_close(item->connection);
+
+            } else if (ngx_queue_empty(&lscf->balancer.free)) {
                 q = ngx_queue_last(&lscf->balancer.cache);
 
                 item = ngx_queue_data(q, ngx_http_lua_balancer_ka_item_t,
                                       queue);
                 ngx_queue_remove(q);
-                ngx_queue_remove(&item->hnode);
+                ngx_http_lua_balancer_detach_item(item);
 
                 ngx_http_lua_balancer_close(item->connection);
 
@@ -651,19 +736,13 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
                                       queue);
             }
 
-            host = &bp->host;
             ngx_log_debug3(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                            "lua balancer: keepalive saving connection %p, "
                            "host: %V, name: %V",
                            c, bp->addr_text, host);
 
             ngx_queue_insert_head(&lscf->balancer.cache, q);
-            hash = ngx_http_lua_balancer_calc_hash(host,
-                                                   bp->sockaddr, bp->socklen,
-                                                   pc->local);
             item->hash = hash;
-            hash %= lscf->balancer.bucket_cnt;
-            ngx_queue_insert_head(&lscf->balancer.buckets[hash], &item->hnode);
             item->connection = c;
             pc->connection = NULL;
 
@@ -707,7 +786,6 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
                         ngx_http_lua_balancer_close(c);
 
                         ngx_queue_remove(&item->queue);
-                        ngx_queue_remove(&item->hnode);
                         ngx_queue_insert_head(&item->lscf->balancer.free,
                                               &item->queue);
                         return;
@@ -719,6 +797,9 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
             } else {
                 ngx_str_null(&item->host);
             }
+
+            ngx_http_lua_balancer_attach_item(lscf, item, host, bp->sockaddr,
+                                              bp->socklen, pc->local);
 
             if (c->read->ready) {
                 ngx_http_lua_balancer_close_handler(c->read);
@@ -820,7 +901,7 @@ close:
     ngx_http_lua_balancer_close(c);
 
     ngx_queue_remove(&item->queue);
-    ngx_queue_remove(&item->hnode);
+    ngx_http_lua_balancer_detach_item(item);
     ngx_queue_insert_head(&item->lscf->balancer.free, &item->queue);
 }
 
@@ -1024,7 +1105,8 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
 
 int
 ngx_http_lua_ffi_balancer_enable_keepalive(ngx_http_request_t *r,
-    unsigned long timeout, unsigned int max_requests, char **err)
+    unsigned long timeout, unsigned int max_requests, unsigned int pool_size,
+    char **err)
 {
     ngx_http_upstream_t                     *u;
     ngx_http_lua_ctx_t                      *ctx;
@@ -1062,6 +1144,7 @@ ngx_http_lua_ffi_balancer_enable_keepalive(ngx_http_request_t *r,
 
     bp->keepalive_timeout = (ngx_msec_t) timeout;
     bp->keepalive_requests = (ngx_uint_t) max_requests;
+    bp->keepalive_pool_size = (ngx_uint_t) pool_size;
     bp->keepalive = 1;
 
     return NGX_OK;
@@ -1456,64 +1539,153 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
     ngx_peer_connection_t *pc, ngx_str_t *name)
 {
     ngx_uint_t                         hash;
+    ngx_connection_t                  *c;
+    ngx_http_lua_balancer_ka_item_t   *item;
+    ngx_http_lua_balancer_ka_pool_t   *pool;
+
+    hash = ngx_http_lua_balancer_calc_hash(name, pc->sockaddr, pc->socklen,
+                                           pc->local);
+
+    pool = ngx_http_lua_balancer_find_pool(lscf, hash, name, pc->sockaddr,
+                                           pc->socklen, pc->local);
+    if (pool == NULL) {
+        return NULL;
+    }
+
+    item = ngx_queue_data(ngx_queue_head(&pool->items),
+                          ngx_http_lua_balancer_ka_item_t, pnode);
+
+    c = item->connection;
+    ngx_http_lua_balancer_detach_item(item);
+    ngx_queue_remove(&item->queue);
+    ngx_queue_insert_head(&lscf->balancer.free, &item->queue);
+    c->idle = 0;
+    c->sent = 0;
+    c->log = pc->log;
+    c->read->log = pc->log;
+    c->write->log = pc->log;
+    c->pool->log = pc->log;
+
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+
+    pc->cached = 1;
+    pc->connection = c;
+    return c;
+}
+
+
+static ngx_int_t
+ngx_http_lua_balancer_item_match(ngx_http_lua_balancer_ka_item_t *item,
+    ngx_uint_t hash, ngx_str_t *name, struct sockaddr *sockaddr,
+    socklen_t socklen, ngx_addr_t *local)
+{
+    if (item->hash != hash) {
+        return 0;
+    }
+
+    return name->len == item->host.len
+           && ngx_memn2cmp((u_char *) &item->sockaddr,
+                           (u_char *) sockaddr,
+                           item->socklen, socklen) == 0
+           && ngx_strncasecmp(name->data,
+                              item->host.data, name->len) == 0
+           && (local == NULL
+               || ngx_memn2cmp((u_char *) &item->local_sockaddr,
+                               (u_char *) local->sockaddr,
+                               socklen, local->socklen) == 0);
+}
+
+
+static ngx_http_lua_balancer_ka_pool_t *
+ngx_http_lua_balancer_find_pool(ngx_http_lua_srv_conf_t *lscf,
+    ngx_uint_t hash, ngx_str_t *name, struct sockaddr *sockaddr,
+    socklen_t socklen, ngx_addr_t *local)
+{
     ngx_queue_t                       *q;
     ngx_queue_t                       *head;
-    ngx_connection_t                  *c;
-    struct sockaddr                   *sockaddr;
-    socklen_t                          socklen;
-    ngx_addr_t                        *local;
     ngx_http_lua_balancer_ka_item_t   *item;
+    ngx_http_lua_balancer_ka_pool_t   *pool;
 
-    sockaddr = pc->sockaddr;
-    socklen = pc->socklen;
-    local = pc->local;
-
-    hash = ngx_http_lua_balancer_calc_hash(name, sockaddr, socklen, pc->local);
     head = &lscf->balancer.buckets[hash % lscf->balancer.bucket_cnt];
 
-    c = NULL;
     for (q = ngx_queue_head(head);
-        q != ngx_queue_sentinel(head);
-        q = ngx_queue_next(q))
+         q != ngx_queue_sentinel(head);
+         q = ngx_queue_next(q))
     {
-        item = ngx_queue_data(q, ngx_http_lua_balancer_ka_item_t, hnode);
-        if (item->hash != hash) {
+        pool = ngx_queue_data(q, ngx_http_lua_balancer_ka_pool_t, hnode);
+
+        if (pool->hash != hash) {
             continue;
         }
 
-        if (name->len == item->host.len
-            && ngx_memn2cmp((u_char *) &item->sockaddr,
-                            (u_char *) sockaddr,
-                            item->socklen, socklen) == 0
-            && ngx_strncasecmp(name->data,
-                               item->host.data, name->len) == 0
-            && (local == NULL
-                || ngx_memn2cmp((u_char *) &item->local_sockaddr,
-                                (u_char *) local->sockaddr,
-                                socklen, local->socklen) == 0))
+        /* a pool is never empty, all its items share the same key */
+
+        item = ngx_queue_data(ngx_queue_head(&pool->items),
+                              ngx_http_lua_balancer_ka_item_t, pnode);
+
+        if (ngx_http_lua_balancer_item_match(item, hash, name, sockaddr,
+                                             socklen, local))
         {
-            c = item->connection;
-            ngx_queue_remove(q);
-            ngx_queue_remove(&item->queue);
-            ngx_queue_insert_head(&lscf->balancer.free, &item->queue);
-            c->idle = 0;
-            c->sent = 0;
-            c->log = pc->log;
-            c->read->log = pc->log;
-            c->write->log = pc->log;
-            c->pool->log = pc->log;
-
-            if (c->read->timer_set) {
-                ngx_del_timer(c->read);
-            }
-
-            pc->cached = 1;
-            pc->connection = c;
-            return c;
+            return pool;
         }
     }
 
     return NULL;
+}
+
+
+static void
+ngx_http_lua_balancer_attach_item(ngx_http_lua_srv_conf_t *lscf,
+    ngx_http_lua_balancer_ka_item_t *item, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local)
+{
+    ngx_queue_t                       *q;
+    ngx_queue_t                       *head;
+    ngx_http_lua_balancer_ka_pool_t   *pool;
+
+    pool = ngx_http_lua_balancer_find_pool(lscf, item->hash, name, sockaddr,
+                                           socklen, local);
+
+    if (pool == NULL) {
+        /* item is not attached yet, so a free pool is always left */
+
+        ngx_http_lua_assert(!ngx_queue_empty(&lscf->balancer.free_pools));
+
+        q = ngx_queue_head(&lscf->balancer.free_pools);
+        ngx_queue_remove(q);
+
+        pool = ngx_queue_data(q, ngx_http_lua_balancer_ka_pool_t, hnode);
+        pool->hash = item->hash;
+        pool->count = 0;
+        ngx_queue_init(&pool->items);
+
+        head = &lscf->balancer.buckets[item->hash % lscf->balancer.bucket_cnt];
+        ngx_queue_insert_head(head, &pool->hnode);
+    }
+
+    ngx_queue_insert_head(&pool->items, &item->pnode);
+    pool->count++;
+    item->pool = pool;
+}
+
+
+static void
+ngx_http_lua_balancer_detach_item(ngx_http_lua_balancer_ka_item_t *item)
+{
+    ngx_http_lua_balancer_ka_pool_t   *pool;
+
+    pool = item->pool;
+
+    ngx_queue_remove(&item->pnode);
+    item->pool = NULL;
+
+    if (--pool->count == 0) {
+        ngx_queue_remove(&pool->hnode);
+        ngx_queue_insert_head(&item->lscf->balancer.free_pools,
+                              &pool->hnode);
+    }
 }
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

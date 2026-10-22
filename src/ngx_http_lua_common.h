@@ -386,6 +386,7 @@ struct ngx_http_lua_srv_conf_s {
         ngx_uint_t                           max_cached;
         ngx_queue_t                          cache;
         ngx_queue_t                          free;
+        ngx_queue_t                          free_pools;
         ngx_queue_t                         *buckets;
         ngx_uint_t                           bucket_cnt;
         ngx_http_upstream_init_pt            original_init_upstream;
