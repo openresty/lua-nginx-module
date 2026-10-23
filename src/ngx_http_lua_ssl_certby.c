@@ -784,7 +784,7 @@ failed:
 }
 
 
-#if !(defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL       \
+#if !(defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL        \
       || OPENSSL_VERSION_NUMBER < 0x30200000L)
 
 static ngx_int_t
@@ -817,7 +817,7 @@ ngx_http_lua_ssl_compress_cert(ngx_ssl_conn_t *ssl_conn, SSL *tmp_conn,
 int
 ngx_http_lua_ffi_ssl_compress_certs(ngx_http_request_t *r, int alg, char **err)
 {
-#if (defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL          \
+#if (defined LIBRESSL_VERSION_NUMBER || defined OPENSSL_IS_BORINGSSL         \
      || OPENSSL_VERSION_NUMBER < 0x30200000L)
 
     *err = "at least OpenSSL 3.2.0 required but found " OPENSSL_VERSION_TEXT;
