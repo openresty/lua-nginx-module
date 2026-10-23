@@ -173,6 +173,7 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY   0x00010000
 #define NGX_HTTP_LUA_CONTEXT_PRECONTENT         0x00020000
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT     0x00040000
+#define NGX_HTTP_LUA_CONTEXT_SSL_VERIFY         0x00080000
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
 #define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
@@ -373,6 +374,13 @@ struct ngx_http_lua_srv_conf_s {
         u_char                              *ssl_client_hello_src_key;
         u_char                              *ssl_client_hello_chunkname;
         int                                  ssl_client_hello_src_ref;
+
+        ngx_http_lua_srv_conf_handler_pt     ssl_verify_handler;
+        ngx_str_t                            ssl_verify_src;
+        u_char                              *ssl_verify_src_key;
+        u_char                              *ssl_verify_chunkname;
+        int                                  ssl_verify_src_ref;
+        ngx_flag_t                           skip_openssl_default_verify;
 #endif
 
         ngx_http_lua_srv_conf_handler_pt     server_rewrite_handler;
