@@ -15,7 +15,7 @@ if ($openssl_version =~ m/built with OpenSSL (\d+)\.(\d+)\.(\d+)/) {
         plan(skip_all => "too old OpenSSL, need >= 4.1.0 was " .
             "$major.$minor.$patch");
     } else {
-	    plan tests => repeat_each() * (blocks() * 5 + 20);
+	    plan tests => repeat_each() * (blocks() * 5 + 21);
     }
 } elsif ($openssl_version =~ m/running with BoringSSL/) {
     plan(skip_all => "does not support BoringSSL");
@@ -122,7 +122,7 @@ ssl_verify_client can't be off when using ssl_verify_by_lua*
 
 
 
-=== TEST 3: simple logging
+=== TEST 3: simple logging and ssl_verify_client on
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -164,12 +164,107 @@ simple logging return
 --- error_log
 ssl verify by lua is running!
 --- no_error_log
+client sent no required SSL certificate
 [error]
 [alert]
 
 
 
-=== TEST 4: sleep
+=== TEST 4: simple logging and ssl_verify_client optional
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_verify_client optional;
+        ssl_certificate        ../../cert/mtls_server.crt;
+        ssl_certificate_key    ../../cert/mtls_server.key;
+        ssl_client_certificate ../../cert/mtls_ca.crt;
+
+        ssl_verify_by_lua_block {
+            ngx.log(ngx.INFO, "ssl verify by lua is running!")
+        }
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("simple logging return")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+
+--- config
+    location /t {
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+    }
+--- request
+GET /t
+--- response_body
+simple logging return
+--- error_log
+ssl verify by lua is running!
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 5: simple logging and ssl_verify_client optional_no_ca
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name   test.com;
+
+        ssl_verify_client optional_no_ca;
+        ssl_certificate        ../../cert/mtls_server.crt;
+        ssl_certificate_key    ../../cert/mtls_server.key;
+        ssl_client_certificate ../../cert/mtls_ca.crt;
+
+        ssl_verify_by_lua_block {
+            ngx.log(ngx.INFO, "ssl verify by lua is running!")
+        }
+
+        location / {
+            default_type 'text/plain';
+
+            content_by_lua_block {
+                ngx.say("simple logging return")
+            }
+
+            more_clear_headers Date;
+        }
+    }
+
+--- config
+    location /t {
+        proxy_pass                    https://unix:$TEST_NGINX_HTML_DIR/nginx.sock;
+        proxy_ssl_name                example.com;
+        proxy_ssl_certificate         ../../cert/mtls_client.crt;
+        proxy_ssl_certificate_key     ../../cert/mtls_client.key;
+        proxy_ssl_trusted_certificate ../../cert/mtls_ca.crt;
+        proxy_ssl_session_reuse       off;
+    }
+--- request
+GET /t
+--- response_body
+simple logging return
+--- error_log
+ssl verify by lua is running!
+--- no_error_log
+[error]
+[alert]
+
+
+
+=== TEST 6: sleep
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -218,7 +313,7 @@ qr/elapsed in ssl verify by lua: 0.(?:09|1\d)\d+,/,
 
 
 
-=== TEST 5: timer
+=== TEST 7: timer
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -272,7 +367,7 @@ my timer run!
 
 
 
-=== TEST 6: ngx.exit(0) - no yield
+=== TEST 8: ngx.exit(0) - no yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -322,7 +417,7 @@ should never reached here
 
 
 
-=== TEST 7: ngx.exit(ngx.ERROR) - no yield
+=== TEST 9: ngx.exit(ngx.ERROR) - no yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -374,7 +469,7 @@ should never reached here
 
 
 
-=== TEST 8: ngx.exit(0) -  yield
+=== TEST 10: ngx.exit(0) -  yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -426,7 +521,7 @@ should never reached here
 
 
 
-=== TEST 9: ngx.exit(ngx.ERROR) - yield
+=== TEST 11: ngx.exit(ngx.ERROR) - yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -480,7 +575,7 @@ should never reached here
 
 
 
-=== TEST 10: lua exception - no yield
+=== TEST 12: lua exception - no yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -532,7 +627,7 @@ should never reached here
 
 
 
-=== TEST 11: lua exception - yield
+=== TEST 13: lua exception - yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -585,7 +680,7 @@ should never reached here
 
 
 
-=== TEST 12: get phase
+=== TEST 14: get phase
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -632,7 +727,7 @@ get_phase: ssl_verify
 
 
 
-=== TEST 13: subrequests disabled
+=== TEST 15: subrequests disabled
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -681,7 +776,7 @@ qr/.*? SSL_do_handshake\(\) failed .*?certificate verify failed/,
 
 
 
-=== TEST 14: simple logging (by_lua_file)
+=== TEST 16: simple logging (by_lua_file)
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -730,7 +825,7 @@ a.lua:1: ssl verify by lua is running!
 
 
 
-=== TEST 15: coroutine API
+=== TEST 17: coroutine API
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -798,7 +893,7 @@ co yield: 2
 
 
 
-=== TEST 16: simple user thread wait with yielding
+=== TEST 18: simple user thread wait with yielding
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -868,7 +963,7 @@ uthread: done
 
 
 
-=== TEST 17: uthread (kill)
+=== TEST 19: uthread (kill)
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -941,7 +1036,7 @@ uthread: failed to kill: already waited or killed
 
 
 
-=== TEST 18: ngx.exit(ngx.OK) - no yield
+=== TEST 20: ngx.exit(ngx.OK) - no yield
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -994,7 +1089,7 @@ should never reached here
 
 
 
-=== TEST 19: ssl_verify_by_lua* without yield API (simple logic)
+=== TEST 21: ssl_verify_by_lua* without yield API (simple logic)
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1072,7 +1167,7 @@ ssl verify: simple test done
 
 
 
-=== TEST 20: lua_skip_openssl_default_verify default off
+=== TEST 22: lua_skip_openssl_default_verify default off
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1117,7 +1212,7 @@ ssl_verify_by_lua: openssl default verify
 
 
 
-=== TEST 21: lua_skip_openssl_default_verify on
+=== TEST 23: lua_skip_openssl_default_verify on
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1167,7 +1262,7 @@ ssl_verify_by_lua: openssl default verify
 
 
 
-=== TEST 22: cosocket
+=== TEST 24: cosocket
 --- http_config
     server {
         listen 127.0.0.1:$TEST_NGINX_RAND_PORT_1;
