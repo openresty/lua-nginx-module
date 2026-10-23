@@ -3257,6 +3257,8 @@ This directive runs user Lua code when Nginx is about to post-process the SSL cl
 
 It is particularly useful to parse downstream client certificate and do some custom operations in pure lua.
 
+When using `ssl_verify_by_lua` directive, the `ssl_verify_client` directive should not be off, that is, it should be `on`/`optional`/`optional_no_ca`, and you can still use the `$ssl_client_verify` variable to get the verification result.
+
 The [ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme) library are particularly useful in this context.
 
 Below is a trivial example using the
@@ -3531,7 +3533,7 @@ lua_skip_openssl_default_verify
 
 **context:** *http, server*
 
-When using ssl_verify_by_lua directive, `lua_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify downstream client certificate.
+When using `ssl_verify_by_lua` directive, `lua_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify downstream client certificate.
 
 This directive is turned `off` by default.
 
