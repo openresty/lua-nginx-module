@@ -36,8 +36,8 @@ jobs:
             TEST_NGINX_USE_HTTP3: "1"
             TEST_NGINX_QUIC_IDLE_TIMEOUT: "3"
 
-          - name: "nginx 1.31.6 + OpenSSL + ASan"
-            NGINX_VERSION: "1.31.6"
+          - name: "nginx 1.31.8 + OpenSSL + ASan"
+            NGINX_VERSION: "1.31.8"
             # ASan slows every request down, so allow more time than the
             # other jobs before a test is called timed out.
             TEST_NGINX_TIMEOUT: "10"
