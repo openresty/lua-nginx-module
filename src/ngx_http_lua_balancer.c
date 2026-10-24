@@ -34,6 +34,8 @@ typedef struct {
 struct ngx_http_lua_balancer_peer_data_s {
     ngx_uint_t                          keepalive_requests;
     ngx_msec_t                          keepalive_timeout;
+    /* max idle connections cached per pool, 0 means no per-pool limit */
+    ngx_uint_t                          keepalive_pool_size;
 
     void                               *data;
 
@@ -96,6 +98,13 @@ static ngx_connection_t *ngx_http_lua_balancer_get_cached_item(
     ngx_http_lua_srv_conf_t *lscf, ngx_peer_connection_t *pc, ngx_str_t *name);
 static ngx_uint_t ngx_http_lua_balancer_calc_hash(ngx_str_t *name,
     struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static ngx_int_t ngx_http_lua_balancer_item_match(
+    ngx_http_lua_balancer_ka_item_t *item, ngx_uint_t hash, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local);
+static ngx_http_lua_balancer_ka_item_t *ngx_http_lua_balancer_pool_full_item(
+    ngx_http_lua_srv_conf_t *lscf, ngx_uint_t hash, ngx_str_t *name,
+    struct sockaddr *sockaddr, socklen_t socklen, ngx_addr_t *local,
+    ngx_uint_t pool_size);
 
 
 static struct sockaddr  *ngx_http_lua_balancer_default_server_sockaddr;
@@ -430,6 +439,7 @@ ngx_http_lua_balancer_get_peer(ngx_peer_connection_t *pc, void *data)
     bp->more_tries = 0;
     bp->keepalive_requests = 0;
     bp->keepalive_timeout = 0;
+    bp->keepalive_pool_size = 0;
     bp->keepalive = 0;
     bp->total_tries++;
 
@@ -633,7 +643,41 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
                 goto invalid;
             }
 
-            if (ngx_queue_empty(&lscf->balancer.free)) {
+            host = &bp->host;
+            hash = ngx_http_lua_balancer_calc_hash(host,
+                                                   bp->sockaddr, bp->socklen,
+                                                   pc->local);
+
+            item = NULL;
+
+            if (bp->keepalive_pool_size) {
+                item = ngx_http_lua_balancer_pool_full_item(lscf, hash, host,
+                                                    bp->sockaddr, bp->socklen,
+                                                    pc->local,
+                                                    bp->keepalive_pool_size);
+            }
+
+            if (item != NULL) {
+                /*
+                 * the pool already holds pool_size idle connections: evict
+                 * its least recently used one instead of pushing out the
+                 * idle connections of other pools
+                 */
+
+                ngx_log_debug4(NGX_LOG_DEBUG_HTTP, pc->log, 0,
+                               "lua balancer: keepalive pool full, "
+                               "evicting connection %p, pool size: %ui, "
+                               "host: %V, name: %V",
+                               item->connection, bp->keepalive_pool_size,
+                               bp->addr_text, host);
+
+                q = &item->queue;
+                ngx_queue_remove(q);
+                ngx_queue_remove(&item->hnode);
+
+                ngx_http_lua_balancer_close(item->connection);
+
+            } else if (ngx_queue_empty(&lscf->balancer.free)) {
                 q = ngx_queue_last(&lscf->balancer.cache);
 
                 item = ngx_queue_data(q, ngx_http_lua_balancer_ka_item_t,
@@ -651,16 +695,12 @@ ngx_http_lua_balancer_free_peer(ngx_peer_connection_t *pc, void *data,
                                       queue);
             }
 
-            host = &bp->host;
             ngx_log_debug3(NGX_LOG_DEBUG_HTTP, pc->log, 0,
                            "lua balancer: keepalive saving connection %p, "
                            "host: %V, name: %V",
                            c, bp->addr_text, host);
 
             ngx_queue_insert_head(&lscf->balancer.cache, q);
-            hash = ngx_http_lua_balancer_calc_hash(host,
-                                                   bp->sockaddr, bp->socklen,
-                                                   pc->local);
             item->hash = hash;
             hash %= lscf->balancer.bucket_cnt;
             ngx_queue_insert_head(&lscf->balancer.buckets[hash], &item->hnode);
@@ -1024,7 +1064,8 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
 
 int
 ngx_http_lua_ffi_balancer_enable_keepalive(ngx_http_request_t *r,
-    unsigned long timeout, unsigned int max_requests, char **err)
+    unsigned long timeout, unsigned int max_requests, unsigned int pool_size,
+    char **err)
 {
     ngx_http_upstream_t                     *u;
     ngx_http_lua_ctx_t                      *ctx;
@@ -1062,6 +1103,7 @@ ngx_http_lua_ffi_balancer_enable_keepalive(ngx_http_request_t *r,
 
     bp->keepalive_timeout = (ngx_msec_t) timeout;
     bp->keepalive_requests = (ngx_uint_t) max_requests;
+    bp->keepalive_pool_size = (ngx_uint_t) pool_size;
     bp->keepalive = 1;
 
     return NGX_OK;
@@ -1477,20 +1519,9 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
         q = ngx_queue_next(q))
     {
         item = ngx_queue_data(q, ngx_http_lua_balancer_ka_item_t, hnode);
-        if (item->hash != hash) {
-            continue;
-        }
 
-        if (name->len == item->host.len
-            && ngx_memn2cmp((u_char *) &item->sockaddr,
-                            (u_char *) sockaddr,
-                            item->socklen, socklen) == 0
-            && ngx_strncasecmp(name->data,
-                               item->host.data, name->len) == 0
-            && (local == NULL
-                || ngx_memn2cmp((u_char *) &item->local_sockaddr,
-                                (u_char *) local->sockaddr,
-                                socklen, local->socklen) == 0))
+        if (ngx_http_lua_balancer_item_match(item, hash, name, sockaddr,
+                                             socklen, local))
         {
             c = item->connection;
             ngx_queue_remove(q);
@@ -1510,6 +1541,77 @@ ngx_http_lua_balancer_get_cached_item(ngx_http_lua_srv_conf_t *lscf,
             pc->cached = 1;
             pc->connection = c;
             return c;
+        }
+    }
+
+    return NULL;
+}
+
+
+static ngx_int_t
+ngx_http_lua_balancer_item_match(ngx_http_lua_balancer_ka_item_t *item,
+    ngx_uint_t hash, ngx_str_t *name, struct sockaddr *sockaddr,
+    socklen_t socklen, ngx_addr_t *local)
+{
+    if (item->hash != hash) {
+        return 0;
+    }
+
+    return name->len == item->host.len
+           && ngx_memn2cmp((u_char *) &item->sockaddr,
+                           (u_char *) sockaddr,
+                           item->socklen, socklen) == 0
+           && ngx_strncasecmp(name->data,
+                              item->host.data, name->len) == 0
+           && (local == NULL
+               || ngx_memn2cmp((u_char *) &item->local_sockaddr,
+                               (u_char *) local->sockaddr,
+                               socklen, local->socklen) == 0);
+}
+
+
+/*
+ * returns the least recently used idle item of the given pool if the pool
+ * already caches pool_size or more idle connections, NULL otherwise
+ */
+static ngx_http_lua_balancer_ka_item_t *
+ngx_http_lua_balancer_pool_full_item(ngx_http_lua_srv_conf_t *lscf,
+    ngx_uint_t hash, ngx_str_t *name, struct sockaddr *sockaddr,
+    socklen_t socklen, ngx_addr_t *local, ngx_uint_t pool_size)
+{
+    ngx_uint_t                         n;
+    ngx_queue_t                       *q;
+    ngx_queue_t                       *head;
+    ngx_http_lua_balancer_ka_item_t   *item, *oldest;
+
+    head = &lscf->balancer.buckets[hash % lscf->balancer.bucket_cnt];
+
+    n = 0;
+    oldest = NULL;
+
+    /*
+     * items are inserted at the bucket head, so walking from the tail meets
+     * the least recently used item of the pool first
+     */
+
+    for (q = ngx_queue_last(head);
+         q != ngx_queue_sentinel(head);
+         q = ngx_queue_prev(q))
+    {
+        item = ngx_queue_data(q, ngx_http_lua_balancer_ka_item_t, hnode);
+
+        if (!ngx_http_lua_balancer_item_match(item, hash, name, sockaddr,
+                                              socklen, local))
+        {
+            continue;
+        }
+
+        if (oldest == NULL) {
+            oldest = item;
+        }
+
+        if (++n >= pool_size) {
+            return oldest;
         }
     }
 
