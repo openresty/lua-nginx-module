@@ -173,3 +173,38 @@ GET /t
 127.0.0.2
 --- no_error_log
 [error]
+
+
+
+=== TEST 6: bind to an invalid address in balancer phase
+--- no_http2
+--- http_config
+    lua_package_path "$TEST_NGINX_SERVER_ROOT/html/?.lua;;";
+
+    upstream backend {
+        server 0.0.0.1;
+        balancer_by_lua_block {
+            local balancer = require "ngx.balancer"
+            assert(balancer.bind_to_local_addr("127.0.0.2"))
+            local ok, err = balancer.bind_to_local_addr("not-an-ip")
+            if not ok then
+                ngx.log(ngx.ERR, "failed to bind: ", err)
+            end
+            assert(balancer.set_current_peer("127.0.0.1", ngx.var.server_port))
+        }
+    }
+--- config
+    location = /t {
+        proxy_pass http://backend/back;
+    }
+
+    location = /back {
+        echo $remote_addr;
+    }
+
+--- request
+GET /t
+--- response_body
+127.0.0.2
+--- error_log
+failed to bind: invalid addr not-an-ip
