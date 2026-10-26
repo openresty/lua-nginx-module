@@ -1006,8 +1006,12 @@ ngx_http_lua_ffi_balancer_bind_to_local_addr(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
+    /*
+     * NGX_DECLINED means addr is not an address, and local->sockaddr is
+     * left unset then, so it must not be published to bp->local either.
+     */
     rc = ngx_parse_addr_port(r->pool, local, (u_char *) addr, addr_len);
-    if (rc == NGX_ERROR) {
+    if (rc != NGX_OK) {
         p = ngx_snprintf(errbuf, *errbuf_size, "invalid addr %s", addr);
         *errbuf_size = p - errbuf;
         return NGX_ERROR;
