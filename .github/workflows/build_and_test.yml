@@ -139,7 +139,8 @@ jobs:
           git clone --depth=1 https://github.com/openresty/rds-json-nginx-module.git     ../rds-json-nginx-module
           git clone --depth=1 https://github.com/openresty/srcache-nginx-module.git      ../srcache-nginx-module
           git clone --depth=1 https://github.com/openresty/redis2-nginx-module.git       ../redis2-nginx-module
-          git clone --depth=1 https://github.com/openresty/lua-resty-core.git            ../lua-resty-core
+          # TEMPORARY, drop once lua-resty-core requires 10033 on master
+          git clone --depth=1 -b change/require-ngx-lua-10033 https://github.com/oowl/lua-resty-core.git ../lua-resty-core
           git clone --depth=1 https://github.com/openresty/lua-resty-lrucache.git        ../lua-resty-lrucache
           git clone --depth=1 https://github.com/openresty/lua-resty-mysql.git           ../lua-resty-mysql
           git clone --depth=1 https://github.com/spacewander/lua-resty-rsa.git           ../lua-resty-rsa
