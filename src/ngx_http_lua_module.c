@@ -32,6 +32,7 @@
 #include "ngx_http_lua_ssl_certby.h"
 #include "ngx_http_lua_ssl_session_storeby.h"
 #include "ngx_http_lua_ssl_session_fetchby.h"
+#include "ngx_http_lua_ssl_verifyby.h"
 
 #include "ngx_http_lua_proxy_ssl_certby.h"
 #include "ngx_http_lua_proxy_ssl_verifyby.h"
@@ -696,6 +697,27 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_ssl_sess_fetch_handler_file },
 
+    { ngx_string("ssl_verify_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_ssl_verify_by_lua_block,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_verify_handler_inline },
+
+    { ngx_string("ssl_verify_by_lua_file"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_lua_ssl_verify_by_lua,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_http_lua_ssl_verify_handler_file },
+
+    { ngx_string("lua_skip_openssl_default_verify"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_SRV_CONF_OFFSET,
+      offsetof(ngx_http_lua_srv_conf_t, srv.skip_openssl_default_verify),
+      NULL },
+
 #if HAVE_LUA_PROXY_SSL
     /* same context as proxy_pass directive */
     { ngx_string("proxy_ssl_certificate_by_lua_block"),
@@ -1305,6 +1327,11 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
      *      lscf->srv.ssl_sess_fetch_chunkname = NULL;
      *      lscf->srv.ssl_sess_fetch_src_key = NULL;
      *
+     *      lscf->srv.ssl_verify_handler = NULL;
+     *      lscf->srv.ssl_verify_src = { 0, NULL };
+     *      lscf->srv.ssl_verify_chunkname = NULL;
+     *      lscf->srv.ssl_verify_src_key = NULL;
+     *
      *      lscf->srv.server_rewrite_handler = NULL;
      *      lscf->srv.server_rewrite_src = { 0, NULL };
      *      lscf->srv.server_rewrite_chunkname = NULL;
@@ -1323,6 +1350,8 @@ ngx_http_lua_create_srv_conf(ngx_conf_t *cf)
     lscf->srv.ssl_cert_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_store_src_ref = LUA_REFNIL;
     lscf->srv.ssl_sess_fetch_src_ref = LUA_REFNIL;
+    lscf->srv.ssl_verify_src_ref = LUA_REFNIL;
+    lscf->srv.skip_openssl_default_verify = NGX_CONF_UNSET;
 #endif
 
     lscf->srv.server_rewrite_src_ref = LUA_REFNIL;
@@ -1472,6 +1501,58 @@ ngx_http_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 #endif
         }
     }
+
+    if (conf->srv.ssl_verify_src.len == 0) {
+        conf->srv.ssl_verify_src = prev->srv.ssl_verify_src;
+        conf->srv.ssl_verify_src_ref = prev->srv.ssl_verify_src_ref;
+        conf->srv.ssl_verify_src_key = prev->srv.ssl_verify_src_key;
+        conf->srv.ssl_verify_handler = prev->srv.ssl_verify_handler;
+        conf->srv.ssl_verify_chunkname
+            = prev->srv.ssl_verify_chunkname;
+    }
+
+    if (conf->srv.ssl_verify_src.len) {
+        sscf = ngx_http_conf_get_module_srv_conf(cf, ngx_http_ssl_module);
+        if (sscf == NULL || sscf->ssl.ctx == NULL) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no ssl configured for the server");
+
+            return NGX_CONF_ERROR;
+        }
+
+        if (sscf->verify == 0) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                    "ssl_verify_client can't be off "
+                    "when using ssl_verify_by_lua*");
+
+            return NGX_CONF_ERROR;
+        }
+#ifdef LIBRESSL_VERSION_NUMBER
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "LibreSSL does not support by ssl_verify_by_lua*");
+        return NGX_CONF_ERROR;
+
+#else
+
+#if defined(SSL_ERROR_WANT_RETRY_VERIFY) &&                                  \
+        OPENSSL_VERSION_NUMBER >= 0x40100000L
+
+        SSL_CTX_set_cert_verify_callback(sscf->ssl.ctx,
+                                         ngx_http_lua_ssl_verify_handler,
+                                         NULL);
+
+#else
+
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "OpenSSL too old to support ssl_verify_by_lua*");
+        return NGX_CONF_ERROR;
+
+#endif
+#endif
+    }
+
+    ngx_conf_merge_value(conf->srv.skip_openssl_default_verify,
+                         prev->srv.skip_openssl_default_verify, 0);
 
 #endif  /* NGX_HTTP_SSL */
 
