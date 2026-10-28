@@ -1851,7 +1851,7 @@ This directive requires the [ngx_devel_kit](https://github.com/simplresty/ngx_de
 [Back to TOC](#directives)
 
 precontent_by_lua_block
---------------------
+-----------------------
 
 **syntax:** *precontent_by_lua_block { lua-script }*
 
@@ -1890,7 +1890,7 @@ of Nginx.
 [Back to TOC](#directives)
 
 precontent_by_lua_file
--------------------
+----------------------
 
 **syntax:** *precontent_by_lua_file &lt;path-to-lua-script-file&gt;*
 
@@ -3744,7 +3744,7 @@ This directive was first introduced in the `v0.10.21` release.
 [Back to TOC](#directives)
 
 lua_upstream_skip_openssl_default_verify
---------------------
+----------------------------------------
 
 **syntax:** *lua_upstream_skip_openssl_default_verify on|off*
 
@@ -3810,7 +3810,7 @@ This directive was first introduced in the `v0.9.20` release.
 [Back to TOC](#directives)
 
 precontent_by_lua_no_postpone
--------------------------
+-----------------------------
 
 **syntax:** *precontent_by_lua_no_postpone on|off*
 
@@ -8332,7 +8332,7 @@ This method was first introduced in the `v0.5.0rc1` release.
 
 
 tcpsock:getfd
---------------------
+-------------
 
 **syntax:** *fd, err = tcpsock:getfd()*
 
@@ -8450,7 +8450,7 @@ This method was first introduced in the `v0.9.11` release.
 [Back to TOC](#nginx-api-for-lua)
 
 tcpsock:getsslpointer
---------------------
+---------------------
 
 **syntax:** *sslpointer, err = tcpsock:getsslpointer()*
 
@@ -8465,7 +8465,7 @@ On success, returns the SSL pointer as a light userdata that can be passed to C 
 [Back to TOC](#nginx-api-for-lua)
 
 tcpsock:getsslctx
---------------------
+-----------------
 
 **syntax:** *sslctx, err = tcpsock:getsslctx()*
 
@@ -8480,7 +8480,7 @@ On success, returns the SSL pointer as a light userdata that can be passed to C 
 [Back to TOC](#nginx-api-for-lua)
 
 tcpsock:getsslsession
------------------------
+---------------------
 
 **syntax:** *session, err = tcpsock:getsslsession()*
 
@@ -9594,7 +9594,7 @@ This API was first introduced in the `0.9.5` release.
 [Back to TOC](#nginx-api-for-lua)
 
 ngx.worker.pids
---------------
+---------------
 
 **syntax:** *pids = ngx.worker.pids()*
 
