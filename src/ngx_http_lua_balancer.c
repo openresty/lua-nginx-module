@@ -1342,11 +1342,11 @@ ngx_http_lua_ffi_balancer_set_upstream_tls(ngx_http_request_t *r, int on,
 
     if (on == 0) {
         u->ssl = 0;
-        u->schema.len = sizeof("http://") - 1;
+        ngx_str_set(&u->schema, "http://");
 
     } else {
         u->ssl = 1;
-        u->schema.len = sizeof("https://") - 1;
+        ngx_str_set(&u->schema, "https://");
     }
 
     return NGX_OK;
