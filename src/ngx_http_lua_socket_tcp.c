@@ -4411,9 +4411,33 @@ ngx_http_lua_socket_tcp_resume_conn_op(ngx_http_lua_socket_pool_t *spool)
         return;
     }
 
-    q = ngx_queue_head(&spool->wait_connect_op);
-    conn_op_ctx = ngx_queue_data(q, ngx_http_lua_socket_tcp_conn_op_ctx_t,
-                                 queue);
+    /* each freed slot must resume its own queued connect operation.
+     * A resumed operation stays in wait_connect_op until its posted event
+     * runs, so when several slots are freed in the same cycle, picking the
+     * head every time re-posts the same event, which ngx_post_event()
+     * ignores, and the extra slots are lost while the queue still counts
+     * them as busy. Resume the first operation not posted yet instead.
+     */
+    for (q = ngx_queue_head(&spool->wait_connect_op);
+         q != ngx_queue_sentinel(&spool->wait_connect_op);
+         q = ngx_queue_next(q))
+    {
+        conn_op_ctx = ngx_queue_data(q, ngx_http_lua_socket_tcp_conn_op_ctx_t,
+                                     queue);
+
+#if (nginx_version >= 1007005)
+        if (!conn_op_ctx->event.posted) {
+#else
+        if (!conn_op_ctx->event.prev) {
+#endif
+            break;
+        }
+    }
+
+    if (q == ngx_queue_sentinel(&spool->wait_connect_op)) {
+        return;
+    }
+
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua tcp socket post connect operation resumption "
                    "u: %p, ctx: %p for connection pool \"%s\", "
@@ -4452,7 +4476,6 @@ ngx_http_lua_socket_tcp_conn_op_ctx_cleanup(void *data)
 static void
 ngx_http_lua_socket_tcp_conn_op_resume_handler(ngx_event_t *ev)
 {
-    ngx_queue_t                             *q;
     ngx_connection_t                        *c;
     ngx_http_lua_ctx_t                      *ctx;
     ngx_http_request_t                      *r;
@@ -4485,8 +4508,9 @@ ngx_http_lua_socket_tcp_conn_op_resume_handler(ngx_event_t *ev)
         return;
     }
 
-    q = ngx_queue_head(&spool->wait_connect_op);
-    ngx_queue_remove(q);
+    /* several operations can be posted at once, so remove this one
+     * rather than the queue head */
+    ngx_queue_remove(&conn_op_ctx->queue);
 
     coctx = u->write_co_ctx;
     coctx->cleanup = NULL;
@@ -6119,6 +6143,16 @@ ngx_http_lua_socket_shutdown_pool_helper(ngx_http_lua_socket_pool_t *spool)
 
         if (conn_op_ctx->event.timer_set) {
             ngx_del_timer(&conn_op_ctx->event);
+        }
+
+        /* more than one queued operation can be posted for
+         * resumption now, do not free one with its event still posted */
+#if (nginx_version >= 1007005)
+        if (conn_op_ctx->event.posted) {
+#else
+        if (conn_op_ctx->event.prev) {
+#endif
+            ngx_delete_posted_event((&conn_op_ctx->event));
         }
 
         ngx_http_lua_socket_tcp_free_conn_op_ctx(conn_op_ctx);
