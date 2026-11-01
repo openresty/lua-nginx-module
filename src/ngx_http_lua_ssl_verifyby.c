@@ -97,7 +97,7 @@ ngx_http_lua_ssl_verify_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
 #if !defined(SSL_ERROR_WANT_RETRY_VERIFY) ||                                 \
-	OPENSSL_VERSION_NUMBER < 0x40100000L
+    OPENSSL_VERSION_NUMBER < 0x40100000L
 
     ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                   "at least OpenSSL 4.1.0 required but found "
@@ -314,7 +314,7 @@ ngx_http_lua_ssl_verify_handler(X509_STORE_CTX *x509_store, void *arg)
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "ssl_verify_by_lua: handler return value: %i, "
                        "cert verify callback exit code: %d", rc,
-					   cctx->exit_code);
+                        cctx->exit_code);
 
         c->log->action = "SSL handshaking";
         return cctx->exit_code;
