@@ -3252,3 +3252,120 @@ lua tcp socket queue connect operation for connection pool "same_cycle"
 --- no_error_log
 [error]
 --- timeout: 4
+
+
+
+=== TEST 57: conn queuing: close multiple connections before resumptions run
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local semaphore = require "ngx.semaphore"
+            local connected = semaphore.new()
+            local release = semaphore.new()
+            local port = ngx.var.port
+            local opts = {pool = "same_cycle_close", pool_size = 2, backlog = 2}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock2 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                local sock = ngx.socket.tcp()
+                sock:settimeout(500)
+                assert(sock:connect("127.0.0.1", port, opts))
+                local reused = sock:getreusedtimes()
+                connected:post()
+                assert(release:wait(2))
+                sock:close()
+                return name .. ": reused " .. reused
+            end
+
+            local w1 = ngx.thread.spawn(waiter, "w1")
+            local w2 = ngx.thread.spawn(waiter, "w2")
+
+            assert(sock1:close())
+            assert(sock2:close())
+
+            -- neither waiter may free its slot before both have connected
+            assert(connected:wait(2))
+            assert(connected:wait(2))
+            release:post(2)
+
+            local _, res1 = ngx.thread.wait(w1)
+            local _, res2 = ngx.thread.wait(w2)
+            ngx.say(res1)
+            ngx.say(res2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+w1: reused 0
+w2: reused 0
+--- error_log
+lua tcp socket queue connect operation for connection pool "same_cycle_close"
+--- no_error_log
+[error]
+--- timeout: 4
+
+
+
+=== TEST 58: conn queuing: cancel a posted resumption and resume the next waiter
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local semaphore = require "ngx.semaphore"
+            local connected = semaphore.new()
+            local release = semaphore.new()
+            local port = ngx.var.port
+            local opts = {pool = "cancel_posted", pool_size = 2, backlog = 3}
+            local order = {}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock2 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                local sock = ngx.socket.tcp()
+                sock:settimeout(500)
+                assert(sock:connect("127.0.0.1", port, opts))
+                order[#order + 1] = name
+                local reused = sock:getreusedtimes()
+                connected:post()
+                assert(release:wait(2))
+                sock:close()
+                return name .. ": reused " .. reused
+            end
+
+            local w1 = ngx.thread.spawn(waiter, "w1")
+            local w2 = ngx.thread.spawn(waiter, "w2")
+            local w3 = ngx.thread.spawn(waiter, "w3")
+
+            assert(sock1:setkeepalive())
+            assert(sock2:setkeepalive())
+            assert(ngx.thread.kill(w1))
+
+            assert(connected:wait(2))
+            assert(connected:wait(2))
+            release:post(2)
+
+            local _, res2 = ngx.thread.wait(w2)
+            local _, res3 = ngx.thread.wait(w3)
+            ngx.say(res2)
+            ngx.say(res3)
+            ngx.say("order: ", table.concat(order, ", "))
+        }
+    }
+--- request
+GET /t
+--- response_body
+w2: reused 1
+w3: reused 1
+order: w2, w3
+--- error_log
+lua tcp socket abort queueing
+--- no_error_log
+[error]
+--- timeout: 4
