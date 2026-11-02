@@ -2077,6 +2077,58 @@ ngx_http_lua_ffi_shdict_set_expire(ngx_shm_zone_t *zone, u_char *key,
 }
 
 
+/*
+ * Compare ownership and mutate the entry under the same slab mutex so an
+ * expired owner cannot delete or renew a successor's lock.
+ */
+int
+ngx_http_lua_ffi_shdict_compare_expire(ngx_shm_zone_t *zone,
+    const u_char *key, size_t key_len, const u_char *value,
+    size_t value_len, long exptime)
+{
+    ngx_int_t                   rc;
+    uint32_t                    hash;
+    ngx_time_t                 *tp;
+    ngx_http_lua_shdict_ctx_t   *ctx;
+    ngx_http_lua_shdict_node_t  *sd;
+
+    if (zone == NULL || key == NULL || key_len == 0 || key_len > 65535
+        || value == NULL || exptime < -1)
+    {
+        return NGX_ERROR;
+    }
+
+    ctx = zone->data;
+    hash = ngx_crc32_short((u_char *) key, key_len);
+
+    ngx_shmtx_lock(&ctx->shpool->mutex);
+
+    rc = ngx_http_lua_shdict_lookup(zone, hash, (u_char *) key, key_len, &sd);
+
+    if (rc != NGX_OK || sd->value_type != SHDICT_TSTRING
+        || sd->value_len != value_len
+        || ngx_memcmp(sd->data + key_len, value, value_len) != 0)
+    {
+        ngx_shmtx_unlock(&ctx->shpool->mutex);
+        return NGX_DECLINED;
+    }
+
+    if (exptime == -1) {
+        ngx_http_lua_shdict_free_node_locked(ctx, sd);
+
+    } else if (exptime > 0) {
+        tp = ngx_timeofday();
+        sd->expires = (uint64_t) tp->sec * 1000 + tp->msec + (uint64_t) exptime;
+
+    } else {
+        sd->expires = 0;
+    }
+
+    ngx_shmtx_unlock(&ctx->shpool->mutex);
+    return NGX_OK;
+}
+
+
 size_t
 ngx_http_lua_ffi_shdict_capacity(ngx_shm_zone_t *zone)
 {

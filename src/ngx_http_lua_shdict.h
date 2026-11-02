@@ -108,6 +108,11 @@ void ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf,
     lua_State *L);
 
 
+int ngx_http_lua_ffi_shdict_compare_expire(ngx_shm_zone_t *zone,
+    const u_char *key, size_t key_len, const u_char *value,
+    size_t value_len, long exptime);
+
+
 #endif /* _NGX_HTTP_LUA_SHDICT_H_INCLUDED_ */
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
