@@ -42,7 +42,12 @@
 #include "ngx_http_lua_pipe.h"
 #endif
 
-#if !defined(OPENSSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER > 0x101010afL
+/*
+ * BoringSSL always reports OPENSSL_VERSION_NUMBER as 1.1.1, but does provide
+ * SSL_CTX_set_keylog_callback()
+ */
+#if !defined(OPENSSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER > 0x101010afL \
+    || defined(OPENSSL_IS_BORINGSSL)
 #define HAVE_SSL_KEY_LOG 1
 #endif
 
