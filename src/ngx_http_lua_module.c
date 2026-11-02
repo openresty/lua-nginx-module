@@ -711,7 +711,7 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       0,
       (void *) ngx_http_lua_ssl_verify_handler_file },
 
-    { ngx_string("lua_skip_openssl_default_verify"),
+    { ngx_string("lua_downstream_skip_openssl_default_verify"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       NGX_HTTP_SRV_CONF_OFFSET,

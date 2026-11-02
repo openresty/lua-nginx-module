@@ -1184,7 +1184,7 @@ Directives
 * [proxy_ssl_verify_by_lua_block](#proxy_ssl_verify_by_lua_block)
 * [proxy_ssl_verify_by_lua_file](#proxy_ssl_verify_by_lua_file)
 * [lua_shared_dict](#lua_shared_dict)
-* [lua_skip_openssl_default_verify](#lua_skip_openssl_default_verify)
+* [lua_downstream_skip_openssl_default_verify](#lua_downstream_skip_openssl_default_verify)
 * [lua_socket_connect_timeout](#lua_socket_connect_timeout)
 * [lua_socket_send_timeout](#lua_socket_send_timeout)
 * [lua_socket_send_lowat](#lua_socket_send_lowat)
@@ -3524,16 +3524,16 @@ This directive was first introduced in the `v0.3.1rc22` release.
 
 [Back to TOC](#directives)
 
-lua_skip_openssl_default_verify
--------------------------------
+lua_downstream_skip_openssl_default_verify
+------------------------------------------
 
-**syntax:** *lua_skip_openssl_default_verify on|off*
+**syntax:** *lua_downstream_skip_openssl_default_verify on|off*
 
-**default:** *lua_skip_openssl_default_verify off*
+**default:** *lua_downstream_skip_openssl_default_verify off*
 
 **context:** *http, server*
 
-When using `ssl_verify_by_lua` directive, `lua_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify downstream client certificate.
+When using `ssl_verify_by_lua` directive, `lua_downstream_skip_openssl_default_verify` controls whether to skip default openssl's verify function, that means using pure Lua code to verify downstream client certificate.
 
 This directive is turned `off` by default.
 

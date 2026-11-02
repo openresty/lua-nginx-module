@@ -1167,7 +1167,7 @@ ssl verify: simple test done
 
 
 
-=== TEST 22: lua_skip_openssl_default_verify default off
+=== TEST 22: lua_downstream_skip_openssl_default_verify default off
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1186,7 +1186,7 @@ ssl verify: simple test done
             default_type 'text/plain';
 
             content_by_lua_block {
-                ngx.say("lua_skip_openssl_default_verify default off")
+                ngx.say("lua_downstream_skip_openssl_default_verify default off")
             }
 
             more_clear_headers Date;
@@ -1212,7 +1212,7 @@ ssl_verify_by_lua: openssl default verify
 
 
 
-=== TEST 23: lua_skip_openssl_default_verify on
+=== TEST 23: lua_downstream_skip_openssl_default_verify on
 --- http_config
     server {
         listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
@@ -1223,7 +1223,7 @@ ssl_verify_by_lua: openssl default verify
         ssl_certificate_key    ../../cert/mtls_server.key;
         ssl_client_certificate ../../cert/mtls_ca.crt;
 
-	lua_skip_openssl_default_verify on;
+        lua_downstream_skip_openssl_default_verify on;
 
         ssl_verify_by_lua_block {
             ngx.log(ngx.INFO, "ssl verify by lua is running!")
@@ -1233,7 +1233,7 @@ ssl_verify_by_lua: openssl default verify
             default_type 'text/plain';
 
             content_by_lua_block {
-                ngx.say("lua_skip_openssl_default_verify on")
+                ngx.say("lua_downstream_skip_openssl_default_verify on")
             }
 
             more_clear_headers Date;
@@ -1252,7 +1252,7 @@ ssl_verify_by_lua: openssl default verify
 --- request
 GET /t
 --- response_body
-lua_skip_openssl_default_verify on
+lua_downstream_skip_openssl_default_verify on
 --- error_log
 ssl verify by lua is running!
 --- no_error_log
