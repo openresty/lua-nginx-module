@@ -3259,10 +3259,10 @@ It is particularly useful to parse downstream client certificate and do some cus
 
 When using `ssl_verify_by_lua` directive, the `ssl_verify_client` directive should not be off, that is, it should be `on`/`optional`/`optional_no_ca`, and you can still use the `$ssl_client_verify` variable to get the verification result.
 
-The [ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme) library are particularly useful in this context.
+The [ngx.ssl.verify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/verify.md) Lua module provided by the [lua-resty-core](https://github.com/openresty/lua-resty-core/#readme) library are particularly useful in this context.
 
 Below is a trivial example using the
-[ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md) module
+[ngx.ssl.verify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/verify.md) module
 at the same time:
 
 ```nginx
@@ -3275,7 +3275,7 @@ at the same time:
      ssl_certificate_key /path/to/key.key;
 
      ssl_verify_by_lua_block {
-         local ssl_vfy = require "ngx.ssl.sslverify"
+         local ssl_vfy = require "ngx.ssl.verify"
 
          local cert = ssl_vfy.get_verify_cert()
 
@@ -3295,7 +3295,7 @@ at the same time:
  }
 ```
 
-See more information in the [ngx.ssl.sslverify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/sslverify.md)
+See more information in the [ngx.ssl.verify](https://github.com/openresty/lua-resty-core/blob/master/lib/ngx/ssl/verify.md)
 Lua module's official documentation.
 
 Uncaught Lua exceptions in the user Lua code immediately abort the current SSL session, so does the
