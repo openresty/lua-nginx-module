@@ -3369,3 +3369,114 @@ lua tcp socket abort queueing
 --- no_error_log
 [error]
 --- timeout: 4
+
+
+
+=== TEST 59: conn queuing: advance past a timed out waiter
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        lua_socket_log_errors off;
+
+        content_by_lua_block {
+            local semaphore = require "ngx.semaphore"
+            local expired = semaphore.new()
+            local port = ngx.var.port
+            local opts = {pool = "expired_head", pool_size = 1, backlog = 2}
+            local sock = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter1()
+                local s = ngx.socket.tcp()
+                s:settimeout(10)
+                local ok, err = s:connect("127.0.0.1", port, opts)
+                expired:post()
+                return "w1: " .. (err or "connected")
+            end
+
+            local function waiter2()
+                local s = ngx.socket.tcp()
+                s:settimeout(500)
+                assert(s:connect("127.0.0.1", port, opts))
+                local reused = s:getreusedtimes()
+                s:close()
+                return "w2: reused " .. reused
+            end
+
+            local w1 = ngx.thread.spawn(waiter1)
+            local w2 = ngx.thread.spawn(waiter2)
+            assert(expired:wait(2))
+            assert(sock:setkeepalive())
+
+            local _, res1 = ngx.thread.wait(w1)
+            local _, res2 = ngx.thread.wait(w2)
+            ngx.say(res1)
+            ngx.say(res2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+w1: timeout
+w2: reused 1
+--- error_log
+lua tcp socket queue connect operation for connection pool "expired_head"
+--- no_error_log
+[error]
+--- timeout: 4
+
+
+
+=== TEST 60: conn queuing: append after all existing waiters have been posted
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local semaphore = require "ngx.semaphore"
+            local connected = semaphore.new()
+            local release = semaphore.new()
+            local port = ngx.var.port
+            local opts = {pool = "append_posted", pool_size = 1, backlog = 2}
+            local sock = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter1()
+                local s = ngx.socket.tcp()
+                s:settimeout(500)
+                assert(s:connect("127.0.0.1", port, opts))
+                connected:post()
+                assert(release:wait(2))
+                s:close()
+                return "w1: connected"
+            end
+
+            local function waiter2()
+                local s = ngx.socket.tcp()
+                s:settimeout(500)
+                assert(s:connect("127.0.0.1", port, opts))
+                s:close()
+                return "w2: connected"
+            end
+
+            local w1 = ngx.thread.spawn(waiter1)
+            assert(sock:close())
+            local w2 = ngx.thread.spawn(waiter2)
+
+            assert(connected:wait(2))
+            release:post()
+            local _, res1 = ngx.thread.wait(w1)
+            local _, res2 = ngx.thread.wait(w2)
+            ngx.say(res1)
+            ngx.say(res2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+w1: connected
+w2: connected
+--- error_log
+lua tcp socket queue connect operation for connection pool "append_posted"
+--- no_error_log
+[error]
+--- timeout: 4

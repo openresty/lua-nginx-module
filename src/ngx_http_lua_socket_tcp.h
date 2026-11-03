@@ -67,7 +67,6 @@ typedef struct {
     ngx_int_t                          size;
     ngx_queue_t                        cache_connect_op;
     ngx_queue_t                        wait_connect_op;
-    ngx_queue_t                        resume_connect_op;
 
     /* connections == active connections + pending connect operations,
      * while active connections == out-of-pool reused connections
@@ -79,6 +78,8 @@ typedef struct {
     ngx_queue_t                        free;
 
     ngx_int_t                          backlog;
+
+    ngx_queue_t                       *next_connect_op;
 
     u_char                             key[1];
 

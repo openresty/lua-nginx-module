@@ -561,7 +561,7 @@ ngx_http_lua_socket_tcp_create_socket_pool(lua_State *L, ngx_http_request_t *r,
 
     ngx_queue_init(&sp->cache_connect_op);
     ngx_queue_init(&sp->wait_connect_op);
-    ngx_queue_init(&sp->resume_connect_op);
+    sp->next_connect_op = ngx_queue_sentinel(&sp->wait_connect_op);
     ngx_queue_init(&sp->cache);
     ngx_queue_init(&sp->free);
 
@@ -699,6 +699,12 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
                 ngx_queue_insert_tail(&spool->wait_connect_op,
                                       &conn_op_ctx->queue);
+
+                if (spool->next_connect_op
+                    == ngx_queue_sentinel(&spool->wait_connect_op))
+                {
+                    spool->next_connect_op = &conn_op_ctx->queue;
+                }
 
                 ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                                "lua tcp socket queued connect operation for "
@@ -4321,9 +4327,14 @@ ngx_http_lua_socket_tcp_conn_op_timeout_handler(ngx_event_t *ev)
     ngx_http_lua_socket_tcp_conn_op_ctx_t   *conn_op_ctx;
 
     conn_op_ctx = ev->data;
+    u = conn_op_ctx->u;
+
+    if (u->socket_pool->next_connect_op == &conn_op_ctx->queue) {
+        u->socket_pool->next_connect_op = ngx_queue_next(&conn_op_ctx->queue);
+    }
+
     ngx_queue_remove(&conn_op_ctx->queue);
 
-    u = conn_op_ctx->u;
     r = u->request;
 
     coctx = u->write_co_ctx;
@@ -4408,11 +4419,14 @@ ngx_http_lua_socket_tcp_resume_conn_op(ngx_http_lua_socket_pool_t *spool)
      * operation resumption, so that there is no resumption happens when Nginx
      * is exiting.
      */
-    if (ngx_queue_empty(&spool->wait_connect_op)) {
+    q = spool->next_connect_op;
+    if (q == ngx_queue_sentinel(&spool->wait_connect_op)) {
         return;
     }
 
-    q = ngx_queue_head(&spool->wait_connect_op);
+    /* advance before posting so each slot resumes a distinct waiter */
+    spool->next_connect_op = ngx_queue_next(q);
+
     conn_op_ctx = ngx_queue_data(q, ngx_http_lua_socket_tcp_conn_op_ctx_t,
                                  queue);
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
@@ -4424,10 +4438,6 @@ ngx_http_lua_socket_tcp_resume_conn_op(ngx_http_lua_socket_pool_t *spool)
     if (conn_op_ctx->event.timer_set) {
         ngx_del_timer(&conn_op_ctx->event);
     }
-
-    /* keep posted operations out of the wait queue and track their cleanup */
-    ngx_queue_remove(q);
-    ngx_queue_insert_tail(&spool->resume_connect_op, q);
 
     conn_op_ctx->event.handler =
         ngx_http_lua_socket_tcp_conn_op_resume_handler;
@@ -6076,6 +6086,8 @@ ngx_http_lua_socket_shutdown_pool_helper(ngx_http_lua_socket_pool_t *spool)
     ngx_http_lua_socket_pool_item_t         *item;
     ngx_http_lua_socket_tcp_conn_op_ctx_t   *conn_op_ctx;
 
+    spool->next_connect_op = ngx_queue_sentinel(&spool->wait_connect_op);
+
     while (!ngx_queue_empty(&spool->cache)) {
         q = ngx_queue_head(&spool->cache);
 
@@ -6094,11 +6106,6 @@ ngx_http_lua_socket_shutdown_pool_helper(ngx_http_lua_socket_pool_t *spool)
         conn_op_ctx = ngx_queue_data(q, ngx_http_lua_socket_tcp_conn_op_ctx_t,
                                      queue);
         ngx_http_lua_socket_tcp_free_conn_op_ctx(conn_op_ctx);
-    }
-
-    if (!ngx_queue_empty(&spool->resume_connect_op)) {
-        ngx_queue_add(&spool->wait_connect_op, &spool->resume_connect_op);
-        ngx_queue_init(&spool->resume_connect_op);
     }
 
     while (!ngx_queue_empty(&spool->wait_connect_op)) {
@@ -6546,6 +6553,10 @@ ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
 
     } else if (conn_op_ctx->event.timer_set) {
         ngx_del_timer(&conn_op_ctx->event);
+    }
+
+    if (u->socket_pool->next_connect_op == &conn_op_ctx->queue) {
+        u->socket_pool->next_connect_op = ngx_queue_next(&conn_op_ctx->queue);
     }
 
     ngx_queue_remove(&conn_op_ctx->queue);
