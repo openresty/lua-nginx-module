@@ -838,4 +838,85 @@ ngx_http_lua_ffi_ssl_set_protocols(ngx_http_request_t *r,
     return NGX_OK;
 }
 
+
+int
+ngx_http_lua_ffi_ssl_set_ciphers(ngx_http_request_t *r, const char *ciphers,
+    const char *ciphersuites, char **err)
+{
+#ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
+    ngx_ssl_conn_t     *ssl_conn;
+
+    static SSL_CTX     *scratch_ctx;
+
+    if (r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NGX_ERROR;
+    }
+
+    ssl_conn = r->connection->ssl->connection;
+    if (ssl_conn == NULL) {
+        *err = "bad ssl conn";
+        return NGX_ERROR;
+    }
+
+    /*
+     * a failed SSL_set_cipher_list() still installs the parsed list on the
+     * connection and leaves the error queue dirty, which aborts the
+     * handshake after the callback returns; validate on a scratch SSL_CTX
+     * so failure is side-effect-free and callers can fall back to the
+     * connection default
+     */
+
+    if (scratch_ctx == NULL) {
+        scratch_ctx = SSL_CTX_new(TLS_method());
+        if (scratch_ctx == NULL) {
+            ERR_clear_error();
+            *err = "SSL_CTX_new() failed";
+            return NGX_ERROR;
+        }
+    }
+
+    if (ciphers != NULL && *ciphers != '\0') {
+        if (SSL_CTX_set_cipher_list(scratch_ctx, ciphers) == 0) {
+            ERR_clear_error();
+            *err = "SSL_set_cipher_list() failed";
+            return NGX_ERROR;
+        }
+    }
+
+#ifdef TLS1_3_VERSION
+    if (ciphersuites != NULL && *ciphersuites != '\0') {
+        if (SSL_CTX_set_ciphersuites(scratch_ctx, ciphersuites) == 0) {
+            ERR_clear_error();
+            *err = "SSL_set_ciphersuites() failed";
+            return NGX_ERROR;
+        }
+    }
+#endif
+
+    if (ciphers != NULL && *ciphers != '\0') {
+        if (SSL_set_cipher_list(ssl_conn, ciphers) == 0) {
+            ERR_clear_error();
+            *err = "SSL_set_cipher_list() failed";
+            return NGX_ERROR;
+        }
+    }
+
+#ifdef TLS1_3_VERSION
+    if (ciphersuites != NULL && *ciphersuites != '\0') {
+        if (SSL_set_ciphersuites(ssl_conn, ciphersuites) == 0) {
+            ERR_clear_error();
+            *err = "SSL_set_ciphersuites() failed";
+            return NGX_ERROR;
+        }
+    }
+#endif
+
+    return NGX_OK;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
+}
+
 #endif /* NGX_HTTP_SSL */
