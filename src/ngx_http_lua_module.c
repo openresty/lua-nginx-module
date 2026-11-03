@@ -801,6 +801,20 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       offsetof(ngx_http_lua_main_conf_t, worker_thread_vm_pool_size),
       NULL },
 
+    { ngx_string("lua_init_worker_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, init_worker_timeout),
+      NULL },
+
+    { ngx_string("lua_init_worker_abort_on_error"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_lua_main_conf_t, init_worker_abort_on_error),
+      NULL },
+
     ngx_null_command
 };
 
@@ -1174,6 +1188,11 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 
     lmcf->worker_thread_vm_pool_size = NGX_CONF_UNSET;
 
+    lmcf->init_worker_timeout = NGX_CONF_UNSET_MSEC;
+
+    lmcf->init_worker_abort_on_error = NGX_CONF_UNSET;
+
+    ngx_queue_init(&lmcf->deferred_timers);
     dd("nginx Lua module main config structure initialized!");
 
     return lmcf;
@@ -1270,6 +1289,10 @@ ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
     dd("init built in headers out hash size: %ld",
        lmcf->builtin_headers_out.size);
 
+    ngx_conf_init_msec_value(lmcf->init_worker_timeout, 0);
+    dd("init_worker_timeout: %lu", (unsigned long) lmcf->init_worker_timeout);
+
+    ngx_conf_init_value(lmcf->init_worker_abort_on_error, 0);
     return NGX_CONF_OK;
 }
 
