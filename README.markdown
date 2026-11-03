@@ -4047,6 +4047,7 @@ Nginx API for Lua
 * [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
+* [ngx.shared.DICT.flush_expired_tail](#ngxshareddictflush_expired_tail)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
 * [ngx.shared.DICT.capacity](#ngxshareddictcapacity)
 * [ngx.shared.DICT.free_space](#ngxshareddictfree_space)
@@ -7318,6 +7319,7 @@ The resulting object `dict` has the following methods:
 * [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
+* [flush_expired_tail](#ngxshareddictflush_expired_tail)
 * [get_keys](#ngxshareddictget_keys)
 * [capacity](#ngxshareddictcapacity)
 * [free_space](#ngxshareddictfree_space)
@@ -7811,6 +7813,25 @@ Unlike the [flush_all](#ngxshareddictflush_all) method, this method actually fre
 This feature was first introduced in the `v0.6.3` release.
 
 See also [ngx.shared.DICT.flush_all](#ngxshareddictflush_all) and [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.flush_expired_tail
+----------------------------------
+
+**syntax:** *flushed = ngx.shared.DICT:flush_expired_tail(max_count)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;, ssl_client_hello_by_lua&#42;*
+
+Scans from the least recently used end of the dictionary's LRU queue, freeing expired items and skipping items without an expiration. Stops at the first item with an expiration time in the future, after freeing `max_count` items, or when the queue ends. Returns the number of items freed.
+
+The required `max_count` argument must be a positive integer no greater than the maximum C `int` value (normally 2147483647). Zero does not mean unlimited.
+
+The expiration check and removal are atomic with respect to other shared dictionary operations. This method does not move surviving items in the LRU queue.
+
+Unlike [flush_expired](#ngxshareddictflush_expired), this method does not scan past an item with an expiration time in the future. Expired items behind such an item may remain indefinitely; applications needing to reclaim those items should also arrange another cleanup mechanism, such as occasional calls to `flush_expired`.
+
+The limit bounds the number of items freed, not the number inspected or elapsed time. Skipping items without an expiration can require scanning the entire dictionary. Removing an expired list also frees all its elements while holding the dictionary lock; one list counts as one item towards `max_count`.
 
 [Back to TOC](#nginx-api-for-lua)
 
