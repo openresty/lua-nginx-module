@@ -2086,9 +2086,10 @@ ngx_http_lua_ffi_shdict_compare_expire(ngx_shm_zone_t *zone,
     const u_char *key, size_t key_len, const u_char *value,
     size_t value_len, long exptime)
 {
-    ngx_int_t                   rc;
-    uint32_t                    hash;
-    ngx_time_t                 *tp;
+    ngx_int_t                    rc;
+    uint32_t                     hash;
+    ngx_time_t                  *tp;
+    ngx_rbtree_node_t           *node;
     ngx_http_lua_shdict_ctx_t   *ctx;
     ngx_http_lua_shdict_node_t  *sd;
 
@@ -2114,7 +2115,13 @@ ngx_http_lua_ffi_shdict_compare_expire(ngx_shm_zone_t *zone,
     }
 
     if (exptime == -1) {
-        ngx_http_lua_shdict_free_node_locked(ctx, sd);
+        ngx_queue_remove(&sd->queue);
+
+        node = (ngx_rbtree_node_t *)
+                   ((u_char *) sd - offsetof(ngx_rbtree_node_t, color));
+
+        ngx_rbtree_delete(&ctx->sh->rbtree, node);
+        ngx_slab_free_locked(ctx->shpool, node);
 
     } else if (exptime > 0) {
         tp = ngx_timeofday();
