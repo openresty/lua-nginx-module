@@ -122,6 +122,8 @@ static int ngx_http_lua_socket_tcp_conn_op_timeout_retval_handler(
     ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u, lua_State *L);
 static void ngx_http_lua_socket_tcp_release_slot(
     ngx_http_lua_socket_pool_t *spool, ngx_http_lua_socket_pool_item_t *item);
+static void ngx_http_lua_socket_tcp_cleanup_failed_connect(
+    ngx_http_request_t *r, ngx_http_lua_socket_tcp_upstream_t *u);
 static ngx_int_t ngx_http_lua_socket_tcp_resume_conn_op(
     ngx_http_lua_socket_pool_t *spool, ngx_http_lua_socket_pool_item_t *item);
 static void ngx_http_lua_socket_tcp_cancel_conn_op(
@@ -913,17 +915,13 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
 failed:
 
-    if (spool != NULL) {
-        ngx_http_lua_socket_tcp_release_slot(spool, NULL);
-    }
+    ngx_http_lua_socket_tcp_cleanup_failed_connect(r, u);
 
     return 2;
 
 no_memory_and_not_resuming:
 
-    if (spool != NULL) {
-        ngx_http_lua_socket_tcp_release_slot(spool, NULL);
-    }
+    ngx_http_lua_socket_tcp_cleanup_failed_connect(r, u);
 
     return luaL_error(L, "no memory");
 }
@@ -4467,6 +4465,27 @@ ngx_http_lua_socket_tcp_release_slot(ngx_http_lua_socket_pool_t *spool,
 
 
 static void
+ngx_http_lua_socket_tcp_cleanup_failed_connect(ngx_http_request_t *r,
+    ngx_http_lua_socket_tcp_upstream_t *u)
+{
+    if (u->conn_closed) {
+        return;
+    }
+
+    ngx_http_lua_socket_tcp_finalize(r, u);
+
+    if (!u->conn_closed) {
+        /* No peer was created, so finalize() did not release the slot. */
+        u->conn_closed = 1;
+
+        if (u->socket_pool != NULL) {
+            ngx_http_lua_socket_tcp_release_slot(u->socket_pool, NULL);
+        }
+    }
+}
+
+
+static void
 ngx_http_lua_socket_tcp_cancel_conn_op(
     ngx_http_lua_socket_tcp_conn_op_ctx_t *conn_op_ctx)
 {
@@ -6586,12 +6605,8 @@ ngx_http_lua_socket_tcp_resume_helper(ngx_http_request_t *r, int socket_op)
                    "u:%p", prepare_retvals, u);
 
     nret = prepare_retvals(r, u, ctx->cur_co_ctx->co);
-    if (socket_op == SOCKET_OP_CONNECT
-        && nret > 1
-        && !u->conn_closed
-        && u->socket_pool != NULL)
-    {
-        ngx_http_lua_socket_tcp_release_slot(u->socket_pool, NULL);
+    if (socket_op == SOCKET_OP_CONNECT && nret > 1) {
+        ngx_http_lua_socket_tcp_cleanup_failed_connect(r, u);
     }
 
     if (nret == NGX_AGAIN) {
