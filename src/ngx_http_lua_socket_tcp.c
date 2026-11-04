@@ -692,6 +692,7 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
             conn_op_ctx->item = NULL;
             conn_op_ctx->queued = 1;
 
+            u->conn_waiting = 1;
             u->write_co_ctx = ctx->cur_co_ctx;
 
             conn_op_ctx->u = u;
@@ -1106,10 +1107,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         case LUA_TSTRING:
             custom_pool = 1;
-
-            lua_pushvalue(L, -1);
-            lua_rawseti(L, 1, SOCKET_KEY_INDEX);
-
             key_index = n + 1;
 
             break;
@@ -1182,13 +1179,6 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         return 2;
     }
 
-    if (!custom_pool) {
-        /* the key's index is 2 */
-
-        lua_pushvalue(L, 2);
-        lua_rawseti(L, 1, SOCKET_KEY_INDEX);
-    }
-
     lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
     u = lua_touserdata(L, -1);
     lua_pop(L, 1);
@@ -1231,6 +1221,10 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
 
         lua_rawseti(L, 1, SOCKET_CTX_INDEX);
     }
+
+    /* A rejected reconnect must not change the pending operation's pool. */
+    lua_pushvalue(L, key_index);
+    lua_rawseti(L, 1, SOCKET_KEY_INDEX);
 
     ngx_memzero(u, sizeof(ngx_http_lua_socket_tcp_upstream_t));
 
@@ -4349,6 +4343,7 @@ ngx_http_lua_socket_tcp_conn_op_timeout_handler(ngx_event_t *ev)
     /* note that we store conn_op_ctx in coctx->data instead of u */
     coctx->data = conn_op_ctx;
     u->write_co_ctx = NULL;
+    u->conn_waiting = 0;
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
 
@@ -4480,6 +4475,8 @@ ngx_http_lua_socket_tcp_cancel_conn_op(
     ngx_http_lua_socket_pool_item_t      *item;
 
     spool = conn_op_ctx->u->socket_pool;
+    conn_op_ctx->u->conn_waiting = 0;
+    conn_op_ctx->u->write_co_ctx = NULL;
     queued = conn_op_ctx->queued;
     item = conn_op_ctx->item;
     conn_op_ctx->item = NULL;
@@ -4611,6 +4608,7 @@ ngx_http_lua_socket_tcp_conn_op_resume_retval_handler(ngx_http_request_t *r,
         conn_op_ctx->cleanup = NULL;
     }
 
+    u->conn_waiting = 0;
     ngx_queue_remove(&conn_op_ctx->queue);
     item = conn_op_ctx->item;
     conn_op_ctx->item = NULL;

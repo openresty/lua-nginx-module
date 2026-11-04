@@ -4402,3 +4402,148 @@ lua tcp socket keepalive max idle timeout
 --- no_error_log
 [error]
 --- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}
+
+
+
+=== TEST 77: conn queuing: reconnect cannot overwrite a waiting socket
+--- config
+    location /t {
+        content_by_lua_block {
+            local port = ngx.var.server_port
+            local opts = {pool = "busy_queued", pool_size = 1, backlog = 1}
+            local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock = ngx.socket.tcp()
+            sock:settimeout(1000)
+            local waiter = ngx.thread.spawn(function()
+                assert(sock:connect("127.0.0.1", port, opts))
+                error("cancelled waiter resumed")
+            end)
+
+            local other = {pool = "busy_other", pool_size = 1, backlog = 1}
+            local ok, err = sock:connect("127.0.0.1", port, other)
+            ngx.say("second: ", ok or err)
+            ngx.say("killed: ", assert(ngx.thread.kill(waiter)))
+            holder:close()
+
+            -- Cancellation clears the busy state before this socket is reused.
+            assert(sock:connect("127.0.0.1", port, other))
+            ngx.say("retry: reused ", sock:getreusedtimes())
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+second: socket busy connecting
+killed: 1
+retry: reused 0
+--- error_log
+lua tcp socket abort queueing
+--- no_error_log
+[error]
+
+
+
+=== TEST 78: conn queuing: rejected reconnect preserves a posted socket's pool
+--- config
+    location /t {
+        content_by_lua_block {
+            local port = ngx.var.server_port
+            local opts = {pool = "busy_posted", pool_size = 1, backlog = 1}
+            local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock = ngx.socket.tcp()
+            local waiter = ngx.thread.spawn(function()
+                assert(sock:connect("127.0.0.1", port, opts))
+                assert(sock:setkeepalive())
+            end)
+
+            assert(holder:setkeepalive())
+            local other = {pool = "posted_other", pool_size = 1, backlog = 1}
+            local ok, err = sock:connect("127.0.0.1", port, other)
+            ngx.say("second: ", ok or err)
+            assert(ngx.thread.wait(waiter))
+
+            local next_sock = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            ngx.say("original pool: reused ", next_sock:getreusedtimes())
+            next_sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+second: socket busy connecting
+original pool: reused 2
+--- error_log
+lua tcp socket queue connect operation for connection pool "busy_posted"
+--- no_error_log
+[error]
+
+
+
+=== TEST 79: conn queuing: a timed out socket can connect again
+--- config
+    location /t {
+        lua_socket_log_errors off;
+        content_by_lua_block {
+            local port = ngx.var.server_port
+            local opts = {pool = "busy_timeout", pool_size = 1, backlog = 1}
+            local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock = ngx.socket.tcp()
+            sock:settimeout(50)
+            local waiter = ngx.thread.spawn(function()
+                local ok, err = sock:connect("127.0.0.1", port, opts)
+                return ok or err
+            end)
+            local ok, res = ngx.thread.wait(waiter)
+            assert(ok, res)
+            ngx.say("first: ", res)
+
+            sock:settimeout(1000)
+            local other = {pool = "timeout_retry", pool_size = 1, backlog = 1}
+            assert(sock:connect("127.0.0.1", port, other))
+            ngx.say("retry: reused ", sock:getreusedtimes())
+            sock:close()
+            holder:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+first: timeout
+retry: reused 0
+--- error_log
+lua tcp socket queue connect operation for connection pool "busy_timeout"
+--- no_error_log
+[error]
+
+
+
+=== TEST 80: conn queuing: a socket cancelled after handoff can connect again
+--- config
+    location /t {
+        content_by_lua_block {
+            local port = ngx.var.server_port
+            local opts = {pool = "busy_cancelled", pool_size = 1, backlog = 1}
+            local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock = ngx.socket.tcp()
+            local waiter = ngx.thread.spawn(function()
+                assert(sock:connect("127.0.0.1", port, opts))
+                error("cancelled waiter resumed")
+            end)
+
+            assert(holder:setkeepalive())
+            ngx.say("killed: ", assert(ngx.thread.kill(waiter)))
+            assert(sock:connect("127.0.0.1", port, opts))
+            ngx.say("retry: reused ", sock:getreusedtimes())
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+killed: 1
+retry: reused 1
+--- error_log
+lua tcp socket abort queueing
+--- no_error_log
+[error]
