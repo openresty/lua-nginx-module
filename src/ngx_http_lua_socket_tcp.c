@@ -605,11 +605,19 @@ ngx_http_lua_socket_tcp_connect_helper(lua_State *L,
 
     spool = u->socket_pool;
     if (spool != NULL) {
-        rc = ngx_http_lua_get_keepalive_peer(r, u);
+        /* While connect operations are queued, an idle connection belongs to
+         * the operation resumed for it. Taking it here would make that
+         * operation, which skips the backlog check, open a connection beyond
+         * the pool size, so queue behind the waiting operations instead. */
+        if (resuming || spool->backlog < 0
+            || ngx_queue_empty(&spool->wait_connect_op))
+        {
+            rc = ngx_http_lua_get_keepalive_peer(r, u);
 
-        if (rc == NGX_OK) {
-            lua_pushinteger(L, 1);
-            return 1;
+            if (rc == NGX_OK) {
+                lua_pushinteger(L, 1);
+                return 1;
+            }
         }
 
         /* rc == NGX_DECLINED */
