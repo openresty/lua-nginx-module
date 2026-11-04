@@ -3756,7 +3756,7 @@ lua tcp socket queue connect operation for connection pool "reserved_closed"
 
 
 
-=== TEST 66: conn queuing: replacing a reserved connection preserves its reservation
+=== TEST 66: conn queuing: a pre-pool connection cannot replace an assigned connection
 --- config
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
@@ -3769,6 +3769,8 @@ lua tcp socket queue connect operation for connection pool "reserved_closed"
                                                     {pool = pool}))
             local opts = {pool = pool, pool_size = 1, backlog = 2}
             local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            assert(holder:setkeepalive())
+            holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
 
             local waiter = ngx.thread.spawn(function()
                 local sock = ngx.socket.tcp()
@@ -3779,8 +3781,8 @@ lua tcp socket queue connect operation for connection pool "reserved_closed"
                 return "waiter: reused " .. reused
             end)
 
-            -- Replace the connection handed to the waiter with one created
-            -- before the pool. The replacement must belong to that waiter.
+            -- The already reused connection belongs to the posted waiter;
+            -- a pre-pool connection must not replace it or take its slot.
             assert(holder:setkeepalive())
             assert(legacy:setkeepalive())
 
@@ -3809,8 +3811,8 @@ lua tcp socket queue connect operation for connection pool "reserved_closed"
 --- request
 GET /t
 --- response_body
-waiter: reused 1
-newcomer: reused 2
+waiter: reused 2
+newcomer: reused 3
 extra: timeout
 --- error_log
 lua tcp socket queue connect operation for connection pool "replace_reserved"
@@ -3819,7 +3821,7 @@ lua tcp socket queue connect operation for connection pool "replace_reserved"
 
 
 
-=== TEST 67: conn queuing: replacing a reserved connection frees no additional slot
+=== TEST 67: conn queuing: a pre-pool connection cannot wake another waiter after handoff
 --- config
     location /t {
         set $port $TEST_NGINX_SERVER_PORT;
@@ -3835,6 +3837,8 @@ lua tcp socket queue connect operation for connection pool "replace_reserved"
                                                     {pool = pool}))
             local opts = {pool = pool, pool_size = 1, backlog = 2}
             local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            assert(holder:setkeepalive())
+            holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
 
             local w1 = ngx.thread.spawn(function()
                 local sock = ngx.socket.tcp()
@@ -3860,8 +3864,8 @@ lua tcp socket queue connect operation for connection pool "replace_reserved"
                 return "w2: reused " .. reused
             end)
 
-            -- Returning the legacy connection replaces w1's reserved one;
-            -- it must not also resume w2 while w1 holds the only slot.
+            -- Returning a pre-pool connection must neither replace w1's
+            -- assigned connection nor resume w2 for the same slot.
             assert(holder:setkeepalive())
             assert(legacy:setkeepalive())
             assert(connected:wait(2))
@@ -3878,7 +3882,7 @@ lua tcp socket queue connect operation for connection pool "replace_reserved"
 --- request
 GET /t
 --- response_body
-w1: reused 1
+w1: reused 2
 w2: timeout
 --- error_log
 lua tcp socket queue connect operation for connection pool "replace_reserved_waiters"
@@ -4277,3 +4281,124 @@ extra: timeout
 lua tcp socket queue connect operation for connection pool "cancel_last_reserved"
 --- no_error_log
 [error]
+
+
+
+=== TEST 75: conn queuing: request cleanup releases an unexecuted handoff
+--- config
+    set $port $TEST_NGINX_SERVER_PORT;
+
+    location /abort {
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "aborted_handoff", pool_size = 1, backlog = 1}
+            local holder = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            ngx.thread.spawn(function()
+                assert(ngx.socket.connect("127.0.0.1", port, opts))
+                error("aborted waiter resumed")
+            end)
+
+            assert(holder:setkeepalive())
+            return ngx.exit(204)
+        }
+    }
+
+    location /t {
+        lua_socket_log_errors off;
+        content_by_lua_block {
+            local res = ngx.location.capture("/abort")
+            local port = ngx.var.port
+            local opts = {pool = "aborted_handoff", pool_size = 1, backlog = 1}
+            local sock = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            ngx.say("status: ", res.status)
+            ngx.say("reused: ", sock:getreusedtimes())
+
+            local extra = ngx.socket.tcp()
+            extra:settimeout(50)
+            local ok, err = extra:connect("127.0.0.1", port, opts)
+            ngx.say("extra: ", ok or err)
+            if ok then
+                extra:close()
+            end
+
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+status: 204
+reused: 1
+extra: timeout
+--- error_log
+lua tcp socket abort queueing
+--- no_error_log
+[error]
+
+
+
+=== TEST 76: conn queuing: cancelling an owner cannot release a recycled item
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "recycled_handoff", pool_size = 2, backlog = 2}
+            local holder1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local holder2 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                return ngx.thread.spawn(function()
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(500)
+                    assert(sock:connect("127.0.0.1", port, opts))
+                    local reused = sock:getreusedtimes()
+                    assert(sock:setkeepalive())
+                    return name .. ": reused " .. reused
+                end)
+            end
+
+            local w1 = waiter("w1")
+            local w2 = waiter("w2")
+            local spinner = ngx.thread.spawn(function()
+                coroutine.yield()
+                assert(holder1:setkeepalive(1))
+
+                local t = ngx.now()
+                repeat
+                    ngx.update_time()
+                until ngx.now() - t >= 0.005
+            end)
+
+            ngx.sleep(0.002)
+
+            -- w1's connection closed, returning its item to the free list.
+            -- Reuse that item for w2 before cancelling w1: the cancellation
+            -- must release only w1's empty slot, leaving w2's connection alone.
+            assert(holder2:setkeepalive())
+            local killed, err = ngx.thread.kill(w1)
+            assert(killed, err)
+            assert(ngx.thread.wait(spinner))
+
+            local sock = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local reused = sock:getreusedtimes()
+            local ok, res = ngx.thread.wait(w2)
+            assert(ok, res)
+            ngx.say("killed: ", killed)
+            ngx.say(res)
+            ngx.say("newcomer: reused ", reused)
+            sock:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+killed: 1
+w2: reused 1
+newcomer: reused 0
+--- error_log
+lua tcp socket keepalive max idle timeout
+--- no_error_log
+[error]
+--- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}
