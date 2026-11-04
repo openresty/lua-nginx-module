@@ -1058,6 +1058,19 @@ To run specific test files:
 
 To run a specific test block in a particular test file, add the line `--- ONLY` to the test block you want to run, and then use the `prove` utility to run that `.t` file.
 
+The cosocket queue regression in `t/196-socket-keepalive-queue.t` checks
+handoff, cancellation, and timeout recovery in the rewrite, access, and content
+phases. Its stress case uses a fixed random seed and runs five rounds for each
+pool size from one to three. Increase `TEST_NGINX_SOCKET_POOL_ROUNDS` for a
+longer run in one worker:
+
+    TEST_NGINX_SOCKET_POOL_ROUNDS=300 prove -I. -I/path/to/test-nginx/lib t/196-socket-keepalive-queue.t
+
+Each round waits for all surviving operations, forces garbage collection, and
+checks that the pool admits exactly its configured number of connections.
+The test also supports the HTTP/2, HTTP/3, and Valgrind modes of Test::Nginx;
+its request and QUIC idle timeouts increase with the round count.
+
 There are also various testing modes based on mockeagain, valgrind, and etc. Refer to the [Test::Nginx documentation](https://search.cpan.org/perldoc?Test::Nginx) for more details for various advanced testing modes. See also the test reports for the Nginx test cluster running on Amazon EC2: <https://qa.openresty.org>.
 
 [Back to TOC](#table-of-contents)
