@@ -76,6 +76,9 @@ typedef struct {
      *                             + in-pool connections */
     ngx_int_t                          connections;
 
+    /* idle connections also counted by their pending connect operations */
+    ngx_int_t                          reserved_connections;
+
     /* queues of ngx_http_lua_socket_pool_item_t: */
     ngx_queue_t                        cache;
     ngx_queue_t                        free;
