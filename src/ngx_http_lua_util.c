@@ -4674,6 +4674,9 @@ ngx_http_lua_resume_quic_ssl_handshake(ngx_connection_t *c)
 #ifdef SSL_ERROR_WANT_CLIENT_HELLO_CB
         && sslerr != SSL_ERROR_WANT_CLIENT_HELLO_CB
 #endif
+#ifdef SSL_ERROR_WANT_RETRY_VERIFY
+        && sslerr != SSL_ERROR_WANT_RETRY_VERIFY
+#endif
     ) {
         /* If a fatal error occurs or lua script exits with error during quic
          * handshake, the quic connection will be closed immediately.

@@ -42,7 +42,8 @@
                                 | NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY      \
                                 | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO      \
                                 | NGX_HTTP_LUA_CONTEXT_SSL_CERT              \
-                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH)
+                                | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH        \
+                                | NGX_HTTP_LUA_CONTEXT_SSL_VERIFY)
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_http_lua_ctx_tables_key  "ngx_lua_ctx_tables"
@@ -72,6 +73,7 @@
                                                  "ssl_session_store_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH ?                          \
                                                  "ssl_session_fetch_by_lua*" \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SSL_VERIFY ? "ssl_verify_by_lua*"         \
      : "(unknown)")
 
 #define ngx_http_lua_check_context(L, ctx, flags)                            \
