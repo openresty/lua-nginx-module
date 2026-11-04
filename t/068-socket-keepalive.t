@@ -3687,3 +3687,69 @@ w2: timeout
 lua tcp socket queue connect operation for connection pool "cancel_queued"
 --- no_error_log
 [alert]
+
+
+
+=== TEST 65: conn queuing: a resumed connect cancelled after its idle connection closed hands the slot on
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "reserved_closed", pool_size = 1, backlog = 2}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                return ngx.thread.spawn(function()
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(500)
+                    local ok, err = sock:connect("127.0.0.1", port, opts)
+                    if not ok then
+                        return name .. ": " .. err
+                    end
+                    local reused = sock:getreusedtimes()
+                    sock:close()
+                    return name .. ": reused " .. reused
+                end)
+            end
+
+            local w1 = waiter("w1")
+            local w2 = waiter("w2")
+
+            -- runs once this thread sleeps below: its 1ms keepalive timer
+            -- is then ahead of the sleep timer, and both expire in this
+            -- cycle before w1's posted resumption runs
+            local spinner = ngx.thread.spawn(function()
+                coroutine.yield()
+
+                -- hand the only connection to w1, to be closed before w1 runs
+                assert(sock1:setkeepalive(1))
+
+                local t = ngx.now()
+                repeat
+                    ngx.update_time()
+                until ngx.now() - t >= 0.005
+            end)
+
+            -- wakes up after the reserved connection closed, to cancel w1
+            ngx.sleep(0.002)
+            local killed, err = ngx.thread.kill(w1)
+            ngx.thread.wait(spinner)
+
+            local _, res = ngx.thread.wait(w2)
+            ngx.say("killed: ", killed or err)
+            ngx.say(res)
+        }
+    }
+--- request
+GET /t
+--- response_body
+killed: 1
+w2: reused 0
+--- error_log
+lua tcp socket queue connect operation for connection pool "reserved_closed"
+--- no_error_log
+[error]
+--- skip_eval: 4:$ENV{TEST_NGINX_USE_HTTP3}

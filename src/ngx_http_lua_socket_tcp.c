@@ -4464,11 +4464,14 @@ ngx_http_lua_socket_tcp_pass_reserved_idle(ngx_http_lua_socket_pool_t *spool)
      * longer takes it: hand the connection to the next waiter, or release it
      * to the pool when nobody waits */
 
+    conn_op_ctx = ngx_http_lua_socket_tcp_resume_conn_op(spool);
+
     if (ngx_queue_empty(&spool->reserved)) {
+        /* the reserved connection is gone, and the slot it freed was left
+         * to this operation: the waiter resumed above connects in it */
         return;
     }
 
-    conn_op_ctx = ngx_http_lua_socket_tcp_resume_conn_op(spool);
     if (conn_op_ctx != NULL) {
         conn_op_ctx->reserved = 1;
         return;
