@@ -53,6 +53,9 @@ typedef struct {
     ngx_http_cleanup_pt                *cleanup;
     ngx_http_lua_socket_tcp_upstream_t *u;
     in_port_t                           port;
+
+    /* resumed to take an idle connection held in the pool's reserved queue */
+    unsigned                            reserved:1;
 } ngx_http_lua_socket_tcp_conn_op_ctx_t;
 
 
@@ -76,6 +79,10 @@ typedef struct {
     /* queues of ngx_http_lua_socket_pool_item_t: */
     ngx_queue_t                        cache;
     ngx_queue_t                        free;
+
+    /* idle connections held for the connect operations resumed to take
+     * them, out of the reach of new connect operations */
+    ngx_queue_t                        reserved;
 
     ngx_int_t                          backlog;
 
@@ -194,6 +201,8 @@ typedef struct {
     ngx_uint_t                       reused;
 
     ngx_http_lua_socket_udata_queue_t   *udata_queue;
+
+    unsigned                         reserved:1;
 } ngx_http_lua_socket_pool_item_t;
 
 

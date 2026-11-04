@@ -3529,3 +3529,113 @@ newcomer: reused 2
 lua tcp socket queue connect operation for connection pool "queue_jump"
 --- no_error_log
 [error]
+
+
+
+=== TEST 62: conn queuing: a new connect reuses an idle connection no queued one was resumed for
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "spare_idle", pool_size = 2, backlog = 2}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+            local sock2 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            -- queued behind sock1 and sock2
+            local waiter = ngx.thread.spawn(function()
+                local sock = ngx.socket.tcp()
+                sock:settimeout(1000)
+                assert(sock:connect("127.0.0.1", port, opts))
+                local reused = sock:getreusedtimes()
+                -- hold the connection past the newcomer's connect timeout
+                ngx.sleep(0.5)
+                assert(sock:setkeepalive())
+                return "waiter: reused " .. reused
+            end)
+
+            -- two connections come back, one of them is handed to the waiter
+            assert(sock1:setkeepalive())
+            assert(sock2:setkeepalive())
+
+            -- the other one is free to reuse: queuing behind the waiter would
+            -- time out while it sits idle
+            local sock3 = ngx.socket.tcp()
+            sock3:settimeout(200)
+            local ok, err = sock3:connect("127.0.0.1", port, opts)
+            local res = ok and "newcomer: reused " .. sock3:getreusedtimes()
+                        or "newcomer: " .. err
+            if ok then
+                sock3:close()
+            end
+
+            local _, wres = ngx.thread.wait(waiter)
+            ngx.say(wres)
+            ngx.say(res)
+        }
+    }
+--- request
+GET /t
+--- response_body
+waiter: reused 1
+newcomer: reused 1
+--- error_log
+lua tcp socket queue connect operation for connection pool "spare_idle"
+--- no_error_log
+[error]
+--- timeout: 4
+
+
+
+=== TEST 63: conn queuing: a cancelled resumed connect passes its idle connection to the next one
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "pass_reserved", pool_size = 1, backlog = 3}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                return ngx.thread.spawn(function()
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(1000)
+                    assert(sock:connect("127.0.0.1", port, opts))
+                    local reused = sock:getreusedtimes()
+                    assert(sock:setkeepalive())
+                    return name .. ": reused " .. reused
+                end)
+            end
+
+            local w1 = waiter("w1")
+            local w2 = waiter("w2")
+
+            -- hand the only connection to w1, then cancel w1 before it runs
+            assert(sock1:setkeepalive())
+            assert(ngx.thread.kill(w1))
+
+            -- the connection now belongs to w2, not to a new connect
+            local sock3 = ngx.socket.tcp()
+            sock3:settimeout(1000)
+            assert(sock3:connect("127.0.0.1", port, opts))
+            local reused = sock3:getreusedtimes()
+            sock3:close()
+
+            local _, res = ngx.thread.wait(w2)
+            ngx.say(res)
+            ngx.say("newcomer: reused ", reused)
+        }
+    }
+--- request
+GET /t
+--- response_body
+w2: reused 1
+newcomer: reused 2
+--- error_log
+lua tcp socket queue connect operation for connection pool "pass_reserved"
+--- no_error_log
+[error]
