@@ -3639,3 +3639,51 @@ newcomer: reused 2
 lua tcp socket queue connect operation for connection pool "pass_reserved"
 --- no_error_log
 [error]
+
+
+
+=== TEST 64: conn queuing: cancelling a queued connect frees no slot
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local port = ngx.var.port
+            local opts = {pool = "cancel_queued", pool_size = 1, backlog = 2}
+
+            local sock1 = assert(ngx.socket.connect("127.0.0.1", port, opts))
+
+            local function waiter(name)
+                return ngx.thread.spawn(function()
+                    local sock = ngx.socket.tcp()
+                    sock:settimeout(300)
+                    local ok, err = sock:connect("127.0.0.1", port, opts)
+                    if not ok then
+                        return name .. ": " .. err
+                    end
+                    local reused = sock:getreusedtimes()
+                    sock:close()
+                    return name .. ": reused " .. reused
+                end)
+            end
+
+            local w1 = waiter("w1")
+            local w2 = waiter("w2")
+
+            -- w1 never got a slot: cancelling it must not let w2 connect while
+            -- sock1 still holds the only one
+            assert(ngx.thread.kill(w1))
+
+            local _, res = ngx.thread.wait(w2)
+            ngx.say(res)
+            sock1:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+w2: timeout
+--- error_log
+lua tcp socket queue connect operation for connection pool "cancel_queued"
+--- no_error_log
+[alert]

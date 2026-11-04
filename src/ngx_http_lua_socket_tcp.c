@@ -6611,6 +6611,7 @@ ngx_http_lua_socket_tcp_resume_helper(ngx_http_request_t *r, int socket_op)
 static void
 ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
 {
+    ngx_uint_t                              resumed;
     ngx_http_lua_co_ctx_t                  *coctx = data;
     ngx_http_lua_socket_tcp_upstream_t     *u;
     ngx_http_lua_socket_tcp_conn_op_ctx_t  *conn_op_ctx;
@@ -6621,6 +6622,8 @@ ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
                    "lua tcp socket abort queueing, conn_op_ctx: %p, u: %p",
                    conn_op_ctx, u);
+
+    resumed = 0;
 
 #if (nginx_version >= 1007005)
     if (conn_op_ctx->event.posted) {
@@ -6633,6 +6636,7 @@ ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
         * nginx cores older than 1.7.5 (exclusive).
         */
         ngx_delete_posted_event((&conn_op_ctx->event));
+        resumed = 1;
 
     } else if (conn_op_ctx->event.timer_set) {
         ngx_del_timer(&conn_op_ctx->event);
@@ -6652,7 +6656,10 @@ ngx_http_lua_tcp_queue_conn_op_cleanup(void *data)
         conn_op_ctx->reserved = 0;
         ngx_http_lua_socket_tcp_pass_reserved_idle(u->socket_pool);
 
-    } else {
+    } else if (resumed) {
+        /* the slot freed for this operation goes to the next one; an
+         * operation still waiting held no slot, so like a timed out one it
+         * frees nothing to resume another with */
         ngx_http_lua_socket_tcp_resume_conn_op(u->socket_pool);
     }
 }
