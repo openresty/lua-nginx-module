@@ -3358,11 +3358,14 @@ ngx_http_lua_finalize_threads(ngx_http_request_t *r,
 
             coctx = &cc[i];
 
+            /* Plain coroutines have no registry reference, but can still
+             * own a pending timer or cosocket operation. Cancel those before
+             * their request-pool coctx is freed as well. */
+            ngx_http_lua_cleanup_pending_operation(coctx);
+
             ref = coctx->co_ref;
 
             if (ref != LUA_NOREF) {
-                ngx_http_lua_cleanup_pending_operation(coctx);
-
                 ngx_http_lua_del_thread(r, L, ctx, coctx);
 
                 ctx->uthreads--;
