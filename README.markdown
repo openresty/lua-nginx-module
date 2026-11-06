@@ -1071,6 +1071,14 @@ checks that the pool admits exactly its configured number of connections.
 The test also supports the HTTP/2, HTTP/3, and Valgrind modes of Test::Nginx;
 its request and QUIC idle timeouts increase with the round count.
 
+The request cleanup regression in `t/197-coroutine-request-cleanup.t` checks
+that client disconnects and `ngx.exit` cancel pending sleep timers owned by
+ordinary coroutines, including nesting across coroutine context list parts.
+It uses its own HTTP listener and shared-dictionary/semaphore barriers, so no
+Redis or memcached service is required. A debug build checks the exact timer
+cleanup log; an ASan build also detects dangling timer nodes after request
+memory is freed.
+
 There are also various testing modes based on mockeagain, valgrind, and etc. Refer to the [Test::Nginx documentation](https://search.cpan.org/perldoc?Test::Nginx) for more details for various advanced testing modes. See also the test reports for the Nginx test cluster running on Amazon EC2: <https://qa.openresty.org>.
 
 [Back to TOC](#table-of-contents)
