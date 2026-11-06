@@ -178,7 +178,7 @@ system("dd", "if=/dev/urandom", "of=$file", "bs=1M", "count=2", "status=none") =
 
 my $port = $Test::Nginx::Util::ServerPortForClient;
 # Valgrind starts nginx asynchronously and can delay the listener under load.
-my $cmd = "curl -sS --connect-timeout 5 --max-time 30 "
+my $cmd = "curl -sS --connect-timeout 5 -m30 "
           . "--retry 30 --retry-connrefused --retry-delay 1 "
           . "--retry-max-time 30 "
           . "http://127.0.0.1:$port/slice.bin -o /dev/null";

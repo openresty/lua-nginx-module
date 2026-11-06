@@ -27,7 +27,7 @@
 #
 # Timing:
 #   pipe stdout read timeout : 1 s  (timer armed 1 s after request lands)
-#   curl --max-time           : 0.5 s  (QUIC connection closed while timer live)
+#   curl -m           : 0.5 s  (QUIC connection closed while timer live)
 #   --- wait                  : 2 s  (covers remaining ~0.5 s + safety margin)
 
 
