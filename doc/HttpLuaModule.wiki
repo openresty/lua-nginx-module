@@ -1090,7 +1090,7 @@ A zero value of `<num>` disables the cache.
 
 Note that this feature requires OpenResty's LuaJIT with the new C API `lua_resetthread`.
 
-This feature was first introduced in verson `v0.10.9`.
+This feature was first introduced in version `v0.10.9`.
 
 == lua_regex_cache_max_entries ==
 
@@ -5554,7 +5554,7 @@ Returns a formatted string can be used as the cookie expiration time. The parame
 
 '''context:''' ''init_worker_by_lua*, set_by_lua*, rewrite_by_lua*, access_by_lua*, content_by_lua*, header_filter_by_lua*, body_filter_by_lua*, log_by_lua*, ngx.timer.*, balancer_by_lua*, ssl_certificate_by_lua*, ssl_session_fetch_by_lua*, ssl_session_store_by_lua*, exit_worker_by_lua*, ssl_client_hello_by_lua*''
 
-Returns a formated string can be used as the http header time (for example, being used in <code>Last-Modified</code> header). The parameter <code>sec</code> is the time stamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
+Returns a formatted string can be used as the http header time (for example, being used in <code>Last-Modified</code> header). The parameter <code>sec</code> is the time stamp in seconds (like those returned from [[#ngx.time|ngx.time]]).
 
 <geshi lang="nginx">
     ngx.say(ngx.http_time(1290079655))
