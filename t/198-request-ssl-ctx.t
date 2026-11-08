@@ -72,7 +72,9 @@ true: bad request
 [error]
 
 
+
 === TEST 2: plain connection returns an error
+--- no_http3
 --- config
     location /t {
         content_by_lua_block {
@@ -87,6 +89,7 @@ GET /t
 true: bad request
 --- no_error_log
 [error]
+
 
 
 === TEST 3: TLS context is readable during certificate and content phases
@@ -131,6 +134,7 @@ GET /t
 3:3
 --- no_error_log
 [error]
+
 
 
 === TEST 4: SNI preserves the original session context
