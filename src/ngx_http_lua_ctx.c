@@ -95,7 +95,8 @@ ngx_http_lua_ffi_get_ctx_ref(ngx_http_request_t *r, int *in_ssl_phase,
     *in_ssl_phase = ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
                                     | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                                     | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
-                                    | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE);
+                                    | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
+                                    | NGX_HTTP_LUA_CONTEXT_SSL_VERIFY);
     *ssl_ctx_ref = LUA_NOREF;
 
 #if (NGX_HTTP_SSL)
@@ -133,7 +134,8 @@ ngx_http_lua_ffi_set_ctx_ref(ngx_http_request_t *r, int ref)
     if (ctx->context & (NGX_HTTP_LUA_CONTEXT_SSL_CERT
                         | NGX_HTTP_LUA_CONTEXT_SSL_CLIENT_HELLO
                         | NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH
-                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE))
+                        | NGX_HTTP_LUA_CONTEXT_SSL_SESS_STORE
+                        | NGX_HTTP_LUA_CONTEXT_SSL_VERIFY))
     {
         ssl_ctx = ngx_http_lua_ssl_get_ctx(r->connection->ssl->connection);
         if (ssl_ctx == NULL) {
