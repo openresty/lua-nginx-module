@@ -843,9 +843,17 @@ int
 ngx_http_lua_ffi_ssl_set_ciphers(ngx_http_request_t *r,
     const char *ciphers, int prefer_server_ciphers, char **err)
 {
-    ngx_ssl_conn_t    *ssl_conn;
+#if defined(SSL_ERROR_WANT_CLIENT_HELLO_CB)
+    int              marked;
+    ngx_int_t        rc;
+    ngx_ssl_conn_t  *ssl_conn, *scratch;
 
     *err = "OK";
+    if (ciphers == NULL) {
+        *err = "bad ciphers";
+        return NGX_ERROR;
+    }
+
     if (r->connection == NULL || r->connection->ssl == NULL) {
         *err = "bad request";
         return NGX_ERROR;
@@ -857,16 +865,48 @@ ngx_http_lua_ffi_ssl_set_ciphers(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (SSL_set_cipher_list(ssl_conn, ciphers) == 0) {
+    rc = NGX_ERROR;
+    marked = ERR_set_mark();
+
+    /* Validate first: failed parsing can change SSL state and queue errors. */
+    scratch = SSL_new(SSL_get_SSL_CTX(ssl_conn));
+    if (scratch == NULL) {
+        *err = "SSL_new() failed";
+        goto done;
+    }
+
+    if (SSL_set_cipher_list(scratch, ciphers) == 0
+        || SSL_set_cipher_list(ssl_conn, ciphers) == 0)
+    {
         *err = "failed to set ciphers";
-        return NGX_ERROR;
+        goto done;
     }
 
     if (prefer_server_ciphers) {
         SSL_set_options(ssl_conn, SSL_OP_CIPHER_SERVER_PREFERENCE);
+
+    } else {
+        SSL_clear_options(ssl_conn, SSL_OP_CIPHER_SERVER_PREFERENCE);
     }
 
-    return NGX_OK;
+    rc = NGX_OK;
+
+done:
+
+    SSL_free(scratch);
+
+    if (marked) {
+        ERR_pop_to_mark();
+
+    } else {
+        ERR_clear_error();
+    }
+
+    return rc;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
 }
 
 
@@ -874,7 +914,10 @@ int
 ngx_http_lua_ffi_ssl_set_ciphersuites(ngx_http_request_t *r,
     const char *ciphersuites, int prefer_server_ciphers, char **err)
 {
-    ngx_ssl_conn_t    *ssl_conn;
+#if defined(SSL_ERROR_WANT_CLIENT_HELLO_CB) && defined(TLS1_3_VERSION)
+    int              marked;
+    ngx_int_t        rc;
+    ngx_ssl_conn_t  *ssl_conn, *scratch;
 
     *err = "OK";
     if (ciphersuites == NULL) {
@@ -893,16 +936,48 @@ ngx_http_lua_ffi_ssl_set_ciphersuites(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    if (SSL_set_ciphersuites(ssl_conn, ciphersuites) == 0) {
+    rc = NGX_ERROR;
+    marked = ERR_set_mark();
+
+    /* Validate first: failed parsing can change SSL state and queue errors. */
+    scratch = SSL_new(SSL_get_SSL_CTX(ssl_conn));
+    if (scratch == NULL) {
+        *err = "SSL_new() failed";
+        goto done;
+    }
+
+    if (SSL_set_ciphersuites(scratch, ciphersuites) == 0
+        || SSL_set_ciphersuites(ssl_conn, ciphersuites) == 0)
+    {
         *err = "failed to set ciphersuites";
-        return NGX_ERROR;
+        goto done;
     }
 
     if (prefer_server_ciphers) {
         SSL_set_options(ssl_conn, SSL_OP_CIPHER_SERVER_PREFERENCE);
+
+    } else {
+        SSL_clear_options(ssl_conn, SSL_OP_CIPHER_SERVER_PREFERENCE);
     }
 
-    return NGX_OK;
+    rc = NGX_OK;
+
+done:
+
+    SSL_free(scratch);
+
+    if (marked) {
+        ERR_pop_to_mark();
+
+    } else {
+        ERR_clear_error();
+    }
+
+    return rc;
+#else
+    *err = "OpenSSL too old to support this function";
+    return NGX_ERROR;
+#endif
 }
 
 
