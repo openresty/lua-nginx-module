@@ -1863,6 +1863,24 @@ failed:
 }
 
 
+SSL_CTX *
+ngx_http_lua_ffi_get_req_ssl_ctx(ngx_http_request_t *r, const char **err)
+{
+    if (r == NULL || r->connection == NULL || r->connection->ssl == NULL) {
+        *err = "bad request";
+        return NULL;
+    }
+
+    if (r->connection->ssl->session_ctx == NULL) {
+        *err = "bad ssl context";
+        return NULL;
+    }
+
+    /* Keep the session context even if SNI selects a different SSL_CTX. */
+    return r->connection->ssl->session_ctx;
+}
+
+
 ngx_ssl_conn_t *
 ngx_http_lua_ffi_get_req_ssl_pointer(ngx_http_request_t *r, const char **err)
 {
