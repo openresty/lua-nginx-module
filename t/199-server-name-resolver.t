@@ -5,9 +5,10 @@ use Test::Nginx::Socket::Lua;
 repeat_each(2);
 
 # server_name_resolver_by_lua_block needs the server_name_resolver hook of
-# the nginx core.  A build without the hook contains the error message the
+# the nginx core and HTTP/2 stream connections created with the reusable
+# flag cleared.  A build without them contains the error message the
 # directive is rejected with; replace this probe with an nginx version check
-# once the hook is in an nginx release.
+# once both are in an nginx release.
 my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
 my $nginx_path = `sh -c 'command -v $NginxBinary'`;
 chomp $nginx_path;
@@ -15,7 +16,7 @@ chomp $nginx_path;
 if (system("grep -q 'requires nginx with the server_name_resolver hook'"
            . " '$nginx_path'") == 0)
 {
-    plan(skip_all => "nginx core without the server_name_resolver hook");
+    plan(skip_all => "nginx core without server_name_resolver support");
 
 } else {
     plan tests => repeat_each() * (blocks() * 3 + 6);

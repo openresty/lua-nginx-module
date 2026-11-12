@@ -52,7 +52,8 @@ ngx_http_lua_server_name_resolver_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                        "server_name_resolver_by_lua_block requires nginx "
                        "with the server_name_resolver hook in "
-                       "ngx_http_core_main_conf_t");
+                       "ngx_http_core_main_conf_t and with the reusable "
+                       "flag cleared in HTTP/2 stream connections");
 
     return NGX_CONF_ERROR;
 
@@ -104,6 +105,7 @@ ngx_http_lua_server_name_resolver(ngx_connection_t *c, ngx_pool_t *pool,
     lua_State                  *L;
     ngx_int_t                   rc;
     ngx_str_t                   val;
+    ngx_uint_t                  reusable;
     ngx_connection_t           *fc;
     ngx_http_request_t         *r;
     ngx_pool_cleanup_t         *cln;
@@ -111,7 +113,21 @@ ngx_http_lua_server_name_resolver(ngx_connection_t *c, ngx_pool_t *pool,
     ngx_http_conf_ctx_t        *http_ctx;
     ngx_http_lua_main_conf_t   *lmcf;
 
+    /*
+     * ngx_get_connection() may reuse connections when the worker runs out
+     * of them, and the connection being served must not be one of those:
+     * a QUIC connection is reusable during its handshake.  On HTTP/2 "c" is
+     * the stream's copy of the client connection, and this relies on the
+     * reusable flag of that copy being 0.
+     */
+
+    reusable = c->reusable;
+    ngx_reusable_connection(c, 0);
+
     fc = ngx_http_lua_create_fake_connection(NULL);
+
+    ngx_reusable_connection(c, reusable);
+
     if (fc == NULL) {
         return NGX_DECLINED;
     }

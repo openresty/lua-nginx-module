@@ -1802,7 +1802,7 @@ The Lua code runs inside server selection and cannot yield, so Lua APIs that yie
 
 Only one `server_name_resolver_by_lua_block` is allowed.
 
-This directive requires an Nginx core that provides the `server_name_resolver` hook in `ngx_http_core_main_conf_t`. Without it, the directive is rejected when the configuration is loaded.
+This directive requires an Nginx core that provides the `server_name_resolver` hook in `ngx_http_core_main_conf_t` and clears the `reusable` flag in HTTP/2 stream connections. Without both, the directive is rejected when the configuration is loaded.
 
 [Back to TOC](#directives)
 

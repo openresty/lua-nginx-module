@@ -496,11 +496,16 @@ CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
 
 # ----------------------------------------
 
-# the server_name_resolver hook of the nginx core (server selection)
+# server_name_resolver_by_lua_block needs two things from the nginx core:
+# the server_name_resolver hook (server selection), and HTTP/2 stream
+# connections created with the reusable flag cleared
 
 if grep 'server_name_resolver' src/http/ngx_http_core_module.h > /dev/null 2>&1
 then
-    have=NGX_HTTP_LUA_HAVE_SERVER_NAME_RESOLVER . auto/have
+    if grep 'fc->reusable = 0;' src/http/v2/ngx_http_v2.c > /dev/null 2>&1
+    then
+        have=NGX_HTTP_LUA_HAVE_SERVER_NAME_RESOLVER . auto/have
+    fi
 fi
 
 # ----------------------------------------
