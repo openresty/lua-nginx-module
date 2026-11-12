@@ -173,6 +173,8 @@ typedef struct {
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_VERIFY   0x00010000
 #define NGX_HTTP_LUA_CONTEXT_PRECONTENT         0x00020000
 #define NGX_HTTP_LUA_CONTEXT_PROXY_SSL_CERT     0x00040000
+#define NGX_HTTP_LUA_CONTEXT_SERVER_NAME_RESOLVER                            \
+                                               0x00080000
 
 #define NGX_HTTP_LUA_FFI_NO_REQ_CTX         -100
 #define NGX_HTTP_LUA_FFI_BAD_CONTEXT        -101
@@ -287,6 +289,11 @@ struct ngx_http_lua_main_conf_s {
     ngx_http_lua_main_conf_handler_pt    exit_worker_handler;
     ngx_str_t                            exit_worker_src;
     u_char                              *exit_worker_chunkname;
+
+    ngx_str_t                            server_name_resolver_src;
+    u_char                              *server_name_resolver_src_key;
+    u_char                              *server_name_resolver_chunkname;
+    int                                  server_name_resolver_src_ref;
 
     ngx_chain_t                            *body_filter_chain;
                     /* neither yielding nor recursion is possible in
