@@ -261,6 +261,7 @@ HTTP_LUA_SRCS=" \
             $ngx_addon_dir/src/ngx_http_lua_util.c \
             $ngx_addon_dir/src/ngx_http_lua_cache.c \
             $ngx_addon_dir/src/ngx_http_lua_precontentby.c \
+            $ngx_addon_dir/src/ngx_http_lua_server_name_resolverby.c \
             $ngx_addon_dir/src/ngx_http_lua_contentby.c \
             $ngx_addon_dir/src/ngx_http_lua_server_rewriteby.c \
             $ngx_addon_dir/src/ngx_http_lua_rewriteby.c \
@@ -330,6 +331,7 @@ HTTP_LUA_DEPS=" \
             $ngx_addon_dir/src/ngx_http_lua_util.h \
             $ngx_addon_dir/src/ngx_http_lua_cache.h \
             $ngx_addon_dir/src/ngx_http_lua_precontentby.h \
+            $ngx_addon_dir/src/ngx_http_lua_server_name_resolverby.h \
             $ngx_addon_dir/src/ngx_http_lua_contentby.h \
             $ngx_addon_dir/src/ngx_http_lua_server_rewriteby.h \
             $ngx_addon_dir/src/ngx_http_lua_rewriteby.h \
@@ -491,6 +493,15 @@ CC_TEST_FLAGS="-Werror -Wall $CC_TEST_FLAGS"
 . auto/feature
 
 CC_TEST_FLAGS="$SAVED_CC_TEST_FLAGS"
+
+# ----------------------------------------
+
+# the server_name_resolver hook of the nginx core (server selection)
+
+if grep 'server_name_resolver' src/http/ngx_http_core_module.h > /dev/null 2>&1
+then
+    have=NGX_HTTP_LUA_HAVE_SERVER_NAME_RESOLVER . auto/have
+fi
 
 # ----------------------------------------
 

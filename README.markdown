@@ -1161,6 +1161,7 @@ Directives
 * [init_worker_by_lua_file](#init_worker_by_lua_file)
 * [exit_worker_by_lua_block](#exit_worker_by_lua_block)
 * [exit_worker_by_lua_file](#exit_worker_by_lua_file)
+* [server_name_resolver_by_lua_block](#server_name_resolver_by_lua_block)
 * [set_by_lua](#set_by_lua)
 * [set_by_lua_block](#set_by_lua_block)
 * [set_by_lua_file](#set_by_lua_file)
@@ -1754,6 +1755,54 @@ exit_worker_by_lua_file
 Similar to [exit_worker_by_lua_block](#exit_worker_by_lua_block), but accepts the file path to a Lua source file or Lua bytecode file.
 
 This directive was first introduced in the `v0.10.18` release.
+
+[Back to TOC](#directives)
+
+server_name_resolver_by_lua_block
+---------------------------------
+
+**syntax:** *server_name_resolver_by_lua_block { lua-script }*
+
+**context:** *http*
+
+**phase:** *server-selection*
+
+Runs the specified Lua code when Nginx selects a `server {}` block for a host name that matches no exact [server_name](http://nginx.org/en/docs/http/ngx_http_core_module.html#server_name). The host name is passed to the Lua code as its only argument (`...`), in lower case. The code returns the `server_name` that should serve the host, or `nil` to decline.
+
+Nginx then selects the server in this order:
+
+1. an exact `server_name`; the Lua code is not run
+1. the name returned by the Lua code, when it is an exact `server_name` on the same listening address; any other value is ignored
+1. a wildcard `server_name`
+1. a regular expression `server_name`
+1. the default server
+
+The code runs both for the TLS SNI name during the handshake and for the `Host` request header, so the selected server answers the handshake with its own certificate. When the SNI name selected a server and the `Host` of a request equals it, the code is not run again for that request.
+
+For example,
+
+```nginx
+
+ lua_shared_dict aliases 10m;
+
+ server_name_resolver_by_lua_block {
+     return ngx.shared.aliases:get(...)
+ }
+
+ server {
+     listen 443 ssl;
+     server_name tenant-1.example.com;
+
+     # also serves every host name stored in the "aliases"
+     # shared dict with the value "tenant-1.example.com"
+ }
+```
+
+The Lua code runs inside server selection and cannot yield, so Lua APIs that yield (cosockets, `ngx.sleep`, etc.) are disabled in this context. It should answer from memory, for example from [ngx.shared.DICT](#ngxshareddict) or a Lua table. A Lua error in the code is logged and treated as a decline.
+
+Only one `server_name_resolver_by_lua_block` is allowed.
+
+This directive requires an Nginx core that provides the `server_name_resolver` hook in `ngx_http_core_main_conf_t`. Without it, the directive is rejected when the configuration is loaded.
 
 [Back to TOC](#directives)
 
@@ -9013,6 +9062,8 @@ Retrieves the current running phase name. Possible return values are
 	for the context of user callback functions for [ngx.timer.*](#ngxtimerat).
 * `exit_worker`
 	for the context of [exit_worker_by_lua*](#exit_worker_by_lua).
+* `server_name_resolver`
+	for the context of [server_name_resolver_by_lua_block](#server_name_resolver_by_lua_block).
 
 This API was first introduced in the `v0.5.10` release.
 
