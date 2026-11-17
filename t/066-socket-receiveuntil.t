@@ -2083,3 +2083,192 @@ close: 1 nil
 --- no_error_log
 [error]
 --- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+
+
+
+=== TEST 28: close socket after receiveuntil iterator is GC'ed following a successful read
+--- config
+    location /t {
+        content_by_lua_block {
+            jit.off()
+            jit.flush()
+
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.server_port
+
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local req = "GET /slow HTTP/1.0\r\nHost: localhost\r\n\r\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            local weak = setmetatable({}, { __mode = "v" })
+
+            local function read_until_match()
+                local reader = sock:receiveuntil("hello")
+                weak[1] = reader
+                local data, err = reader()
+                ngx.say("matched: ", data ~= nil and err == nil)
+            end
+
+            read_until_match()
+            for _ = 1, 4 do
+                collectgarbage("collect")
+            end
+            ngx.say("reader collected: ", weak[1] == nil)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        }
+    }
+
+    server_tokens off;
+    location = /slow {
+        lua_http10_buffering off;
+        content_by_lua_block {
+            ngx.print("hello")
+            ngx.flush(true)
+            ngx.sleep(0.2)
+        }
+    }
+--- request
+GET /t
+--- response_body
+matched: true
+reader collected: true
+close: 1 nil
+--- no_error_log
+[error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+
+
+
+=== TEST 29: retry the same iterator after a timeout with a partial delimiter
+--- config
+    location /t {
+        lua_socket_log_errors off;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            assert(sock:connect("127.0.0.1", ngx.var.server_port))
+            assert(sock:send("GET /slow HTTP/1.0\r\nHost: localhost\r\n\r\n"))
+
+            local headers = sock:receiveuntil("\r\n\r\n")
+            assert(headers())
+
+            local reader = sock:receiveuntil("abcabd")
+            sock:settimeout(100)
+            local data, err, partial = reader()
+            ngx.say("first: ", data, " ", err, " [", partial, "]")
+
+            collectgarbage("collect")
+
+            sock:settimeout(1000)
+            data, err = reader()
+            ngx.say("retry: [", data, "] ", err)
+
+            data, err = reader()
+            ngx.say("next: [", data, "] ", err)
+
+            local ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        }
+    }
+
+    location = /slow {
+        lua_http10_buffering off;
+        content_by_lua_block {
+            ngx.print("abc")
+            ngx.flush(true)
+            ngx.sleep(0.3)
+            ngx.print("abdtailabcabd")
+        }
+    }
+--- request
+GET /t
+--- response_body
+first: nil timeout []
+retry: [] nil
+next: [tail] nil
+close: 1 nil
+--- no_error_log
+[error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
+
+
+
+=== TEST 30: close socket after receiveuntil iterator is GC'ed following a timeout
+--- config
+    location /t {
+        lua_socket_log_errors off;
+
+        content_by_lua_block {
+            jit.off()
+            jit.flush()
+
+            local sock = ngx.socket.tcp()
+            local ok, err = sock:connect("127.0.0.1", ngx.var.server_port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local bytes, err = sock:send("GET /slow HTTP/1.0\r\n\r\n")
+            if not bytes then
+                ngx.say("failed to send request: ", err)
+                return
+            end
+
+            local headers = sock:receiveuntil("\r\n\r\n")
+            local data, err = headers()
+            if not data then
+                ngx.say("failed to read headers: ", err)
+                return
+            end
+
+            sock:settimeout(100)
+            local weak = setmetatable({}, { __mode = "v" })
+
+            local function read_until_timeout()
+                local reader = sock:receiveuntil("abcabd")
+                weak[1] = reader
+                local data, err, partial = reader()
+                ngx.say("read: ", data, " ", err, " [", partial, "]")
+            end
+
+            read_until_timeout()
+            for _ = 1, 4 do
+                collectgarbage("collect")
+            end
+
+            ngx.say("reader collected: ", weak[1] == nil)
+
+            ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        }
+    }
+
+    location = /slow {
+        lua_http10_buffering off;
+        content_by_lua_block {
+            ngx.print("abc")
+            ngx.flush(true)
+            ngx.sleep(0.3)
+        }
+    }
+--- request
+GET /t
+--- response_body
+read: nil timeout []
+reader collected: true
+close: 1 nil
+--- no_error_log
+[error]
+--- skip_eval: 3:$ENV{TEST_NGINX_USE_HTTP3}
