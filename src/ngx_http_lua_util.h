@@ -72,6 +72,8 @@
                                                  "ssl_session_store_by_lua*" \
      : (c) == NGX_HTTP_LUA_CONTEXT_SSL_SESS_FETCH ?                          \
                                                  "ssl_session_fetch_by_lua*" \
+     : (c) == NGX_HTTP_LUA_CONTEXT_SERVER_NAME_RESOLVER ?                    \
+                                              "server_name_resolver_by_lua*" \
      : "(unknown)")
 
 #define ngx_http_lua_check_context(L, ctx, flags)                            \
