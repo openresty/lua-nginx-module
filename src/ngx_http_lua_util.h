@@ -32,7 +32,8 @@
 
 #define NGX_HTTP_LUA_ESCAPE_HEADER_VALUE  8
 
-#define NGX_HTTP_LUA_CONTEXT_YIELDABLE (NGX_HTTP_LUA_CONTEXT_REWRITE         \
+#define NGX_HTTP_LUA_CONTEXT_YIELDABLE (NGX_HTTP_LUA_CONTEXT_INIT_WORKER     \
+                                | NGX_HTTP_LUA_CONTEXT_REWRITE               \
                                 | NGX_HTTP_LUA_CONTEXT_SERVER_REWRITE        \
                                 | NGX_HTTP_LUA_CONTEXT_ACCESS                \
                                 | NGX_HTTP_LUA_CONTEXT_PRECONTENT            \
