@@ -3813,6 +3813,14 @@ ngx_http_lua_socket_send(ngx_http_request_t *r,
                     ngx_del_timer(c->write);
                 }
 
+                /* ngx_pfree() only releases large blocks, so release the
+                 * data memory of large buffers right away; the chain is
+                 * kept in free_bufs and get_free_buf() reallocates on
+                 * demand when b->start is NULL. */
+                if (b->start && (size_t) (b->end - b->start) > r->pool->max) {
+                    ngx_pfree(r->pool, b->start);
+                    b->start = b->pos = b->last = b->end = NULL;
+                }
 
                 ngx_chain_update_chains(r->pool,
                                         &ctx->free_bufs, &u->busy_bufs,
