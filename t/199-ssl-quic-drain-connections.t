@@ -24,6 +24,11 @@ BEGIN {
 
     if ($v !~ /--with-http_v3_module/) {
         $SkipReason = "requires nginx built with --with-http_v3_module";
+
+    } elsif ($v =~ /BoringSSL/) {
+        # no ssl_client_hello_by_lua* with BoringSSL, and t/139 skips its
+        # QUIC ssl_certificate_by_lua* tests there as well
+        $SkipReason = "does not support BoringSSL";
     }
 }
 
