@@ -184,6 +184,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
 {
     lua_State                       *L;
     ngx_int_t                        rc;
+    ngx_uint_t                       reusable;
     ngx_connection_t                *c, *fc;
     ngx_http_request_t              *r = NULL;
     ngx_pool_cleanup_t              *cln;
@@ -237,6 +238,21 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     ngx_reusable_connection(c, 0);
 #endif
 
+    /*
+     * A QUIC connection stays reusable during its handshake.  Once
+     * worker_connections run low, ngx_get_connection() for the fake
+     * connection below, or for a cosocket in the Lua code, would drain
+     * this very connection: close and free it under the handler.  Keep
+     * it off the reusable queue for as long as the handler runs, yields
+     * included, as ngx_quic_create_stream() does around its own
+     * ngx_get_connection() call.
+     */
+    reusable = c->reusable;
+
+    if (reusable) {
+        ngx_reusable_connection(c, 0);
+    }
+
     hc = c->data;
 
     fc = ngx_http_lua_create_fake_connection(NULL);
@@ -284,6 +300,7 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
     cctx->exit_code = 1;  /* successful by default */
     cctx->connection = c;
     cctx->request = r;
+    cctx->reusable = reusable;
     cctx->entered_client_hello_handler = 1;
     cctx->done = 0;
 
@@ -327,6 +344,11 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
                        "client hello cb exit code: %d", rc, cctx->exit_code);
 
         c->log->action = "SSL handshaking";
+
+        if (reusable) {
+            ngx_reusable_connection(c, 1);
+        }
+
         return cctx->exit_code;
     }
 
@@ -352,6 +374,8 @@ ngx_http_lua_ssl_client_hello_handler(ngx_ssl_conn_t *ssl_conn,
 
     *cctx->cleanup = ngx_http_lua_ssl_client_hello_aborted;
 
+    /* ngx_http_lua_ssl_client_hello_done() makes it reusable again */
+
     return -1;
 
 failed:
@@ -362,6 +386,10 @@ failed:
 
     if (fc) {
         ngx_http_lua_close_fake_connection(fc);
+    }
+
+    if (reusable) {
+        ngx_reusable_connection(c, 1);
     }
 
     return 0;
@@ -389,6 +417,10 @@ ngx_http_lua_ssl_client_hello_done(void *data)
     }
 
     c = cctx->connection;
+
+    if (cctx->reusable) {
+        ngx_reusable_connection(c, 1);
+    }
 
     c->log->action = "SSL handshaking";
 
