@@ -45,6 +45,9 @@ typedef struct {
     unsigned                 done:1;
     unsigned                 aborted:1;
 
+    /* connection->reusable to restore once a yielded handler is done */
+    unsigned                 reusable:1;
+
     unsigned                 entered_client_hello_handler:1;
     unsigned                 entered_cert_handler:1;
     unsigned                 entered_sess_fetch_handler:1;
