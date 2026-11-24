@@ -1389,6 +1389,50 @@ Similar to [[#exit_worker_by_lua_block|exit_worker_by_lua_block]], but accepts t
 
 This directive was first introduced in the <code>v0.10.18</code> release.
 
+== server_name_resolver_by_lua_block ==
+
+'''syntax:''' ''server_name_resolver_by_lua_block { lua-script }''
+
+'''context:''' ''http''
+
+'''phase:''' ''server-selection''
+
+Runs the specified Lua code when Nginx selects a <code>server {}</code> block for a host name that matches no exact [http://nginx.org/en/docs/http/ngx_http_core_module.html#server_name server_name]. The host name is passed to the Lua code as its only argument (<code>...</code>), in lower case. The code returns the <code>server_name</code> that should serve the host, or <code>nil</code> to decline.
+
+Nginx then selects the server in this order:
+
+# an exact <code>server_name</code>; the Lua code is not run
+# the name returned by the Lua code, when it is an exact <code>server_name</code> on the same listening address; any other value is ignored
+# a wildcard <code>server_name</code>
+# a regular expression <code>server_name</code>
+# the default server
+
+The code runs both for the TLS SNI name during the handshake and for the <code>Host</code> request header, so the selected server answers the handshake with its own certificate. When the SNI name selected a server and the <code>Host</code> of a request equals it, the code is not run again for that request.
+
+For example,
+
+<geshi lang="nginx">
+    lua_shared_dict aliases 10m;
+
+    server_name_resolver_by_lua_block {
+        return ngx.shared.aliases:get(...)
+    }
+
+    server {
+        listen 443 ssl;
+        server_name tenant-1.example.com;
+
+        # also serves every host name stored in the "aliases"
+        # shared dict with the value "tenant-1.example.com"
+    }
+</geshi>
+
+The Lua code runs inside server selection and cannot yield, so Lua APIs that yield (cosockets, <code>ngx.sleep</code>, etc.) are disabled in this context. It should answer from memory, for example from [[#ngx.shared.DICT|ngx.shared.DICT]] or a Lua table. A Lua error in the code is logged and treated as a decline.
+
+Only one <code>server_name_resolver_by_lua_block</code> is allowed.
+
+This directive requires an Nginx core that provides the <code>server_name_resolver</code> hook in <code>ngx_http_core_main_conf_t</code> and clears the <code>reusable</code> flag in HTTP/2 stream connections. Without both, the directive is rejected when the configuration is loaded.
+
 == set_by_lua ==
 
 '''syntax:''' ''set_by_lua $res <lua-script-str> [$arg1 $arg2 ...]''
@@ -7359,6 +7403,8 @@ Retrieves the current running phase name. Possible return values are
 : for the context of user callback functions for [[#ngx.timer.at|ngx.timer.*]].
 * <code>exit_worker</code>
 : for the context of [[#exit_worker_by_lua|exit_worker_by_lua*]].
+* <code>server_name_resolver</code>
+: for the context of [[#server_name_resolver_by_lua_block|server_name_resolver_by_lua_block]].
 
 This API was first introduced in the <code>v0.5.10</code> release.
 

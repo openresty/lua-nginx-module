@@ -40,6 +40,7 @@
 #include "ngx_http_lua_headers_out.h"
 #if !(NGX_WIN32)
 #include "ngx_http_lua_pipe.h"
+#include "ngx_http_lua_server_name_resolverby.h"
 #endif
 
 /*
@@ -276,6 +277,13 @@ static ngx_command_t ngx_http_lua_cmds[] = {
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       (void *) ngx_http_lua_init_worker_by_file },
+
+    { ngx_string("server_name_resolver_by_lua_block"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_http_lua_server_name_resolver_by_lua_block,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      0,
+      NULL },
 
     { ngx_string("exit_worker_by_lua_block"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
@@ -893,6 +901,12 @@ ngx_http_lua_init(ngx_conf_t *cf)
     }
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+#ifdef NGX_HTTP_LUA_HAVE_SERVER_NAME_RESOLVER
+    if (lmcf->server_name_resolver_src_key) {
+        cmcf->server_name_resolver = ngx_http_lua_server_name_resolver;
+    }
+#endif
 
     if (lmcf->requires_server_rewrite) {
         h = ngx_array_push(
