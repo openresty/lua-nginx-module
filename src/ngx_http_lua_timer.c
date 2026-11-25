@@ -338,6 +338,13 @@ ngx_http_lua_ngx_timer_helper(lua_State *L, int every)
 
     lmcf->pending_timers++;
 
+    if (ctx->context == NGX_HTTP_LUA_CONTEXT_INIT_WORKER) {
+        ev->timer.key = ngx_current_msec + delay;
+        ngx_queue_insert_tail(&lmcf->deferred_timers, &ev->queue);
+        lua_pushinteger(L, 1);
+        return 1;
+    }
+
 #ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
     if (delay == 0 && !ngx_exiting) {
         dd("posting 0 sec sleep event to head of delayed queue");

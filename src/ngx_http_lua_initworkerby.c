@@ -4,6 +4,17 @@
  */
 
 
+#include "ngx_core.h"
+#include "ngx_event.h"
+#include "ngx_event_posted.h"
+#include "ngx_event_timer.h"
+#include "ngx_http.h"
+#include "ngx_http_lua_common.h"
+#include "ngx_http_request.h"
+#include "ngx_process_cycle.h"
+#include "ngx_string.h"
+#include "ngx_time.h"
+#include "ngx_times.h"
 #ifndef DDEBUG
 #define DDEBUG 0
 #endif
@@ -17,6 +28,241 @@
 
 static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
     u_char *buf, size_t len);
+
+static void ngx_http_lua_init_worker_toggle_accept(
+    ngx_cycle_t *cycle, ngx_uint_t arm);
+
+static void ngx_http_lua_init_worker_pump(ngx_cycle_t *cycle,
+    ngx_msec_t budget);
+
+static void ngx_http_lua_init_worker_flush_timers(
+    ngx_http_lua_main_conf_t *lmcf);
+
+
+typedef struct {
+    unsigned     done:1;
+    unsigned     failed:1;
+    unsigned     timeout:1;
+} ngx_http_lua_init_worker_state_t;
+
+
+static void ngx_http_lua_init_worker_pump_loop(ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf,
+    ngx_http_lua_init_worker_state_t *st);
+
+
+static void
+ngx_http_lua_init_worker_done(void *data)
+{
+    ngx_http_lua_init_worker_state_t *state = data;
+
+    state->done = 1;
+}
+
+
+static void
+ngx_http_lua_init_worker_pump(ngx_cycle_t *cycle, ngx_msec_t budget)
+{
+    ngx_msec_t                   timer;
+
+    timer = ngx_event_find_timer();
+
+    if (timer == NGX_TIMER_INFINITE || timer > budget) {
+        timer = budget;
+    }
+
+    if (!ngx_queue_empty(&ngx_posted_next_events)) {
+        ngx_event_move_posted_next(cycle);
+        timer = 0;
+    }
+
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+    if (!ngx_queue_empty(&ngx_posted_delayed_events)) {
+        timer = 0;
+    }
+#endif
+
+    (void) ngx_process_events(cycle, timer, NGX_UPDATE_TIME | NGX_POST_EVENTS);
+
+    ngx_event_expire_timers();
+
+    ngx_event_process_posted(cycle, &ngx_posted_events);
+
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+    ngx_event_process_posted(cycle, &ngx_posted_delayed_events);
+#endif
+}
+
+
+static void
+ngx_http_lua_init_worker_toggle_accept(ngx_cycle_t *cycle, ngx_uint_t arm)
+{
+    ngx_listening_t    *ls;
+    ngx_connection_t   *c;
+    ngx_event_t        *rev;
+    ngx_uint_t          i;
+    ngx_uint_t          flags;
+#if (NGX_HAVE_EPOLLEXCLUSIVE)
+    ngx_uint_t          exclusive;
+#endif
+
+    if (ngx_use_accept_mutex) {
+        return;
+    }
+
+#if (NGX_HAVE_EPOLLEXCLUSIVE)
+    {
+        ngx_core_conf_t *ccf;
+
+        ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx,
+                                               ngx_core_module);
+        exclusive = ((ngx_event_flags & NGX_USE_EPOLL_EVENT)
+                     && ccf->worker_processes > 1);
+    }
+#endif
+
+    ls = cycle->listening.elts;
+
+    for (i = 0; i < cycle->listening.nelts; i++) {
+
+        /* disarm every listener, not just HTTP ones: any pending
+         * connection on an armed level-triggered listen fd would make the
+         * pump spin at 100% CPU, and re-arming is faithful for all
+         * subsystems since nginx arms all listeners via the same
+         * subsystem-independent path in ngx_event.c */
+#if (NGX_HAVE_REUSEPORT)
+        if (ls[i].reuseport && ls[i].worker != ngx_worker) {
+            /* other workers' sockets: ls[i].connection is NULL here */
+            continue;
+        }
+#endif
+
+        c = ls[i].connection;
+
+        if (c == NULL) {
+            continue;
+        }
+
+        rev = c->read;
+
+        if (!arm) {
+            if (rev->active
+                && ngx_del_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR)
+            {
+                ngx_log_error(NGX_LOG_ALERT, cycle->log, 0,
+                              "init_worker: failed to disarm listen fd %d",
+                              c->fd);
+            }
+
+            continue;
+        }
+
+        if (rev->active) {
+            continue;
+        }
+
+        flags = 0;
+
+#if (NGX_HAVE_EPOLLEXCLUSIVE)
+        if (exclusive
+#if (NGX_HAVE_REUSEPORT)
+            /* upstream registers reuseport sockets with plain flags,
+             * before the EPOLLEXCLUSIVE branch (ngx_event.c:907) */
+            && !ls[i].reuseport
+#endif
+           )
+        {
+            flags = NGX_EXCLUSIVE_EVENT;
+        }
+#endif
+
+        if (ngx_add_event(rev, NGX_READ_EVENT, flags) == NGX_ERROR) {
+            ngx_log_error(NGX_LOG_ALERT, cycle->log, 0,
+                          "init_worker: failed to re-arm listen fd %d, "
+                          "worker will not accept on it", c->fd);
+        }
+    }
+}
+
+
+static void
+ngx_http_lua_init_worker_flush_timers(ngx_http_lua_main_conf_t *lmcf)
+{
+    ngx_queue_t    *q;
+    ngx_event_t    *ev;
+    ngx_msec_int_t  remaining;
+
+    while (!ngx_queue_empty(&lmcf->deferred_timers)) {
+        q = ngx_queue_head(&lmcf->deferred_timers);
+        ngx_queue_remove(q);
+
+        ev = ngx_queue_data(q, ngx_event_t, queue);
+        remaining = (ngx_msec_int_t) (ev->timer.key - ngx_current_msec);
+
+        if (remaining <= 0) {
+#ifdef HAVE_POSTED_DELAYED_EVENTS_PATCH
+            ngx_post_event(ev, &ngx_posted_delayed_events);
+#else
+            ngx_add_timer(ev, 0);
+#endif
+            continue;
+        }
+
+        ngx_add_timer(ev, (ngx_msec_t) remaining);
+    }
+}
+
+
+static void
+ngx_http_lua_init_worker_pump_loop(ngx_cycle_t *cycle,
+    ngx_http_lua_main_conf_t *lmcf, ngx_http_lua_init_worker_state_t *st)
+{
+    ngx_msec_t           deadline = 0, budget;
+    ngx_uint_t           unlimited;
+
+    unlimited = (lmcf->init_worker_timeout == 0);
+
+    if (!unlimited) {
+        ngx_time_update();
+        deadline = ngx_current_msec + lmcf->init_worker_timeout;
+    }
+
+    ngx_http_lua_init_worker_toggle_accept(cycle, 0);
+
+    for (;;) {
+
+        if (st->done) {
+            break;
+        }
+
+        if (ngx_terminate || ngx_quit || ngx_exiting) {
+            ngx_log_error(NGX_LOG_WARN, cycle->log, 0,
+                          "init_worker_by_lua* aborted by signal while "
+                          "waiting for a yielded operation");
+            break;
+        }
+
+        if (unlimited) {
+            budget = NGX_TIMER_INFINITE;
+
+        } else {
+            if ((ngx_msec_int_t) (deadline - ngx_current_msec) <= 0) {
+                st->timeout = 1;
+                ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
+                              "init_worker_by_lua* timed out after %M ms",
+                              lmcf->init_worker_timeout);
+                break;
+            }
+
+            budget = deadline - ngx_current_msec;
+        }
+
+        ngx_http_lua_init_worker_pump(cycle, budget);
+    }
+
+
+    ngx_http_lua_init_worker_toggle_accept(cycle, 1);
+}
 
 
 ngx_int_t
@@ -39,6 +285,12 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     ngx_http_lua_loc_conf_t     *top_llcf;
     ngx_http_lua_main_conf_t    *lmcf;
     ngx_http_core_loc_conf_t    *clcf, *top_clcf;
+    ngx_pool_cleanup_t          *cln;
+    lua_State                   *co;
+    ngx_int_t                    rc;
+    int                          co_ref = LUA_NOREF;
+
+    ngx_http_lua_init_worker_state_t   st;
 
     lmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_lua_module);
 
@@ -303,17 +555,95 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
     }
 
     ctx->context = NGX_HTTP_LUA_CONTEXT_INIT_WORKER;
-    ctx->cur_co_ctx = NULL;
+    ctx->cur_co_ctx = &ctx->entry_co_ctx;
     r->read_event_handler = ngx_http_block_reading;
 
-    ngx_http_lua_set_req(lmcf->lua, r);
+    if (lmcf->init_worker_handler(cycle->log, lmcf, lmcf->lua) != NGX_OK) {
+        ngx_http_lua_set_req(lmcf->lua, NULL);
+        ngx_http_lua_finalize_request(r, NGX_ERROR);
+        return NGX_OK;
+    }
 
-    (void) lmcf->init_worker_handler(cycle->log, lmcf, lmcf->lua);
+    co_ref = ngx_http_lua_new_cached_thread(lmcf->lua, &co, lmcf, 1);
 
+    lua_pop(lmcf->lua, 2);
+
+    cln = ngx_pool_cleanup_add(r->pool, 0);
+    if (cln == NULL) {
+        goto runner_failed;
+    }
+
+    cln->handler = ngx_http_lua_request_cleanup_handler;
+    cln->data = ctx;
+    ctx->cleanup = &cln->handler;
+
+    ngx_memzero(&st, sizeof(st));
+
+    cln = ngx_pool_cleanup_add(r->pool, 0);
+    if (cln == NULL) {
+        goto runner_failed;
+    }
+
+    cln->handler = ngx_http_lua_init_worker_done;
+    cln->data = &st;
+
+    ctx->entered_content_phase = 1;
+
+    ctx->cur_co_ctx->co = co;
+    ctx->cur_co_ctx->co_ref = co_ref;
+    ctx->cur_co_ctx->co_status = NGX_HTTP_LUA_CO_RUNNING;
+
+    ngx_http_lua_set_req(co, r);
+    ngx_http_lua_attach_co_ctx_to_L(co, ctx->cur_co_ctx);
+
+    lua_xmove(lmcf->lua, co, 1);
+
+#ifdef NGX_LUA_USE_ASSERT
+    ctx->cur_co_ctx->co_top = 1;
+#endif
+
+    rc = ngx_http_lua_run_thread(lmcf->lua, r, ctx, 0);
+
+    if (rc == NGX_AGAIN || rc == NGX_DONE) {
+        ngx_http_lua_init_worker_pump_loop(cycle, lmcf, &st);
+
+    } else {
+        st.done = 1;
+        st.failed = (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE);
+    }
+
+    if (!st.done) {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
+                      "init_worker_by_lua* failed to complete");
+
+        ngx_http_lua_request_cleanup(ctx, 1);
+        ngx_http_lua_finalize_request(r, NGX_ERROR);
+
+    } else if (rc != NGX_AGAIN && rc != NGX_DONE) {
+        ngx_http_lua_finalize_request(r, rc);
+    }
+
+    ngx_http_lua_init_worker_flush_timers(lmcf);
     ngx_http_lua_set_req(lmcf->lua, NULL);
 
-    ngx_destroy_pool(c->pool);
+    if (st.failed || st.timeout) {
+        if (lmcf->init_worker_abort_on_error) {
+            return NGX_ERROR;
+        }
+    }
     return NGX_OK;
+
+runner_failed:
+
+    if (co_ref != LUA_NOREF) {
+        ngx_http_lua_free_thread(r, lmcf->lua, co_ref, co, lmcf);
+    }
+
+    if (c != NULL) {
+        ngx_http_lua_close_fake_connection(c);
+    }
+
+    return NGX_ERROR;
 
 failed:
 
@@ -344,8 +674,7 @@ ngx_http_lua_init_worker_by_inline(ngx_log_t *log,
     }
 
     status = luaL_loadbuffer(L, (char *) lmcf->init_worker_src.data,
-                             lmcf->init_worker_src.len, chunkname)
-             || ngx_http_lua_do_call(log, L);
+                             lmcf->init_worker_src.len, chunkname);
 
     return ngx_http_lua_report(log, L, status, "init_worker_by_lua");
 }
@@ -357,8 +686,7 @@ ngx_http_lua_init_worker_by_file(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
 {
     int         status;
 
-    status = luaL_loadfile(L, (char *) lmcf->init_worker_src.data)
-             || ngx_http_lua_do_call(log, L);
+    status = luaL_loadfile(L, (char *) lmcf->init_worker_src.data);
 
     return ngx_http_lua_report(log, L, status, "init_worker_by_lua_file");
 }
