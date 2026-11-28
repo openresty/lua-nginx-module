@@ -1951,6 +1951,9 @@ static ngx_int_t
 ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
 {
     ngx_fd_t                     fd;
+#if !(NGX_WIN32)
+    ngx_file_info_t              fi;
+#endif
     ngx_http_lua_ssl_key_log_t  *ssl_key_log;
     ngx_pool_cleanup_t          *cln;
 
@@ -1970,12 +1973,34 @@ ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
      * append so that existing keylog file contents can be preserved
      */
     fd = ngx_open_file(file->data, NGX_FILE_APPEND, NGX_FILE_CREATE_OR_OPEN,
-                       NGX_FILE_DEFAULT_ACCESS);
+                       NGX_FILE_OWNER_ACCESS);
     if (fd == NGX_INVALID_FILE) {
         ngx_ssl_error(NGX_LOG_EMERG, ssl->log, 0, ngx_open_file_n
                       "(\"%V\") failed", file);
         return NGX_ERROR;
     }
+
+#if !(NGX_WIN32)
+    if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
+        ngx_log_error(NGX_LOG_EMERG, ssl->log, ngx_errno,
+                      ngx_fd_info_n "(\"%V\") failed", file);
+        goto failed;
+    }
+
+    if (fi.st_uid != geteuid()) {
+        ngx_log_error(NGX_LOG_EMERG, ssl->log, 0,
+                      "the SSL key log file \"%V\" must be owned by the "
+                      "nginx master process user", file);
+        goto failed;
+    }
+
+    if (ngx_file_access(&fi) & ~NGX_FILE_OWNER_ACCESS) {
+        ngx_log_error(NGX_LOG_EMERG, ssl->log, 0,
+                      "the SSL key log file \"%V\" must have owner-only "
+                      "permissions", file);
+        goto failed;
+    }
+#endif
 
     ssl_key_log = ngx_palloc(cf->pool, sizeof(ngx_http_lua_ssl_key_log_t));
     if (ssl_key_log == NULL) {
@@ -2007,6 +2032,17 @@ ngx_http_lua_ssl_key_log(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *file)
     SSL_CTX_set_keylog_callback(ssl->ctx, key_log_callback);
 
     return NGX_OK;
+
+#if !(NGX_WIN32)
+failed:
+
+    if (ngx_close_file(fd) == NGX_FILE_ERROR) {
+        ngx_log_error(NGX_LOG_ALERT, ssl->log, ngx_errno,
+                      ngx_close_file_n "(\"%V\") failed", file);
+    }
+
+    return NGX_ERROR;
+#endif
 }
 #endif
 
