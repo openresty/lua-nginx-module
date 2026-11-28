@@ -3168,16 +3168,29 @@ ngx_http_lua_param_set(lua_State *L)
 ngx_http_lua_co_ctx_t *
 ngx_http_lua_get_co_ctx(lua_State *L, ngx_http_lua_ctx_t *ctx)
 {
-#ifdef HAVE_LUA_EXDATA2
-    return (ngx_http_lua_co_ctx_t *) lua_getexdata2(L);
-#else
     ngx_uint_t                   i;
     ngx_list_part_t             *part;
     ngx_http_lua_co_ctx_t       *coctx;
+#ifdef HAVE_LUA_EXDATA2
+    ngx_http_lua_co_ctx_t       *exdata_coctx;
+
+    exdata_coctx = (ngx_http_lua_co_ctx_t *) lua_getexdata2(L);
+    if (exdata_coctx == NULL) {
+        return NULL;
+    }
+
+    /* The exdata2 coctx is request-pool allocated and may be stale.  Do not
+     * dereference it until it matches storage owned by the current ctx. */
+    if (exdata_coctx == &ctx->entry_co_ctx) {
+        return L == ctx->entry_co_ctx.co ? exdata_coctx : NULL;
+    }
+
+#else
 
     if (L == ctx->entry_co_ctx.co) {
         return &ctx->entry_co_ctx;
     }
+#endif
 
     if (ctx->user_co_ctx == NULL) {
         return NULL;
@@ -3200,13 +3213,18 @@ ngx_http_lua_get_co_ctx(lua_State *L, ngx_http_lua_ctx_t *ctx)
             i = 0;
         }
 
+#ifdef HAVE_LUA_EXDATA2
+        if (exdata_coctx == &coctx[i]) {
+            return L == coctx[i].co ? exdata_coctx : NULL;
+        }
+#else
         if (coctx[i].co == L) {
             return &coctx[i];
         }
+#endif
     }
 
     return NULL;
-#endif
 }
 
 
