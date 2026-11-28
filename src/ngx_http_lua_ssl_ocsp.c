@@ -280,6 +280,7 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
     OCSP_RESPONSE         *ocsp = NULL;
     OCSP_BASICRESP        *basic = NULL;
     STACK_OF(X509)        *chain = NULL;
+    X509_STORE            *store = NULL;
     ASN1_GENERALIZEDTIME  *thisupdate = NULL, *nextupdate = NULL;
 
     ocsp = d2i_OCSP_RESPONSE(NULL, &resp, resp_len);
@@ -347,7 +348,31 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
 
     (void) sk_X509_push(chain, issuer);
 
-    if (OCSP_basic_verify(basic, chain, NULL, OCSP_NOVERIFY) != 1) {
+    /* Trust only the expected issuer while allowing it to be an intermediate
+     * CA, so embedded responder certificates still require authorization. */
+
+    store = X509_STORE_new();
+    if (store == NULL) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "X509_STORE_new() failed") - errbuf;
+        goto error;
+    }
+
+    if (X509_STORE_add_cert(store, issuer) != 1) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "X509_STORE_add_cert() failed") - errbuf;
+        goto error;
+    }
+
+#ifdef X509_V_FLAG_PARTIAL_CHAIN
+    if (X509_STORE_set_flags(store, X509_V_FLAG_PARTIAL_CHAIN) != 1) {
+        *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
+                                    "X509_STORE_set_flags() failed") - errbuf;
+        goto error;
+    }
+#endif
+
+    if (OCSP_basic_verify(basic, chain, store, 0) != 1) {
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
                                     "OCSP_basic_verify() failed") - errbuf;
         goto error;
@@ -395,6 +420,7 @@ ngx_http_lua_ffi_ssl_validate_ocsp_response(const u_char *resp,
     }
 
     sk_X509_free(chain);
+    X509_STORE_free(store);
     X509_free(cert);
     X509_free(issuer);
     BIO_free(bio);
@@ -408,6 +434,10 @@ error:
 
     if (chain) {
         sk_X509_free(chain);
+    }
+
+    if (store) {
+        X509_STORE_free(store);
     }
 
     if (id) {
