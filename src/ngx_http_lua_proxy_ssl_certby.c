@@ -43,7 +43,7 @@ ngx_http_lua_proxy_ssl_cert_set_callback(ngx_conf_t *cf)
 
     ssl = ucf->ssl;
 
-    if (!ssl->ctx) {
+    if (ssl == NULL || ssl->ctx == NULL) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "proxy_ssl_certificate_by_lua* should be used with "
                       "proxy_pass https url");
