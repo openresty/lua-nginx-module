@@ -176,7 +176,7 @@ GET /t
 --- response_body
 timers scheduled: OK
 --- wait: 0.1
---- grep_error_log eval: qr/(?:overlapping|expired) (?:status|resume rejected|local resume): [^\n]+/
+--- grep_error_log eval: qr/(?:overlapping|expired) (?:status|resume rejected|local resume): [^,\n]+/
 --- grep_error_log_out
 overlapping status: dead
 overlapping resume rejected: true
