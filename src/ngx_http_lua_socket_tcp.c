@@ -1148,9 +1148,13 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         }
 
         if (!custom_pool) {
+            /* Keep the host string alive while p still points into it. */
+            lua_pushvalue(L, 2);
             lua_pushliteral(L, ":");
-            lua_insert(L, 3);
+            lua_pushvalue(L, 3);
             lua_concat(L, 3);
+            lua_replace(L, 3);
+            key_index = 3;
         }
 
         dd("socket key: %s", lua_tostring(L, -1));
