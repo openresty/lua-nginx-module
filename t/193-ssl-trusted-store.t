@@ -417,3 +417,93 @@ received: HTTP/1\.[01] 200 OK$
 [alert]
 [crit]
 [emerg]
+
+
+
+=== TEST 7: pooled TLS connection accepts the same trusted store
+--- http_config eval: $::tls_http_config
+--- config eval
+"
+    location /t {
+        content_by_lua_block {
+            local f = assert(io.open('$::HtmlDir/mtls_ca.crt'))
+            local ca_pem = f:read('*a')
+            f:close()
+            local store = assert(load_store_from_pem(ca_pem))
+
+            local sock = ngx.socket.tcp()
+            for i = 1, 2 do
+                assert(sock:connect('unix:$::HtmlDir/tls.sock'))
+                ngx.say('reused: ', sock:getreusedtimes())
+                assert(settrustedstore(sock, store))
+
+                local session, err =
+                    sock:sslhandshake(false, 'example.com', true)
+                ngx.say('handshake: ', session, ' ', err)
+
+                if i == 1 then
+                    assert(sock:setkeepalive())
+                else
+                    sock:close()
+                end
+            end
+        }
+    }
+"
+--- user_files eval: $::tls_user_files
+--- request
+GET /t
+--- response_body
+reused: 0
+handshake: true nil
+reused: 1
+handshake: true nil
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]
+
+
+
+=== TEST 8: pooled TLS connection rejects a different trusted store
+--- http_config eval: $::tls_http_config
+--- config eval
+"
+    location /t {
+        content_by_lua_block {
+            local f = assert(io.open('$::HtmlDir/mtls_ca.crt'))
+            local ca_pem = f:read('*a')
+            f:close()
+            local store1 = assert(load_store_from_pem(ca_pem))
+
+            local f2 = assert(io.open('$::HtmlDir/unrelated_ca.crt'))
+            local ca_pem2 = f2:read('*a')
+            f2:close()
+            local store2 = assert(load_store_from_pem(ca_pem2))
+
+            local sock = ngx.socket.tcp()
+            assert(sock:connect('unix:$::HtmlDir/tls.sock'))
+            assert(settrustedstore(sock, store1))
+            assert(sock:sslhandshake(false, 'example.com', true))
+            assert(sock:setkeepalive())
+
+            assert(sock:connect('unix:$::HtmlDir/tls.sock'))
+            ngx.say('reused: ', sock:getreusedtimes())
+            local ok, err = settrustedstore(sock, store2)
+            ngx.say('settrustedstore: ', ok, ' ', err)
+            sock:close()
+        }
+    }
+"
+--- user_files eval: $::tls_user_files
+--- request
+GET /t
+--- response_body
+reused: 1
+settrustedstore: nil ssl handshake already done; trusted store cannot be changed on an established TLS connection
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]

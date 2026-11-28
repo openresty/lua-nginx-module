@@ -1756,6 +1756,216 @@ ngx_http_lua_socket_tcp_check_busy(ngx_http_request_t *r,
 }
 
 
+static ngx_int_t
+ngx_http_lua_socket_tcp_ssl_policy_update(EVP_MD_CTX *md, const void *data,
+    size_t len)
+{
+    if (EVP_DigestUpdate(md, data, len) != 1) {
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_tcp_ssl_policy_update_uint64(EVP_MD_CTX *md,
+    uint64_t value)
+{
+    u_char      buf[8];
+    ngx_int_t   i;
+
+    for (i = 7; i >= 0; i--) {
+        buf[i] = (u_char) value;
+        value >>= 8;
+    }
+
+    return ngx_http_lua_socket_tcp_ssl_policy_update(md, buf, sizeof(buf));
+}
+
+
+static ngx_int_t
+ngx_http_lua_socket_tcp_ssl_policy_digest(
+    ngx_http_lua_socket_tcp_upstream_t *u, ngx_str_t *server_name, int verify,
+    int ocsp_status_req, STACK_OF(X509) *chain, EVP_PKEY *pkey,
+    u_char *digest, const char **errmsg)
+{
+    static const u_char  policy_version[] =
+        "lua cosocket TLS policy version 1";
+
+    int          certs, i, key_len;
+    u_char       present, flag, *der, *p;
+    unsigned int cert_digest_len, digest_len;
+    uintptr_t    identity;
+    X509        *x509;
+    EVP_MD_CTX  *md;
+    u_char       cert_digest[NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN];
+
+    der = NULL;
+    md = EVP_MD_CTX_create();
+    if (md == NULL) {
+        *errmsg = "no memory";
+        return NGX_ERROR;
+    }
+
+    if (EVP_DigestInit_ex(md, EVP_sha256(), NULL) != 1
+        || ngx_http_lua_socket_tcp_ssl_policy_update(md, policy_version,
+                                                     sizeof(policy_version) - 1)
+           != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    /* SSL configuration objects are immutable after configuration. */
+    identity = (uintptr_t) u->conf->ssl;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update_uint64(md,
+                                                        (uint64_t) identity)
+        != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    flag = verify ? 1 : 0;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update(md, &flag, sizeof(flag))
+        != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    flag = ocsp_status_req ? 1 : 0;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update(md, &flag, sizeof(flag))
+        != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    present = server_name != NULL && server_name->data != NULL;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update(md, &present,
+                                                  sizeof(present))
+        != NGX_OK
+        || ngx_http_lua_socket_tcp_ssl_policy_update_uint64(
+               md, present ? (uint64_t) server_name->len : 0)
+           != NGX_OK
+        || (present && server_name->len != 0
+            && ngx_http_lua_socket_tcp_ssl_policy_update(
+                   md, server_name->data, server_name->len)
+               != NGX_OK))
+    {
+        goto digest_failed;
+    }
+
+    /* SSL_set1_verify_cert_store() keeps this store identity alive. */
+    identity = (uintptr_t) u->ssl_trusted_store;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update_uint64(md,
+                                                        (uint64_t) identity)
+        != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    present = chain != NULL;
+    if (ngx_http_lua_socket_tcp_ssl_policy_update(md, &present,
+                                                  sizeof(present))
+        != NGX_OK)
+    {
+        goto digest_failed;
+    }
+
+    if (chain != NULL) {
+        if (pkey == NULL) {
+            *errmsg = "client certificate has no private key";
+            goto failed;
+        }
+
+        certs = sk_X509_num(chain);
+        if (certs < 1) {
+            *errmsg = "invalid client certificate chain";
+            goto failed;
+        }
+
+        if (ngx_http_lua_socket_tcp_ssl_policy_update_uint64(
+                md, (uint64_t) certs)
+            != NGX_OK)
+        {
+            goto digest_failed;
+        }
+
+        /* Bind every certificate in the ordered client chain. */
+        for (i = 0; i < certs; i++) {
+            x509 = sk_X509_value(chain, i);
+            if (x509 == NULL) {
+                *errmsg = i == 0
+                          ? "ssl fetch client certificate from chain failed"
+                          : "ssl fetch client intermediate certificate from "
+                            "chain failed";
+                goto failed;
+            }
+
+            if (X509_digest(x509, EVP_sha256(), cert_digest,
+                            &cert_digest_len)
+                != 1
+                || cert_digest_len != sizeof(cert_digest)
+                || ngx_http_lua_socket_tcp_ssl_policy_update(
+                       md, cert_digest, sizeof(cert_digest))
+                   != NGX_OK)
+            {
+                goto digest_failed;
+            }
+        }
+
+        /* The encoded public key uniquely identifies the private key. */
+        key_len = i2d_PUBKEY(pkey, NULL);
+        if (key_len <= 0) {
+            *errmsg = "ssl encode client private key failed";
+            goto failed;
+        }
+
+        der = ngx_alloc(key_len, ngx_cycle->log);
+        if (der == NULL) {
+            *errmsg = "no memory";
+            goto failed;
+        }
+
+        p = der;
+        if (i2d_PUBKEY(pkey, &p) != key_len
+            || ngx_http_lua_socket_tcp_ssl_policy_update_uint64(
+                   md, (uint64_t) key_len)
+               != NGX_OK
+            || ngx_http_lua_socket_tcp_ssl_policy_update(md, der, key_len)
+               != NGX_OK)
+        {
+            goto digest_failed;
+        }
+
+        ngx_free(der);
+        der = NULL;
+    }
+
+    if (EVP_DigestFinal_ex(md, digest, &digest_len) != 1
+        || digest_len != NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN)
+    {
+        goto digest_failed;
+    }
+
+    EVP_MD_CTX_destroy(md);
+    return NGX_OK;
+
+digest_failed:
+
+    ERR_clear_error();
+    *errmsg = "failed to calculate TLS policy";
+
+failed:
+
+    if (der != NULL) {
+        ngx_free(der);
+    }
+
+    EVP_MD_CTX_destroy(md);
+    return NGX_ERROR;
+}
+
+
 int
 ngx_http_lua_socket_tcp_get_ssl_session(ngx_http_request_t *r,
     ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t **sess,
@@ -1805,7 +2015,10 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
     ngx_http_lua_co_ctx_t   *coctx;
     const char              *busy_msg;
     ngx_ssl_conn_t          *ssl_conn;
+    X509_STORE              *trusted_store;
     X509                    *x509;
+    u_char                   ssl_policy_digest[
+                                NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN];
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "lua tcp socket ssl handshake");
@@ -1839,9 +2052,33 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
     c = u->peer.connection;
 
+    if (ngx_http_lua_socket_tcp_ssl_policy_digest(
+            u, server_name, verify, ocsp_status_req, chain, pkey,
+            ssl_policy_digest, errmsg)
+        != NGX_OK)
+    {
+        ERR_clear_error();
+        return NGX_ERROR;
+    }
+
+    trusted_store = u->ssl_trusted_store;
+
     u->ssl_session_reuse = 1;
 
     if (c->ssl && c->ssl->handshaked) {
+        /* Never reinterpret an established channel under a new policy. */
+        if (!u->ssl_policy_set
+            || ngx_memcmp(u->ssl_policy_digest, ssl_policy_digest,
+                          sizeof(ssl_policy_digest))
+               != 0)
+        {
+            *errmsg = "ssl handshake already done with different TLS "
+                      "settings";
+            return NGX_ERROR;
+        }
+
+        u->ssl_trusted_store = NULL;
+
         if (sess != NULL) {
             return NGX_DONE;
         }
@@ -1953,8 +2190,8 @@ ngx_http_lua_ffi_socket_tcp_sslhandshake(ngx_http_request_t *r,
 
     u->ssl_verify = verify;
 
-    if (u->ssl_trusted_store) {
-        if (SSL_set1_verify_cert_store(ssl_conn, u->ssl_trusted_store) == 0) {
+    if (trusted_store) {
+        if (SSL_set1_verify_cert_store(ssl_conn, trusted_store) == 0) {
             ERR_clear_error();
             *errmsg = "SSL_set1_verify_cert_store() failed";
             return NGX_ERROR;
@@ -2007,6 +2244,11 @@ new_ssl_name:
             u->ssl_name.len = server_name->len;
         }
     }
+
+    ngx_memcpy(u->ssl_policy_digest, ssl_policy_digest,
+               sizeof(u->ssl_policy_digest));
+    u->ssl_policy_trusted_store = trusted_store;
+    u->ssl_policy_set = 1;
 
     u->write_co_ctx = coctx;
 
@@ -2298,7 +2540,9 @@ ngx_http_lua_ffi_socket_tcp_settrustedstore(ngx_http_request_t *r,
     }
 
     if (u->peer.connection->ssl
-        && u->peer.connection->ssl->handshaked)
+        && u->peer.connection->ssl->handshaked
+        && (!u->ssl_policy_set
+            || store != u->ssl_policy_trusted_store))
     {
         *errmsg = "ssl handshake already done; trusted store cannot be "
                   "changed on an established TLS connection";
@@ -5999,6 +6243,12 @@ ngx_http_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
     ngx_memcpy(item->host, u->host, sizeof(u->host));
     item->reused = u->reused;
+#if (NGX_HTTP_SSL)
+    item->ssl_policy_trusted_store = u->ssl_policy_trusted_store;
+    ngx_memcpy(item->ssl_policy_digest, u->ssl_policy_digest,
+               sizeof(item->ssl_policy_digest));
+    item->ssl_policy_set = u->ssl_policy_set;
+#endif
     item->udata_queue = u->udata_queue;
     u->udata_queue = NULL;
 
@@ -6091,6 +6341,12 @@ ngx_http_lua_socket_tcp_reuse_peer(ngx_http_request_t *r,
     u->log.handler = ngx_http_lua_socket_tcp_log_error;
     u->log.data = u;
     u->reused = item->reused + 1;
+#if (NGX_HTTP_SSL)
+    u->ssl_policy_trusted_store = item->ssl_policy_trusted_store;
+    ngx_memcpy(u->ssl_policy_digest, item->ssl_policy_digest,
+               sizeof(u->ssl_policy_digest));
+    u->ssl_policy_set = item->ssl_policy_set;
+#endif
     u->udata_queue = item->udata_queue;
     item->udata_queue = NULL;
 

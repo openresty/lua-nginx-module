@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 43;
+plan tests => repeat_each() * 49;
 
 $ENV{TEST_NGINX_RESOLVER} ||= '8.8.8.8';
 
@@ -366,6 +366,54 @@ failed to setclientcert: client certificate must be supplied with corresponding 
 GET /t
 --- response_body
 failed to setclientcert: client certificate must be supplied with corresponding private key
+--- no_error_log
+[alert]
+[error]
+[crit]
+[emerg]
+
+
+
+=== TEST 8: pooled TLS connection rejects a different client identity
+--- http_config eval: $::mtls_http_config
+--- config eval
+"
+    location /t {
+        content_by_lua_block {
+            local f = assert(io.open('$::HtmlDir/mtls_client.crt'))
+            local cert_data = f:read('*a')
+            f:close()
+
+            f = assert(io.open('$::HtmlDir/mtls_client.key'))
+            local key_data = f:read('*a')
+            f:close()
+
+            local ssl = require('ngx.ssl')
+            local chain = assert(ssl.parse_pem_cert(cert_data))
+            local priv = assert(ssl.parse_pem_priv_key(key_data))
+
+            local sock = ngx.socket.tcp()
+            assert(sock:setclientcert(chain, priv))
+            assert(sock:connect('unix:$::HtmlDir/mtls.sock'))
+            assert(sock:sslhandshake(false))
+            assert(sock:setkeepalive())
+
+            assert(sock:connect('unix:$::HtmlDir/mtls.sock'))
+            ngx.say('reused: ', sock:getreusedtimes())
+            assert(sock:setclientcert(nil, nil))
+
+            local session, err = sock:sslhandshake(false)
+            ngx.say('handshake: ', session, ' ', err)
+            sock:close()
+        }
+    }
+"
+--- user_files eval: $::mtls_user_files
+--- request
+GET /t
+--- response_body
+reused: 1
+handshake: nil ssl handshake already done with different TLS settings
 --- no_error_log
 [alert]
 [error]

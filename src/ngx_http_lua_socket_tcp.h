@@ -28,6 +28,8 @@
 #define COSOCKET_HOST_LEN  32
 #endif
 
+#define NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN  32
+
 
 typedef struct ngx_http_lua_socket_tcp_upstream_s
         ngx_http_lua_socket_tcp_upstream_t;
@@ -145,6 +147,9 @@ struct ngx_http_lua_socket_tcp_upstream_s {
     const char                      *error_ret;
     int                              openssl_error_code_ret;
     X509_STORE                      *ssl_trusted_store;
+    X509_STORE                      *ssl_policy_trusted_store;
+    u_char                           ssl_policy_digest[
+                                NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN];
 #endif
 
     ngx_chain_t                     *busy_bufs;
@@ -163,6 +168,7 @@ struct ngx_http_lua_socket_tcp_upstream_s {
 #if (NGX_HTTP_SSL)
     unsigned                         ssl_verify:1;
     unsigned                         ssl_session_reuse:1;
+    unsigned                         ssl_policy_set:1;
 #endif
 };
 
@@ -199,6 +205,13 @@ struct ngx_http_lua_socket_pool_item_s {
     char                             host[COSOCKET_HOST_LEN];
 
     ngx_uint_t                       reused;
+
+#if (NGX_HTTP_SSL)
+    X509_STORE                      *ssl_policy_trusted_store;
+    u_char                           ssl_policy_digest[
+                                NGX_HTTP_LUA_SOCKET_SSL_POLICY_DIGEST_LEN];
+    unsigned                         ssl_policy_set:1;
+#endif
 
     ngx_http_lua_socket_udata_queue_t   *udata_queue;
 

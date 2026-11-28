@@ -3182,3 +3182,167 @@ HTTP/1.1 200 OK
 [emerg]
 SSL reused session
 --- timeout: 15
+
+
+
+=== TEST 37: pooled TLS connection rejects a different verify policy
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local policies = { false, true }
+
+            for i, verify in ipairs(policies) do
+                assert(sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock"))
+                ngx.say("reused: ", sock:getreusedtimes())
+
+                local session, err =
+                    sock:sslhandshake(false, "test.com", verify)
+                ngx.say("handshake: ", session, " ", err)
+
+                if i == 1 then
+                    assert(sock:setkeepalive())
+                else
+                    sock:close()
+                end
+            end
+        }
+    }
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+--- request
+GET /t
+--- response_body
+reused: 0
+handshake: true nil
+reused: 1
+handshake: nil ssl handshake already done with different TLS settings
+--- grep_error_log
+lua tcp socket get keepalive peer: using connection
+--- grep_error_log_out
+lua tcp socket get keepalive peer: using connection
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]
+--- timeout: 5
+
+
+
+=== TEST 38: pooled TLS connection rejects a different server name
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local names = { "test.com", "other.example" }
+
+            for i, name in ipairs(names) do
+                assert(sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock"))
+                ngx.say("reused: ", sock:getreusedtimes())
+
+                local session, err = sock:sslhandshake(false, name, false)
+                ngx.say("handshake: ", session, " ", err)
+
+                if i == 1 then
+                    assert(sock:setkeepalive())
+                else
+                    sock:close()
+                end
+            end
+        }
+    }
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+--- request
+GET /t
+--- response_body
+reused: 0
+handshake: true nil
+reused: 1
+handshake: nil ssl handshake already done with different TLS settings
+--- grep_error_log
+lua tcp socket get keepalive peer: using connection
+--- grep_error_log_out
+lua tcp socket get keepalive peer: using connection
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]
+--- timeout: 5
+
+
+
+=== TEST 39: pooled TLS connection rejects a different OCSP policy
+--- http_config
+    server {
+        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
+        server_name test.com;
+        ssl_certificate ../html/test.crt;
+        ssl_certificate_key ../html/test.key;
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local ocsp_policies = { false, true }
+
+            for i, request_ocsp in ipairs(ocsp_policies) do
+                assert(sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock"))
+                ngx.say("reused: ", sock:getreusedtimes())
+
+                local session, err = sock:sslhandshake(
+                    false, "test.com", false, request_ocsp)
+                ngx.say("handshake: ", session, " ", err)
+
+                if i == 1 then
+                    assert(sock:setkeepalive())
+                else
+                    sock:close()
+                end
+            end
+        }
+    }
+--- user_files eval
+">>> test.key
+$::TestCertificateKey
+>>> test.crt
+$::TestCertificate"
+--- request
+GET /t
+--- response_body
+reused: 0
+handshake: true nil
+reused: 1
+handshake: nil ssl handshake already done with different TLS settings
+--- grep_error_log
+lua tcp socket get keepalive peer: using connection
+--- grep_error_log_out
+lua tcp socket get keepalive peer: using connection
+--- no_error_log
+[error]
+[alert]
+[crit]
+[emerg]
+--- timeout: 5

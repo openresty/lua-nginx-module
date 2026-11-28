@@ -8413,6 +8413,9 @@ If `x509_store` is `nil`, this method will clear any previously set trusted stor
 object.
 
 The TCP connection must already be established before calling this method.
+On a connection that has already completed its TLS handshake, the exact store used for that
+handshake may be set again so that a matching pooled TLS policy can be confirmed. Replacing or
+clearing that store is rejected because an established connection cannot adopt new trust anchors.
 
 The trusted store only takes effect when the next [tcpsock:sslhandshake](#tcpsocksslhandshake)
 call is made with `ssl_verify` set to `true`; with verification off, the store is ignored. The
@@ -8463,8 +8466,12 @@ to validate the server name in the server certificate.
 The optional `send_status_req` argument takes a boolean that controls whether to send
 the OCSP status request in the SSL handshake request (which is for requesting OCSP stapling).
 
-For connections that have already done SSL/TLS handshake, this method returns
-immediately.
+For connections that have already done SSL/TLS handshake, this method returns immediately only
+when the requested TLS settings match the original handshake. The comparison covers the effective
+`lua_ssl_*` configuration, server name, verification mode, trusted store, OCSP request, and client
+certificate/key identity. A conflicting call returns `nil, "ssl handshake already done with
+different TLS settings"`; use a distinct connection pool for each TLS policy when these settings
+can vary for the same endpoint.
 
 This method was first introduced in the `v0.9.11` release.
 
