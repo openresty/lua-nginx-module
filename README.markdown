@@ -3731,6 +3731,8 @@ lua_ssl_key_log
 
 Enables logging of client connection SSL keys in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method and specifies the path to the key log file. Keys are logged in the SSLKEYLOGFILE format compatible with Wireshark.
 
+The key log contains TLS session secrets and must be protected accordingly. On Unix, a new key log is created with owner-only permissions. An existing key log must be owned by the user that starts the nginx master process and must not grant permissions to group or other users; otherwise, nginx rejects the configuration. Place the key log in a directory that untrusted local users cannot modify.
+
 [Back to TOC](#directives)
 
 lua_ssl_conf_command
