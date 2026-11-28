@@ -130,3 +130,60 @@ lua clean up the timer for pending ngx.sleep
 --- no_error_log
 [error]
 [alert]
+
+
+
+=== TEST 3: timers reject coroutines owned by another request context
+--- config
+    location = /t {
+        content_by_lua_block {
+            local function inspect(premature, label, retained)
+                assert(not premature)
+
+                ngx.log(ngx.WARN, label, " status: ",
+                        coroutine.status(retained))
+
+                local ok, err = pcall(coroutine.resume, retained)
+                ngx.log(ngx.WARN, label, " resume rejected: ",
+                        not ok
+                        and string.find(err, "no co ctx found", 1, true)
+                            ~= nil)
+
+                local local_co = coroutine.create(function()
+                    return "local coroutine"
+                end)
+                local resumed, value = coroutine.resume(local_co)
+                ngx.log(ngx.WARN, label, " local resume: ",
+                        resumed and value == "local coroutine")
+            end
+
+            local overlapping = coroutine.create(function()
+                return "foreign coroutine"
+            end)
+            local expired = coroutine.create(function()
+                return "stale coroutine"
+            end)
+
+            assert(ngx.timer.at(0, inspect, "overlapping", overlapping))
+            assert(ngx.timer.at(0.05, inspect, "expired", expired))
+
+            ngx.sleep(0.01)
+            ngx.say("timers scheduled: OK")
+        }
+    }
+--- request
+GET /t
+--- response_body
+timers scheduled: OK
+--- wait: 0.1
+--- grep_error_log eval: qr/(?:overlapping|expired) (?:status|resume rejected|local resume): [^,\n]+/
+--- grep_error_log_out
+overlapping status: dead
+overlapping resume rejected: true
+overlapping local resume: true
+expired status: dead
+expired resume rejected: true
+expired local resume: true
+--- no_error_log
+[error]
+[alert]
