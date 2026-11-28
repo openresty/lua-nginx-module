@@ -30,6 +30,7 @@ static ssize_t ngx_http_lua_pipe_fd_read(ngx_connection_t *c, u_char *buf,
     size_t size);
 static ssize_t ngx_http_lua_pipe_fd_write(ngx_connection_t *c, u_char *buf,
     size_t size);
+static int ngx_http_lua_pipe_create(int pipefd[2]);
 static void ngx_http_lua_pipe_close_helper(ngx_http_lua_pipe_t *pipe,
     ngx_http_lua_pipe_ctx_t *pipe_ctx, ngx_event_t *ev);
 static void ngx_http_lua_pipe_close_stdin(ngx_http_lua_pipe_t *pipe);
@@ -598,6 +599,32 @@ ngx_http_lua_execvpe(const char *program, char * const argv[],
 #endif
 
 
+static int
+ngx_http_lua_pipe_create(int pipefd[2])
+{
+#if (NGX_HTTP_LUA_HAVE_PIPE2)
+    return pipe2(pipefd, O_CLOEXEC);
+
+#else
+    ngx_err_t  err;
+
+    if (pipe(pipefd) == -1) {
+        return -1;
+    }
+
+    if (ngx_cloexec(pipefd[0]) == -1 || ngx_cloexec(pipefd[1]) == -1) {
+        err = ngx_errno;
+        (void) close(pipefd[0]);
+        (void) close(pipefd[1]);
+        ngx_set_errno(err);
+        return -1;
+    }
+
+    return 0;
+#endif
+}
+
+
 int
 ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
     ngx_http_lua_ffi_pipe_proc_t *proc,
@@ -642,7 +669,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
         goto free_pool;
     }
 
-    rc = pipe(in);
+    rc = ngx_http_lua_pipe_create(in);
     if (rc == -1) {
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "pipe failed: %s",
                                     strerror(errno))
@@ -650,7 +677,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
         goto free_pool;
     }
 
-    rc = pipe(out);
+    rc = ngx_http_lua_pipe_create(out);
     if (rc == -1) {
         *errbuf_size = ngx_snprintf(errbuf, *errbuf_size, "pipe failed: %s",
                                     strerror(errno))
@@ -659,7 +686,7 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_request_t *r,
     }
 
     if (!merge_stderr) {
-        rc = pipe(err);
+        rc = ngx_http_lua_pipe_create(err);
         if (rc == -1) {
             *errbuf_size = ngx_snprintf(errbuf, *errbuf_size,
                                         "pipe failed: %s", strerror(errno))
